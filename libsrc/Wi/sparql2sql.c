@@ -5618,7 +5618,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
         }
       else
         eq->e_rvr.rvrRestrictions |= SPART_VARR_ALWAYS_NULL;
-      DO_BOX_FAST (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
+      DO_BOX_FAST_REV (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
         {
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
           if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
@@ -5628,7 +5628,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
             }
           sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, eq);
         }
-      END_DO_BOX_FAST;
+      END_DO_BOX_FAST_REV;
       eq->e_replaces_filter = 0;
     }
   END_SPARP_REVFOREACH_GP_EQUIV;
