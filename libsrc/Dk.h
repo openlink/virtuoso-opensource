@@ -51,12 +51,6 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #define longjmp(buf,val) ldbg_longjmp((buf),(val))
 #endif
 
-/* These are about to disappear when merge is complete */
-#define PMN_THREADS	/* Activate new threading model */
-#define PMN_LOG		/* Activate new logging */
-#define PMN_NMARSH	/* Activate new marshaller */
-#define PMN_MODS	/* Subtle changes to dksrv library */
-
 /* Align all boxes on an 8 byte boundary
    Could do without on most systems, but this is usually faster */
 #if !defined (NO_DOUBLE_ALIGN)
@@ -107,9 +101,7 @@ VIRT_API_BEGIN
 #include "Thread/thread_int.h"
 #include "Dk/tlsf.h"
 
-#ifdef PMN_LOG
 # include "util/logmsg.h"
-#endif
 
 #include "Dk/Dkstubs.h"
 

@@ -104,13 +104,9 @@ call_exit_outline (int status)
 }
 
 
-#ifdef PMN_THREADS
 int time_slice = 100;
 #define process_is_quiescent(X) \
 	(_thread_sched_preempt || _thread_num_runnable < 1)
-#else
-extern int time_slice;
-#endif
 
 
 #ifndef GSTATE
@@ -179,11 +175,9 @@ typedef int (*select_func_t) (int ses_count, session_t ** reads, session_t ** wr
 static caddr_t PrpcFutureNextResult1T (future_t * future);
 
 
-#ifdef PMN_THREADS
 static dk_thread_t *dk_thread_alloc (void);
 #ifndef NO_THREAD
 static int future_wrapper (void *dkt);
-#endif
 #endif
 
 
@@ -1074,11 +1068,7 @@ future_wrapper (void *ignore)
 	    ret_block[RRC_VALUE] = (caddr_t) ret_box;
 	    ret_block[RRC_ERROR] = box_num (error);
 	    CB_PREPARE;
-#ifdef PMN_NMARSH
 	    srv_write_in_session (ret_block, future->rq_client, 1);
-#else
-	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
-#endif
 	    CB_DONE;
 	    dk_free_tree ((caddr_t)ret_block);
 	  }
@@ -1757,11 +1747,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
       ret_block[RRC_ERROR] = box_num (error);
       CB_PREPARE;
       {
-#ifdef PMN_NMARSH
 	srv_write_in_session (ret_block, future->rq_client, 1);
-#else
-	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
-#endif
       }
       CB_DONE;
       if (ret_type == DV_C_STRING)
@@ -2794,11 +2780,7 @@ PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush)
     ret_block[RRC_VALUE] = (caddr_t) ret_box;
     ret_block[RRC_ERROR] = NULL;
     CB_PREPARE
-#ifdef PMN_NMARSH
 	srv_write_in_session (ret_block, future->rq_client, flush);
-#else
-	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, flush);
-#endif
     CB_DONE;
     if (ret_type == DV_C_STRING)
       dk_free_box ((caddr_t) ret_box[0]);	 /* mty HUHTI */
@@ -3113,23 +3095,10 @@ PrpcProtocolInitialize (int sesclass)
     protocols = hash_table_allocate (4);
   if (!gethash ((void *) (ptrlong) sesclass, protocols))
     {
-#ifdef PMN_THREADS
       du_thread_t *server_process;
       server_process = thread_create (server_loop, server_thread_sz, (void *) (ptrlong) sesclass);
 
       sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
-#else
-      du_thread_t *server_process;
-      server_process = process_allocate (server_thread_sz);
-
-      server_process->thr_attributes = hash_table_allocate (11);
-
-      process_set_init_function (server_process, (init_func) server_loop, (void *) sesclass);
-
-      sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
-
-      semaphore_leave (server_process->thr_sem);
-#endif /* PMN_THREADS */
     }
 #endif /* NO_THREAD */
 }
@@ -3599,7 +3568,7 @@ void
 PrpcInitialize1 (int mem_mode)
 {
   USE_GLOBAL
-#if (!defined (PREEMPT) && !defined (NO_THREAD)) || (defined (PMN_THREADS) && !defined (NO_THREAD))
+#if !defined (PREEMPT) && !defined (NO_THREAD) ||  !defined (NO_THREAD)
   int zero = 0;
 #endif
 
@@ -3616,9 +3585,6 @@ PrpcInitialize1 (int mem_mode)
 
   prpcinitialized = 1;
 
-#ifndef PMN_NMARSH
-  write_in_session = srv_write_in_session;
-#endif
 
   du_thread_init (main_thread_sz);
 
@@ -3646,32 +3612,20 @@ PrpcInitialize1 (int mem_mode)
   init_pctcp ();
 #endif
 
-#ifdef PMN_THREADS
 # ifndef NO_THREAD
   if (!_thread_sched_preempt)
     session_set_default_control (SC_BLOCKING, (char *) (&zero), sizeof (int));
 # endif
 
-#else
-# if !defined (PREEMPT) && !defined (NO_THREAD)
-  session_set_default_control (SC_BLOCKING, (char *) (&zero), sizeof (int));
-# endif
-#endif
 
   session_set_default_control (SC_MSGLEN, (char *) (&socket_buf_sz), sizeof (int));
 
-#ifdef PMN_THREADS
   {
     dk_thread_t *dkt = dk_thread_alloc ();
     du_thread_t *thr = thread_current ();
     thr->thr_client_data = dkt;
     dkt->dkt_process = thr;
   }
-#else
-  process_futures_initialize (initial_process);
-
-  start_scheduler ();
-#endif
 
   init_readtable ();
 
@@ -3821,11 +3775,7 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
   else
 #endif
     {
-#ifdef PMN_NMARSH
       srv_write_in_session (request_v, server, 1);
-#else
-      write_in_session ((caddr_t) request_v, server, NULL, NULL, 1);
-#endif
     }
   CB_DONE;
 

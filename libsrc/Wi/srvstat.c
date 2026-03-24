@@ -510,48 +510,6 @@ extern int debug_invalid_iri_id;
 void
 process_status_report (void)
 {
-#if defined (UNIX) && !defined PMN_THREADS
-  USE_GLOBAL
-  int n;
-  int active = 0, running = 0, served = 0;
-
-  active = 0;
-  running = 0;
-  served = 0;
-
-  for (n = 0; n < MAX_THREADS; n++)
-    {
-      if (threads[n].thr_IsActive)
-	{
-	  active++;
-	  if (threads[n].thr_status == RUNNABLE)
-	    running++;
-	}
-    }
-  for (n = 0; n < MAX_SESSIONS; n++)
-    {
-      if (served_sessions[n])
-	served++;
-    }
-  rep_printf ("Server status: %d served sessions, %d threads, %d running.\n",
-      served, active, running);
-  st_proc_served = served;
-  st_proc_running = running;
-  st_proc_active = active;
-  {
-    s_node_t *token = in_basket.first_token;
-    n = 0;
-    while (token)
-      {
-	n++;
-	token = token->next;
-      }
-    st_proc_brk  = (unsigned ptrlong) sbrk (0) - initbrk;
-    rep_printf ("	    %d requests queued.  brk = %Ld\n", n,
-	(unsigned int64) st_proc_brk);
-    st_proc_queued_req = n;
-  }
-#endif
 }
 
 

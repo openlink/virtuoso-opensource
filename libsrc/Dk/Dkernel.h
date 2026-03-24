@@ -159,16 +159,9 @@ typedef struct dk_thread_s dk_thread_t;
 struct future_request_s
 {
   service_t *		rq_service;
-#ifndef PMN_MODS
-  jmp_buf_splice 	rq_start_context;
-#endif
   long **		rq_arguments;
   dk_session_t *	rq_client;
   long 			rq_condition;
-#ifndef PMN_MODS
-  int 			rq_ancestor_count;
-  future_request_t **	rq_ancestors;
-#endif
   dk_thread_t *		rq_thread;
   future_request_t *	rq_next_waiting;
   int 			rq_is_direct_io;

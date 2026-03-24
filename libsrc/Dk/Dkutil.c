@@ -59,7 +59,7 @@ gpf_notice (const char *file, int line, const char *text)
   FILE *core_reason;
 #endif
   print_trace ();
-#if defined (PMN_LOG) && defined (NOT_DEFINED)
+#if defined (NOT_DEFINED)
   /* XXX - first resolve libutil conflicts */
   if (text)
     log_out (LOG_EMERG, file, line, "internal error: %s", text);

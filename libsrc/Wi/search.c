@@ -1530,9 +1530,7 @@ search_switch:
 	  return DVC_INDEX_END; /* the non-root became root while waiting for parent, which got popped away by itc_delete_single_leaf.  At end. Return */
 
 	/* This never fails. We're in on the parent node. Where do we go now? */
-#ifdef PMN_THREADS
 	PROCESS_ALLOW_SCHEDULE ();
-#endif
 
 	pos = page_find_leaf (*buf_ret, leaf_from);
 	if (-1 == pos)

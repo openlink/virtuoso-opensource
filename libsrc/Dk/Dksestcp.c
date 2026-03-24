@@ -462,11 +462,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
  * Globals used :
  */
 
-#if defined(WINNT) || defined(WINDOWS) || defined(PMN_MODS)
 int reuse_address = 1;
-#else
-int reuse_address = 0;
-#endif
 
 
 void
