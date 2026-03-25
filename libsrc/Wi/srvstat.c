@@ -507,6 +507,10 @@ static long db_sizeof_wide_char = sizeof (wchar_t);
 
 extern int debug_invalid_iri_id;
 
+extern int32 dk_tcp_keepalive_idle;
+extern int32 dk_tcp_keepalive_probes;
+extern int32 dk_tcp_keepalive_intvl;
+
 void
 process_status_report (void)
 {
@@ -2334,6 +2338,9 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I32 (http_connect_timeout, "http_connect_timeout"),
     SD_DEF_I64 (users_cache_sz, "users_cache_sz"),
     SD_DEF_I32 (enable_cpt_rb_ck, "enable_cpt_rb_ck"),
+    SD_DEF_I32 (dk_tcp_keepalive_idle, "tcp_keepalive_idle"),
+    SD_DEF_I32 (dk_tcp_keepalive_probes, "tcp_keepalive_probes"),
+    SD_DEF_I32 (dk_tcp_keepalive_intvl, "tcp_keepalive_intvl"),
     SD_DEF_I64 (swap_guard_threshold, "swap_guard_threshold"),
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),

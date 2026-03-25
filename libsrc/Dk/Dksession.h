@@ -34,9 +34,10 @@ typedef struct control_s control_t;
 
 struct control_s
 {
-  int 			ctrl_blocking;		/* 1 if read/write blocking */
-  timeout_t *		ctrl_timeout;		/* s+us value for read/write */
-  int 			ctrl_msg_length;	/* max length of single message */
+  int		ctrl_blocking;	  /*!< 1 if read/write blocking */
+  timeout_t *	ctrl_timeout;     /*!< s+us value for read/write */
+  int		ctrl_msg_length;  /*!< max length of single message */
+  int		ctrl_keepalive;	  /*!< number of seconds a TCP connection will remain idle before to send keep-alive packets */
 };
 
 typedef struct strsestmpfile_s strsestmpfile_t;
@@ -164,6 +165,7 @@ struct session_s
 #define SC_BLOCKING		1
 #define SC_TIMEOUT		2
 #define SC_MSGLEN		3
+#define SC_KEEPALIVE            4
 
 /* Macros defining default values for session's control fields */
 

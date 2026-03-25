@@ -81,6 +81,30 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
 #endif
 
 
+/*
+ *  Keepalive settings for various OS types
+ */
+#if defined (WIN32)
+#define KEEPALIVE_UNITS(x)	((x) * 1000)		/* Windows uses milliseconds */
+#else
+#define KEEPALIVE_UNITS(x)	(x)
+#endif
+
+/*
+ *  Default settings will add 6 keepalive packet per hour idle time.
+ *
+ *  Under normal network circumstances this is enough to not flood the network with unnecessary packets, as
+ *  the remote kernel normally closes open sockets correctly when the remote process is killed or exits
+ *  so we should get the disconnect straight away.
+ *
+ *  However if the remote machine hangs or disappears from the network, these settings should let the local
+ *  Virtuoso process know in about 15 min which should be acceptable for most situations.
+ */
+int dk_tcp_keepalive_idle   = 600; 	/* number of seconds the socket can be idle before keepalive packets are sent (default 10 minutes) */
+int dk_tcp_keepalive_intvl  = 30;	/* interval between keepalive probes in seconds (default 30 seconds)  */
+int dk_tcp_keepalive_probes = 10;	/* number of keepalive probes sent before aborting the connection (default 10 probes) */
+
+
 /*##**********************************************************************
  *
  *              tcpdev_allocate
@@ -1695,6 +1719,68 @@ tcpses_set_control (session_t * ses, int fieldtoset, char *p_value, int size)
 	}
       sescontrol->ctrl_msg_length = *(int *) p_value;
       rc = SER_SUCC;
+      break;
+
+    case SC_KEEPALIVE:
+
+      if (ses->ses_class != SESCLASS_TCPIP)
+	return SER_NOSUP;
+      if (size != sizeof (sescontrol->ctrl_keepalive))
+	{
+	  return SER_ILLPRM;
+	}
+      else
+	{
+	  int keepalive;
+	  memcpy ((char *) &ctrl, p_value, size);
+	  keepalive = (ctrl > 0 ? 1 : 0);
+	  rc = setsockopt (s, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof (keepalive));
+	  if (rc < 0)
+	    return SER_SYSCALL;
+	  if (keepalive)
+	    {
+#if defined (WIN32)
+	      struct tcp_keepalive vals;
+	      DWORD dummy;
+	      vals.onoff = 1;
+	      vals.keepalivetime = KEEPALIVE_UNITS (dk_tcp_keepalive_idle);	/* value in milliseconds */
+	      vals.keepaliveinterval = KEEPALIVE_UNITS (dk_tcp_keepalive_intvl);	/* value in milliseconds */
+	      rc = WSAIoctl (s, SIO_KEEPALIVE_VALS, &vals, sizeof (vals), NULL, 0, &dummy, NULL, NULL);
+	      if (rc)
+		log_error ("Cannot set keepalive values (%d)", WSAGetLastError ());
+#else
+
+	      if (dk_tcp_keepalive_idle > 0)
+		{
+#if defined (TCP_KEEPALIVE)	/* Apple, BSD */
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPALIVE, &dk_tcp_keepalive_idle, sizeof (ctrl)) < 0)
+		    log_error ("Cannot set keepalive idle timeout to %d (%m)", dk_tcp_keepalive_idle);
+#elif defined (TCP_KEEPIDLE)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPIDLE, &dk_tcp_keepalive_idle, sizeof (ctrl)) < 0)
+		    log_error ("Cannot set keepalive idle timeout to %d (%m)", dk_tcp_keepalive_idle);
+#endif
+		}
+
+	      if (dk_tcp_keepalive_intvl > 0)
+		{
+#if defined (TCP_KEEPINTVL)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPINTVL, &dk_tcp_keepalive_intvl, sizeof (dk_tcp_keepalive_intvl)) < 0)
+		    log_error ("Cannot set keepalive interval timeout to %d (%m)", dk_tcp_keepalive_intvl);
+#endif
+		}
+
+	      if (dk_tcp_keepalive_probes > 0)
+		{
+#if defined (TCP_KEEPCNT)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPCNT, &dk_tcp_keepalive_probes, sizeof (dk_tcp_keepalive_probes)) < 0)
+		    log_error ("Cannot set keepalive interval timeout to %d (%m)", dk_tcp_keepalive_probes);
+#endif
+		}
+#endif
+	    }
+	  sescontrol->ctrl_keepalive = ctrl;
+	  rc = SER_SUCC;
+	}
       break;
 
     default:
