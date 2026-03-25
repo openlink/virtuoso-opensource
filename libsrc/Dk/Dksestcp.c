@@ -56,8 +56,6 @@ static void set_array_status (int count, session_t ** sesarr, int status);
 static int fileses_write (session_t * ses, char *buffer, int n_bytes);
 int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
 
-
-
 #define TCP_CHECKVALUE     313			 /* Donald Duck registration number */
 
 #define TCP_CHK(sesp)       \
@@ -103,6 +101,10 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
 int dk_tcp_keepalive_idle   = 600; 	/* number of seconds the socket can be idle before keepalive packets are sent (default 10 minutes) */
 int dk_tcp_keepalive_intvl  = 30;	/* interval between keepalive probes in seconds (default 30 seconds)  */
 int dk_tcp_keepalive_probes = 10;	/* number of keepalive probes sent before aborting the connection (default 10 probes) */
+
+int32 dk_tcp_so_linger_enable = 0;	/* disabled by default */
+int32 dk_tcp_so_linger_timeout = 0;	/* timeout in seconds when linger_enable = 1 */
+int32 dk_tcp_shutdown_enable = 0;	/* disabled by default */
 
 
 /*##**********************************************************************
@@ -943,6 +945,7 @@ static int
 tcpses_disconnect (session_t * ses)
 {
   int rc;
+  int s = tcpses_get_fd(ses);
 
   dbg_printf_1 (("tcpses_disconnect."));
 
@@ -950,17 +953,38 @@ tcpses_disconnect (session_t * ses)
 
   SESSTAT_CLR (ses, SST_OK);
 
-  /* Close the connected socket */
-#if 0 /* defined(WIN32) */
+
+  /* Set linger options (default off) */
+#if defined (SO_LINGER)
   {
-    struct linger l = {1, 0};
-    rc = setsockopt (ses->ses_device->dev_connection->con_s,
-        SOL_SOCKET, SO_LINGER, (void *)&l, sizeof (struct linger));
-    rc = shutdown (ses->ses_device->dev_connection->con_s, 2);
+    struct linger l_opt;
+
+    l_opt.l_onoff = dk_tcp_so_linger_enable;
+    l_opt.l_linger = dk_tcp_so_linger_timeout;
+
+    if (dk_tcp_so_linger_enable)
+      {
+	rc = setsockopt (s, SOL_SOCKET, SO_LINGER, (void *) &l_opt, sizeof (l_opt));
+	if (rc)
+	  {
+	    dbg_perror ("setsockopt(SO_LINGER)");
+	  }
+      }
   }
 #endif
 
-  rc = closesocket (ses->ses_device->dev_connection->con_s);
+  /* Shutdown operation on socket (default off) */
+  if (dk_tcp_shutdown_enable)
+    {
+      rc = shutdown (s, SHUT_WR);
+      if (rc)
+        {
+	  dbg_perror ("shutdown(SHUT_WR)");
+	}
+    }
+
+  /* Close the connected socket */
+  rc = closesocket (s);
   ses->ses_device->dev_connection->con_s = -1;
 
   /* Whether close succeeded or not, the connection will be
