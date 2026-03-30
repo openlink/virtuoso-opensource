@@ -44,12 +44,6 @@
 # ifdef HAVE_SYS_SOCKIO_H
 #  include <sys/sockio.h>
 # endif
-# ifdef OPL_SOURCE
-#  define RPCFUN
-#  include <rpc/netdb.h>
-# else
-#  include <netdb.h>
-# endif
 #endif
 
 #ifdef COM_UNIXSOCK

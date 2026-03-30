@@ -32,12 +32,8 @@
 #endif
 
 #ifndef _IEEE_FLOATS
-#if defined (OPL_SOURCE)
-# include <librpc.h>
-#else
 # include <rpc/types.h>
 # include <rpc/xdr.h>
-#endif
 #endif
 
 macro_char_func readtable[256];
