@@ -1150,7 +1150,7 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
   else if (isstring (o) or __tag of uname = __tag (o))
   {
     http ('"', ses);
-    http_escape (o, 14, ses, 1, 1);
+    http_escape (o, 21, ses, 1, 1);
     http ('"', ses);
   }
   else if (__tag(o) = __tag of datetime)
@@ -1189,7 +1189,7 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
             http (repeat (' ', (depth * indent)), ses);
     }
         http ('"', ses);
-        http_escape (elm, 14, ses, 1, 1);
+        http_escape (elm, 21, ses, 1, 1);
         http ('":', ses);
         if (indent) http(' ', ses);
         DB.DBA.JSON_SERIALIZE_INNER (ses, aref(o,inx + 1), depth, indent);
@@ -1229,7 +1229,7 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
                   http (repeat (' ', (depth * indent)), ses);
                 }
               http ('"', ses);
-              http_escape (field, 14, ses, 1, 1);
+              http_escape (field, 21, ses, 1, 1);
               http ('":', ses);
               if (indent) http(' ', ses);
               DB.DBA.JSON_SERIALIZE_INNER (ses, v, depth, indent);
