@@ -30,14 +30,12 @@
 #include "Wi/sqlver.h"
 
 #ifdef WIN32
-#include <windows.h>
-# include <winsock.h>		/* For struct timeval */
-#include <process.h>
-#include <conio.h>
-#include <time.h>
+#  include <process.h>
+#  include <conio.h>
+#  include <time.h>
 #else
-#include <netdb.h>
-#include <netinet/in.h>
+#  include <netdb.h>
+#  include <netinet/in.h>
 #endif
 
 #include <locale.h>

@@ -84,6 +84,7 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
  */
 #if defined (WIN32)
 #define KEEPALIVE_UNITS(x)	((x) * 1000)		/* Windows uses milliseconds */
+#define SHUT_WR			SD_SEND
 #else
 #define KEEPALIVE_UNITS(x)	(x)
 #endif
@@ -2220,7 +2221,7 @@ init_pctcp (void)
   WSADATA wsaData;
   int err;
 
-  wVersionRequested = (1 << 8) + 1;
+  wVersionRequested = MAKEWORD (2,2);
   err = WSAStartup (wVersionRequested, &wsaData);
   if (err != 0)
     {
@@ -2228,26 +2229,20 @@ init_pctcp (void)
       return err;
     }
 
-  /* Confirm that the Windows Sockets DLL supports 1.1.
+  /*
+   * Confirm that the Windows Sockets DLL supports 2.2.
    * Note that if the DLL supports versions greater
-   * than 1.1 in addition to 1.1, it will still return
-   * 1.1 in wVersion since that is the version we requested.
+   * than 2.2 in addition to 2.2, it will still return
+   * 2.2 in wVersion since that is the version we requested.
    */
-  if (LOBYTE (wsaData.wVersion) != 1 || HIBYTE (wsaData.wVersion) != 1)
+  if (LOBYTE (wsaData.wVersion) != 2 || HIBYTE (wsaData.wVersion) != 2)
     {
       /* Tell the user that we couldn't find a usable winsock.dll. */
+      log_debug ("Could not find a usable version of Winsock.dll");
       WSACleanup ();
       return WSAVERNOTSUPPORTED;
     }
 
-  /* The Windows Sockets DLL is acceptable.  Proceed.  */
-  if (LOBYTE (wVersionRequested) < 1 ||
-      (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
-    {
-      return WSAVERNOTSUPPORTED;
-    }
-
-  /*WSASetBlockingHook ((FARPROC) Yield); */
   return 0;
 }
 #endif

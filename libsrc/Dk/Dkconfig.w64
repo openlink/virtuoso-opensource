@@ -27,6 +27,7 @@
 #pragma warning (disable:4514) // unreferenced inline function has been removed
 #pragma warning (disable:4996) // The POSIX name for this item is deprecated
 #endif
+
 /* GK: hack that is placed here for compatibility with the WIN2003 Platform SDK */
 #define _WSPIAPI_H_
 #define _USE_MATH_DEFINES
@@ -35,10 +36,11 @@
 #define DOSFS
 #define FD_SETSIZE 8192
 
-#include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+
+#include <stdio.h>
 #include <setjmp.h>
 #include <process.h>
 #include <io.h>

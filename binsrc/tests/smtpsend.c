@@ -1,5 +1,4 @@
 /*
- *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
@@ -17,8 +16,14 @@
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
+
+#ifdef WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  include <windows.h>
+#  pragma comment(lib, "ws2_32.lib")
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,21 +31,21 @@
 #include <time.h>
 #include <fcntl.h>
 #include <ctype.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <signal.h>
-#else
-#include <winsock.h>
-#endif
-
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdarg.h>
+
+#ifndef WIN32
+#  include <unistd.h>
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <arpa/inet.h>
+#  include <sys/types.h>
+#  include <netdb.h>
+#  include <signal.h>
+
+#  define closesocket(x)		close(x)
+#endif
 
 #define TRUE 1
 #define FALSE 0
@@ -200,20 +205,24 @@ main (int argc, char *argv[])
 {
 #ifdef WIN32
   WSADATA wsaData;
-  WORD wVersionRequired = (1 << 8) + 1;
-#endif
-  if (argc < 3)
-    exit (1);
-#ifndef WIN32
-  signal (SIGPIPE, SIG_IGN);
-#else
-  if (WSAStartup (wVersionRequired, &wsaData))
+  WORD wVersionRequired = MAKEWORD (2, 2);
+
+  if (WSAStartup (mVersionRequired, &wsaData) != 0)
     {
       printf ("*** FAILED: Windows sockets unable to initialize\n");
       exit (1);
     }
 #endif
+
+  if (argc < 3)
+    exit (1);
+
+#ifndef WIN32
+  signal (SIGPIPE, SIG_IGN);
+#endif
+
   make_connection (argv[1], atoi (argv[2]), &fd);
+
   if (0 > read_resp (stdout))
     exit (3);
   if (SendMailFile (stdin))

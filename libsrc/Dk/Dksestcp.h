@@ -53,6 +53,7 @@
 
 #if defined (WIN32)
 # include <winsock2.h>
+# include <ws2tcpip.h>
 # include <mstcpip.h>
 # include <windows.h>
 extern int last_errno;
