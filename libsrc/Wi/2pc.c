@@ -1019,8 +1019,6 @@ trx_uuid_t;
 caddr_t
 tp_get_server_uuid (void)
 {
-#if defined (UUID_BY_PORT)
-
 #if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
   char buff[4096];
   int herrnop;
@@ -1050,9 +1048,6 @@ tp_get_server_uuid (void)
       return srv_uuid;
     }
   return ip_addr;
-#else
-  return NULL;
-#endif
 }
 
 static void

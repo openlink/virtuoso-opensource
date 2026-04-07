@@ -41,8 +41,6 @@
 #endif
 #endif
 
-#define UUID_BY_PORT
-
 #ifndef WIN32
 #ifndef HRESULT
 #define HRESULT long
