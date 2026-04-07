@@ -461,7 +461,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
   if (buf_out_len && buf_out)
     {
       strncpy (buf_out, buf, buf_out_len);
-      buf[buf_out_len - 1] = 0;
+      buf_out[buf_out_len - 1] = 0;
     }
   return 0;
 }
