@@ -260,8 +260,6 @@ dk_parse_address (char *str)
 }
 
 
-static char addrinfo[256];
-
 #define SEPARATOR " :"
 
 int
@@ -300,6 +298,7 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
   int HostAndPort = 0;
   struct hostent *host = NULL;
   in_addr_t addr = INADDR_NONE;
+  char addrinfo[256];
 #if defined (_REENTRANT)
   char buff[4096];
   int herrnop = 0;
