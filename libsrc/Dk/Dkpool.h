@@ -422,10 +422,10 @@ void mp_trash (mem_pool_t * mp, caddr_t box);
 extern box_tmp_copy_f box_tmp_copier[256];
 
 #ifdef LACERATED_POOL
-#define MP_BYTES(x, mp, len)  			{ (x) = (void *)mp_alloc_box (mp, len, DV_NON_BOX); }
+#define MP_BYTES(x, mp, len)  			do { (x) = (void *)mp_alloc_box (mp, len, DV_NON_BOX); } while (0)
 #else
 #define MP_BYTES(x, mp, len2) \
-  { \
+  do { \
     int __len = ALIGN_8 (len2); \
     mem_block_t * f = mp->mp_first; \
     if (f && f->mb_fill + __len <= f->mb_size) \
@@ -435,34 +435,34 @@ extern box_tmp_copy_f box_tmp_copier[256];
       } \
     else \
       *(void**)&(x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX);	\
-  }
+  } while (0)
 #endif
 
 #define MP_INT(x, mp, v, tag_word)		\
-  { \
+  do { \
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(int64 *)x = v; \
     ((int64*)x)[-1] = tag_word; \
-  }
+  } while (0)
 
 
 #define MP_DOUBLE(x, mp, v, tag_word)		\
-  { \
+  do { \
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(double *)x = v; \
     ((int64*)x)[-1] = tag_word; \
-  }
+  } while (0)
 
 
 #define MP_FLOAT(x, mp, v, tag_word)		\
-  { \
+  do { \
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(float *)x = v; \
     ((int64*)x)[-1] = tag_word; \
-  }
+  } while (0)
 
 
 typedef struct auto_pool_s
@@ -526,12 +526,12 @@ extern dk_pool_4g_t * dk_pool_map[256 * 256];
 void mp_check_not_in_pool (int64 ptr);
 
 #define ASSERT_NOT_IN_POOL(ptr)			\
-{ \
+do { \
   int64 __ptr = (int64)ptr; \
   dk_pool_4g_t * map = dk_pool_map[__ptr >> 32]; \
 if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 0x7)))) \
   mp_check_not_in_pool (__ptr);						\
-}
+} while (0)
 
 #else
 #define ASSERT_NOT_IN_POOL(ptr)
