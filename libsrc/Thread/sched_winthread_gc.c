@@ -28,9 +28,6 @@
 
 #define GC_THREADS
 /*#define GC_DLL*/
-#if !defined (WIN95COMPAT)
-#define _WIN32_WINNT 0x400
-#endif
 #include "Dk.h"
 #include <gc/gc.h>
 #include "sched_winthread.c"

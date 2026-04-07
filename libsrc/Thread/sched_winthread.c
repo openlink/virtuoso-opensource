@@ -28,9 +28,6 @@
 
 // TODO XXX INITIAL ATTRIBUTES, RESTART
 
-#if !defined (WIN95COMPAT)
-#define _WIN32_WINNT 0x400
-#endif
 #include "Dk.h"
 
 const char *build_thread_model = "-threads";
@@ -368,13 +365,7 @@ thread_exit (int n)
   thread_queue_to (&_deadq, thr);
   _thread_num_dead++;
 
-#ifdef WIN95COMPAT
-  Q_UNLOCK ();
-  if (WaitForSingleObject (thr->thr_cv, INFINITE) != WAIT_OBJECT_0)
-#else
-  if (SignalObjectAndWait (_q_lock->mtx_handle, thr->thr_cv,
-      INFINITE, FALSE) != WAIT_OBJECT_0)
-#endif
+  if (SignalObjectAndWait (_q_lock->mtx_handle, thr->thr_cv, INFINITE, FALSE) != WAIT_OBJECT_0)
     {
       thread_queue_remove (&_deadq, thr);
       _thread_num_dead--;
@@ -384,10 +375,6 @@ thread_exit (int n)
       // _endthreadex ..
     }
   /* Woke up with a PulseEvent() */
-
-#ifdef WIN95COMPAT
-  Q_UNLOCK ();
-#endif
 
   if (thr->thr_status == TERMINATE)
     goto terminate;

@@ -24,7 +24,6 @@
  */
 
 #include "virtpwd.h"
-#ifndef WIN95COMPAT
 #include "Dk.h"
 #include "sqlnode.h"
 #include "http.h"
@@ -32,9 +31,7 @@
 #include "sqlbif.h"
 #include "libutil.h"
 #include <stdlib.h>
-#endif
 #ifndef NO_LDAP
-#ifndef WIN95COMPAT
 
 #ifdef WIN32
 
@@ -1009,12 +1006,10 @@ bif_ldap_modify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (rc);
 }
 
-#endif
 
 void
 bif_ldapcli_init (void)
 {
-#ifndef WIN95COMPAT
 #ifdef WIN32
   ldap_handle_mutex = mutex_allocate ();
 #endif
@@ -1023,11 +1018,9 @@ bif_ldapcli_init (void)
   bif_define ("ldap_delete", bif_ldap_delete);
   bif_define_ex ("ldap_add", bif_ldap_add, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("ldap_modify", bif_ldap_modify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-#endif
 }
 
 #else /*ndef NO_LDAP */
-#ifndef WIN95COMPAT
 static caddr_t
 bif_ldap_modify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1051,16 +1044,13 @@ bif_ldap_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return NULL;
 }
-#endif
 
 void
 bif_ldapcli_init (void)
 {
-#ifndef WIN95COMPAT
   bif_define ("ldap_search", bif_ldap_search);
   bif_define ("ldap_delete", bif_ldap_delete);
   bif_define_ex ("ldap_add", bif_ldap_add, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("ldap_modify", bif_ldap_modify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-#endif
 }
 #endif /* ndef NO_LDAP */
