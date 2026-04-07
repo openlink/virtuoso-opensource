@@ -38,6 +38,11 @@
 #include "numeric.h"
 #include "rdf_core.h" /* for IRI_TO_ID_WITH_CREATE */
 #include "xml_ecm.h"
+#ifdef _SSL
+#include <openssl/md5.h>
+#else
+#include "util/md5.h"
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1983,6 +1988,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
       }
     case ORDER_L:
       return sparp_expn_native_valmode (sparp, tree->_.oby.expn);
+    case SPAR_TRIPLE_TERM:
+      return SSG_VALMODE_LONG;
     default: break;
     }
   spar_internal_error (sparp, "sparp_" "expn_native_valmode(): unsupported case");
@@ -2040,6 +2047,7 @@ ptrlong sparp_restr_bits_of_dtp (dtp_t dtp)
       case DV_DB_NULL:
         return SPART_VARR_ALWAYS_NULL;
       case DV_IRI_ID:
+      case DV_IRI_ID_8:
         return SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
       case DV_LONG_INT: case DV_DATETIME: case DV_DATE: case DV_TIME:
       case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC:
@@ -2301,6 +2309,8 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
       }
     case ORDER_L:
       return sparp_restr_bits_of_expn (sparp, tree->_.oby.expn);
+    case SPAR_TRIPLE_TERM:
+      return SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL;
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -3420,7 +3430,8 @@ Without the special optimization it becomes iri_to_id ('graph iri string from vi
   if (!bop_is_comparison &&
     ((SSG_VALMODE_LONG == right_vmode) || (SSG_VALMODE_SQLVAL == right_vmode)) && /* case (SSG_VALMODE_LONG == right_vmode) happens for IRI(?::0) and the like */
     ((SSG_VALMODE_LONG == left_vmode) ||
-      (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection) ) &&
+      (IS_BOX_POINTER (left_vmode) &&
+        (left_vmode->qmfIsBijection || left_vmode->qmfOkForAnySqlvalue)) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, right) )
     {
       if ((BOP_NEQ != ttype) || !(IS_BOX_POINTER (left_vmode)) || left_vmode->qmfOkForAnySqlvalue)
@@ -3445,7 +3456,8 @@ Without the special optimization it becomes iri_to_id ('graph iri string from vi
     }
   if (!bop_is_comparison && (SSG_VALMODE_SQLVAL == left_vmode) &&
     ((SSG_VALMODE_LONG == right_vmode) ||
-      (IS_BOX_POINTER (right_vmode) && right_vmode->qmfIsBijection) ) &&
+      (IS_BOX_POINTER (right_vmode) &&
+        (right_vmode->qmfIsBijection || right_vmode->qmfOkForAnySqlvalue)) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, left) )
     {
       if ((BOP_NEQ == ttype) && (IS_BOX_POINTER (right_vmode)) && !right_vmode->qmfOkForAnySqlvalue)
@@ -3927,7 +3939,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         ptrlong arg2_restrs = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg2);
         if ((arg1_restrs & SPART_VARR_IS_REF) && (arg2_restrs & SPART_VARR_IS_REF))
           {
-            expanded = spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2);
+            expanded = spartlist (ssg->ssg_sparp, 3, SPAR_BOP_EQ_NONOPT, arg1, arg2);
             ssg_print_bop_bool_expn (ssg, expanded, " = ", " equ (", top_filter_op, needed);
             goto print_asname;
           }
@@ -3936,14 +3948,14 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
             SPART *potential_literal = ((arg1_restrs & SPART_VARR_IS_REF) ? arg2 : arg1);
             expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
               sparp_make_builtin_call (ssg->ssg_sparp, IRI_L, (SPART **)t_list (1, potential_literal)),
-              spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2) );
+              spartlist (ssg->ssg_sparp, 3, SPAR_BOP_EQ_NONOPT, arg1, arg2) );
             goto expanded_sameterm_ready; /* see below */
           }
         expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
-          spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2),
+          spartlist (ssg->ssg_sparp, 3, SPAR_BOP_EQ_NONOPT, arg1, arg2),
           spartlist (ssg->ssg_sparp, 3, BOP_AND,
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
-              spartlist (ssg->ssg_sparp, 3, BOP_EQ,
+              spartlist (ssg->ssg_sparp, 3, SPAR_BOP_EQ_NONOPT,
                 sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg1)),
                 sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
@@ -3956,7 +3968,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                       sparp_make_builtin_call (ssg->ssg_sparp, DATATYPE_L, (SPART **)t_list (1, arg2)) ) ),
                   NULL ) ) ),
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
-              spartlist (ssg->ssg_sparp, 3, BOP_EQ,
+              spartlist (ssg->ssg_sparp, 3, SPAR_BOP_EQ_NONOPT,
                 sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg1)),
                 sparp_make_builtin_call (ssg->ssg_sparp, LANG_L, (SPART **)t_list (1, arg2)) ),
               spartlist (ssg->ssg_sparp, 3, BOP_AND,
@@ -3971,6 +3983,13 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
 
 expanded_sameterm_ready:
         ssg_print_bop_bool_expn (ssg, expanded, " AND ", " __and (", top_filter_op, needed);
+        goto print_asname;
+      }
+    case SPAR_BIF_SAMEVALUE:
+      {
+        SPART *arg2 = tree->_.builtin.args[1];
+        SPART *expanded = spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2);
+        ssg_print_bop_bool_expn (ssg, expanded, " = ", " equ (", top_filter_op, needed);
         goto print_asname;
       }
     case DATATYPE_L:
@@ -4215,8 +4234,10 @@ expanded_sameterm_ready:
           ssg_puts_with_comment (" NULL", "optimized LANG");
           goto print_asname;
         }
-      ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LANGUAGE, asname);
-      return;
+      ssg_puts (" DB.DBA.rdf_lang_impl (");
+      ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LONG, NULL_ASNAME);
+      ssg_puts (")");
+      goto print_asname;
     case SPAR_BIF_ISURI:
     case SPAR_BIF_ISIRI:
       if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
@@ -4236,7 +4257,12 @@ expanded_sameterm_ready:
           ssg_puts_with_comment (" 0", "optimized isIRI");
           goto print_asname;
         }
-      if ((arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_REF | SPART_VARR_NOT_NULL))
+      if ((arg1_restr_bits & (SPART_VARR_IS_BLANK | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_BLANK | SPART_VARR_NOT_NULL))
+        {
+          ssg_puts_with_comment (" 0", "optimized isIRI of guaranteed blank node");
+          goto print_asname;
+        }
+      if ((arg1_restr_bits & (SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL)) == (SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL))
         {
           ssg_puts_with_comment (" 1", "optimized isIRI");
           goto print_asname;
@@ -4593,6 +4619,26 @@ expanded_sameterm_ready:
             ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
             return;
           }
+        switch (sbd->sbd_subtype)
+          {
+          case SPAR_BIF_TRIPLE_SUBJECT:
+            ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+            ssg_puts (", NULL)");
+            goto cant_have_asname;
+          case SPAR_BIF_TRIPLE_PREDICATE:
+            ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+            ssg_puts (", NULL, NULL)");
+            goto cant_have_asname;
+          case SPAR_BIF_TRIPLE_OBJECT:
+            ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+            ssg_puts (", NULL)");
+            goto cant_have_asname;
+          default:
+            break;
+          }
         switch (sbd->sbd_implementation)
           {
           case 'B': ssg_puts (" rdf_"); break;
@@ -4630,6 +4676,179 @@ expanded_sameterm_ready:
                     }
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   goto cant_have_asname; /* see below */
+                }
+              case SPAR_BIF_SHA1:
+                {
+                  ssg_puts (" hash ('sha1', ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_SHA256:
+                {
+                  ssg_puts (" hash ('sha256', ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_SHA384:
+                {
+                  ssg_puts (" hash ('sha384', ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_SHA512:
+                {
+                  ssg_puts (" hash ('sha512', ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_STRLEN:
+                {
+                  ssg_puts (" length (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_UCASE:
+                {
+                  ssg_puts (" ucase (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_LCASE:
+                {
+                  ssg_puts (" lcase (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_ROUND:
+                {
+                  ssg_puts (" round (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_CEIL:
+                {
+                  ssg_puts (" ceil (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_FLOOR:
+                {
+                  ssg_puts (" floor (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_HASLANG:
+                {
+                  if (SSG_VALMODE_SQLVAL == needed)
+                    {
+                      ssg_puts (" case when DB.DBA.rdf_haslang_impl (");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                      ssg_puts (") <> 0 then DB.DBA.rdf_strdt_impl ('true', UNAME'" XMLSCHEMA_NS_URI "#boolean') else DB.DBA.rdf_strdt_impl ('false', UNAME'" XMLSCHEMA_NS_URI "#boolean') end");
+                    }
+                  else
+                    {
+                      ssg_puts (" DB.DBA.rdf_haslang_impl (");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                      ssg_puts (")");
+                    }
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_HASLANGDIR:
+                {
+                  if (SSG_VALMODE_SQLVAL == needed)
+                    {
+                      ssg_puts (" case when DB.DBA.rdf_haslangdir_impl (");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                      ssg_puts (") <> 0 then DB.DBA.rdf_strdt_impl ('true', UNAME'" XMLSCHEMA_NS_URI "#boolean') else DB.DBA.rdf_strdt_impl ('false', UNAME'" XMLSCHEMA_NS_URI "#boolean') end");
+                    }
+                  else
+                    {
+                      ssg_puts (" DB.DBA.rdf_haslangdir_impl (");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                      ssg_puts (")");
+                    }
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_LANGDIR:
+                {
+                  ssg_puts (" DB.DBA.rdf_langdir_impl (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_STRLANGDIR:
+                {
+                  ssg_puts (" DB.DBA.rdf_strlangdir_impl (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_STRDIR:
+                {
+                  ssg_puts (" DB.DBA.rdf_strdir_impl (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_DIR:
+                {
+                  ssg_puts (" DB.DBA.rdf_dir_impl (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_ISTRIPLE:
+                {
+                  ssg_puts (" case when __rdf_strsqlval (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (", 0) like '" RDF_STAR_NS "%' then 1 else 0 end");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_TRIPLE_SUBJECT:
+                {
+                  ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (", NULL)");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_TRIPLE_PREDICATE:
+                {
+                  ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (", NULL, NULL)");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_TRIPLE_OBJECT:
+                {
+                  ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (", NULL)");
+                  goto cant_have_asname;
+                }
+              case SPAR_BIF_UNNEST:
+                {
+                  /* SPARQL UNNEST: UNNEST(bif:vector(...)) AS ?var */
+                  /* Generate SQL that expands the vector elements */
+                  ssg_puts (" (SELECT ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  ssg_puts (" as item) ");
+                  goto cant_have_asname;
                 }
               case TOP_L:
                 {
@@ -5179,7 +5398,7 @@ const char *ssg_tmpl_X_of_Y (spar_sqlgen_t *ssg, ssg_valmode_t needed, ssg_valmo
       if (SSG_VALMODE_LONG	== native)	return " __rdf_sqlval_of_obj /*l*/ (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
-      if (SSG_VALMODE_BOOL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_BOOL	== native)	return " case when (^{tree}^) is null then null when (^{tree}^) = 0 then DB.DBA.rdf_strdt_impl ('false', UNAME'" XMLSCHEMA_NS_URI "#boolean') else DB.DBA.rdf_strdt_impl ('true', UNAME'" XMLSCHEMA_NS_URI "#boolean') end";
     }
   else if (SSG_VALMODE_DATATYPE == needed)
     {
@@ -5527,7 +5746,10 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       {
         if ((SSG_VALMODE_BOOL == needed) || (SSG_VALMODE_SQLVAL == needed))
           {
-            ssg_puts (" __not ("); ssg_print_scalar_expn (ssg, tree->_.bin_exp.left, SSG_VALMODE_SQLVAL, NULL_ASNAME); ssg_putchar (')');
+            /* SPARQL NOT must preserve EBV errors as NULL (unbound in BIND). */
+            ssg_puts (" (1 - sparql_ebv_int_of_sqlval (");
+            ssg_print_scalar_expn (ssg, tree->_.bin_exp.left, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+            ssg_puts ("))");
           }
         else if (SSG_VALMODE_DATATYPE == needed)
           {
@@ -5771,8 +5993,15 @@ args_are_printed:
               }
             else if (NULL != tree->_.lit.datatype)
               ssg_print_box_as_sql_atom (ssg, tree->_.lit.datatype, SQL_ATOM_UNAME_ALLOWED);
+            else if (NULL != tree->_.lit.language)
+              {
+                if (strstr ((const char *)(tree->_.lit.language), "--"))
+                  ssg_puts (" UNAME'" RDF_NS_URI "dirLangString'");
+                else
+                  ssg_print_box_as_sql_atom (ssg, uname_rdf_ns_uri_langString, SQL_ATOM_UNAME_ALLOWED);
+              }
             else
-              ssg_puts (" NULL");
+              ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_string, SQL_ATOM_UNAME_ALLOWED);
             goto print_asname; /* see below */
           }
         if (SSG_VALMODE_LANGUAGE == needed)
@@ -5999,6 +6228,20 @@ args_are_printed:
         case DESC_L: ssg_puts (" DESC"); break;
         }
       goto print_asname; /* see below */
+      }
+    case SPAR_TRIPLE_TERM:
+      {
+        SPART *tts = tree->_.triple_term.subject;
+        SPART *ttp = tree->_.triple_term.predicate;
+        SPART *tto = tree->_.triple_term.object;
+        ssg_puts (" __bft (\"DB\".\"DBA\".\"RDF_STAR_TT_IRI\" (");
+        ssg_print_scalar_expn (ssg, tts, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        ssg_puts (", ");
+        ssg_print_scalar_expn (ssg, ttp, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        ssg_puts (", ");
+        ssg_print_scalar_expn (ssg, tto, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        ssg_puts ("), 1)");
+        goto print_asname; /* see below */
       }
     default:
       spar_sqlprint_error ("ssg_" "print_scalar_expn(): unsupported scalar expression type");
@@ -6675,6 +6918,25 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
           }
         restr_bits_to_ignore = (((NULL != field) && field->qmvFormat->qmfIsBijection) ? ssg_restr_bits_derived_for_var_from_equiv_qm_vals (ssg, field->qmvFormat, fld_tree) : 0);
         ssg_print_fld_var_restrictions_ex (ssg, qmap, field, tabid, fld_tree, triple, fld_if_outer, &(fld_tree->_.var.rvr), restr_bits_to_ignore);
+        return;
+      }
+    case SPAR_TRIPLE_TERM:
+      {
+        SPART_buf rv_buf;
+        SPART *rv = NULL;
+        ssg_print_where_or_and (ssg, "field equal to triple term");
+        if (print_outer_filter)
+          {
+            SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
+            rv->_.retval.triple = triple;
+            rv->_.retval.tr_idx = fld_idx;
+            rv->_.retval.tabid = tabid;
+            ssg_print_scalar_expn (ssg, rv, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+          }
+        else
+          ssg_print_tr_field_expn (ssg, field, tabid, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        ssg_puts (" =");
+        ssg_print_scalar_expn (ssg, fld_tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);
         return;
       }
     default:
@@ -8221,6 +8483,7 @@ args_are_printed:
     case SPAR_BUILT_IN_CALL:
     case SPAR_LIT: case SPAR_QNAME:/* case SPAR_QNAME_NS:*/
     case SPAR_GP:
+    case SPAR_TRIPLE_TERM:
       ssg_print_scalar_expn (ssg, tree, needed, asname);
       return;
     default:
@@ -9656,6 +9919,22 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
     case SPAR_TRIPLE:
       ssg_print_triple_table_exp (ssg, gp, trees, tree_count, pass);
       break;
+    case SPAR_TRIPLE_TERM:
+      {
+        SPART *pred = tree->_.triple_term.predicate;
+        ccaddr_t pred_val = NULL;
+        if (pred && SPAR_IS_LIT_OR_QNAME(pred))
+          pred_val = SPAR_LIT_OR_QNAME_VAL(pred);
+        if (NULL != pred_val)
+          {
+            ssg_puts ("(SELECT S FROM RDF_QUAD WHERE P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies') AND cast (O as varchar) LIKE '" RDF_STAR_NS "%')");
+          }
+        else
+          {
+            ssg_puts ("(SELECT S FROM RDF_QUAD WHERE P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies'))");
+          }
+        break;
+      }
     case SPAR_GP:
       {
         if (SERVICE_L == tree->_.gp.subtype)
@@ -10293,7 +10572,19 @@ end_of_where_list:
 void
 ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
 {
-  ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+  ssg_valmode_t native = sparp_expn_native_valmode (ssg->ssg_sparp, oby_itm->_.oby.expn);
+  int use_rdf_star_order_key =
+    ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_SHORT_OR_LONG == native) ||
+      (IS_BOX_POINTER (native) &&
+        (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql)));
+  if (use_rdf_star_order_key)
+    {
+      ssg_puts (" DB.DBA.RDF_STAR_ORDER_KEY (");
+      ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (")");
+    }
+  else
+    ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   switch (oby_itm->_.oby.direction)
     {
     case 0: case ASC_L: ssg_puts (" ASC"); break;

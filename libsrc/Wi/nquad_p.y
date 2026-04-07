@@ -66,7 +66,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
 #define TTLP_URI_RESOLVE_IF_NEEDED(rel) \
   do { \
-    if ((NULL != ttlp_arg->ttlp_tf->tf_base_uri) && strncmp ((rel), "http://", 7)) \
+    if ((NULL != ttlp_arg->ttlp_tf->tf_base_uri) && !ttlp_uri_is_absolute (rel)) \
       (rel) = ttlp_uri_resolve (ttlp_arg, (rel)); \
     } while (0)
 
@@ -111,13 +111,23 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_of_L		/*:: PUNCT_TTL_LAST("@of") ::*/
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
+%token _AT_version_L	/*:: PUNCT_TTL_LAST("@version") ::*/
 %token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
 %token BASE_L		/*:: PUNCT("BASE"), TTL, LAST("BASE "), LAST("Base "), LAST("base ") ::*/
 %token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
 %token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
 %token PREFIX_L		/*:: PUNCT("PREFIX"), TTL, LAST("PREFIX "), LAST("Prefix "), LAST("prefix ") ::*/
+%token VERSION_L	/*:: PUNCT("VERSION"), TTL, LAST("VERSION "), LAST("Version "), LAST("version ") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
+
+%token TRIPLE_TERM_L	/*:: PUNCT_TTL_LAST("<<(") ::*/
+%token TRIPLE_TERM_R	/*:: PUNCT_TTL_LAST(")>>") ::*/
+%token REIFIED_TRIPLE_L	/*:: PUNCT_TTL_LAST("<<") ::*/
+%token REIFIED_TRIPLE_R	/*:: PUNCT_TTL_LAST(">>") ::*/
+%token ANNOTATION_L	/*:: PUNCT_TTL_LAST("{") ::*/
+%token ANNOTATION_R	/*:: PUNCT_TTL_LAST("}") ::*/
+%token TILDE		/*:: PUNCT_TTL_LAST("~") ::*/
 
 %token __TTL_PUNCT_END	/* Delimiting value for syntax highlighting */
 
@@ -130,6 +140,8 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token <box> TURTLE_STRING /*:: LITERAL("%s"), TTL, LAST("'sq'"), LAST("\"dq\""), LAST("'''sq1\nsq2'''"), LAST("\"\"\"dq1\ndq2\"\"\""), LAST("'\"'"), LAST("'-\\\\-\\t-\\v-\\r-\\'-\\\"-\\u1234-\\U12345678-\\uaAfF-'") ::*/
 %token <box> KEYWORD	/*:: LITERAL("@%s"), TTL, LAST("@example") ::*/
 %token <box> LANGTAG	/*:: LITERAL("%s"), TTL, LAST("@ES") ::*/
+%token DIR_LTR	/*:: LITERAL("~ltr"), TTL, LAST("~ltr") ::*/
+%token DIR_RTL	/*:: LITERAL("~rtl"), TTL, LAST("~rtl") ::*/
 
 %token <box> QNAME	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:_f.Rag.2"), LAST(":_f.Rag.2") ::*/
 %token <box> QNAME_NS	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:") ::*/
@@ -140,9 +152,13 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
 %token _GARBAGE_BEFORE_DOT_WS	/* Syntax error that may be (inaccurately) recovered by skipping to dot and space */
 %token TTL_RECOVERABLE_ERROR	/* Token that marks error so the triple should be discarded */
-%token __NQUAD_NONPUNCT_END	/* Delimiting value for syntax highlighting, this is instead of __TTL_NONPUNCT_END */
+%token __TTL_NONPUNCT_END	/* Delimiting value for syntax highlighting */
 
 %type<box> blank
+%type<box> q_complete_take
+%type<box> nq_tt_subject
+%type<box> nq_tt_object
+%type<token_type> dir_opt
 %type<token_type> keyword
 
 %left _GARBAGE_BEFORE_DOT_WS _DOT_WS
@@ -297,49 +313,51 @@ object_with_ctx
 	  ctx_opt {
 		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| true_L ctx_opt {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL, 0); }
 	| false_L ctx_opt {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL, 0); }
 	| TURTLE_INTEGER ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL, 0); }
 	| TURTLE_DECIMAL ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL, 0); }
 	| TURTLE_DOUBLE ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| NaN_L ctx_opt {
 	  	double myZERO = 0.0;
 		double myNAN_d = 0.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNAN_d);
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| INF_L ctx_opt {
 	  	double myZERO = 0.0;
 	  	double myPOSINF_d = 1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| _MINUS_INF_L ctx_opt {
 	  	double myZERO = 0.0;
 	 	double myNEGINF_d = -1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| TURTLE_STRING ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL); }
-	| TURTLE_STRING LANGTAG ctx_opt	{
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL, 0); }
+	| TURTLE_STRING LANGTAG dir_opt ctx_opt	{
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, $3);	}
+	| TRIPLE_TERM_L nq_tt_subject q_complete_take nq_tt_object TRIPLE_TERM_R {
 		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		dk_free_tree (ttlp_arg->ttlp_obj_lang);
-		ttlp_arg->ttlp_obj_lang = $2;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2);	}
+		ttlp_arg->ttlp_obj = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+	  ctx_opt {
+		ttlp_triple_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj); }
 	| TURTLE_STRING _CARET_CARET q_complete {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
@@ -347,7 +365,7 @@ object_with_ctx
 		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL, 0);	}
 	| TTL_RECOVERABLE_ERROR ctx_opt { }
 	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
@@ -422,4 +440,35 @@ q_complete
 		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		}
+	;
+
+q_complete_take
+	: Q_IRI_REF	{ $$ = $1; TTLP_URI_RESOLVE_IF_NEEDED($$); }
+	| QNAME		{ $$ = $1; $$ = ttlp_expand_qname_prefix (ttlp_arg, $$); TTLP_URI_RESOLVE_IF_NEEDED($$); }
+	| QNAME_NS	{ $$ = $1; ttlp_arg->ttlp_last_q_save = NULL; $$ = ttlp_expand_qname_prefix (ttlp_arg, $$); TTLP_URI_RESOLVE_IF_NEEDED($$); }
+	;
+
+nq_tt_subject
+	: q_complete_take	{ $$ = $1; }
+	| blank			{ $$ = $1; }
+	;
+
+nq_tt_object
+	: q_complete_take	{ $$ = $1; }
+	| blank			{ $$ = $1; }
+	| TRIPLE_TERM_L nq_tt_subject q_complete_take nq_tt_object TRIPLE_TERM_R {
+		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+	| TURTLE_STRING		{ $$ = $1; }
+	| TURTLE_STRING LANGTAG	{ $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING _CARET_CARET q_complete_take { $$ = $1; dk_free_tree ($3); }
+	| TURTLE_INTEGER	{ $$ = $1; }
+	| TURTLE_DECIMAL	{ $$ = $1; }
+	| TURTLE_DOUBLE		{ $$ = $1; }
+	;
+
+dir_opt
+	: /* empty */	{ $$ = 0; }
+	| DIR_LTR	{ $$ = 'l'; }
+	| DIR_RTL	{ $$ = 'r'; }
 	;

@@ -58,6 +58,7 @@ extern "C" {
 #define XRL_PARSETYPE_EMPTYPROP		0x20	/*!< Nothing but ending tag of property */
 #define XRL_PARSETYPE_COLLECTION	0x40	/*!< First resource inside collection, other resources are recognized by */
 #define XRL_PARSETYPE_SET_EXPLICITLY	0x80	/*!< The parser mode is set explicitly by rdf:parseType attribute */
+#define XRL_PARSETYPE_TRIPLE		0x100	/*!< Triple term (RDF 1.2) */
 
 /*! Stack part of RDF/XML-specific context of XML parser.
 These are fields of quad to be created.
@@ -72,9 +73,15 @@ typedef struct xp_rdfxml_locals_s
   caddr_t	xrl_language;		/*!< Language tag as string or NULL, inheritable */
   caddr_t	xrl_datatype;		/*!< Object data type (named node IRI_ID), not inheritable */
   caddr_t	xrl_reification_id;	/*!< ID used to reify a statement as four quads for S,P,O and rdf:type rdfs:Statement. */
+  caddr_t	xrl_tt_subject;		/*!< Subject of triple term being constructed (parseType="Triple") */
+  caddr_t	xrl_tt_predicate;	/*!< Predicate of triple term being constructed (parseType="Triple") */
+  caddr_t	xrl_tt_object;	/*!< Object of triple term being constructed (parseType="Triple") */
+  int		xrl_tt_pending;		/*!< Count of parseType="Triple" child elements handled without pushing locals */
+  caddr_t	xrl_annotation_iri;	/*!< Annotation reifier IRI or blank node (RDF 1.2) */
+  int		xrl_annotation_is_bnode;	/*!< 1 if annotation is blank node, 0 if IRI */
   int		xrl_li_count;		/*!< Counter of used LI, not inheritable */
   dk_set_t	xrl_seq_items;		/*!< Backstack of "Sequence" parseType subjects */
-  unsigned char	xrl_parsetype;		/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  unsigned int	xrl_parsetype;		/*!< Parse type flags (XRL_PARSETYPE_*), not inheritable */
   char		xrl_base_set;
   char		xrl_language_set;
 } xp_rdfxml_locals_t;
@@ -307,6 +314,14 @@ void xp_pop_rdf_locals (xparse_ctx_t *xp)
     dk_free_tree (inner->xrl_reification_id);
   while (NULL != inner->xrl_seq_items)
     dk_free_tree (dk_set_pop (&(inner->xrl_seq_items)));
+  if (NULL != inner->xrl_tt_subject)
+    dk_free_tree (inner->xrl_tt_subject);
+  if (NULL != inner->xrl_tt_predicate)
+    dk_free_tree (inner->xrl_tt_predicate);
+  if (NULL != inner->xrl_tt_object)
+    dk_free_tree (inner->xrl_tt_object);
+  if (NULL != inner->xrl_annotation_iri)
+    dk_free_tree (inner->xrl_annotation_iri);
   xp->xp_rdfxml_locals = inner->xrl_parent;
   memset (inner, -1, sizeof (xp_rdfxml_locals_t));
   inner->xrl_parent = xp->xp_rdfxml_free_list;
@@ -416,7 +431,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
   xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfxml_locals_t *outer = xp->xp_rdfxml_locals;
   xp_rdfxml_locals_t *inner;
-  xp_node_t *xn;
+  xp_node_t *xn = xp->xp_current;
   caddr_t subj_type = NULL;
   int inx, fill, n_attrs, n_ns;
   dk_set_t inner_attr_props = NULL;
@@ -432,6 +447,44 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
     }
   else if (XRL_PARSETYPE_EMPTYPROP & outer->xrl_parsetype)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Sub-element in a predicate element with object node attribute");
+  else if (XRL_PARSETYPE_TRIPLE & outer->xrl_parsetype)
+    {
+      /* Inside parseType="Triple" - check for rdf:subject, rdf:predicate, rdf:object child elements */
+      xp_rdfxml_get_name_parts (xn, name, 1, &tmp_nsuri, &tmp_local);
+      if (!strcmp ("http://www.w3.org/1999/02/22-rdf-syntax-ns#", tmp_nsuri))
+        {
+          int inx2;
+          caddr_t val = NULL;
+          /* Look for rdf:resource or rdf:nodeID attribute */
+          for (inx2 = 0; inx2 < attrdata->local_attrs_count; inx2++)
+            {
+              char *raw_aname = attrdata->local_attrs[inx2].ta_raw_name.lm_memblock;
+              caddr_t avalue = attrdata->local_attrs[inx2].ta_value;
+              caddr_t nsuri2;
+              char *local2;
+              xp_rdfxml_get_name_parts (xn, raw_aname, 0, &nsuri2, &local2);
+              if (!strcmp (nsuri2, "http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
+                {
+                  if (!strcmp (local2, "resource"))
+                    val = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
+                  else if (!strcmp (local2, "nodeID"))
+                    val = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
+                }
+            }
+          if (!strcmp (tmp_local, "subject"))
+            XRL_SET_NONINHERITABLE (outer, xrl_tt_subject, val, "Triple term subject set twice");
+          else if (!strcmp (tmp_local, "predicate"))
+            XRL_SET_NONINHERITABLE (outer, xrl_tt_predicate, val, "Triple term predicate set twice");
+          else if (!strcmp (tmp_local, "object"))
+            XRL_SET_NONINHERITABLE (outer, xrl_tt_object, val, "Triple term object set twice");
+          else
+            xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Only rdf:subject, rdf:predicate, rdf:object allowed inside parseType='Triple'");
+          outer->xrl_tt_pending++;
+          return;
+        }
+      xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Only rdf:subject, rdf:predicate, rdf:object allowed inside parseType='Triple'");
+      return;
+    }
   inner = xp_push_rdf_locals (xp);
   xn = xp->xp_free_list;
   if (NULL == xn)
@@ -618,7 +671,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           else if (!strcmp (tmp_local, "resource"))
             {
               caddr_t inner_subj;
-              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype) && !(XRL_PARSETYPE_TRIPLE & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
                   return;
@@ -631,7 +684,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:nodeID' conflicts with other attribute that set the subject");
-              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
+              if ((XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype) || (XRL_PARSETYPE_TRIPLE & outer->xrl_parsetype))
                 {
                   inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
                 }
@@ -686,11 +739,55 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   inner->xrl_parsetype = XRL_PARSETYPE_COLLECTION | XRL_PARSETYPE_SET_EXPLICITLY;
                   return;
                 }
+              else if (!strcmp (avalue, "Triple"))
+                {
+                  inner->xrl_parsetype = XRL_PARSETYPE_TRIPLE | XRL_PARSETYPE_SET_EXPLICITLY;
+                }
               else
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Unknown parseType");
                   return;
                 }
+            }
+          else if (!strcmp (tmp_local, "annotation"))
+            {
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotation' can appear only in property elements");
+                  return;
+                }
+              if (NULL != inner->xrl_annotation_iri)
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotation' conflicts with 'rdf:annotationNodeID'");
+                  return;
+                }
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotation' conflicts with 'rdf:ID' on property element");
+                  return;
+                }
+              inner->xrl_annotation_iri = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
+              inner->xrl_annotation_is_bnode = 0;
+            }
+          else if (!strcmp (tmp_local, "annotationNodeID"))
+            {
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotationNodeID' can appear only in property elements");
+                  return;
+                }
+              if (NULL != inner->xrl_annotation_iri)
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotationNodeID' conflicts with 'rdf:annotation'");
+                  return;
+                }
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotationNodeID' conflicts with 'rdf:ID' on property element");
+                  return;
+                }
+              inner->xrl_annotation_iri = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
+              inner->xrl_annotation_is_bnode = 1;
             }
           else if (!strcmp (tmp_local, "type"))
             {
@@ -819,6 +916,18 @@ xp_rdfxml_element_end (void *userdata, const char * name)
   xp_rdfxml_locals_t *inner = xp->xp_rdfxml_locals;
   if (!(XRL_PARSETYPE_LITERAL & inner->xrl_parsetype))
     {
+      if ((XRL_PARSETYPE_TRIPLE & inner->xrl_parsetype) && (inner->xrl_tt_pending > 0))
+        {
+          caddr_t tmp_nsuri;
+          char *tmp_local;
+          xp_rdfxml_get_name_parts (xp->xp_current, (char *)name, 1, &tmp_nsuri, &tmp_local);
+          if (!strcmp ("http://www.w3.org/1999/02/22-rdf-syntax-ns#", tmp_nsuri) &&
+              (!strcmp (tmp_local, "subject") || !strcmp (tmp_local, "predicate") || !strcmp (tmp_local, "object")))
+            {
+              inner->xrl_tt_pending--;
+              return;
+            }
+        }
       xp_node_t *current_node = xp->xp_current;
       xp_node_t *parent_node = xp->xp_current->xn_parent;
       xp_rdfxml_locals_t *outer = inner->xrl_parent;
@@ -849,6 +958,22 @@ xp_rdfxml_element_end (void *userdata, const char * name)
             }
           xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, tail);
         }
+      else if (XRL_PARSETYPE_TRIPLE & inner->xrl_parsetype)
+        {
+          /* Emit triple-term IRI as property object */
+          caddr_t tt_iri;
+          if ((NULL == inner->xrl_tt_subject) || (NULL == inner->xrl_tt_predicate) || (NULL == inner->xrl_tt_object))
+            xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "parseType='Triple' requires rdf:subject, rdf:predicate, and rdf:object child elements");
+          tt_iri = ttlp_make_triple_term_iri (inner->xrl_tt_subject, inner->xrl_tt_predicate, inner->xrl_tt_object);
+          xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, tt_iri);
+          /* Note: rdf_star_tt_map_store is called inside ttlp_make_triple_term_iri */
+          /* Handle annotation for parseType="Triple" */
+          if (NULL != inner->xrl_annotation_iri)
+            {
+              caddr_t ann_tt_iri = ttlp_make_triple_term_iri (outer->xrl_subject, inner->xrl_predicate, tt_iri);
+              xp_rdfxml_triple (xp, inner->xrl_annotation_iri, uname_rdf_ns_uri_reifies, ann_tt_iri);
+            }
+        }
       else if (NULL != inner->xrl_predicate)
         {
           xp_rdfxml_locals_t *outer = inner->xrl_parent;
@@ -876,6 +1001,12 @@ xp_rdfxml_element_end (void *userdata, const char * name)
                   xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
                   xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
                   xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+                }
+              /* Handle annotation for IRI object */
+              if (NULL != inner->xrl_annotation_iri)
+                {
+                  caddr_t ann_tt_iri = ttlp_make_triple_term_iri (outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_annotation_iri, uname_rdf_ns_uri_reifies, ann_tt_iri);
                 }
             }
         }
@@ -930,6 +1061,12 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
           xp_rdfxml_triple_l (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, obj, inner->xrl_datatype, lang_in_effect);
           xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+        }
+      /* Handle annotation for literal object */
+      if (NULL != inner->xrl_annotation_iri)
+        {
+          caddr_t ann_tt_iri = ttlp_make_triple_term_iri (outer->xrl_subject, inner->xrl_predicate, obj);
+          xp_rdfxml_triple (xp, inner->xrl_annotation_iri, uname_rdf_ns_uri_reifies, ann_tt_iri);
         }
       dk_free_tree (obj);
       xp_pop_rdf_locals (xp);

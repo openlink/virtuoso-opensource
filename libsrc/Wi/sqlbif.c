@@ -575,7 +575,7 @@ bif_iri_id_or_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
       numeric_to_int64 ((numeric_t) arg, &tl);
       return (iri_id_t)(unsigned int64) tl;
     }
-  if (dtp == DV_IRI_ID)
+  if (IS_IRI_DTP (dtp))
     return unbox_iri_id (arg);
   if (dtp != DV_SHORT_INT && dtp != DV_LONG_INT)
     {
@@ -593,7 +593,7 @@ bif_iri_id_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
-  if (dtp != DV_IRI_ID)
+  if (!IS_IRI_DTP (dtp))
     sqlr_new_error ("22023", "SR008",
 		    "Function %s needs an IRI_ID as argument %d, "
 		    "not an arg of type %s (%d)",
@@ -608,7 +608,7 @@ bif_iri_id_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   dtp_t dtp = DV_TYPE_OF (arg);
   if (DV_DB_NULL == dtp)
     return 0;
-  if (dtp != DV_IRI_ID)
+  if (!IS_IRI_DTP (dtp))
     sqlr_new_error ("22023", "SR008",
 		    "Function %s needs an IRI_ID or NULL as argument %d, "
 		    "not an arg of type %s (%d)",
@@ -623,7 +623,7 @@ bif_string_or_uname_or_iri_id_arg (caddr_t * qst, state_slot_t ** args, int nth,
   dtp_t dtp = DV_TYPE_OF (arg);
   switch (dtp)
     {
-    case DV_IRI_ID: case DV_STRING: case DV_UNAME:
+    case DV_IRI_ID: case DV_IRI_ID_8: case DV_STRING: case DV_UNAME:
       return arg;
     }
   sqlr_new_error ("22023", "SR008",
@@ -6935,7 +6935,7 @@ caddr_t
 bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "isiri_id");
-  return box_bool (DV_IRI_ID == DV_TYPE_OF (arg0));
+  return box_bool (IS_IRI_DTP (DV_TYPE_OF (arg0)));
 }
 
 caddr_t
@@ -6945,7 +6945,7 @@ bif_rdf_isliteral_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   switch (DV_TYPE_OF (arg0))
     {
     case DV_DB_NULL: return (caddr_t)((ptrlong)0);
-    case DV_IRI_ID: return (caddr_t)((ptrlong)0);
+    case DV_IRI_ID: case DV_IRI_ID_8: return (caddr_t)((ptrlong)0);
     case DV_UNAME: return (caddr_t)((ptrlong)0);
     case DV_STRING: return box_bool (!(box_flags (arg0) & BF_IRI));
     default: return (caddr_t)((ptrlong)1);
@@ -6957,7 +6957,7 @@ bif_is_named_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "is_named_iri_id");
   iri_id_t iid;
-  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+  if (!IS_IRI_DTP (DV_TYPE_OF (arg0)))
     return box_bool (0);
   iid = unbox_iri_id (arg0);
   return box_bool (iid < min_bnode_iri_id());
@@ -6968,7 +6968,7 @@ bif_is_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "is_bnode_iri_id");
   iri_id_t iid;
-  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+  if (!IS_IRI_DTP (DV_TYPE_OF (arg0)))
     return box_bool (0);
   iid = unbox_iri_id (arg0);
   return box_bool (iid >= min_bnode_iri_id());
@@ -6979,7 +6979,7 @@ bif_is_plain_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "is_plain_bnode_iri_id");
   iri_id_t iid;
-  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+  if (!IS_IRI_DTP (DV_TYPE_OF (arg0)))
     return box_bool (0);
   iid = unbox_iri_id (arg0);
   return box_bool ((iid >= min_bnode_iri_id()) && (iid < min_named_bnode_iri_id()));
@@ -7030,7 +7030,7 @@ bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t **
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "iri_id_bnode32_to_bnode64");
   iri_id_t iid;
-  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+  if (!IS_IRI_DTP (DV_TYPE_OF (arg0)))
     return box_copy_tree (arg0);
   iid = unbox_iri_id (arg0);
   if (iid < MIN_32BIT_BNODE_IRI_ID)
@@ -16612,8 +16612,7 @@ caddr_t
 bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fnname, const char *sparql_fnname, int op_flags)
 {
   caddr_t str_orig, pattern_orig;
-  ccaddr_t str = bif_arg_unrdf_ext (qst, args, 0, fnname, &str_orig);
-  ccaddr_t pattern = bif_arg_unrdf_ext (qst, args, 1, fnname, &pattern_orig);
+  ccaddr_t str, pattern;
   int str_lang, pattern_lang;
   /*ccaddr_t str_end, pattern_position;*/
   size_t str_len, size_of_str_char, /*str_n_chars, pattern_n_chars,*/ pattern_len;
@@ -16622,6 +16621,11 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int found = 0;
   size_t hit_pos = 0;
   caddr_t res;
+  str_orig = bif_arg (qst, args, 0, fnname);
+  pattern_orig = bif_arg (qst, args, 1, fnname);
+  str = (DV_RDF == DV_TYPE_OF (str_orig)) ? ((rdf_box_t *)str_orig)->rb_box : str_orig;
+  pattern = (DV_RDF == DV_TYPE_OF (pattern_orig)) ? ((rdf_box_t *)pattern_orig)->rb_box : pattern_orig;
+
   switch (DV_TYPE_OF (str))
     {
     case DV_STRING: 
@@ -16774,6 +16778,242 @@ caddr_t
 bif_rdf_contains_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_contains_impl", "CONTAINS", STRCONTAINS_INSIDE | STRCONTAINS_RET_BOOL);
+}
+
+static int
+rdf_is_token_space (unsigned char ch)
+{
+  return ((' ' == ch) || ('\t' == ch) || ('\n' == ch) || ('\r' == ch));
+}
+
+static caddr_t
+rdf_box_to_utf8_narrow (caddr_t val, caddr_t *owned_ret)
+{
+  dtp_t dtp = DV_TYPE_OF (val);
+  owned_ret[0] = NULL;
+  if ((DV_WIDE == dtp) || (DV_LONG_WIDE == dtp))
+    {
+      owned_ret[0] = box_wide_as_utf8_char ((ccaddr_t) val, box_length (val) / sizeof (wchar_t) - 1, DV_STRING);
+      return owned_ret[0];
+    }
+  return val;
+}
+
+caddr_t
+bif_rdf_contains_token_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src_orig, tok_orig;
+  caddr_t src, tok;
+  caddr_t src_utf8, tok_utf8;
+  caddr_t owned_src, owned_tok;
+  dtp_t src_dtp, tok_dtp;
+  int src_lang, tok_lang;
+  size_t src_len, tok_len;
+  size_t src_idx, tok_beg, tok_end, tok_idx;
+  int found = 0;
+
+  src_orig = bif_arg (qst, args, 0, "rdf_contains_token_impl");
+  tok_orig = bif_arg (qst, args, 1, "rdf_contains_token_impl");
+  src = (DV_RDF == DV_TYPE_OF (src_orig)) ? ((rdf_box_t *) src_orig)->rb_box : src_orig;
+  tok = (DV_RDF == DV_TYPE_OF (tok_orig)) ? ((rdf_box_t *) tok_orig)->rb_box : tok_orig;
+
+  src_dtp = DV_TYPE_OF (src);
+  tok_dtp = DV_TYPE_OF (tok);
+  if (DV_DB_NULL == src_dtp || DV_DB_NULL == tok_dtp)
+    return NEW_DB_NULL;
+  if ((DV_STRING != src_dtp) && (DV_UNAME != src_dtp) && (DV_WIDE != src_dtp) && (DV_LONG_WIDE != src_dtp))
+    sqlr_new_error ("22023", "SL001", "The SPARQL 1.2 function CONTAINS_TOKEN() needs a string value as first argument");
+  if ((DV_STRING != tok_dtp) && (DV_UNAME != tok_dtp) && (DV_WIDE != tok_dtp) && (DV_LONG_WIDE != tok_dtp))
+    sqlr_new_error ("22023", "SL001", "The SPARQL 1.2 function CONTAINS_TOKEN() needs a string value as second argument");
+
+  src_lang = (DV_RDF == DV_TYPE_OF (src_orig)) ? ((rdf_box_t *) src_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  tok_lang = (DV_RDF == DV_TYPE_OF (tok_orig)) ? ((rdf_box_t *) tok_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  if ((tok_lang != RDF_BOX_DEFAULT_LANG) && (src_lang != tok_lang))
+    return NEW_DB_NULL;
+
+  src_utf8 = rdf_box_to_utf8_narrow (src, &owned_src);
+  tok_utf8 = rdf_box_to_utf8_narrow (tok, &owned_tok);
+  src_len = box_length (src_utf8) - 1;
+  tok_len = box_length (tok_utf8) - 1;
+
+  tok_beg = 0;
+  while ((tok_beg < tok_len) && rdf_is_token_space (((unsigned char *) tok_utf8)[tok_beg]))
+    tok_beg++;
+  tok_end = tok_len;
+  while ((tok_end > tok_beg) && rdf_is_token_space (((unsigned char *) tok_utf8)[tok_end - 1]))
+    tok_end--;
+  if (tok_end <= tok_beg)
+    goto done;
+  for (tok_idx = tok_beg; tok_idx < tok_end; tok_idx++)
+    {
+      if (rdf_is_token_space (((unsigned char *) tok_utf8)[tok_idx]))
+        goto done;
+    }
+
+  src_idx = 0;
+  while (src_idx < src_len)
+    {
+      size_t word_beg, word_end;
+      while ((src_idx < src_len) && rdf_is_token_space (((unsigned char *) src_utf8)[src_idx]))
+        src_idx++;
+      if (src_idx >= src_len)
+        break;
+      word_beg = src_idx;
+      while ((src_idx < src_len) && !rdf_is_token_space (((unsigned char *) src_utf8)[src_idx]))
+        src_idx++;
+      word_end = src_idx;
+      if ((word_end - word_beg == tok_end - tok_beg) &&
+          !memcmp (((unsigned char *) src_utf8) + word_beg, ((unsigned char *) tok_utf8) + tok_beg, tok_end - tok_beg))
+        {
+          found = 1;
+          break;
+        }
+    }
+
+done:
+  if (NULL != owned_src)
+    dk_free_box (owned_src);
+  if (NULL != owned_tok)
+    dk_free_box (owned_tok);
+  return (caddr_t) box_bool (found);
+}
+
+static int
+rdf_format_number_parse_picture (const char *pic, size_t pic_len, int *use_grouping_ret, int *precision_ret, int *min_int_digits_ret)
+{
+  size_t inx;
+  int seen_dot = 0;
+  int has_digit = 0;
+  int use_grouping = 0;
+  int precision = 0;
+  int min_int_digits = 0;
+  for (inx = 0; inx < pic_len; inx++)
+    {
+      char ch = pic[inx];
+      if ('.' == ch)
+        {
+          if (seen_dot)
+            return 0;
+          seen_dot = 1;
+          continue;
+        }
+      if (',' == ch)
+        {
+          if (seen_dot)
+            return 0;
+          use_grouping = 1;
+          continue;
+        }
+      if (('0' == ch) || ('#' == ch))
+        {
+          has_digit = 1;
+          if (seen_dot)
+            precision++;
+          else if ('0' == ch)
+            min_int_digits++;
+          continue;
+        }
+      return 0;
+    }
+  if (!has_digit)
+    return 0;
+  use_grouping_ret[0] = use_grouping;
+  precision_ret[0] = precision;
+  min_int_digits_ret[0] = min_int_digits;
+  return 1;
+}
+
+caddr_t
+bif_rdf_format_number_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int is_null = 0;
+  double val;
+  caddr_t pic;
+  caddr_t owned_pic;
+  const char *pic_text;
+  size_t pic_len;
+  int use_grouping, precision, min_int_digits;
+  char raw[512];
+  char int_tmp[512];
+  char grouped[768];
+  char out[1024];
+  char *int_part;
+  char *frac_part;
+  int is_neg = 0;
+  size_t int_len, frac_len = 0, int_inx, group_inx = 0, out_inx = 0;
+
+  val = bif_double_or_null_arg (qst, args, 0, "rdf_format_number_impl", &is_null);
+  if (is_null)
+    return NEW_DB_NULL;
+  pic = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rdf_format_number_impl");
+  if (NULL == pic)
+    return NEW_DB_NULL;
+
+  pic = rdf_box_to_utf8_narrow (pic, &owned_pic);
+  pic_text = (const char *) pic;
+  pic_len = box_length (pic) - 1;
+  if (!rdf_format_number_parse_picture (pic_text, pic_len, &use_grouping, &precision, &min_int_digits))
+    {
+      if (NULL != owned_pic)
+        dk_free_box (owned_pic);
+      sqlr_new_error ("22023", "SL001", "The SPARQL 1.2 function FORMAT_NUMBER() needs a picture in the XPath 3.1 subset of [#0,.]");
+    }
+
+  snprintf (raw, sizeof (raw), "%.*f", precision, val);
+  if ('-' == raw[0])
+    {
+      is_neg = 1;
+      int_part = raw + 1;
+    }
+  else
+    int_part = raw;
+  frac_part = strchr (int_part, '.');
+  if (NULL != frac_part)
+    {
+      frac_part[0] = '\0';
+      frac_part++;
+      frac_len = strlen (frac_part);
+    }
+  int_len = strlen (int_part);
+  if (int_len < (size_t) min_int_digits)
+    {
+      size_t pad = min_int_digits - int_len;
+      memset (int_tmp, '0', pad);
+      memcpy (int_tmp + pad, int_part, int_len + 1);
+      int_part = int_tmp;
+      int_len = strlen (int_part);
+    }
+  if (use_grouping)
+    {
+      size_t lead = int_len % 3;
+      if (0 == lead && int_len)
+        lead = 3;
+      for (int_inx = 0; int_inx < int_len; int_inx++)
+        {
+          if (int_inx && (((int_inx - lead) % 3) == 0))
+            grouped[group_inx++] = ',';
+          grouped[group_inx++] = int_part[int_inx];
+        }
+      grouped[group_inx] = '\0';
+      int_part = grouped;
+      int_len = group_inx;
+    }
+
+  if (is_neg)
+    out[out_inx++] = '-';
+  memcpy (out + out_inx, int_part, int_len);
+  out_inx += int_len;
+  if (precision > 0)
+    {
+      out[out_inx++] = '.';
+      memcpy (out + out_inx, frac_part, frac_len);
+      out_inx += frac_len;
+    }
+  out[out_inx] = '\0';
+
+  if (NULL != owned_pic)
+    dk_free_box (owned_pic);
+  return box_dv_short_string (out);
 }
 
 caddr_t
@@ -17040,20 +17280,698 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_bool (1);
   if (RDF_BOX_DEFAULT_TYPE == arg->rb_type)
     return box_bool (1);
-  if (RDF_BOX_DEFAULT_LANG != arg->rb_lang)
-    return box_bool (0); /* Non-default datatype with non-default language? */
-  if (DV_STRING != DV_TYPE_OF (arg->rb_box))
-    return box_bool (1);
-  if (2 <= BOX_ELEMENTS (args))
+  return box_bool (0);
+}
+
+caddr_t
+bif_rdf_strdir_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t strg = bif_string_arg (qst, args, 0, "strdir");
+  caddr_t dir = bif_string_arg (qst, args, 1, "strdir");
+  if (0 == strcasecmp (dir, "ltr"))
+    return box_dv_short_strconcat (strg, "~ltr");
+  else if (0 == strcasecmp (dir, "rtl"))
+    return box_dv_short_strconcat (strg, "~rtl");
+  return box_copy (strg);
+}
+
+caddr_t
+bif_rdf_dir_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t strg = bif_string_arg (qst, args, 0, "dir");
+  int len = box_length (strg);
+  if (len > 4)
     {
-      caddr_t dt_uname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rdf_valid_impl");
-      if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
-        return box_bool (0);
-      /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
-      if (rb_uname_to_flags_of_parseable_datatype (dt_uname) & RDF_TYPE_PARSEABLE)
-        return box_bool (0);
+      const char *ptr = strg + len - 4;
+      if (ptr[0] == '~' && ptr[1] == 'l' && ptr[2] == 't' && ptr[3] == 'r')
+        return box_dv_short_string ("ltr");
+      if (ptr[0] == '~' && ptr[1] == 'r' && ptr[2] == 't' && ptr[3] == 'l')
+        return box_dv_short_string ("rtl");
     }
-  return box_bool (1);
+  return box_dv_short_string ("");
+}
+
+/* ======================================================================
+   RDF 1.2 triple-term support.
+   Primary path: self-describing IRI urn:rdf-star:triple:<S_IID>:<P_IID>:<O-tag><payload>
+   ====================================================================== */
+
+static int
+rdf_star_is_bnode_lex (const char *s)
+{
+  if (NULL == s)
+    return 0;
+  return (!strncmp (s, "nodeID://", 9) || !strncmp (s, "_:", 2));
+}
+
+static int
+rdf_star_is_iri_lex (const char *s)
+{
+  if (NULL == s)
+    return 0;
+  /* Well-known absolute IRI schemes */
+  if (!strncmp (s, "http://", 7) ||
+      !strncmp (s, "https://", 8) ||
+      !strncmp (s, "urn:", 4) ||
+      !strncmp (s, "mailto:", 7) ||
+      !strncmp (s, "ftp://", 6) ||
+      !strncmp (s, "file://", 7))
+    return 1;
+  /* Fragment-only relative IRI reference (e.g. #foo from PREFIX : <#>) */
+  if ('#' == s[0])
+    return 1;
+  /* Generic scheme detection: ALPHA *(ALPHA / DIGIT / "+" / "-" / ".") ":" per RFC 3986.
+     This catches schemes like tag:, data:, geo:, tel:, did:, etc. */
+  if (isalpha ((unsigned char)s[0]))
+    {
+      const char *p = s + 1;
+      while (isalnum ((unsigned char)*p) || *p == '+' || *p == '-' || *p == '.')
+        p++;
+      if (':' == *p)
+        return 1;
+    }
+  return 0;
+}
+
+static int
+rdf_star_tt_parse_u64 (const char *txt, size_t len, unsigned long long *out)
+{
+  unsigned long long v = 0;
+  size_t i;
+  if (NULL == txt || 0 == len)
+    return 0;
+  for (i = 0; i < len; i++)
+    {
+      unsigned char ch = (unsigned char) txt[i];
+      if ((ch < '0') || (ch > '9'))
+        return 0;
+      if (v > 1844674407370955161ULL)
+        return 0;
+      v = (v * 10) + (unsigned long long)(ch - '0');
+      if (v < (unsigned long long)(ch - '0'))
+        return 0;
+    }
+  out[0] = v;
+  return 1;
+}
+
+/* Internal lexical markers used by parser-side literal normalization.
+   These are literal encodings, not IRI schemes. */
+static int
+rdf_star_tt_is_internal_lex_marker (const char *s)
+{
+  const char *p;
+  if (NULL == s || '\0' == s[0])
+    return 0;
+  if (!strncmp (s, "u:", 2) || !strncmp (s, "i:", 2) ||
+      !strncmp (s, "n:", 2) || !strncmp (s, "f:", 2) ||
+      !strncmp (s, "d:", 2))
+    return 1;
+  if ('x' != s[0])
+    return 0;
+  p = s + 1;
+  if (!isdigit ((unsigned char) *p))
+    return 0;
+  while (isdigit ((unsigned char) *p))
+    p++;
+  return (':' == *p);
+}
+
+static caddr_t
+rdf_star_tt_hex_encode (const char *src)
+{
+  size_t src_len, out_len, inx;
+  caddr_t out;
+  if (NULL == src)
+    src = "";
+  src_len = strlen (src);
+  out_len = (2 * src_len) + 1;
+  out = dk_alloc_box (out_len, DV_SHORT_STRING);
+  for (inx = 0; inx < src_len; inx++)
+    {
+      unsigned char c = (unsigned char) src[inx];
+      out[(2 * inx) + 0] = "0123456789abcdef"[(c >> 4) & 0x0f];
+      out[(2 * inx) + 1] = "0123456789abcdef"[c & 0x0f];
+    }
+  out[2 * src_len] = '\0';
+  return out;
+}
+
+static caddr_t
+rdf_star_tt_hex_decode (const char *hex)
+{
+  size_t hex_len, out_len, inx;
+  caddr_t out;
+  if (NULL == hex)
+    return NULL;
+  hex_len = strlen (hex);
+  if (hex_len & 1)
+    return NULL;
+  out_len = (hex_len / 2) + 1;
+  out = dk_alloc_box (out_len, DV_SHORT_STRING);
+  for (inx = 0; inx < hex_len; inx += 2)
+    {
+      unsigned char h1 = (unsigned char) toupper ((unsigned char) hex[inx]);
+      unsigned char h2 = (unsigned char) toupper ((unsigned char) hex[inx + 1]);
+      int v1, v2;
+      if (!isxdigit (h1) || !isxdigit (h2))
+        {
+          dk_free_tree (out);
+          return NULL;
+        }
+      v1 = (h1 <= '9') ? (h1 - '0') : (10 + h1 - 'A');
+      v2 = (h2 <= '9') ? (h2 - '0') : (10 + h2 - 'A');
+      out[inx / 2] = (char) ((v1 << 4) | v2);
+    }
+  out[hex_len / 2] = '\0';
+  return out;
+}
+
+static int
+rdf_star_tt_parse_self_iri (const char *iri, iri_id_t *s_iid, iri_id_t *p_iid, char *o_tag, const char **o_payload)
+{
+  const char *ptr, *sep1, *sep2;
+  size_t pfx_len = strlen (RDF_STAR_NS);
+  unsigned long long s_u, p_u;
+  if (NULL == iri || 0 != strncmp (iri, RDF_STAR_NS, pfx_len))
+    return 0;
+  ptr = iri + pfx_len;
+  sep1 = strchr (ptr, ':');
+  if (NULL == sep1)
+    return 0;
+  sep2 = strchr (sep1 + 1, ':');
+  if (NULL == sep2)
+    return 0;
+  if (!rdf_star_tt_parse_u64 (ptr, (size_t)(sep1 - ptr), &s_u))
+    return 0;
+  if (!rdf_star_tt_parse_u64 (sep1 + 1, (size_t)(sep2 - (sep1 + 1)), &p_u))
+    return 0;
+  if (('\0' == sep2[1]) || ('\0' == sep2[2]))
+    return 0;
+  s_iid[0] = (iri_id_t) s_u;
+  p_iid[0] = (iri_id_t) p_u;
+  o_tag[0] = sep2[1];
+  o_payload[0] = sep2 + 2;
+  if (('i' != o_tag[0]) && ('g' != o_tag[0]) && ('o' != o_tag[0]))
+    return 0;
+  return 1;
+}
+
+static caddr_t
+rdf_star_box_subject_component (caddr_t v)
+{
+  if (NULL == v)
+    return NEW_DB_NULL;
+  if (DV_UNAME == DV_TYPE_OF (v))
+    return box_copy (v);
+  if (DV_STRING == DV_TYPE_OF (v))
+    {
+      if (!rdf_star_is_bnode_lex (v) && rdf_star_is_iri_lex (v))
+        return box_dv_uname_string (v);
+      return box_copy (v);
+    }
+  return box_copy (v);
+}
+
+static caddr_t
+rdf_star_box_predicate_component (caddr_t v)
+{
+  if (NULL == v)
+    return NEW_DB_NULL;
+  if (DV_UNAME == DV_TYPE_OF (v))
+    return box_copy (v);
+  if (DV_STRING == DV_TYPE_OF (v))
+    {
+      if (!rdf_star_is_bnode_lex (v))
+        return box_dv_uname_string (v);
+      return box_copy (v);
+    }
+  return box_copy (v);
+}
+
+static caddr_t
+rdf_star_box_object_component (caddr_t v)
+{
+  if (NULL == v)
+    return NEW_DB_NULL;
+  if (DV_UNAME == DV_TYPE_OF (v))
+    return box_copy (v);
+  if (DV_STRING == DV_TYPE_OF (v))
+    {
+      if (!rdf_star_is_bnode_lex (v) && rdf_star_is_iri_lex (v))
+        return box_dv_uname_string (v);
+      return box_copy (v);
+    }
+  return box_copy (v);
+}
+
+static caddr_t rdf_star_tt_iri_from_values_internal (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback);
+
+static caddr_t
+rdf_star_tt_decode_component_lex (const char *lex)
+{
+  if (NULL == lex || !lex[0])
+    return NULL;
+  if (0 == strncmp (lex, "i:", 2))
+    return box_num_nonull ((ptrlong) atol (lex + 2));
+  if (0 == strncmp (lex, "n:", 2))
+    {
+      numeric_t num = numeric_allocate ();
+      if (NUMERIC_STS_SUCCESS != numeric_from_string (num, lex + 2))
+        {
+          numeric_free (num);
+          return box_dv_short_string (lex + 2);
+        }
+      return (caddr_t) num;
+    }
+  if (0 == strncmp (lex, "f:", 2))
+    return box_float ((float) atof (lex + 2));
+  if (0 == strncmp (lex, "d:", 2))
+    return box_double (atof (lex + 2));
+  if (0 == strncmp (lex, "id:", 3))
+    {
+      iri_id_t iid = (iri_id_t) atoll (lex + 3);
+      return box_iri_id (iid);
+    }
+  if (0 == strncmp (lex, "u:", 2))
+    return box_dv_short_string (lex + 2);
+  if ('x' == lex[0])
+    {
+      const char *colon = strchr (lex, ':');
+      if (colon && colon[1])
+        return box_dv_short_string (colon + 1);
+    }
+  return NULL;
+}
+
+static const char *
+rdf_star_tt_val_to_cstr (caddr_t val, char *buf, size_t bufsz, caddr_t *owned)
+{
+  dtp_t dtp;
+  char nbuf[80];
+  owned[0] = NULL;
+  if (NULL == val)
+    return "";
+  dtp = DV_TYPE_OF (val);
+  if (DV_STRING == dtp || DV_UNAME == dtp)
+    return val;
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) val;
+      if (BOX_ELEMENTS (val) >= 3)
+        {
+          owned[0] = rdf_star_tt_iri_from_values_internal (NULL, arr[0], arr[1], arr[2], 1);
+          return owned[0] ? owned[0] : "";
+        }
+      return "";
+    }
+  if (DV_LONG_INT == dtp)
+    { snprintf (buf, bufsz, "i:%ld", (long) unbox (val)); return buf; }
+  if (DV_NUMERIC == dtp)
+    {
+      numeric_to_string ((numeric_t) val, nbuf, sizeof (nbuf));
+      if (!strchr (nbuf, '.') && !strchr (nbuf, 'e') && !strchr (nbuf, 'E'))
+        strncat (nbuf, ".0", sizeof (nbuf) - strlen (nbuf) - 1);
+      snprintf (buf, bufsz, "n:%s", nbuf);
+      return buf;
+    }
+  if (DV_SINGLE_FLOAT == dtp)
+    {
+      snprintf (nbuf, sizeof (nbuf), "%.9g", (double) unbox_float (val));
+      if (!strchr (nbuf, 'e') && !strchr (nbuf, 'E'))
+        strncat (nbuf, "e0", sizeof (nbuf) - strlen (nbuf) - 1);
+      snprintf (buf, bufsz, "f:%s", nbuf);
+      return buf;
+    }
+  if (DV_DOUBLE_FLOAT == dtp)
+    {
+      snprintf (nbuf, sizeof (nbuf), "%.17g", unbox_double (val));
+      if (!strchr (nbuf, 'e') && !strchr (nbuf, 'E'))
+        strncat (nbuf, "e0", sizeof (nbuf) - strlen (nbuf) - 1);
+      snprintf (buf, bufsz, "d:%s", nbuf);
+      return buf;
+    }
+  if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
+    { snprintf (buf, bufsz, "id:%llu", (unsigned long long) unbox_iri_id (val)); return buf; }
+  owned[0] = box_cast_to_UTF8 (NULL, val);
+  if (owned[0] && (DV_STRING == DV_TYPE_OF (owned[0]) || DV_UNAME == DV_TYPE_OF (owned[0])))
+    {
+      caddr_t casted = owned[0];
+      owned[0] = box_sprintf (32 + box_length (casted), "x%d:%s", (int) dtp, (char *) casted);
+      dk_free_tree (casted);
+      return owned[0];
+    }
+  if (owned[0])
+    {
+      dk_free_tree (owned[0]);
+      owned[0] = NULL;
+    }
+  snprintf (buf, bufsz, "u:%ld", (long) unbox (val));
+  return buf;
+}
+
+static int
+rdf_star_tt_component_to_iid (caddr_t *qst, caddr_t val, iri_id_t *iid_ret, int allow_string_heuristics)
+{
+  dtp_t dtp;
+  caddr_t err = NULL;
+  if (NULL == val)
+    return 0;
+  dtp = DV_TYPE_OF (val);
+  if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
+    {
+      iid_ret[0] = unbox_iri_id (val);
+      return 1;
+    }
+  if (DV_LONG_INT == dtp)
+    {
+      iid_ret[0] = (iri_id_t) unbox (val);
+      return 1;
+    }
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) val;
+      caddr_t nested_iri;
+      if (BOX_ELEMENTS (val) < 3)
+        return 0;
+      nested_iri = rdf_star_tt_iri_from_values_internal (qst, arr[0], arr[1], arr[2], 1);
+      if (NULL == nested_iri)
+        return 0;
+      if (NULL == qst)
+        {
+          dk_free_tree (nested_iri);
+          return 0;
+        }
+      {
+        caddr_t iid_box = iri_to_id (qst, nested_iri, IRI_TO_ID_WITH_CREATE, &err);
+        dk_free_tree (nested_iri);
+        if (NULL == err && IS_IRI_DTP (DV_TYPE_OF (iid_box)))
+          {
+            iid_ret[0] = unbox_iri_id (iid_box);
+            dk_free_tree (iid_box);
+            return 1;
+          }
+        if (iid_box)
+          dk_free_tree (iid_box);
+        if (err)
+          dk_free_tree (err);
+        return 0;
+      }
+    }
+  if ((DV_UNAME == dtp) || ((DV_STRING == dtp) && allow_string_heuristics))
+    {
+      caddr_t str = val;
+      if (DV_STRING == dtp)
+        {
+          if (!strncmp (str, "u:", 2))
+            return 0;
+          if (!strncmp (str, "id:", 3))
+            {
+              unsigned long long iid_u = 0;
+              if (rdf_star_tt_parse_u64 (str + 3, strlen (str + 3), &iid_u))
+                {
+                  iid_ret[0] = (iri_id_t) iid_u;
+                  return 1;
+                }
+              return 0;
+            }
+          if (NULL != strstr (str, "^^"))
+            return 0;
+          if (!(rdf_star_is_bnode_lex (str) || rdf_star_is_iri_lex (str)))
+            return 0;
+        }
+      if (NULL == qst)
+        {
+          caddr_t iid_box = key_name_to_iri_id (NULL, str, 1);
+          if (IS_BOX_POINTER (iid_box) && IS_IRI_DTP (DV_TYPE_OF (iid_box)))
+            {
+              iid_ret[0] = unbox_iri_id (iid_box);
+              dk_free_tree (iid_box);
+              return 1;
+            }
+          if (IS_BOX_POINTER (iid_box))
+            dk_free_tree (iid_box);
+          return 0;
+        }
+      {
+        caddr_t iid_box = iri_to_id (qst, str, IRI_TO_ID_WITH_CREATE, &err);
+        if (NULL == err && IS_IRI_DTP (DV_TYPE_OF (iid_box)))
+          {
+            iid_ret[0] = unbox_iri_id (iid_box);
+            dk_free_tree (iid_box);
+            return 1;
+          }
+        if (iid_box)
+          dk_free_tree (iid_box);
+        if (err)
+          dk_free_tree (err);
+      }
+    }
+  return 0;
+}
+
+static caddr_t
+rdf_star_tt_iri_from_values_internal (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback)
+{
+  iri_id_t s_iid = 0, p_iid = 0, o_iid = 0;
+  char s_iid_buf[64], p_iid_buf[64], o_iid_buf[64];
+  caddr_t iri, o_payload_box = NULL;
+  const char *o_payload = NULL;
+  char o_tag = 'g';
+  size_t len;
+  if (rdf_star_tt_component_to_iid (qst, s_val, &s_iid, 1) &&
+      rdf_star_tt_component_to_iid (qst, p_val, &p_iid, 1))
+    {
+      dtp_t o_dtp = DV_TYPE_OF (o_val);
+      if ((DV_IRI_ID == o_dtp) || (DV_IRI_ID_8 == o_dtp) || (DV_UNAME == o_dtp) ||
+          (DV_ARRAY_OF_POINTER == o_dtp) ||
+          ((DV_STRING == o_dtp) &&
+           (NULL == strstr (o_val, "^^")) &&
+           (!rdf_star_tt_is_internal_lex_marker ((const char *) o_val)) &&
+           (rdf_star_is_bnode_lex (o_val) || rdf_star_is_iri_lex (o_val) || !strncmp (o_val, "id:", 3))))
+        {
+          if (rdf_star_tt_component_to_iid (qst, o_val, &o_iid, 1))
+            {
+              o_tag = 'i';
+              snprintf (o_iid_buf, sizeof (o_iid_buf), "%llu", (unsigned long long) o_iid);
+              o_payload = o_iid_buf;
+            }
+        }
+      if (NULL == o_payload)
+        {
+          char o_buf[400];
+          caddr_t o_owned = NULL;
+          const char *ov = rdf_star_tt_val_to_cstr (o_val, o_buf, sizeof (o_buf), &o_owned);
+          o_payload_box = rdf_star_tt_hex_encode (ov ? ov : "");
+          if (o_owned)
+            dk_free_tree (o_owned);
+          o_payload = o_payload_box;
+          o_tag = 'g';
+        }
+      snprintf (s_iid_buf, sizeof (s_iid_buf), "%llu", (unsigned long long) s_iid);
+      snprintf (p_iid_buf, sizeof (p_iid_buf), "%llu", (unsigned long long) p_iid);
+      len = strlen (RDF_STAR_NS) + strlen (s_iid_buf) + 1 + strlen (p_iid_buf) + 1 + 1 + strlen (o_payload) + 1;
+      iri = dk_alloc_box (len, DV_SHORT_STRING);
+      snprintf (iri, len, RDF_STAR_NS "%s:%s:%c%s", s_iid_buf, p_iid_buf, o_tag, o_payload);
+      if (o_payload_box)
+        dk_free_tree (o_payload_box);
+      {
+        caddr_t res = box_dv_uname_string (iri);
+        dk_free_tree (iri);
+        return res;
+      }
+    }
+  (void) allow_legacy_fallback;
+  return NULL;
+}
+
+caddr_t
+rdf_star_tt_iri_from_values_qst (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback)
+{
+  return rdf_star_tt_iri_from_values_internal (qst, s_val, p_val, o_val, allow_legacy_fallback);
+}
+
+caddr_t
+bif_rdf_istriple_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg = bif_arg (qst, args, 0, "istriple");
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    return box_bool (1);
+  if ((DV_STRING == dtp || DV_UNAME == dtp || DV_SHORT_STRING_SERIAL == dtp || DV_LONG_STRING == dtp) &&
+      box_length (arg) > 21 &&
+      0 == memcmp (arg, RDF_STAR_NS, strlen (RDF_STAR_NS)))
+    return box_bool (1);
+  return box_bool (0);
+}
+
+caddr_t
+bif_rdf_triple_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t s = bif_arg (qst, args, 0, "triple");
+  caddr_t p = bif_arg (qst, args, 1, "triple");
+  caddr_t o = bif_arg (qst, args, 2, "triple");
+  caddr_t result = list (3);
+  /* TRIPLE(...) can be nested; use deep copies so nested array components
+     have independent ownership and cannot be double-freed on statement teardown. */
+  ((caddr_t *)result)[0] = box_copy_tree (s);
+  ((caddr_t *)result)[1] = box_copy_tree (p);
+  ((caddr_t *)result)[2] = box_copy_tree (o);
+  return result;
+}
+
+caddr_t
+bif_rdf_triple_term_iri_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t s_val = bif_arg (qst, args, 0, "rdf_triple_term_iri_impl");
+  caddr_t p_val = bif_arg (qst, args, 1, "rdf_triple_term_iri_impl");
+  caddr_t o_val = bif_arg (qst, args, 2, "rdf_triple_term_iri_impl");
+  return rdf_star_tt_iri_from_values_internal (qst, s_val, p_val, o_val, 0);
+}
+
+caddr_t
+bif_rdf_triple_subject_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t triple = bif_arg (qst, args, 0, "subject");
+  dtp_t dtp = DV_TYPE_OF (triple);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) triple;
+      return rdf_star_box_subject_component (arr[0]);
+    }
+  if ((DV_STRING == dtp || DV_UNAME == dtp) && box_length (triple) > 25)
+    {
+      iri_id_t s_iid = 0, p_iid = 0;
+      char o_tag = 0;
+      const char *o_payload = NULL;
+      if (rdf_star_tt_parse_self_iri ((const char *) triple, &s_iid, &p_iid, &o_tag, &o_payload))
+        return box_iri_id (s_iid);
+    }
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_rdf_triple_predicate_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t triple = bif_arg (qst, args, 0, "predicate");
+  dtp_t dtp = DV_TYPE_OF (triple);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) triple;
+      return rdf_star_box_predicate_component (arr[1]);
+    }
+  if ((DV_STRING == dtp || DV_UNAME == dtp) && box_length (triple) > 25)
+    {
+      iri_id_t s_iid = 0, p_iid = 0;
+      char o_tag = 0;
+      const char *o_payload = NULL;
+      if (rdf_star_tt_parse_self_iri ((const char *) triple, &s_iid, &p_iid, &o_tag, &o_payload))
+        return box_iri_id (p_iid);
+    }
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_rdf_triple_object_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t triple = bif_arg (qst, args, 0, "object");
+  dtp_t dtp = DV_TYPE_OF (triple);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) triple;
+      return rdf_star_box_object_component (arr[2]);
+    }
+  if ((DV_STRING == dtp || DV_UNAME == dtp) && box_length (triple) > 25)
+    {
+      iri_id_t s_iid = 0, p_iid = 0;
+      char o_tag = 0;
+      const char *o_payload = NULL;
+      if (rdf_star_tt_parse_self_iri ((const char *) triple, &s_iid, &p_iid, &o_tag, &o_payload))
+        {
+          if ('i' == o_tag)
+            {
+              unsigned long long o_u = 0;
+              if (rdf_star_tt_parse_u64 (o_payload, strlen (o_payload), &o_u))
+                return box_iri_id ((iri_id_t) o_u);
+              return NEW_DB_NULL;
+            }
+          if ('g' == o_tag)
+            {
+              caddr_t decoded_lex = rdf_star_tt_hex_decode (o_payload);
+              caddr_t decoded_val;
+              if (NULL == decoded_lex)
+                return NEW_DB_NULL;
+              decoded_val = rdf_star_tt_decode_component_lex ((const char *) decoded_lex);
+              if (NULL != decoded_val)
+                {
+                  caddr_t boxed = rdf_star_box_object_component (decoded_val);
+                  dk_free_tree (decoded_val);
+                  dk_free_tree (decoded_lex);
+                  return boxed;
+                }
+              return rdf_star_box_object_component (decoded_lex);
+            }
+          if ('o' == o_tag)
+            {
+              unsigned long long ro_u = 0;
+              if (rdf_star_tt_parse_u64 (o_payload, strlen (o_payload), &ro_u))
+                return box_num_nonull ((ptrlong) ro_u);
+              return NEW_DB_NULL;
+            }
+        }
+    }
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_rdf_triple_component_lex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t triple = bif_arg (qst, args, 0, "rdf_triple_component_lex_impl");
+  int idx = (int) bif_long_arg (qst, args, 1, "rdf_triple_component_lex_impl");
+  dtp_t dtp = DV_TYPE_OF (triple);
+  if (idx < 0 || idx > 2)
+    return NEW_DB_NULL;
+  if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t *arr = (caddr_t *) triple;
+      caddr_t owned = NULL;
+      char buf[200];
+      const char *lex;
+      if (idx >= BOX_ELEMENTS (triple))
+        return NEW_DB_NULL;
+      lex = rdf_star_tt_val_to_cstr (arr[idx], buf, sizeof (buf), &owned);
+      {
+        caddr_t res = box_dv_short_string (lex ? lex : "");
+        if (NULL != owned) dk_free_tree (owned);
+        return res;
+      }
+    }
+  if ((DV_STRING == dtp || DV_UNAME == dtp) && box_length (triple) > 25)
+    {
+      iri_id_t s_iid = 0, p_iid = 0;
+      char o_tag = 0;
+      const char *o_payload = NULL;
+      if (rdf_star_tt_parse_self_iri ((const char *) triple, &s_iid, &p_iid, &o_tag, &o_payload))
+        {
+          if (0 == idx)
+            return box_sprintf (64, "id:%llu", (unsigned long long) s_iid);
+          if (1 == idx)
+            return box_sprintf (64, "id:%llu", (unsigned long long) p_iid);
+          if ('i' == o_tag)
+            return box_sprintf (64 + strlen (o_payload), "id:%s", o_payload);
+          if ('g' == o_tag)
+            {
+              caddr_t decoded_lex = rdf_star_tt_hex_decode (o_payload);
+              if (NULL == decoded_lex)
+                return NEW_DB_NULL;
+              return decoded_lex;
+            }
+          if ('o' == o_tag)
+            return box_sprintf (64 + strlen (o_payload), "o:%s", o_payload);
+          return NEW_DB_NULL;
+        }
+    }
+  return NEW_DB_NULL;
 }
 
 
@@ -17126,6 +18044,10 @@ bif_sparql_init (void)
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_contains_impl", bif_rdf_contains_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
       BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_contains_token_impl", bif_rdf_contains_token_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_format_number_impl", bif_rdf_format_number_impl, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_encode_for_uri_impl", bif_rdf_encode_for_uri_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_concat_impl", bif_rdf_concat_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   /* Functions rdf_now_impl() and rdf_year_impl() to rdf_minutes_impl() are in bif_date.c */
@@ -17137,6 +18059,15 @@ bif_sparql_init (void)
   bif_define_ex ("rdf_sha384_impl", bif_rdf_SHA384_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_sha512_impl", bif_rdf_SHA512_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_valid_impl", bif_rdf_valid_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_strdir_impl", bif_rdf_strdir_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_dir_impl", bif_rdf_dir_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_istriple_impl", bif_rdf_istriple_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_triple_impl", bif_rdf_triple_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_triple_term_iri_impl", bif_rdf_triple_term_iri_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_triple_subject_impl", bif_rdf_triple_subject_impl, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("rdf_triple_predicate_impl", bif_rdf_triple_predicate_impl, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("rdf_triple_object_impl", bif_rdf_triple_object_impl, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("rdf_triple_component_lex_impl", bif_rdf_triple_component_lex_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
 }
 
 extern caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);

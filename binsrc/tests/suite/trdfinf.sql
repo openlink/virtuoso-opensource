@@ -365,6 +365,317 @@ sparql select * where { graph ?g { ?s ?p ?o . filter (?o in (10,20,30)) }};
 explain ('select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where o in (10,20,30)');
 select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP) where o in (10,20,30);
 
+sparql clear graph <g_param>;
+sparql insert into <g_param> { <s_param> <p> 10 ; <r> <o_param> . };
+
+create procedure DB.DBA.RDF_OBJ_SPARQL_PARAM_COUNT (in obj any)
+{
+  return (sparql select count (*) from <g_param> where { ?s ?p ?o . filter (?o = ?:obj) });
+}
+;
+
+select DB.DBA.RDF_OBJ_SPARQL_PARAM_COUNT (10);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL ?o = ?:param numeric literal\n";
+
+select DB.DBA.RDF_OBJ_SPARQL_PARAM_COUNT (UNAME'o_param');
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL ?o = ?:param IRI\n";
+
+-- ============================================================
+-- RDF 1.2 / iri_id_8 parameter regressions in pre-compiled SPARQL.
+-- Mirrors the inlined patterns in binsrc/graphql/graphql.sql that
+-- commit de30cc0f45 routed through exec() as a workaround.
+-- These tests must pass without iri()-wrapping the parameters and
+-- without falling back to dynamic SPASQL.
+-- ============================================================
+
+sparql clear graph <urn:g_iri12>;
+
+sparql prefix : <urn:rdf12:>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+insert into <urn:g_iri12> {
+  :Top    a rdfs:Class .
+  :Super  a rdfs:Class ; rdfs:subClassOf :Top .
+  :Sub    a rdfs:Class ; rdfs:subClassOf :Super .
+  :propA  rdfs:domain :Super ; rdfs:range :Top ; gql:field :fldA ; gql:type :TypeA .
+  :propB  rdfs:domain :Top   ; rdfs:range :Top ; gql:field :fldB ; gql:type :TypeB .
+};
+
+-- (A) ?o = ?:obj when the parameter slot is declared iri_id_8.
+-- Same shape as RDF_OBJ_SPARQL_PARAM_COUNT above, but with the
+-- caller-side declaration that GraphQL uses (GQL_IID returns iri_id_8).
+create procedure DB.DBA.RDF_GQL_O_PARAM_IID8 (in obj iri_id_8)
+{
+  return (sparql select count (*) from <urn:g_iri12>
+                  where { ?s ?p ?o . filter (?o = ?:obj) });
+}
+;
+
+select DB.DBA.RDF_GQL_O_PARAM_IID8 (iri_to_id ('urn:rdf12:Top'));
+echo both $if $equ $LAST[1] 4 "PASSED" "***FAILED";
+echo both ": 4 rows SPARQL ?o = ?:iri_id_8 param (Top is referenced 4x)\n";
+
+select DB.DBA.RDF_GQL_O_PARAM_IID8 (iri_to_id ('urn:rdf12:Super'));
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 2 rows SPARQL ?o = ?:iri_id_8 param (Super is referenced 2x)\n";
+
+-- (B) ?:cls rdfs:subClassOf* ?domain — iri_id_8 parameter at the
+-- start of a transitive property path inside a graph block.
+create procedure DB.DBA.RDF_GQL_SUBCLS_PARAM (in cls iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop where {
+                graph <urn:g_iri12> {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop rdfs:domain ?domain ; gql:field ?:fld .
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+select DB.DBA.RDF_GQL_SUBCLS_PARAM (iri_to_id ('urn:rdf12:Sub'),
+                                    iri_to_id ('urn:rdf12:fldA'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL ?:iid8 rdfs:subClassOf* ?d (Sub->Super matches propA)\n";
+
+select DB.DBA.RDF_GQL_SUBCLS_PARAM (iri_to_id ('urn:rdf12:Sub'),
+                                    iri_to_id ('urn:rdf12:fldB'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL ?:iid8 rdfs:subClassOf* ?d (Sub->Top matches propB)\n";
+
+-- (C) Full GraphQL pattern: subClassOf* + OPTIONAL with shared
+-- ?domain/?range across the optional join, all with iri_id_8 params.
+-- This is the exact shape from GQL_CONSTRUCT pre-de30cc0f45.
+create procedure DB.DBA.RDF_GQL_SUBCLS_OPT (in cls iri_id_8, in arg iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop0", "prop1"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop0 ?prop1 where {
+                graph <urn:g_iri12> {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop0 rdfs:domain ?domain ; gql:field ?:arg .
+                  optional {
+                    [] rdfs:domain ?domain ; rdfs:range ?range ; gql:field ?:fld .
+                    ?prop1 rdfs:domain ?range ; gql:field ?:arg .
+                  }
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+select DB.DBA.RDF_GQL_SUBCLS_OPT (iri_to_id ('urn:rdf12:Sub'),
+                                  iri_to_id ('urn:rdf12:fldA'),
+                                  iri_to_id ('urn:rdf12:fldB'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL subClassOf* + OPTIONAL all-iid8 params\n";
+
+-- (D) Same as (B) but with the graph IRI itself bound from an iri_id_8
+-- parameter (?:g rather than the literal <urn:g_iri12>). This is the
+-- exact GQL_CONSTRUCT shape: graph ?:g_iid { ?:cls subClassOf* ... }.
+create procedure DB.DBA.RDF_GQL_SUBCLS_GPARAM (in g_iid iri_id_8, in cls iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop where {
+                graph ?:g_iid {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop rdfs:domain ?domain ; gql:field ?:fld .
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+-- The graph-parameter variant must return the same cardinality as the
+-- literal-graph variant (B): SPARQL semantics are identical when ?:g is
+-- bound to the same IRI. If this returns more than 1 row, the engine is
+-- emitting a duplicating join for `graph ?:g` + property path.
+select DB.DBA.RDF_GQL_SUBCLS_GPARAM (iri_to_id ('urn:g_iri12'),
+                                     iri_to_id ('urn:rdf12:Sub'),
+                                     iri_to_id ('urn:rdf12:fldA'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL graph ?:iid8 { ?:iid8 subClassOf* } (Sub->Super propA)\n";
+
+select DB.DBA.RDF_GQL_SUBCLS_GPARAM (iri_to_id ('urn:g_iri12'),
+                                     iri_to_id ('urn:rdf12:Sub'),
+                                     iri_to_id ('urn:rdf12:fldB'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL graph ?:iid8 { ?:iid8 subClassOf* } (Sub->Top propB)\n";
+
+-- (E) Full GraphQL pattern with graph ?:g_iid AND subClassOf* AND OPTIONAL,
+-- four iri_id_8 parameters — the exact shape of the inlined query at
+-- graphql.sql:825-832 (pre-de30cc0f45).
+create procedure DB.DBA.RDF_GQL_SUBCLS_OPT_GPARAM (in g_iid iri_id_8, in cls iri_id_8, in arg iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop0", "prop1"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop0 ?prop1 where {
+                graph ?:g_iid {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop0 rdfs:domain ?domain ; gql:field ?:arg .
+                  optional {
+                    [] rdfs:domain ?domain ; rdfs:range ?range ; gql:field ?:fld .
+                    ?prop1 rdfs:domain ?range ; gql:field ?:arg .
+                  }
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+-- Must equal (C) result of 1; same data, same query semantics.
+select DB.DBA.RDF_GQL_SUBCLS_OPT_GPARAM (iri_to_id ('urn:g_iri12'),
+                                         iri_to_id ('urn:rdf12:Sub'),
+                                         iri_to_id ('urn:rdf12:fldA'),
+                                         iri_to_id ('urn:rdf12:fldB'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL graph ?:iid8 + subClassOf* + OPTIONAL all-iid8\n";
+
+-- Diagnostic: dump the rewritten procedure bodies so the SPARQL->SQL
+-- emission is visible. Compare RDF_GQL_SUBCLS_PARAM (literal graph) vs
+-- RDF_GQL_SUBCLS_GPARAM (graph ?:g_iid) — under correct semantics the
+-- inner SQL must produce equal cardinalities for the same data.
+-- Literal-graph baseline (B-shape): graph IRI is a literal.
+select '--- LITERAL GRAPH (B) ---' as marker;
+select cast (sparql_to_sql_text ('
+  define input:storage ""
+  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+  select ?prop where {
+    graph <urn:g_iri12> {
+      <urn:rdf12:Sub> rdfs:subClassOf* ?domain .
+      ?prop rdfs:domain ?domain ; gql:field <urn:rdf12:fldA> .
+    }}') as varchar (10000));
+
+-- Variable-graph (D-shape): graph IRI is a free variable.
+-- After rewrite, the SQL shows whether the engine emits a duplicating
+-- (cross-product) join between the property-path zero-step and the
+-- unconstrained graph-IRI scan.
+select '--- VARIABLE GRAPH (D) ---' as marker;
+select cast (sparql_to_sql_text ('
+  define input:storage ""
+  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+  select ?prop where {
+    graph ?g {
+      <urn:rdf12:Sub> rdfs:subClassOf* ?domain .
+      ?prop rdfs:domain ?domain ; gql:field <urn:rdf12:fldA> .
+    }}') as varchar (10000));
+
+-- (F) cciso-shaped reproduction: a graph that has rdfs:domain and
+-- gql:field triples but NO rdfs:subClassOf triples at all. The
+-- transitive `?:cls rdfs:subClassOf* ?domain` zero-step must still
+-- bind ?domain := ?:cls (RDF/SPARQL property-path semantics) so that
+-- the subsequent `?prop rdfs:domain ?domain ; gql:field ?:fld` can
+-- match. If the engine emits a SQL TRANSITIVE whose inner SCAN is
+-- filtered by P=subClassOf and that scan is empty, T_MIN(0) must
+-- still emit the (input,input) zero-step row.
+sparql clear graph <urn:g_iri12b>;
+
+sparql prefix : <urn:rdf12:>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+insert into <urn:g_iri12b> {
+  :Country a rdfs:Class .
+  :code   rdfs:domain :Country ; gql:field :fldCode ; gql:type :ID .
+  :name   rdfs:domain :Country ; gql:field :fldName ; gql:type :String .
+};
+
+create procedure DB.DBA.RDF_GQL_SUBCLS_NOSUB (in g_iid iri_id_8, in cls iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop where {
+                graph ?:g_iid {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop rdfs:domain ?domain ; gql:field ?:fld .
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+-- The graph has zero subClassOf triples; ?:cls rdfs:subClassOf* ?domain
+-- must still bind ?domain := ?:cls via the zero-step, yielding 1 row.
+select DB.DBA.RDF_GQL_SUBCLS_NOSUB (iri_to_id ('urn:g_iri12b'),
+                                    iri_to_id ('urn:rdf12:Country'),
+                                    iri_to_id ('urn:rdf12:fldCode'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL graph ?:iid8 subClassOf* zero-step (no subClassOf in graph)\n";
+
+select DB.DBA.RDF_GQL_SUBCLS_NOSUB (iri_to_id ('urn:g_iri12b'),
+                                    iri_to_id ('urn:rdf12:Country'),
+                                    iri_to_id ('urn:rdf12:fldName'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL graph ?:iid8 subClassOf* zero-step (fldName)\n";
+
+-- Literal-graph control: same data, literal graph IRI. Sanity check
+-- that the zero-step works in the simpler case.
+create procedure DB.DBA.RDF_GQL_SUBCLS_NOSUB_LIT (in cls iri_id_8, in fld iri_id_8)
+{
+  declare cnt int;
+  cnt := 0;
+  for select "prop"
+        from (sparql define input:storage ""
+              prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+              prefix gql: <http://www.openlinksw.com/schemas/graphql#>
+              select ?prop where {
+                graph <urn:g_iri12b> {
+                  ?:cls rdfs:subClassOf* ?domain .
+                  ?prop rdfs:domain ?domain ; gql:field ?:fld .
+                }}) sub do {
+    cnt := cnt + 1;
+  }
+  return cnt;
+}
+;
+
+select DB.DBA.RDF_GQL_SUBCLS_NOSUB_LIT (iri_to_id ('urn:rdf12:Country'),
+                                        iri_to_id ('urn:rdf12:fldCode'));
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 1 row SPARQL literal-graph subClassOf* zero-step (no subClassOf in graph)\n";
+
+-- Cleanup
+drop procedure DB.DBA.RDF_GQL_O_PARAM_IID8;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_PARAM;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_OPT;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_GPARAM;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_OPT_GPARAM;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_NOSUB;
+drop procedure DB.DBA.RDF_GQL_SUBCLS_NOSUB_LIT;
+sparql clear graph <urn:g_iri12>;
+sparql clear graph <urn:g_iri12b>;
+
 --explain ('delete from rdf_quad table option (index RDF_QUAD) where g in ( __i2id ( UNAME\'g3\' ) , __i2id ( UNAME\'g2\' ) , __i2id ( UNAME\'g1\' ))');
 --explain ('delete from rdf_quad table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME\'g3\' ) , __i2id ( UNAME\'g2\' ) , __i2id ( UNAME\'g1\' ))');
 --delete from rdf_quad table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) );

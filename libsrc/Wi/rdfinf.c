@@ -924,12 +924,16 @@ ric_allocate (caddr_t n2)
   id_hash_set (rdf_name_to_ric, (caddr_t) & n2, (caddr_t) & ctx);
   ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_prop_to_domains = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_prop_to_ranges = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
   /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp); */
   ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
   id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
+  id_hash_set_rehash_pct (ctx->ric_prop_to_domains, 200);
+  id_hash_set_rehash_pct (ctx->ric_prop_to_ranges, 200);
   id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);
   id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
@@ -1046,6 +1050,7 @@ bif_rdf_inf_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_set_t res_triples = NULL;
   id_hash_iterator_t hiter;
   caddr_t *key_ptr, *data_ptr;
+  caddr_t **classes_ptr;
   rdf_sub_t **rsub_ptr;
   iri_id_t **rels_ptr;
   id_hash_iterator (&hiter, ctx->ric_iri_to_subclass);
@@ -1077,6 +1082,26 @@ bif_rdf_inf_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dk_set_push (&res_triples, list (3, box_copy_tree (equiv_rs->rs_iri), box_dv_uname_string ("http://www.w3.org/2002/07/owl#equivalentProperty"), box_copy_tree(key_ptr[0])));
         }
       END_DO_SET ()
+    }
+  id_hash_iterator (&hiter, ctx->ric_prop_to_domains);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&classes_ptr)))
+    {
+      caddr_t *classes = classes_ptr[0];
+      DO_BOX_FAST_REV (caddr_t, cls_iid, ctr, classes)
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (key_ptr[0]), box_dv_uname_string ("http://www.w3.org/2000/01/rdf-schema#domain"), box_copy_tree (cls_iid)));
+        }
+      END_DO_BOX_FAST;
+    }
+  id_hash_iterator (&hiter, ctx->ric_prop_to_ranges);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&classes_ptr)))
+    {
+      caddr_t *classes = classes_ptr[0];
+      DO_BOX_FAST_REV (caddr_t, cls_iid, ctr, classes)
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (key_ptr[0]), box_dv_uname_string ("http://www.w3.org/2000/01/rdf-schema#range"), box_copy_tree (cls_iid)));
+        }
+      END_DO_BOX_FAST;
     }
   DO_BOX_FAST_REV (caddr_t, iid, ctr, ctx->ric_ifp_list)
     {
@@ -1374,6 +1399,53 @@ bif_rdf_inf_set_prop_props (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   dk_free_tree ((caddr_t)(ctx->ric_prop_props));
   ctx->ric_prop_props = uname_flags_lst;
   return NULL;
+}
+
+static caddr_t
+bif_rdf_inf_set_prop_types_impl (caddr_t * qst, state_slot_t ** args, id_hash_t * ht, const char *fname)
+{
+  caddr_t prop = bif_arg (qst, args, 1, (char *)fname);
+  caddr_t *classes = bif_array_of_pointer_arg (qst, args, 2, (char *)fname);
+  caddr_t prop_copy, classes_copy;
+  caddr_t **place;
+  int cls_inx;
+  sec_check_dba ((query_instance_t *)qst, (char *)fname);
+  if (!IS_IRI_DTP (DV_TYPE_OF (prop)))
+    sqlr_new_error ("22023", "RDFI.", "%.200s(): property argument must be an IRI_ID", fname);
+  DO_BOX (caddr_t, cls, cls_inx, classes)
+    {
+      if (!IS_IRI_DTP (DV_TYPE_OF (cls)))
+        sqlr_new_error ("22023", "RDFI.", "%.200s(): class list must contain IRI_ID values", fname);
+    }
+  END_DO_BOX;
+  prop_copy = box_copy_tree (prop);
+  classes_copy = box_copy_tree ((caddr_t)classes);
+  place = (caddr_t **) id_hash_get (ht, (caddr_t) &prop);
+  if (place)
+    {
+      dk_free_tree ((caddr_t)(place[0]));
+      place[0] = (caddr_t *) classes_copy;
+      dk_free_tree (prop_copy);
+    }
+  else
+    {
+      id_hash_set (ht, (caddr_t) &prop_copy, (caddr_t) &classes_copy);
+    }
+  return NULL;
+}
+
+caddr_t
+bif_rdf_inf_set_prop_domains (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_domains", 1);
+  return bif_rdf_inf_set_prop_types_impl (qst, args, ctx->ric_prop_to_domains, "rdf_inf_set_prop_domains");
+}
+
+caddr_t
+bif_rdf_inf_set_prop_ranges (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_ranges", 1);
+  return bif_rdf_inf_set_prop_types_impl (qst, args, ctx->ric_prop_to_ranges, "rdf_inf_set_prop_ranges");
 }
 
 caddr_t
@@ -1721,6 +1793,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_ifp_is_excluded", bif_rdf_inf_ifp_is_excluded);
   bif_define ("rdf_inf_set_inverses", bif_rdf_inf_set_inverses);
   bif_define ("rdf_inf_set_prop_props", bif_rdf_inf_set_prop_props);
+  bif_define ("rdf_inf_set_prop_domains", bif_rdf_inf_set_prop_domains);
+  bif_define ("rdf_inf_set_prop_ranges", bif_rdf_inf_set_prop_ranges);
   bif_define ("rdf_check_init" , bif_rdf_check_init);
   bif_set_uses_index (bif_rdf_check_init);
   bif_define ("rdf_super_sub_list", bif_rdf_super_sub_list);
