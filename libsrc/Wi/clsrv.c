@@ -138,12 +138,71 @@ cll_times (void)
 
 
 
+
+extern int32 dk_tcp_ai_ipv4_enable;
+extern int32 dk_tcp_ai_ipv6_enable;
+
 caddr_t
-bif_cll_times (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+cl_host_addr (char *host_and_port)
 {
-  cll_times ();
-  return NULL;
+  char host[NI_MAXHOST];
+  char ip[INET6_ADDRSTRLEN];
+  char *col;
+  struct addrinfo hints = { 0 };
+  struct addrinfo *res = NULL;
+  struct addrinfo *p = NULL;
+  int rc;
+
+  /* extract host name without port */
+  strcpy_ck (host, host_and_port);
+  col = strchr (host, ':');
+  if (col)
+    col[0] = '\0';
+
+  hints.ai_family = AF_UNSPEC;		/* Allow IPv4 or IPv6 */
+  hints.ai_socktype = SOCK_STREAM;
+
+#if defined(AI_ADDRCONFIG)
+  hints.ai_flags |= AI_ADDRCONFIG;
+#endif
+
+  if ((rc = getaddrinfo (host, NULL, &hints, &res)) != 0)
+    {
+      log_error ("Could not resolve host \"%s\" in cluster host list: %s", host, gai_strerror (rc));
+      call_exit (1);
+      return NULL;
+    }
+
+  ip[0] = '\0';
+  for (p = res; p != NULL; p = p->ai_next)
+    {
+      const void *src = NULL;
+
+      if (dk_tcp_ai_ipv4_enable && p->ai_family == AF_INET)
+	src = &((struct sockaddr_in *) p->ai_addr)->sin_addr;
+      else if (dk_tcp_ai_ipv6_enable && p->ai_family == AF_INET6)
+	src = &((struct sockaddr_in6 *) p->ai_addr)->sin6_addr;
+      else
+	continue;
+
+      if (inet_ntop (p->ai_family, src, ip, sizeof (ip)))
+	break;			/* success */
+
+      ip[0] = '\0';
+    }
+
+  freeaddrinfo (res);
+
+  if (ip[0] == '\0')
+    {
+      log_error ("Could not resolve host \"%s\" in cluster host list", host);
+      call_exit (1);
+      return NULL;
+    }
+
+  return box_dv_short_string (ip);
 }
+
 
 
 #ifdef MTX_METER

@@ -35,6 +35,9 @@
 # include <netinet/in.h>
 # include <net/if.h>
 # include <arpa/inet.h>
+# ifdef HAVE_NETDB_H
+#  include <netdb.h>
+# endif
 # ifdef HAVE_SYS_SELECT_H
 #  include <sys/select.h>
 # endif

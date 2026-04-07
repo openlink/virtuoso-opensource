@@ -107,6 +107,10 @@ int32 dk_tcp_so_linger_enable = 0;	/* disabled by default */
 int32 dk_tcp_so_linger_timeout = 0;	/* timeout in seconds when linger_enable = 1 */
 int32 dk_tcp_shutdown_enable = 0;	/* disabled by default */
 
+int32 dk_tcp_ai_idn_enable = 0;		/* disabled by default */
+int32 dk_tcp_ai_ipv4_enable = 1;	/* enabled by default */
+int32 dk_tcp_ai_ipv6_enable = 0;	/* disabled by default */
+
 
 /*##**********************************************************************
  *

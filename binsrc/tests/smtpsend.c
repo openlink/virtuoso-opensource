@@ -53,51 +53,69 @@
 int fd;
 
 void
-make_connection (char *host, int port, int *s)
+make_connection (const char *host, int port, int *s)
 {
-  struct hostent *phe;
-  struct sockaddr_in sin;
+  struct addrinfo hints = { 0 };
+  struct addrinfo *res = NULL;
+  struct addrinfo *p = NULL;
+  char port_str[8];
+  int rc;
+  int sock = -1;
 
+  snprintf (port_str, sizeof (port_str), "%d", port);
 
-  /* initilize sockaddr_in structure */
-  memset (&sin, 0, sizeof (sin));
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons ((u_short) port);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
 
-  if ((phe = gethostbyname (host)) != NULL)
+#if defined(AI_ADDRCONFIG)
+  hints.ai_flags |= AI_ADDRCONFIG;
+#endif
+
+  if ((rc = getaddrinfo (host, port_str, &hints, &res)) != 0)
     {
-      memcpy (&sin.sin_addr, phe->h_addr, phe->h_length);
-    }
-  else
-    {
-      fprintf (stderr, "Cannot get hostname %s\n", host);
+      fprintf (stderr, "Cannot resolve host \"%s\": %s\n", host, gai_strerror (rc));
       exit (1);
     }
 
-
-/* create socket */
-  *s = socket (PF_INET, SOCK_STREAM, 0);
-  if (*s < 0)
+  for (p = res; p != NULL; p = p->ai_next)
     {
-      fprintf (stderr, "Cannot create socket\n");
-      exit (1);
+      char addr_str[INET6_ADDRSTRLEN] = "<unknown>";
 
+      if (p->ai_family == AF_INET)
+	inet_ntop (AF_INET, &((struct sockaddr_in *) p->ai_addr)->sin_addr, addr_str, sizeof (addr_str));
+      else if (p->ai_family == AF_INET6)
+	inet_ntop (AF_INET6, &((struct sockaddr_in6 *) p->ai_addr)->sin6_addr, addr_str, sizeof (addr_str));
+
+      if ((sock = socket (p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
+	{
+	  fprintf (stderr, "Cannot create socket for %s, trying next...\n", addr_str);
+	  continue;
+	}
+
+      if (connect (sock, p->ai_addr, (socklen_t) p->ai_addrlen) == 0)
+	break;			/* success */
+
+      /* Connection failed — close and try the next address */
+      fprintf (stderr, "Cannot connect to %s:%d, trying next...\n", addr_str, port);
+      closesocket (sock);
+      sock = -1;
     }
 
-/* connect */
-  if (connect (*s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
-    {
-      fprintf (stderr, "Cannot connect, errno = %d\n", errno);
-      perror ("");
-      exit (1);
+  freeaddrinfo (res);
 
+  if (sock < 0)
+    {
+      fprintf (stderr, "Cannot connect to \"%s\" port %d\n", host, port);
+      exit (1);
     }
+
+  *s = sock;
 }
 
 int
-read_resp (FILE * in)
+read_resp (FILE *in)
 {
-  char buf [4096];
+  char buf[4096];
   int rc;
   rc = recv (fd, buf, sizeof (buf), 0);
   if (rc <= 0)
@@ -105,15 +123,15 @@ read_resp (FILE * in)
       perror ("recv");
       return rc;
     }
-  buf [rc] = 0;
+  buf[rc] = 0;
   fprintf (in, "%s", buf);
   return rc;
 }
 
 int
-send_buf (char * fmt, ...)
+send_buf (char *fmt, ...)
 {
-  char buf [10000];
+  char buf[10000];
   va_list list;
   int rc;
 

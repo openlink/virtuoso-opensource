@@ -2562,33 +2562,59 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
-srv_ip (char *ip_addr, size_t max_ip_addr, char *host)
-{
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-  struct hostent ht;
-  char buff [4096];
-  int herrnop;
-#endif
-  struct hostent *local;
 
-#if defined (_REENTRANT) && defined (linux)
-  gethostbyname_r (host, &ht, buff, sizeof (buff), &local, &herrnop);
-#elif defined (_REENTRANT) && defined (SOLARIS)
-  local = gethostbyname_r (host, &ht, buff, sizeof (buff), &herrnop);
-#else
-  local = gethostbyname (host);
+extern int32 dk_tcp_ai_ipv4_enable;
+extern int32 dk_tcp_ai_ipv6_enable;
+
+void
+srv_ip (char *ip_addr, size_t ip_addr_len, char *host)
+{
+  struct addrinfo hints = {0};
+  struct addrinfo *res = NULL;
+  struct addrinfo *p = NULL;
+  int rc;
+
+  ip_addr[0] = '\0';
+
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+#if defined(AI_ADDRCONFIG)
+  hints.ai_flags |= AI_ADDRCONFIG;
 #endif
-  /* XXX in a feature we should check for AF_INET6 */
-  if (local && local->h_addr_list[0] && local->h_addrtype == AF_INET)
+
+  if ((rc = getaddrinfo (host, NULL, &hints, &res)) != 0)
     {
-      unsigned char addr [4];
-      memcpy (addr, (unsigned char *)(local->h_addr_list[0]), sizeof (addr));
-      snprintf (ip_addr, max_ip_addr, "%u.%u.%u.%u", addr [0], addr [1], addr [2], addr [3]);
+      log_debug ("getaddrinfo failed for host \"%s\": %s\n", host, gai_strerror (rc));
+      return;
     }
-  else
-    strcpy_size_ck (ip_addr, "", max_ip_addr);
+
+  for (p = res; p != NULL; p = p->ai_next)
+    {
+      const void *src = NULL;
+
+      if (dk_tcp_ai_ipv4_enable && p->ai_family == AF_INET)
+	{
+	  src = &((struct sockaddr_in *) p->ai_addr)->sin_addr;
+	}
+      else if (dk_tcp_ai_ipv6_enable && p->ai_family == AF_INET6)
+	{
+	  src = &((struct sockaddr_in6 *) p->ai_addr)->sin6_addr;
+	}
+      else
+	continue;
+
+      if (inet_ntop (p->ai_family, src, ip_addr, (socklen_t) ip_addr_len))
+	break;
+
+      ip_addr[0] = '\0';
+    }
+
+  freeaddrinfo (res);
+
+  return;
 }
+
 
 caddr_t
 bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
