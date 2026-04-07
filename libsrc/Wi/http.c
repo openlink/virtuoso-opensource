@@ -240,6 +240,27 @@ caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, const char * d
 
 
 
+extern int32 dk_tcp_ai_idn_enable;
+
+static void
+decode_idn_hostname (char *host, size_t hostlen)
+{
+#if defined(_WIN32)
+  wchar_t wide_ace[NI_MAXHOST];
+  wchar_t wide_uni[NI_MAXHOST];
+
+  if (MultiByteToWideChar (CP_UTF8, 0, host, -1, wide_ace, NI_MAXHOST) == 0)
+    return;
+
+  if (IdnToUnicode (0, wide_ace, -1, wide_uni, NI_MAXHOST) == 0)
+    return;
+
+  WideCharToMultiByte (CP_UTF8, 0, wide_uni, -1, host, (int) hostlen, NULL, NULL);
+#endif
+
+  return;
+}
+
 caddr_t
 ws_gethostbyaddr (const char *ip)
 {
@@ -270,6 +291,12 @@ ws_gethostbyaddr (const char *ip)
   /* set lookup flags */
   flags = NI_NAMEREQD;		/* require a real hostname */
 
+#if defined (NI_IDN)
+  /* enable lookup of hostnames with non-ASCII characters on linux */
+  if (dk_tcp_ai_idn_enable)
+    flags |= NI_IDN;
+#endif
+
   rc = getnameinfo (
            (struct sockaddr *) &ss, addrlen,
 	   host, sizeof (host),
@@ -280,6 +307,12 @@ ws_gethostbyaddr (const char *ip)
 
   if (rc != 0)
     return box_dv_short_string (ip);	/* lookup failed */
+
+  /*
+   *  decode punicode to UTF-8 hostname
+   */
+  if (dk_tcp_ai_idn_enable)
+    decode_idn_hostname (host, sizeof (host));
 
   return box_dv_short_string (host);
 }
