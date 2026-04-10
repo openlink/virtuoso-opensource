@@ -513,6 +513,9 @@ extern int32 dk_tcp_keepalive_intvl;
 extern int32 dk_tcp_so_linger_enable;
 extern int32 dk_tcp_so_linger_timeout;
 extern int32 dk_tcp_shutdown_enable;
+extern int32 dk_tcp_ai_idn_enable;
+extern int32 dk_tcp_ai_ipv4_enable;
+extern int32 dk_tcp_ai_ipv6_enable;
 
 void
 process_status_report (void)
@@ -2348,6 +2351,9 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I32 (dk_tcp_so_linger_enable, "tcp_so_linger_enable"),
     SD_DEF_I32 (dk_tcp_so_linger_timeout, "tcp_so_linger_timeout"),
     SD_DEF_I32 (dk_tcp_shutdown_enable, "tcp_shutdown_enable"),
+    SD_DEF_I32 (dk_tcp_ai_idn_enable, "tcp_ai_idn_enable"),
+    SD_DEF_I32 (dk_tcp_ai_ipv4_enable, "tcp_ai_ipv4_enable"),
+    SD_DEF_I32 (dk_tcp_ai_ipv6_enable, "tcp_ai_ipv6_enable"),
 
     SD_DEF_I64 (swap_guard_threshold, "swap_guard_threshold"),
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
