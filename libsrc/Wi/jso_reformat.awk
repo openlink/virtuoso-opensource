@@ -591,23 +591,6 @@ match($0,"^JSO_GROUP_END.*$",line)	{
   next
   }
 
-#          1                          2---------------------- 3             4------------- 7
-match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
-  nsprefixes[line[2]] = line[6]
-  next
-  }
-
-#          1                          2---------------------- 3             4------------- 7
-match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
-  nsprefixes[line[2]] = line[6]
-  next
-  }
-
-match($0,"^JSO_NAMESPACE.*$",line)	{
-  report_error("Invalid arguments of JSO_NAMESPACE")
-  next
-  }
-
 #          1                             2---------------------- 3             4------------- 5             6-------------------- 7                             8--------
 match($0,"^(JSO_STRUCT_BEGIN[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)([[:blank:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_struct_begin(line[2], line[4], line[6], line[8])
