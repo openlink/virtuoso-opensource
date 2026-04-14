@@ -45,10 +45,6 @@ static thread_queue_t _runq[MAX_PRIORITY];
 static thread_queue_t _deadq;
 thread_queue_t _waitq;
 static thread_t *_main_thread;
-#ifdef EXPIRIMENTAL
-timer_queue_t *_timerq;
-static char _ev_never;
-#endif
 
 
 static void
@@ -67,11 +63,6 @@ _sched_init (void)
   _thread_num_runnable = 0;
   _thread_num_total = 1;
 
-#ifdef EXPIRIMENTAL
-  _timerq = timer_queue_allocate ();
-  timer_queue_update (_timerq, timer_queue_time_elapsed (_timerq));
-  io_init ();
-#endif
 }
 
 
@@ -131,10 +122,6 @@ _fiber_schedule_next (void)
   if (_current_fiber->thr_status == RUNNING)
     _fiber_status (_current_fiber, RUNNABLE);
 
-#ifdef EXPIRIMENTAL
-  while (_thread_num_runnable == 0)
-    _fiber_event_loop ();
-#endif
 
   thr = NULL;
   for (i = MAX_PRIORITY; --i >= 0; )
@@ -150,63 +137,6 @@ _fiber_schedule_next (void)
 }
 
 
-#ifdef EXPIRIMENTAL
-static void
-_fiber_timeout (void *arg)
-{
-  thread_t *thr = (thread_t *) arg;
-
-  thr->thr_retcode = -1;
-#ifdef WIN32
-  thr->thr_err = WSAETIMEDOUT;
-#else
-  thr->thr_err = ETIMEDOUT;
-#endif
-
-  _fiber_status (thr, RUNNABLE);
-}
-
-
-int
-_fiber_sleep (void *event, TVAL timeout)
-{
-  thread_t *thr = _current_fiber;
-
-  assert (thr->thr_status == RUNNING);
-
-  thr->thr_err = 0;
-  thr->thr_retcode = 0;
-
-  /* set a timer */
-  assert (thr->thr_timer == NULL);
-
-  if (timeout != TV_INFINITE)
-    thr->thr_timer = timer_queue_new_timer (_timerq, timeout, 0,
-	_fiber_timeout, thr);
-
-  if (event == NULL)
-    event = &_ev_never;
-  thr->thr_event = event;
-
-  do
-    {
-      _fiber_status (thr, WAITEVENT);
-      _fiber_schedule_next ();
-    }
-  while (thr->thr_event == event && thr->thr_err == 0);
-
-  thr->thr_event = NULL;
-
-  if (timeout != TV_INFINITE)
-    {
-      timer_deactivate (thr->thr_timer);
-      timer_unref (thr->thr_timer);
-      thr->thr_timer = NULL;
-    }
-
-  return thr->thr_retcode;
-}
-#endif
 
 
 /******************************************************************************
@@ -399,49 +329,6 @@ thread_get_priority (thread_t *self)
 }
 
 
-#ifdef EXPIRIMENTAL
-int
-thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
-{
-  int rc;
-
-  if (holds)
-    {
-      mutex_leave (holds);
-      rc = _fiber_sleep (event, timeout);
-      mutex_enter (holds);
-    }
-  else
-    rc = _fiber_sleep (event, timeout);
-
-  return rc;
-}
-
-
-int
-thread_signal_cond (void *event)
-{
-  thread_t *thr;
-  thread_t *next;
-  int count = 0;
-
-  /* Wake up waiting threads for which event occurred */
-  for (thr = (thread_t *) _waitq.thq_head.thr_next;
-      thr != (thread_t *) &_waitq.thq_head;
-      thr = next)
-    {
-      next = (thread_t *) thr->thr_hdr.thr_next;
-      if (thr->thr_event == event)
-	{
-	  thr->thr_event = NULL;
-	  thr->thr_retcode = 0;
-	  _fiber_status (thr, RUNNABLE);
-	  count++;
-	}
-    }
-  return count;
-}
-#endif
 
 /******************************************************************************
  *

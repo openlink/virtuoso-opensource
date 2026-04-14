@@ -27,43 +27,6 @@
 
 #include "Dk.h"
 
-#ifdef DK_NEED_VSNPRINTF
-
-#ifndef HAVE_VSNPRINTF
-int
-vsnprintf (char *str, size_t size, const char *format, va_list ap)
-{
-#ifdef WIN32
-  return _vsnprintf (str, size, format, ap);
-#else
-  int written = vsprintf (str, format, ap);
-  if (written > size)
-    GPF_T1 ("Not enough buffer length for writing");
-  return written;
-#endif /* WIN32 */
-}
-#endif
-
-#ifndef HAVE_SNPRINTF
-int
-snprintf (char *str, size_t size, const char *format, ...)
-{
-  int res;
-  va_list ap;
-  va_start (ap, format);
-#ifdef WIN32
-  res = _vsnprintf (str, size, format, ap);
-#else
-  res = vsprintf (str, format, ap);
-  if (res > size)
-    GPF_T1 ("Not enough buffer length for writing");
-#endif /* WIN32 */
-  va_end (ap);
-  return res;
-}
-#endif
-
-#endif /* DK_NEED_VSNPRINTF */
 
 int
 vsnprintf_ck (char *str, size_t size, const char *format, va_list ap)
@@ -71,15 +34,15 @@ vsnprintf_ck (char *str, size_t size, const char *format, va_list ap)
   int written;
 #ifdef WIN32
   written = _vsnprintf (str, size, format, ap);
-#else
-#ifdef HAVE_VSNPRINTF
+#elif defined (HAVE_VSNPRINTF)
   written = vsnprintf (str, size, format, ap);
 #else
-  written = vsprintf (str, format, ap);
-#endif
+  GPF_T1 ("vsnprintf_ck requires a native vsnprintf implementation");
 #endif
   if (written > (int) (size))
     GPF_T1 ("Not enough buffer length for writing by vsnprintf_ck");
+  if (size > 0)
+    str[size - 1] = '\0';
   return written;
 }
 
@@ -92,15 +55,15 @@ snprintf_ck (char *str, size_t size, const char *format, ...)
   va_start (ap, format);
 #ifdef WIN32
   written = _vsnprintf (str, size, format, ap);
-#else
-#ifdef HAVE_VSNPRINTF
+#elif defined(HAVE_VSNPRINTF)
   written = vsnprintf (str, size, format, ap);
 #else
-  written = vsprintf (str, format, ap);
-#endif
+  GPF_T1 ("snprintf_ck requires a native snprintf implementation");
 #endif
   if (written > (int) (size))
     GPF_T1 ("Not enough buffer length for writing by snprintf_ck");
   va_end (ap);
+  if (size > 0)
+    str[size - 1] = '\0';
   return written;
 }

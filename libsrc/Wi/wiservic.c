@@ -108,11 +108,7 @@ wisvc_err_printf (const char *str, ...)
   va_start (list, str);
   vsnprintf (temp, sizeof (temp), str, list);
   OutputDebugStringA (temp);	/* Some kind of Windows debugging function. */
-#ifdef PMN_LOG
   log_error (temp);
-#else
-  log_error_list (str, list);	/* In log.c, appends stuff to wi.err */
-#endif
   return 0;
 }
 

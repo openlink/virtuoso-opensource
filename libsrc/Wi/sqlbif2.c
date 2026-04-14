@@ -259,9 +259,7 @@ bif_sys_lockdown (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  DO_SET (dk_session_t *, ses, &listeners)
 	    {
-	      without_scheduling_tic ();
 	      session_listen (ses->dks_session);
-	      without_scheduling_tic ();
 	    }
 	  END_DO_SET ();
 	}

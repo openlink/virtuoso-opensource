@@ -238,51 +238,86 @@ caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, const char * d
     (!(ws)->ws_header || \
      (NULL == nc_strstr ((unsigned char *) (ws)->ws_header, (unsigned char *)h)))
 
-caddr_t
-ws_gethostbyaddr (const char * ip)
+
+
+extern int32 dk_tcp_ai_idn_enable;
+
+static void
+decode_idn_hostname (char *host, size_t hostlen)
 {
-  struct hostent *host = NULL;
-  unsigned long int addr;
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS) || defined (HPUX_10))
-  char buff [4096];
-  int herrnop;
-  struct hostent ht;
-# if defined (HPUX_10)
-  struct hostent_data hted;
-# endif
+#if defined(_WIN32)
+  wchar_t wide_ace[NI_MAXHOST];
+  wchar_t wide_uni[NI_MAXHOST];
+
+  if (MultiByteToWideChar (CP_UTF8, 0, host, -1, wide_ace, NI_MAXHOST) == 0)
+    return;
+
+  if (IdnToUnicode (0, wide_ace, -1, wide_uni, NI_MAXHOST) == 0)
+    return;
+
+  WideCharToMultiByte (CP_UTF8, 0, wide_uni, -1, host, (int) hostlen, NULL, NULL);
 #endif
 
-  if ((int)(addr = inet_addr (ip)) == -1)
-    return box_dv_short_string (ip);
+  return;
+}
 
+caddr_t
+ws_gethostbyaddr (const char *ip)
+{
+  struct sockaddr_storage ss = { 0 };
+  struct sockaddr_in *sa4 = (struct sockaddr_in *) &ss;
+  struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) &ss;
+  char host[NI_MAXHOST];
+  int rc;
+  int flags;
+  socklen_t addrlen;
 
-#if defined (_REENTRANT) && defined (linux)
-  gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &host, &herrnop);
-#elif defined (_REENTRANT) && defined (SOLARIS)
-  host = gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &herrnop);
-#elif defined (_REENTRANT) && defined (HPUX_10)
-  /* in HP-UX 10 these functions are MT-safe */
-  hted.current = NULL;
-  if (-1 != gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, &hted))
-    host = &ht;
-#else
-  /* gethostbyname and gethostbyaddr is a threadsafe on AIX4.3 HP-UX WindowsNT */
-  host = gethostbyaddr ((char *)&addr, sizeof (addr), AF_INET);
-#endif
-
-  if (!host)
+  if (inet_pton (AF_INET, ip, &sa4->sin_addr) == 1)
     {
-#if 0
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-      int status = herrnop;
-#else
-      int status = h_errno;
-#endif
-#endif
+      sa4->sin_family = AF_INET;
+      addrlen = sizeof (struct sockaddr_in);
+    }
+  else if (inet_pton (AF_INET6, ip, &sa6->sin6_addr) == 1)
+    {
+      sa6->sin6_family = AF_INET6;
+      addrlen = sizeof (struct sockaddr_in6);
+    }
+  else
+    {
+      /* Not a valid IP address at all — return it as-is. */
       return box_dv_short_string (ip);
     }
-  return box_dv_short_string (host->h_name);
+
+  /* set lookup flags */
+  flags = NI_NAMEREQD;		/* require a real hostname */
+
+#if defined (NI_IDN)
+  /* enable lookup of hostnames with non-ASCII characters on linux */
+  if (dk_tcp_ai_idn_enable)
+    flags |= NI_IDN;
+#endif
+
+  rc = getnameinfo (
+           (struct sockaddr *) &ss, addrlen,
+	   host, sizeof (host),
+	   NULL,
+	   0,
+           flags
+      );
+
+  if (rc != 0)
+    return box_dv_short_string (ip);	/* lookup failed */
+
+  /*
+   *  decode punicode to UTF-8 hostname
+   */
+  if (dk_tcp_ai_idn_enable)
+    decode_idn_hostname (host, sizeof (host));
+
+  return box_dv_short_string (host);
 }
+
+
 
 /* HTTP listeners startup query */
 /*                       0             1        2             3           4  */

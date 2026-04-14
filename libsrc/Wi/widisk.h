@@ -28,10 +28,6 @@
 #ifndef _WIDISK_H
 #define _WIDISK_H
 
-#ifndef PMN_THREADS
-typedef int int32;
-typedef unsigned int uint32;
-#endif
 
 #if defined (WIN32) && !defined (__CYGWIN__)
 int ftruncate (int fh, long sz);

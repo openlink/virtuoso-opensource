@@ -36,10 +36,10 @@
 
 #else
 
-#include <windows.h>
-#include <winsock.h>
-#include <sql.h>
-#include <sqlext.h>
+# include <winsock2.h>
+# include <windows.h>
+# include <sql.h>
+# include <sqlext.h>
 // #include <sqltypes.h>
 
 typedef void *pthread_attr_t;

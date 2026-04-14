@@ -56,7 +56,7 @@
 #include "xmltree.h"
 #endif
 
-#if defined (PCTCP)
+#if defined (WIN32)
 int last_errno;
 # ifdef errno
 #  undef errno

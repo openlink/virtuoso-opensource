@@ -417,11 +417,6 @@ session_select (int ses_count, session_t ** reads, session_t ** writes, timeout_
 #if defined (COM_TCPIP)
   return (tcpses_select (ses_count, reads, writes, timeout));
 
-#elif defined (COM_UDPIP)
-  return (udpses_select (ses_count, reads, writes, timeout));
-
-#elif defined (COM_NMPIPE)
-  return (nmpses_select (ses_count, reads, writes, timeout));
 #else
 
 #error FIX ME

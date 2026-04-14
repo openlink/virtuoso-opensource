@@ -100,9 +100,7 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
     }
   while (bytes > 0)
     {
-      without_scheduling_tic ();
       rc = session_write (ses->dks_session, &(buffer[last_written]), bytes);
-      restore_scheduling_tic ();
       if (rc == 0)
 	PROCESS_ALLOW_SCHEDULE ();
       if (rc > 0)
@@ -382,7 +380,6 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 
   while (bytes > 0)
     {
-      without_scheduling_tic ();
       if (!ses->dks_is_read_select_ready && ses->dks_session && ses->dks_session->ses_class != SESCLASS_STRING)
 	{
 	  tcpses_is_read_ready (ses->dks_session, &ses->dks_read_block_timeout);
@@ -399,7 +396,6 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 	  rc = session_read (ses->dks_session, &(buffer[last_read]), bytes);
 	}
       ses->dks_is_read_select_ready = 0;
-      restore_scheduling_tic ();
 
       if (rc == 0)
 	PROCESS_ALLOW_SCHEDULE ();

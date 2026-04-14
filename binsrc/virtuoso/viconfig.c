@@ -23,8 +23,6 @@
  *
  */
 
-/*#define WIN95COMPAT*/ /*!!! To avoid using SetAffinityMask() */
-
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlver.h"
@@ -1195,8 +1193,6 @@ cfg_setup (void)
       }
     while (bd != old_backup_dirs);
   }
-
-#ifndef WIN95COMPAT
 #ifdef WIN32
   if (cfg_getlong (pconfig, section, "SingleCPU", &c_single_processor) == -1)
     c_single_processor = 0;
@@ -1221,7 +1217,6 @@ cfg_setup (void)
       else
 	log_info ("Running in single CPU mode");
     }
-#endif
 #endif
 
   if (cfg_getlong (pconfig, section, "RecursiveFreeTextUsage", &c_recursive_ft_usage) == -1)

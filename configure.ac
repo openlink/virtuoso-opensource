@@ -469,7 +469,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(unistd.h limits.h sys/param.h fcntl.h string.h memory.h \
 		sys/timeb.h sys/sockio.h sys/resource.h \
 		malloc.h sys/select.h sys/time.h wchar.h wctype.h \
-		pwd.h grp.h sys/mman.h execinfo.h)
+		pwd.h grp.h sys/mman.h execinfo.h poll.h sys/epoll.h netdb.h)
 
 
 ##########################################################################
@@ -593,6 +593,8 @@ AC_CHECK_FUNCS(memmove memmem memcpy)
 AC_CHECK_FUNCS(mkstemp64 mkstemp)
 AC_CHECK_FUNCS(strftime stpcpy)
 AC_CHECK_FUNCS(gethrtime)
+AC_CHECK_FUNCS(poll epoll_create)
+AC_CHECK_FUNCS(getaddrinfo getnameinfo)
 
 AC_MSG_CHECKING(for sys_errlist)
 AC_TRY_LINK([

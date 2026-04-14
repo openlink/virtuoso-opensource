@@ -284,11 +284,9 @@ kubl_main (int argc, char **argv, int called_as_service, DWORD * errptr)
   char *service_name = (called_as_service ? argv[0] : NULL);
   char *s;
 
-#ifdef PMN_LOG
   log_open_fp (stderr, LOG_DEBUG, L_MASK_ALL, L_STYLE_GROUP|L_STYLE_TIME);
 
   log_open_file ("wi.err", LOG_DEBUG, L_MASK_ALL, L_STYLE_GROUP | L_STYLE_TIME);
-#endif
 
   /* If not overridden with any arguments specified with StartService,
      (i.e. either there are no args at all, or there is just -S)
