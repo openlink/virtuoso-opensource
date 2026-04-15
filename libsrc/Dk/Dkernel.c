@@ -3100,14 +3100,15 @@ void
 PrpcRegisterService (char *name, server_func func, void *client_data, int ret_type, post_func postprocess)
 {
   USE_GLOBAL
-  service_t * new_sr = find_service (name);
+  caddr_t boxed_name = box_dv_short_string(name);
+  service_t * new_sr = find_service (boxed_name);
   if (!new_sr)
     {
       new_sr = (service_t *) dk_alloc (sizeof (service_t));
       new_sr->sr_next = services;
       services = new_sr;
     }
-  new_sr->sr_name = name;
+  new_sr->sr_name = boxed_name;
   new_sr->sr_func = func;
   new_sr->sr_postprocess = postprocess;
   new_sr->sr_return_type = ret_type;
