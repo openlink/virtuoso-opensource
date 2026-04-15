@@ -6925,7 +6925,7 @@ sqlo_subscore (sqlo_t * so, op_table_t * ot, float score)
     return 1;
   if (!so->so_subscore)
     {
-      so->so_subscore = t_id_hash_allocate (201, sizeof (caddr_t), sizeof (double), strhash, strhashcmp);
+      so->so_subscore = t_id_hash_allocate (201, sizeof (caddr_t), sizeof (float), strhash, strhashcmp);
       so->so_subscore->ht_rehash_threshold = 300;
     }
   DO_SET (df_elt_t *, part, &ot->ot_from_dfes)

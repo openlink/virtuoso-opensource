@@ -3074,7 +3074,7 @@ void algo_stores_init (void)
 
   for (idx = 0; idx < algo_stores_len; idx++)
     {
-      (algo_stores + idx)->dat_hash = id_hash_allocate (31, sizeof (char*), sizeof (xxx_algo_t), strhash, strhashcmp);
+      (algo_stores + idx)->dat_hash = id_hash_allocate (31, sizeof (char*), sizeof (xxx_algo_t*), strhash, strhashcmp);
     }
 
 #if 1
