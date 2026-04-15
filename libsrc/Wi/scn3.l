@@ -501,7 +501,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     {
       global_scs->scs_scn3c.last_keyword_yytext = yytext;
       global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
-      yylval->strval = k->kwd;
+      yylval->strval = t_sym_string (k->kwd);
       if (SPARQL_L == k->token)
         {
 #ifndef SCN3SPILT
