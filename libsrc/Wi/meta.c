@@ -826,7 +826,7 @@ dtp_no_comp_if_dep (dtp_t dtp)
 int
 dtp_is_pref_comp (dtp_t dtp)
 {
-  return memchr (pref_compressible_dtps, dtp, sizeof (offset_comp_dtps)) ? 1 : 0;
+  return memchr (pref_compressible_dtps, dtp, sizeof (pref_compressible_dtps)) ? 1 : 0;
 }
 
 
