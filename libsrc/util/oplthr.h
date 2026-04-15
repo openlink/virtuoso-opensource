@@ -133,13 +133,8 @@ END_CPLUSPLUS
 #define OPL_THREADING
 
 # define OPL_MUTEX_DECLARE(M)		pthread_mutex_t M
-# ifndef OLD_PTHREADS
 #  define OPL_THREAD_IDENT		((long) (pthread_self ()))
 #  define OPL_MUTEX_INIT(M)		pthread_mutex_init (&M, NULL)
-# else
-#  undef OPL_THREAD_IDENT
-#  define OPL_MUTEX_INIT(M)		pthread_mutex_init (&M, pthread_mutexattr_default)
-# endif
 # define OPL_MUTEX_DONE(M)		pthread_mutex_destroy (&M)
 # define OPL_MUTEX_LOCK(M)		pthread_mutex_lock (&M)
 # define OPL_MUTEX_UNLOCK(M)		pthread_mutex_unlock (&M)
