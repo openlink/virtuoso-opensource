@@ -147,8 +147,6 @@ struct thread_s
    : 0)
 
 
-
-
 /*
  *  Thread status values (thr_status)
  */

@@ -225,6 +225,16 @@ char *strtok_r ();
 #define poll(a,b,c)    WSAPoll(a,b,c)
 #endif
 
+/*
+ *  For CLANG/GCC portability
+ */
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+#    define __SANITIZE_ADDRESS__ 1             /* Clang is not setting same variable as GCC */
+#  endif
+#endif
+
+
 #if 0                          /* set to 1 to disable poll and use select */
 #undef HAVE_POLL
 #endif

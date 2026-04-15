@@ -139,15 +139,57 @@ failed:
   return NULL;
 }
 
+#define OS_STACK_RESERVE	(4 * 8192)
+#define SAN_STACK_MIN  		(6 * 1024 * 1024)
+
+static void
+adjust_stack_size (size_t *p_stack_sz)
+{
+  size_t page_size;
+  size_t stack_size = *p_stack_sz;
+
+#if defined (__SANITIZE_ADDRESS__)
+  if (stack_size < SAN_STACK_MIN)
+    stack_size = SAN_STACK_MIN;
+#endif
+
+#if (SIZEOF_VOID_P == 8)
+  stack_size *= 2;
+#endif
+
+#if defined (PTHREAD_STACK_MIN)
+  if (stack_size < PTHREAD_STACK_MIN)
+    stack_size = PTHREAD_STACK_MIN;
+#endif
+
+#if defined(_SC_PAGESIZE)
+   page_size = sysconf (_SC_PAGESIZE);
+#else
+   page_size = 8192;
+#endif
+
+  /* Make stack size multiple of page-size */
+  stack_size = (((stack_size - 1) / page_size) + 1) * page_size;
+
+#ifdef DEBUG
+  fprintf (stderr, "Changed stack size from %ld to %ld\n", *p_stack_sz, stack_size);
+#endif
+
+  *p_stack_sz = stack_size;
+
+  return;
+}
+
 
 /*
  *  The main thread must call this function to convert itself into a thread.
  */
 thread_t *
-thread_initial (unsigned long stack_size)
+thread_initial (unsigned long _stack_size)
 {
   int rc;
   thread_t *thr = NULL;
+  size_t stack_size = (size_t) _stack_size;
 
   if (_main_thread)
     return _main_thread;
@@ -204,14 +246,10 @@ thread_initial (unsigned long stack_size)
   if (stack_size == 0)
     stack_size = MAIN_STACK_SIZE;
 
-#if (SIZEOF_VOID_P == 8)
-  stack_size *= 2;
-#endif
-
-  stack_size = ((stack_size / 8192) + 1) * 8192;
+  adjust_stack_size (&stack_size);
 
   thr->thr_stack_size = stack_size;
-  thr->thr_stack_base = (void *) &stack_size;
+  thr->thr_stack_base = (void *) &_stack_size;
   thr->thr_status = RUNNING;
   thr->thr_cv = _alloc_cv ();
   thr->thr_sem = semaphore_allocate (0);
@@ -282,13 +320,16 @@ thread_alloc (void)
 }
 
 
+
+
 thread_t *
 thread_create (
     thread_init_func initial_function,
-    unsigned long stack_size,
+    unsigned long _stack_size,
     void *initial_argument)
 {
   thread_t *thr;
+  size_t stack_size = (size_t) _stack_size;
   int rc;
 
   assert (_main_thread != NULL);
@@ -296,18 +337,8 @@ thread_create (
   if (stack_size == 0)
     stack_size = THREAD_STACK_SIZE;
 
-#if (SIZEOF_VOID_P == 8)
-  stack_size *= 2;
-#endif
+   adjust_stack_size (&stack_size);
 
-  stack_size = ((stack_size / 8192) + 1) * 8192;
-
-#if defined (PTHREAD_STACK_MIN)
-  if (stack_size < PTHREAD_STACK_MIN)
-    {
-      stack_size = PTHREAD_STACK_MIN;
-    }
-#endif
   /* Any free threads with the right stack size? */
   Q_LOCK ();
   for (thr = (thread_t *) _deadq.thq_head.thr_next;
@@ -336,15 +367,15 @@ thread_create (
       rc = pthread_attr_setstacksize (&_thread_attr, stack_size);
       if (rc)
 	{
-          log_error ("Failed setting the OS thread stack size to %d : %m", stack_size);
+          log_error ("Failed setting the OS thread stack size to %ld : %m", stack_size);
 	}
 # endif
 
 #if defined(HAVE_PTHREAD_ATTR_GETSTACKSIZE)
       if (0 == pthread_attr_getstacksize (&_thread_attr, &os_stack_size))
 	{
-	  if (os_stack_size > 4 * 8192)
-	    stack_size = thr->thr_stack_size = ((unsigned long) os_stack_size) - 4 * 8192;
+	  if (os_stack_size > OS_STACK_RESERVE)
+	    stack_size = thr->thr_stack_size = ((unsigned long) os_stack_size) - OS_STACK_RESERVE;
 	}
 #endif
 
