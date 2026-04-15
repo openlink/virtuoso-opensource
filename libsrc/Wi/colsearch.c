@@ -615,6 +615,7 @@ int
 ce_search_cmp (db_buf_t ce, int row_no, int64 n, dtp_t dtp, it_cursor_t * itc)
 {
   /* presupposes that the ce type and dtp are compatible. n and dtp must come from itc_ce_search_param */
+  dtp_t ctmp[MAX_FIXED_DV_BYTES];
   int64 ti[2];
   int64 first;
   db_buf_t ce_first;
@@ -695,7 +696,6 @@ gen:
     {
       if (DV_ANY == itc->itc_col_spec->sp_cl.cl_sqt.sqt_dtp)
 	{
-	  dtp_t ctmp[MAX_FIXED_DV_BYTES];
 	  cpo.cpo_cmp_min = (caddr_t) (ptrlong) dv_if_needed (n, dtp, ctmp);
 	}
       else
