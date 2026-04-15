@@ -3086,7 +3086,7 @@ itc_opt_extend_sets (it_cursor_t * itc, data_source_t * qn, caddr_t * inst, int 
 int
 itc_single_row_opt (it_cursor_t * itc, buffer_desc_t * buf, int set, int *done)
 {
-  int is_unq = itc->itc_ks->ks_ts->ts_is_unique;
+  int is_unq = IS_TS(itc->itc_ks->ks_ts) ? itc->itc_ks->ks_ts->ts_is_unique : 0;
   int match_fill = 0;
   data_source_t *qn = (data_source_t *) itc->itc_ks->ks_ts;
   caddr_t *inst = itc->itc_out_state;
