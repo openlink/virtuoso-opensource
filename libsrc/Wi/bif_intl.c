@@ -459,8 +459,8 @@ charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, c
   encoding_handler_t *eh_cs1 = NULL;
   res_is_new_ret[0] = 0;
 
-  cs1 = (cs1_uppercase && box_length (cs1_uppercase) > 1 ? sch_name_to_charset (cs1_uppercase) : (wcharset_t *)NULL);
-  cs2 = (cs2_uppercase && box_length (cs2_uppercase) > 1 ? sch_name_to_charset (cs2_uppercase) : (wcharset_t *)NULL);
+  cs1 = (cs1_uppercase && strlen (cs1_uppercase) > 1 ? sch_name_to_charset (cs1_uppercase) : (wcharset_t *)NULL);
+  cs2 = (cs2_uppercase && strlen (cs2_uppercase) > 1 ? sch_name_to_charset (cs2_uppercase) : (wcharset_t *)NULL);
 
   if (cs1_uppercase && !cs1 && !strcmp (cs1_uppercase, "UTF-8"))
     cs1 = CHARSET_UTF8;
