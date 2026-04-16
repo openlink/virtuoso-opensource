@@ -1085,7 +1085,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   list_body := '';
   best_id := 0;
   for select VM_ID, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO, VM_CONTENT_LOCATION_HOOK
-  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri do
+  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri order by VM_QS desc do
     {
        declare alang, aenc, variant, path_str varchar;
 
