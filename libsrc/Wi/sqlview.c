@@ -363,6 +363,9 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   tree->_.insert.table = (ST *) t_box_copy_tree (
       (caddr_t) view->_.select_stmt.table_exp->_.table_exp.from[0]->_.table_ref.table);
 
+  if (ST_P (tree->_.insert.vals, SELECT_STMT))
+    sqlc_new_error (sc->sc_cc, "42000", "SQ490", "Insert into view via select statement is not supported");
+
   if (BOX_ELEMENTS_0(cols) != BOX_ELEMENTS_0(tree->_.insert.vals->_.ins_vals.vals))
     sqlc_new_error (sc->sc_cc, "21S01", "SQ099",
 	"different number of cols and values in insert.");
