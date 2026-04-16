@@ -81,6 +81,8 @@
 
 #define JFLG_DEBUG            0x10000
 #define JFLG_NO_BNODE         0x1
+#define JFLG_BOOL_BOX         0x2
+#define JFLG_CANON_NUM        0x4
 
 #define JSON_LD_UNNAMED       "Entity"
 

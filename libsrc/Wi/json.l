@@ -241,12 +241,15 @@ AT              ("@"|"\\u0040")
 		}
 <INITIAL>"-"?[0-9]+"."[0-9]* |
 <INITIAL>"-"?"."[0-9]+ {
-  numeric_t num = t_numeric_allocate ();
-  int rc = numeric_from_string (num, yytext);
-  if (NUMERIC_STS_SUCCESS == rc)
+  if (!(jsonp_arg->jflags & JFLG_CANON_NUM))
     {
-      yylval->box = (caddr_t) num;
-      return NUMBER;
+      numeric_t num = t_numeric_allocate ();
+      int rc = numeric_from_string (num, yytext);
+      if (NUMERIC_STS_SUCCESS == rc)
+        {
+          yylval->box = (caddr_t) num;
+          return NUMBER;
+        }
     }
   yylval->box = t_box_double (atof (yytext));
   return NUMBER;

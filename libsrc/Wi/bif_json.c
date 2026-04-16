@@ -52,6 +52,7 @@ static caddr_t
 bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_arg (qst, args, 0, "json_parse");
+  long flags = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "json_parse") : 0;
   caddr_t tree = NULL;
   caddr_t err = NULL;
   jsonp_t jsonp;
@@ -59,6 +60,7 @@ bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   MP_START();
   JSONP_ARG_INIT (&jsonp, str, 0, 0);
+  jsonp.jflags = flags & 0xffff;
   jsonyylex_init (&scanner);
   jsonyyset_extra (&jsonp, scanner);
   QR_RESET_CTX

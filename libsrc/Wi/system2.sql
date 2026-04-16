@@ -1079,15 +1079,15 @@ create procedure DB.DBA.array2obj (
 --
 
 --!AWK PUBLIC
-create procedure DB.DBA.obj2json (
+create procedure DB.DBA.OBJ2JSON (
   in o any,
-  in d integer := 10,
-  in nsArray any := null,
-  in attributePrefix varchar := null)
+  in d integer default null,
+  in nsArray any default null,
+  in attributePrefix varchar default null)
 {
   declare ses any;
   ses := string_output ();
-  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, 0, d, nsArray, attributePrefix);
+  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, 0, d, nsArray, attributePrefix, 14);
   return string_output_string (ses);
 }
 ;
@@ -1097,13 +1097,55 @@ create procedure DB.DBA.JSON_SERIALIZE (in o any, in indent int := 0)
 {
   declare ses any;
   ses := string_output ();
-  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, indent, null, null, null);
+  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, indent, null, null, null, 14);
   return ses;
 }
 ;
 
+create procedure JSON_OBJ_SORT_INNER(in v any)
+{
+  declare i int;
+  declare obj any;
+  if (not isvector(v))
+      return v;
+  obj := null;
+  if (length(v) > 2 and __tag(aref(v,0)) = 255 and __tag(aref(v,1)) = __tag of varchar)
+    {
+      v := subseq (v, 2);
+      gvector_sort (v, 2, 0, 1);
+      obj := vector(composite(), '');
+    }
+  for (i := 0; i < length(v); i := i + 1)
+    {
+      declare el any;
+      el := aref_set_0 (v, i);
+      if (isvector(el))
+        el := JSON_OBJ_SORT_INNER(el);
+      aset_zap_arg (v, i, el);
+    }
+  v := vector_concat(obj, v);
+  return v;
+}
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.JSON_CANONICALIZE (in json_input any)
+{
+  declare ses, o any;
+  ses := string_output ();
+  if (not isvector (json_input))
+    o := json_parse (json_input, 6); -- parse with booleand box and shotest number representation
+  else
+    o := json_input;
+  o := JSON_OBJ_SORT_INNER(o);
+  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, 0, null, null, null, 22);
+  return string_output_string(ses);
+}
+;
+
 create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth any, in indent int := 0,
-        in max_depth int := null, in ns_array any := null, in attr_prefix varchar := null)
+        in max_depth int := null, in ns_array any := null, in attr_prefix varchar := null, in dks_flags int default 14)
 {
   declare inx integer;
 
@@ -1150,7 +1192,7 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
   else if (isstring (o) or __tag of uname = __tag (o))
   {
     http ('"', ses);
-    http_escape (o, 14, ses, 1, 1);
+      http_escape (o, dks_flags, ses, 1, 1);
     http ('"', ses);
   }
   else if (__tag(o) = __tag of datetime)
@@ -1189,10 +1231,10 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
             http (repeat (' ', (depth * indent)), ses);
     }
         http ('"', ses);
-        http_escape (elm, 14, ses, 1, 1);
+        http_escape (elm, dks_flags, ses, 1, 1);
         http ('":', ses);
         if (indent) http(' ', ses);
-        DB.DBA.JSON_SERIALIZE_INNER (ses, aref(o,inx + 1), depth, indent);
+        DB.DBA.JSON_SERIALIZE_INNER (ses, aref(o,inx + 1), depth, indent, max_depth, ns_array, attr_prefix, dks_flags);
       }
     if (indent and inx > 2)
       {
@@ -1229,10 +1271,10 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
                   http (repeat (' ', (depth * indent)), ses);
                 }
               http ('"', ses);
-              http_escape (field, 14, ses, 1, 1);
+              http_escape (field, dks_flags, ses, 1, 1);
               http ('":', ses);
               if (indent) http(' ', ses);
-              DB.DBA.JSON_SERIALIZE_INNER (ses, v, depth, indent);
+              DB.DBA.JSON_SERIALIZE_INNER (ses, v, depth, indent, max_depth, ns_array, attr_prefix, dks_flags);
               nth := nth + 1;
             }
         }
@@ -1255,7 +1297,7 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
               http ('\n', ses);
               http (repeat (' ', (depth * indent)), ses);
     }
-          DB.DBA.JSON_SERIALIZE_INNER (ses, aref (o, inx), depth, indent);
+          DB.DBA.JSON_SERIALIZE_INNER (ses, aref (o, inx), depth, indent, max_depth, ns_array, attr_prefix, dks_flags);
   }
       if (indent and inx)
         {
