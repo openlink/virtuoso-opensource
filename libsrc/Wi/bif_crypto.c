@@ -1343,7 +1343,7 @@ get_client_pem_certificate (caddr_t *qst, caddr_t *err_ret)
   SSL *ssl = NULL;
   X509 *cert = NULL;
   BIO *in = NULL;
-  session_t * ses = (ws ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
+  session_t * ses = (ws && ws->ws_session ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
 
   if (ses)
     ssl = (SSL *) tcpses_get_ssl (ses);
@@ -1384,7 +1384,7 @@ get_client_certificate (caddr_t *qst, caddr_t *err_ret)
   X509 *cert = NULL;
   SSL *ssl = NULL;
   BIO *in = NULL;
-  session_t * ses = (ws ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
+  session_t * ses = (ws && ws->ws_session ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
   if (ses)
     ssl = (SSL *) tcpses_get_ssl (ses);
 
