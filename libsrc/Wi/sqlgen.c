@@ -2018,8 +2018,10 @@ box_position_no_tag (caddr_t * box, caddr_t elt)
 }
 
 
+int sqlo_is_dt_state_func (char * name);
+
 void
-sqlg_mark_not_gen (df_elt_t * dfe)
+sqlg_mark_not_gen (sqlo_t *so, df_elt_t * dfe)
 {
   /* a trans dt has the reverse dir sharing col and possibly col pred dfes with the fwd direction.  These must be marked placed and not gen to get the reverse with right placing */
   if (!IS_BOX_POINTER (dfe))
@@ -2030,7 +2032,7 @@ sqlg_mark_not_gen (df_elt_t * dfe)
       df_elt_t ** dfe_arr = (df_elt_t **) dfe;
       DO_BOX (df_elt_t *, elt, inx, dfe_arr)
 	{
-	  sqlg_mark_not_gen (elt);
+	  sqlg_mark_not_gen (so, elt);
 	}
       END_DO_BOX;
       return;
@@ -2044,15 +2046,25 @@ sqlg_mark_not_gen (df_elt_t * dfe)
 	df_elt_t * sub;
 	if (dfe->_.sub.generated_dfe)
 	  {
-	    sqlg_mark_not_gen (dfe->_.sub.generated_dfe);
+	    sqlg_mark_not_gen (so, dfe->_.sub.generated_dfe);
 	    return;
 	  }
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.after_join_test);
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.vdb_join_test);
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.invariant_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.sub.after_join_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.sub.vdb_join_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.sub.invariant_test);
 	for (sub = dfe->_.sub.first; sub; sub = sub->dfe_next)
-	  sqlg_mark_not_gen (sub);
+	  sqlg_mark_not_gen (so, sub);
 	break;
+      }
+    case DFE_QEXP:
+      {
+        int inx;
+        DO_BOX (df_elt_t *, elt, inx, dfe->_.qexp.terms)
+          {
+            sqlg_mark_not_gen (so, elt);
+          }
+        END_DO_BOX;
+        break;
       }
     case DFE_TABLE:
       {
@@ -2062,10 +2074,19 @@ sqlg_mark_not_gen (df_elt_t * dfe)
 	DO_SET (df_elt_t *, col, &dfe->_.table.all_preds)
 	  col->dfe_is_placed = DFE_PLACED;
 	END_DO_SET();
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.join_test);
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.after_join_test);
-	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.vdb_join_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.table.join_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.table.after_join_test);
+	sqlg_mark_not_gen (so, (df_elt_t*)dfe->_.table.vdb_join_test);
 	break;
+      }
+    case DFE_CALL:
+      {
+        if (!sqlo_is_dt_state_func(dfe->dfe_tree->_.call.name))
+          {
+            df_elt_t * call = sqlo_df (so, dfe->dfe_tree);
+            call->dfe_ssl = NULL;
+          }
+        break;
       }
     }
 }
@@ -2213,7 +2234,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   if (tl->tl_complement)
     {
       tl->tl_complement->dfe_super = dt_dfe;
-      sqlg_mark_not_gen (tl->tl_complement);
+      sqlg_mark_not_gen (so, tl->tl_complement);
       tn->tn_complement = (trans_node_t*)sqlg_make_trans_dt (so, tl->tl_complement, target_names, pre_code);
       tn->tn_complement->tn_is_primary = 0;
       tn->tn_complement->tn_complement = tn;
