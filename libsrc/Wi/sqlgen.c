@@ -5493,7 +5493,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		    if (dfe->dfe_tree)
 		      {
 			df_elt_t *defd_dfe = sqlo_df_elt (so, dfe->dfe_tree);
-			if (defd_dfe)
+			if (defd_dfe && (DFE_CALL != defd_dfe->dfe_type || !defd_dfe->dfe_tables || dfe_defines(dt_dfe, defd_dfe)))
 			  defd_dfe->dfe_ssl = NULL;
 		      }
 		    dfe->dfe_ssl = NULL;
