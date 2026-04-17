@@ -226,6 +226,9 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    declare vname, mask, tb_name varchar;
    declare i int;
 
+   if (regexp_match ('^[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]*\$', qualifier) is null)
+     signal ('22023', 'The prefix (qualifier argument) contains invalid characters');
+
    ret := make_array (2, 'any');
    for (i := 0; i < length(_tbls); i := i + 1)
       {
@@ -1486,6 +1489,9 @@ DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0,
    declare total_select, total_tb, total, qual, pkcols any;
    declare vname, mask, graph, uriqa_str, tb_name varchar;
    declare i int;
+
+   if (regexp_match ('^[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]*\$', qualifier) is null)
+     signal ('22023', 'The prefix (qualifier argument) contains invalid characters');
 
    for (i := 0; i < length(_tbls); i := i + 1)
       {
