@@ -91,6 +91,7 @@ lin_int (lin_int_t * li, float x)
 	if (x <= li->li_x[pt + 1])
 	  break;
     }
+  pt = MIN((n - 2), pt);
   k =  (li->li_y[pt + 1] - li->li_y[pt]) / (li->li_x[pt + 1] - li->li_x[pt]);
   return li->li_y[pt] + k * (x - li->li_x[pt]);
 }
@@ -4267,7 +4268,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
-	  left_col = in_list ? in_list[0]->_.col.col : DFE_COLUMN == pred->_.bin.left->dfe_type ? pred->_.bin.left->_.col.col : NULL;
+	  left_col = in_list ? in_list[0]->_.col.col : !DFE_SHORTCUT(pred->_.bin.left) && DFE_COLUMN == pred->_.bin.left->dfe_type ? pred->_.bin.left->_.col.col : NULL;
 	  if (DFE_BOP_PRED == pred->dfe_type &&
 	      !dk_set_member (key->key_parts, (void*) left_col) &&
 	      !dk_set_member (ic->ic_inx_sample_cols, (void*) left_col))

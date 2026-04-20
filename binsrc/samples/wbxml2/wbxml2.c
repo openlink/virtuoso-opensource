@@ -101,7 +101,8 @@ bif_xml2wbxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   ret_wbxml = dk_alloc_box (wbxml_len + 1, DV_SHORT_STRING);
-  memcpy (ret_wbxml, wbxml, wbxml_len + 1);
+  memcpy (ret_wbxml, wbxml, wbxml_len);
+  ret_wbxml[wbxml_len] = 0;
 
 end:
   wbxml_free(wbxml);

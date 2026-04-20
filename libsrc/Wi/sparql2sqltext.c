@@ -7532,7 +7532,7 @@ name_is_non_ghost: ;
       if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
         {
 	  SPART *rval, *bop;
-	  if (((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE)) || (NULL != eq->e_rvr.rvrFixedOrigText))
+          if (((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE)) || (NULL != eq->e_rvr.rvrFixedOrigText) || ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && NULL != eq->e_rvr.rvrLanguage))
 	    rval = spartlist (ssg->ssg_sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedOrigText);
 	  else
 	    rval = (SPART *) (eq->e_rvr.rvrFixedValue);

@@ -168,6 +168,13 @@ else
     LOG "PASSED: login hook - logging in as masterdba"
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tjson.sql
+if test $STATUS -ne 0
+then
+   LOG "***ABORTED: tjson.sql"
+   exit 1
+fi
+
 RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u BASE=$VIRTUOSO_TEST < $VIRTUOSO_TEST/tjsonld.sql
 if test $STATUS -ne 0
 then

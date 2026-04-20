@@ -139,8 +139,8 @@ value_list
 
 value	: STRING  { $$ = $1; }
       	| NUMBER  { $$ = $1; }
-	| TRUE_L  { $$ = t_box_num (1); }
-	| FALSE_L { $$ = t_box_num (0); }
+	| TRUE_L  { $$ = ((jsonp_arg->jflags & JFLG_BOOL_BOX) ? (caddr_t) t_list(2, t_alloc_box(0, DV_COMPOSITE), t_box_num (1)) : t_box_num (1)); }
+	| FALSE_L { $$ = ((jsonp_arg->jflags & JFLG_BOOL_BOX) ? (caddr_t) t_list(2, t_alloc_box(0, DV_COMPOSITE), t_box_num (0)) : t_box_num (0)); }
 	| NULL_L  { $$ = t_NEW_DB_NULL; }
 	| object  { $$ = $1; }
       	| array   { $$ = $1; }

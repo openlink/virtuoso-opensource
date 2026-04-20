@@ -813,7 +813,8 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   memcpy (temp, dv1, len1);
   if (len3)
   memcpy (&temp[len1], dv3, len3);
-  temp[len1 + len3 - 1] += offset;
+  if (0 < (len1 + len3))
+    temp[len1 + len3 - 1] += offset;
   temp[len1 + len3] = 0;
   res = cmp_like (temp, pattern, collation, spec->sp_like_escape, st, pt);
   return res;

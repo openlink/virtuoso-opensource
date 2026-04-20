@@ -6925,7 +6925,7 @@ sqlo_subscore (sqlo_t * so, op_table_t * ot, float score)
     return 1;
   if (!so->so_subscore)
     {
-      so->so_subscore = t_id_hash_allocate (201, sizeof (caddr_t), sizeof (double), strhash, strhashcmp);
+      so->so_subscore = t_id_hash_allocate (201, sizeof (caddr_t), sizeof (float), strhash, strhashcmp);
       so->so_subscore->ht_rehash_threshold = 300;
     }
   DO_SET (df_elt_t *, part, &ot->ot_from_dfes)
@@ -7001,7 +7001,7 @@ sqlo_layout_lim (sqlo_t * so, op_table_t * ot, int is_top)
    * here is a weird way it works, if max mp set, start with some part of it, put a lower limit to see if fits,
    * next time increase up to max +25% this helps to do not try to fit in max at once,
    */
-  if (next_quota > sqlo_layout_min_quota && (bytes + next_quota) < ((sqlo_max_mp_size / 3) * 4))
+  if (next_quota > 0 && next_quota > sqlo_layout_min_quota && (bytes + next_quota) < ((sqlo_max_mp_size * 4) / 3))
     {
       so->so_max_memory = bytes + next_quota;
       changed = 1;

@@ -2312,7 +2312,7 @@ itc_bm_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	}
       itc->itc_bp.bp_new_on_row = 0;
       KEY_TOUCH (itc->itc_insert_key);
-      if (1 == ks->ks_ts->ts_max_rows)
+      if (IS_TS(ks->ks_ts) && 1 == ks->ks_ts->ts_max_rows)
 	return DVC_GREATER;
       if (itc->itc_n_results == itc->itc_batch_size)
 	return DVC_MATCH;

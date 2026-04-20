@@ -266,7 +266,7 @@ int reset_work_uniblocks(void)
   fprintf (out,"\n");
 #endif
 /* Pass 2, Gaps should be filled by data from any blocks no matter if they contain subblocks or not */
-  raw_maxctr = LENGTHOF__raw_uniblocks;
+  raw_maxctr = LENGTHOF__raw_uniblocks - 1;
   for (work_ctr = work_uniblocks_fill; work_ctr--; /* no step */)
     {
       curr_work = work_uniblocks+work_ctr;

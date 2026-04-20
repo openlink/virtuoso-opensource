@@ -226,6 +226,9 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    declare vname, mask, tb_name varchar;
    declare i int;
 
+   if (regexp_match ('^[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]*\$', qualifier) is null)
+     signal ('22023', 'The prefix (qualifier argument) contains invalid characters');
+
    ret := make_array (2, 'any');
    for (i := 0; i < length(_tbls); i := i + 1)
       {
@@ -711,7 +714,7 @@ RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv int, in sc int)
 ;
 
 create procedure
-RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
+RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv int)
 {
   if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'integer';
   if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
@@ -750,7 +753,7 @@ create procedure
 RDF_VIEW_CREATE_CLASS (in decl varchar, in _tbl varchar, in _host varchar, in qualifier varchar, in cols any, in pkcols any)
 {
    declare ret, qual, tbl_name, tbl_name_l, pks, pk_text, sk_str any;
-   declare cols_arr, inx, col_name any;
+   declare cols_arr, inx, col_name, pks_len any;
 
    qual := name_part (_tbl, 0);
    tbl_name := name_part (_tbl, 3);
@@ -759,13 +762,20 @@ RDF_VIEW_CREATE_CLASS (in decl varchar, in _tbl varchar, in _host varchar, in qu
    pk_text := '';
    sk_str := '';
 
-   if (length (pks) = 0)
+   pks_len := length (pks);
+   if (pks_len = 0)
      signal ('22023', sprintf ('This version does not support tables without primary key, please remove table %s from set', _tbl));
 
-   for (declare i any, i := 0; i < length (pks) ; i := i + 1)
+   for (declare i any, i := 0; i < pks_len ; i := i + 1)
      {
-       pk_text := pk_text || 'in ' || '_' || RDF_VIEW_CLS_NAME (pks[i][0]) || ' ' || RDF_VIEW_DV_TO_SQL_STR_TYPE(pks[i][1]) || ' not null,';
-       sk_str := sk_str || '/' || RDF_VIEW_CLS_NAME (pks[i][0]) || '/' || RDF_VIEW_DV_TO_PRINTF_STR_TYPE (pks[i][1], pks[i][2]);
+       declare col_dtp int;
+       col_dtp := pks[i][1];
+       if (pks_len = 1 and col_dtp in (__tag of date, __tag of time, __tag of datetime))
+         col_dtp := __tag of varchar;
+       if (pks_len = 1 and col_dtp = __tag of double precision)
+         col_dtp := __tag of numeric;
+       pk_text := pk_text || 'in ' || '_' || RDF_VIEW_CLS_NAME (pks[i][0]) || ' ' || RDF_VIEW_DV_TO_SQL_STR_TYPE(col_dtp) || ' not null,';
+       sk_str := sk_str || '/' || RDF_VIEW_CLS_NAME (pks[i][0]) || '/' || RDF_VIEW_DV_TO_PRINTF_STR_TYPE (col_dtp, pks[i][2]);
      }
    pk_text := trim (pk_text, ',');
    sk_str  := trim (sk_str , '/');
@@ -1486,6 +1496,9 @@ DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0,
    declare total_select, total_tb, total, qual, pkcols any;
    declare vname, mask, graph, uriqa_str, tb_name varchar;
    declare i int;
+
+   if (regexp_match ('^[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]*\$', qualifier) is null)
+     signal ('22023', 'The prefix (qualifier argument) contains invalid characters');
 
    for (i := 0; i < length(_tbls); i := i + 1)
       {

@@ -1601,7 +1601,9 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 		  *err_ret = numeric_from_x ((numeric_t)n, data, tsqt->sqt_precision,
 		      tsqt->sqt_scale,0, col_id, key);
 		  res = (caddr_t) numeric_allocate ();
-		  memcpy (res, &n, MIN (box_length (res), sizeof (n)));
+                  if (NUMERIC_STS_SUCCESS != *err_ret)
+                    numeric_from_string ((numeric_t)n,"NaN");
+                  memcpy (res, &n, MIN (box_length (res), sizeof (n)));
 		  break;
 		}
 

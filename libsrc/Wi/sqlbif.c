@@ -480,6 +480,22 @@ bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, co
 }
 
 caddr_t
+bif_string_or_uname_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_DB_NULL == dtp)
+  {
+    return (NULL);
+  }
+  if ((dtp != DV_UNAME) && (dtp != DV_STRING))
+    sqlr_new_error ("22023", "SR014",
+  "Function %s needs a string or a UNAME or NULL as argument %d, not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
+  return arg;
+}
+
+caddr_t
 bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
@@ -5478,8 +5494,10 @@ bif_nc_strstr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_casemode_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str1 = bif_string_or_uname_arg (qst, args, 0, "casemode_strcmp");
-  caddr_t str2 = bif_string_or_uname_arg (qst, args, 1, "casemode_strcmp");
+  caddr_t str1 = bif_string_or_uname_or_null_arg (qst, args, 0, "casemode_strcmp");
+  caddr_t str2 = bif_string_or_uname_or_null_arg (qst, args, 1, "casemode_strcmp");
+  if (NULL == str1 || NULL == str2)
+    return NEW_DB_NULL;
   return box_num (CASEMODESTRCMP (str1, str2));
 }
 
@@ -9366,12 +9384,15 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n_args = BOX_ELEMENTS (args);
   const char *me = "position";
   caddr_t item = bif_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   int start = (int) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
   int every_nth = (int) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 1);
   dtp_t vectype = DV_TYPE_OF (arr);
-  int boxlen = (is_string_type (vectype) ? box_length (arr) - 1 : box_length (arr));
+  int boxlen = arr ? (is_string_type (vectype) ? box_length (arr) - 1 : box_length (arr)) : 0;
   int len = (boxlen / get_itemsize_of_vector (vectype));
+
+  if (NULL == arr)
+    return box_num(0);
 
   if (start < 0)
   start = 0;

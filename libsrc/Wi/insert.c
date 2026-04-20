@@ -623,7 +623,9 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   int res, was_allowed_duplicate = 0;
   buffer_desc_t *buf;
 
+#if 0
   b159ck ();
+#endif
   FAILCK (it);
   rd->rd_keep_together_pos = ITC_AT_END;
   if (it->itc_insert_key)

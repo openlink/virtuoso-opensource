@@ -4065,8 +4065,9 @@ bif_xte_nodebld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args
 	    break;
 	  default:
 	    {
-	      caddr_t strg = box_cast_to_UTF8 (qst, dst[0]);
-	      dst[0] = strg;
+	      caddr_t strg = dst[0];
+              dst[0] = NULL; /* remove reference to the original, next can signal */
+              dst[0] = box_cast_to_UTF8 (qst, strg);
 	      dst++;
 	      break;
 	    }

@@ -2108,14 +2108,7 @@ if test $with_pthreads = "yes"; then
     AC_CHECK_LIB(pthreads, pthread_create,
        [BUILD_OPTS="$BUILD_OPTS pthreads"
 	WITH_PTHREADS="yes"
-	if test "$host_os" = "osf3.2"
-	then
-	  BUILD_OPTS="$BUILD_OPTS old_pthreads"
-	  LIBTHR="-lpthreads -lmach -lc_r"
-	  AC_DEFINE([OLD_PTHREADS], [1], [Old pthreads])
-	else
-	  LIBTHR="-lpthreads"
-	fi
+	LIBTHR="-lpthreads"
 	AC_DEFINE([_REENTRANT], [1], [use reentrant code])
 	AC_DEFINE([WITH_PTHREADS],
 		  [1],

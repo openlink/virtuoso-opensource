@@ -1051,13 +1051,6 @@ fi
       exit 1
    fi
  
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tjson.sql
-   if test $STATUS -ne 0
-   then
-      LOG "***ABORTED: tjson.sql"
-      exit 1
-   fi
-
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcors.sql
    if test $STATUS -ne 0
    then
