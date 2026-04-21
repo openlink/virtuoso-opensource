@@ -587,36 +587,8 @@ thread_set_priority (thread_t *self, int prio)
 {
   int old_prio = self->thr_priority;
 
-  if (prio < 0 && prio >= MAX_PRIORITY)
-    return old_prio;
-
-#if defined (PRI_RR_MIN) && !defined(__osf__)
-  switch (prio)
-    {
-    case LOW_PRIORITY:
-      prio = PRI_RR_MIN;
-      break;
-    case NORMAL_PRIORITY:
-      prio = (PRI_RR_MIN + PRI_RR_MAX) / 2;
-      break;
-    case HIGH_PRIORITY:
-      prio = PRI_RR_MAX;
-      break;
-    default:
-      return old_prio;
-    }
-
-  /*
-   *  Cannot set priority on main thread, because it does not have a handle
-   */
-  if (self != _main_thread &&
-      pthread_setprio (*(pthread_t *) self->thr_handle, prio))
-    {
-	prio = old_prio;
-    }
-#endif
-
-  self->thr_priority = prio;
+  if (prio >= 0 && prio < MAX_PRIORITY)
+    self->thr_priority = prio;
 
   return old_prio;
 }

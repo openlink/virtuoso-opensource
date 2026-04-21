@@ -316,8 +316,10 @@ int
 thread_set_priority (thread_t *self, int prio)
 {
   int old_prio = self->thr_priority;
+
   if (prio >= 0 && prio < MAX_PRIORITY)
     self->thr_priority = prio;
+
   return old_prio;
 }
 
