@@ -480,15 +480,15 @@ again:
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>About: <?vsp if (length (label)) http_value (label); else http (b3s_uri_percent_decode(b3s_uri_curie (page_resource_uri)));?></title>
-    <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
+    <title>About: <?vsp if (length (label)) http_value (label); else http (b3s_uri_percent_decode(b3s_uri_curie (page_resource_uri))); ?></title>
+    <!--link rel="alternate" type="application/rdf+xml" href="<?V rdf_link ?>" title="RDF" /-->
 
     <?vsp
 	declare main_ss varchar;
         main_ss := registry_get ('fct_main_ss');
 	if (not isstring (main_ss)) main_ss := '/fct/css/default.css';
     ?>
-    <link rel="stylesheet" type="text/css" href="<?=main_ss?>" />
+    <link rel="stylesheet" type="text/css" href="<?V main_ss ?>" />
 
     <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" />
 
@@ -514,7 +514,7 @@ again:
     </div>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
-        <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+        <li><a href="<?V b3s_render_fct_link() ?>">Facets</a></li>
       <?vsp } else { ?>
       <li><a href="/fct/">Facets (new session)</a></li>
       <?vsp } ?>
@@ -526,7 +526,7 @@ again:
         <div id="settings_popup" style="display: none">
           <ul>
             <li>
-              <input id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/>
+              <input id="sas_ckb" type="checkbox" <?V b3s_sas_selected() ?> onchange="javascript:sas_cb();"/>
               <label for="sas_ckb">owl:sameAs</label>
             </li>
             <li>
@@ -572,7 +572,7 @@ again:
       }
     ?>
     &nbsp;
-    <a class="desc_sponge_link" href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
+    <a class="desc_sponge_link" href="/describe/?url=<?U page_resource_uri ?><?V case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
         id="sp_link" rel="nofollow">Sponge
@@ -898,27 +898,27 @@ if (_subject <> '') {
 
         &nbsp; &nbsp; Content Formats: &nbsp; 
 	<?vsp if (VAD_CHECK_VERSION ('sparql_cxml') is not null) { ?>
-	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img alt="[cxml]" src="/fct/images/cxml_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'text/cxml') ?>"><img alt="[cxml]" src="/fct/images/cxml_doc.png" class="dicon"/></a>
 	<?vsp } ?>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img alt="[csv]" src="/fct/images/csv_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'text/csv') ?>"><img alt="[csv]" src="/fct/images/csv_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; RDF &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img alt="[text]" src="/fct/images/ntriples_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img alt="[turtle]" src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img alt="[ld+json]" src="/fct/images/jsonld_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img alt="[rdf+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img alt="[rdf+xml]" src="/fct/images/xml_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'text/plain') ?>"><img alt="[text]" src="/fct/images/ntriples_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'text/turtle') ?>"><img alt="[turtle]" src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/ld+json') ?>"><img alt="[ld+json]" src="/fct/images/jsonld_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/rdf+json') ?>"><img alt="[rdf+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/rdf+xml') ?>"><img alt="[rdf+xml]" src="/fct/images/xml_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; ODATA &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img alt="[atom+xml]" src="/fct/images/atom_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img alt="[odata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/atom+xml') ?>"><img alt="[atom+xml]" src="/fct/images/atom_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/odata+json') ?>"><img alt="[odata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; Microdata &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img alt="[microdata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img alt="[html]" src="/fct/images/html_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'application/microdata+json') ?>"><img alt="[microdata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?V rdf_link ?><?V sprintf ('&output=%U', 'text/html') ?>"><img alt="[html]" src="/fct/images/html_doc.png" class="dicon"/></a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0"/></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
-        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
+        <a href="<?V rdf_link ?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
 
 	<span about=""
 	resource="http://www.w3.org/TR/rdfa-syntax"

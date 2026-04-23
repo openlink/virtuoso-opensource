@@ -57,7 +57,7 @@
       </div>
       <ul id="main_menu">
         <?vsp if (sid is not null) { ?>
-          <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+          <li><a href="<?V b3s_render_fct_link() ?>">Facets</a></li>
         <?vsp } ?>
         <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Description</a></li>
         <li id="mnu_usage" class="sel">
@@ -74,7 +74,7 @@
         <table> <!-- yeah I know but life's just too short. -->
           <tr>
             <td></td>
-            <td><input class="ckb" id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
+            <td><input class="ckb" id="sas_ckb" type="checkbox" <?V b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
           </tr>
           <tr>
             <td><label for="inf_sel">Inference Rule:</label></td>

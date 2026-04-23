@@ -30,7 +30,7 @@
     pageUrl := pageUrl || '?' || query_str;
 
 ?>
-  <link rel="stylesheet" type="text/css" href="<?=main_ss?>" />
+  <link rel="stylesheet" type="text/css" href="<?V main_ss ?>" />
 
 <?vsp
   fct_gen_opensearch_link();

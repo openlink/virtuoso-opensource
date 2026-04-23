@@ -1437,8 +1437,8 @@ http('
 <script type="text/javascript">
 var featureList = ["","",""];
 
-var sparql_ep = ''http://<?=uriqa_str?>/sparql'';
-var isparql_ep = ''http://<?=uriqa_str?>/isparql'';
+var sparql_ep = ''http://<?V uriqa_str ?>/sparql'';
+var isparql_ep = ''http://<?V uriqa_str ?>/isparql'';
 
 function init() {  }
 
