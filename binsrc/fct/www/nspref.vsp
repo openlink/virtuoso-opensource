@@ -34,7 +34,7 @@
   <body>
     <div id="header">
       <div id="hd_l">
-        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+        <h1 id="title"><?V label ?></h1>
       </div> <!-- hd_l -->
     </div> <!-- header -->
     <div id="content">

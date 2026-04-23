@@ -380,7 +380,7 @@ b3s_render_iri_select (inout types_a any,
 
       for (i := 0; i < length(types_a); i := i + 1) 
         { 
-          http (sprintf ('<option value="%s" title="%s" %s>%s</option>', 
+          http (sprintf ('<option value="%V" title="%V" %s>%V</option>',
                          types_a[i][0],
                          types_a[i][0],
                          case when i = sel then 'selected="selected"' else '' end,
@@ -417,11 +417,11 @@ b3s_render_inf_opts ()
     {
       if (RS_NAME = inf)
         {
-          http (sprintf ('<option value="%s" selected="selected">%s</option>', RS_NAME, RS_NAME));
+          http (sprintf ('<option value="%V" selected="selected">%V</option>', RS_NAME, RS_NAME));
           f := 1;
         }
       else
-        http (sprintf ('<option value="%s">%s</option>', RS_NAME, RS_NAME));
+        http (sprintf ('<option value="%V">%V</option>', RS_NAME, RS_NAME));
     }
 
   if (f = 0)
@@ -543,7 +543,7 @@ b3s_render_ses_params (in with_graph int := 1, in with_ses int := 1)
   grs := connection_get ('graphs', null);
 
   if (i is not null) http (sprintf ('&inf=%U', i), ses);
-  if (s is not null) http (sprintf ('&sas=%V', s), ses);
+  if (s is not null) http (sprintf ('&sas=%U', s), ses);
   if (with_ses and sid is not null) http (sprintf ('&sid=%V', sid), ses);
   if (grs is not null and with_graph)
     {
@@ -805,7 +805,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 
    if (r) http ('is ');
 
-   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n',
+   http (sprintf ('<a class="uri" href="%H" title="%V">%V</a>\n',
                   url,
                   p_prefix,
                   b3s_trunc_uri (p_prefix, 40)));
@@ -858,7 +858,7 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 
 create procedure b3s_xsd_link (in dt varchar)
 {
-  return sprintf ('<a href="%s">%s</a>', dt, b3s_uri_curie(dt));
+  return sprintf ('<a href="%H">%s</a>', __bft(dt, 2), b3s_uri_curie(dt));
 }
 ;
 
@@ -998,12 +998,12 @@ again:
 		  lbl := b3s_label (_url, langs, 1);
 		if ((not isstring(lbl)) or length (lbl) = 0)
 		  lbl := b3s_uri_curie(_url);
-		http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
+		http (sprintf ('<a %s class="uri" %s href="%H">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
 		vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 		http_value (case when vlbl <> 0 then vlbl else lbl end);
 		http (sprintf ('</a>'));
 		if (b3s_o_is_out (prop))
-		  http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
+		  http (sprintf ('&nbsp;<a href="%H"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
                 http(sprintf('<div id="x_content" class="content embedded">%s</div>', cast(abody as varchar)));
              }
            } else {
@@ -1020,7 +1020,7 @@ again:
 	     u := _url;
 	   else
 	     u := b3s_http_url (_url, sid, _from);
-	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" class="external" height="160" style="border-width:0" alt="%s" /></a>', 
+	   http (sprintf ('<a class="uri" %s href="%H"><img src="%H" class="external" height="160" style="border-width:0" alt="%s" /></a>', 
                  rdfa, u, _url, _url));
 	 }
        else
@@ -1033,13 +1033,13 @@ again:
 	   if ((not isstring(lbl)) or length (lbl) = 0)
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly
-	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
+	   --http (sprintf ('<a class="uri" %s href="%H">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
 	   http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
 	   if (b3s_o_is_out (prop))
-	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a href="%H"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
 	 }
 
      }
@@ -1211,8 +1211,8 @@ create procedure fct_links_mup (in subj any, in desc_link any)
       links := links || repeat (' ', 5) ||
       sprintf ('<link href="%V&amp;output=%U" rel="alternate" type="%s"  title="Structured Descriptor Document (%s format)" />\n', desc_link, elm[0], elm[0], elm[1]);
     }
-  links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
-  links := links || repeat (' ', 5) || sprintf ('<link href="%V" rev="describedby" />\n', subj);
+  links := links || repeat (' ', 5) || sprintf ('<link href="%H" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
+  links := links || repeat (' ', 5) || sprintf ('<link href="%H" rev="describedby" />\n', subj);
   http (links);
 }
 ;

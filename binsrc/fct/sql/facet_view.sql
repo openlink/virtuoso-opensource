@@ -516,7 +516,7 @@ fct_query_info (in tree any,
 
             if (length(lat) and length(lon))
               {
-                http (sprintf ('%s is within %s km radius of lat:<span class="loc_lat">%s</span>, lon:<span class="loc_lon">%s</span>%s',
+                http (sprintf ('%s is within %s km radius of lat:<span class="loc_lat">%V</span>, lon:<span class="loc_lon">%V</span>%s', 
                                fct_var_tag(this_s, ctx),
                                d,
                                lat,
@@ -592,7 +592,7 @@ fct_view_link (in tp varchar, in lim int, in msg varchar, in txt any, in tip any
   if (tip is null)
     tip := msg;
 
-  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=%d&offset=0" title="%V">%s</a></li>',
+  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%U&limit=%d&offset=0" title="%V">%V</a></li>',
                  connection_get ('sid'), tp, lim, tip, msg), txt);
 }
 ;
@@ -709,9 +709,9 @@ fct_nav (in tree any,
             {
               gval := glst [i];
               if (gval <> 'virtrdf:geo_cont')
-                gopt := gopt || sprintf ('<option value="%s">%s</option>', gval, gval);
+                gopt := gopt || sprintf ('<option value="%s">%V</option>', gval, gval);
             }
-      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=%d&offset=0" title="%V">%s</a>&nbsp;'||
+      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%U&limit=%d&offset=0" title="%V">%V</a>&nbsp;'||
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="any">Any location</option>'||
 	    		'<option value="">Shown items</option>'||
@@ -1946,7 +1946,7 @@ fct_bold_tags (in s varchar)
 
   if (not isstring (s))
     return s;
-  ret := xtree_doc (sprintf ('<span class="srch_xerpt">%s</span>', s));
+  ret := xtree_doc (sprintf ('<span class="srch_xerpt">%V</span>', s));
 
   return ret;
 }

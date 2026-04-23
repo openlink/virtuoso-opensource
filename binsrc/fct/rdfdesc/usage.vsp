@@ -159,7 +159,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
+    <title>Metadata about: <?V label ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?V rdf_link ?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="/fct/css/default.css" />
     <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" />
@@ -189,8 +189,8 @@
       <?vsp
       if (safetolink > 0)
         {
-          http(sprintf('<a href="%s">',
-	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+          http(sprintf('<a href="%H">',
+	    __bft (case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end, 2)));
 
 	  if (length (label))
 	    http_value (label);
@@ -216,11 +216,11 @@
         ));
     ?>
     </h2>
-	<p> an Entity references as follows: </p>
+       <p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
       <?vsp if (_subject <> '') { ?>
-        <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+        <p class="subj_desc"><?V _subject ?></p>
       <?vsp } ?>
     <?vsp
     ?>

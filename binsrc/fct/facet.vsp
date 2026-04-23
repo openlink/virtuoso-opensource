@@ -183,8 +183,8 @@ declare exit handler for sqlstate '*'
   http('  </div>\n');
   http('  <div class="diag">\n');
   http('  <h3>Diagnostics</h3>\n');
-  http(sprintf ('<pre class="sqlstate">SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
-  http(sprintf ('<pre class="sqlmsg">SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  http(sprintf ('<pre class="sqlstate">SQLSTATE: %V</pre><br/>\n', __SQL_STATE));
+  http(sprintf ('<pre class="sqlmsg">SQLMSG  : %V</pre><br/>\n', __SQL_MESSAGE));
   http('<a href="#" id="err_det_toggle" onclick="javascript: OAT.Dom.show (err_details);">More info&hellip;</a>');
   http('  <div id="err_details" style="display:none">');
 

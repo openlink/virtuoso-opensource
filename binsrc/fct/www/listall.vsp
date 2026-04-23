@@ -34,7 +34,7 @@
   <body>
     <div id="header">
       <div id="hd_l">
-        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+        <h1 id="title"><?V label ?></h1>
       </div> <!-- hd_l -->
     </div> <!-- header -->
     <div id="content">
@@ -48,7 +48,7 @@
 	  {
 	    declare num int;
 	    num := qrlist [i];
-            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%s">%s</a></td></tr>', num,label_get(num)));
+            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%U">%V</a></td></tr>', num,label_get(num)));
           };
         ?>
       </table>

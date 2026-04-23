@@ -546,8 +546,8 @@ again:
       <?vsp
       if (safetolink > 0)
         {
-          http(sprintf('<a href="%s">',
-	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+          http(sprintf('<a href="%H">',
+	    __bft(case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end, 2)));
 
 	  if (length (label))
 	    http_value (label);
@@ -566,8 +566,8 @@ again:
     &nbsp;&nbsp;&nbsp;
     <?vsp
       if(safetolink>0) {
-        http(sprintf('<a class="desc_permalink" href="%s" rel="nofollow">Goto</a>\n',
-          case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end
+        http(sprintf('<a class="desc_permalink" href="%H" rel="nofollow">Goto</a>\n',
+          __bft(case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end, 2)
         ));
       }
     ?>
@@ -648,7 +648,7 @@ again:
 <?vsp
 if (_subject <> '') {
 ?>
-  <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+  <p class="subj_desc"><?V _subject ?></p>
 <?vsp
 } else {
 ?>

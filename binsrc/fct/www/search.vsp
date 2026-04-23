@@ -70,7 +70,7 @@
   <body>
     <div id="header">
       <div id="hd_l">
-        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+        <h1 id="title"><?V label ?></h1>
       </div> <!-- hd_l -->
     </div> <!-- header -->
     <div id="homelink">
@@ -238,8 +238,8 @@
                     http('<tr>');
                     for(j:=0;j<length(rs);j:=j+1)
                     {
-                      tmp := rs[j];
-                      if ( isstring(tmp ) and (strstr(tmp,'http://') = 0 or strstr(tmp,'nodeID://')=0))
+                      tmp := __bft (rs[j], 2);
+                      if ( isstring(tmp ) and (strstr(tmp,'http://') = 0 or strstr(tmp,'https://') = 0 or strstr(tmp,'nodeID://')=0))
                       {
 --Social Connections a la LinkedIn: smode ='6' j=0
 --Connection Between:               smode ='7' j=0
@@ -275,15 +275,15 @@
 			  }
 			else if (smode  = '1001' and j = 0)
                           {
-		  	    http (sprintf ('<td><a class="uri" href="%V">%s</a>',
-			    	replace (tmp, 'http://umbel.org/umbel/ne/wikipedia/', 'http://dbpedia.org/resource/'),
+		  	    http (sprintf ('<td><a class="uri" href="%H">%V</a>',
+			    	__bft(replace (tmp, 'http://umbel.org/umbel/ne/wikipedia/', 'http://dbpedia.org/resource/'),2),
 			    	get_curie (tmp)));
 			    http (sprintf('&nbsp;<b><a href="search.vsp?q=1004&sc=%U&fa=Execute">Authors</a></b>',tmp));
 		          }
 			else if (smode not in ('2'))
-		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
+		   	  http (sprintf ('<td><a class="uri" href="/describe/?url=%U">%V</a>', tmp, get_curie (tmp)));
  		        else
-                          http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://demo.openlinksw.com/ode/?uri=',tmp), get_curie (tmp)));
+                          http (sprintf ('<td><a class="uri" href="http://demo.openlinksw.com/ode/?uri=%U">%V</a>', tmp, get_curie (tmp)));
                         if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '101') and j=0)
 			  http (sprintf('&nbsp;<b><a href="dlistall.vsp?p=%U">Drill-down</a></b>',tmp));
 			if (0 and smode = '5')

@@ -37,7 +37,7 @@
   <body>
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title"><?vsp http (sprintf ('%s', label)); ?> for
+	  <h1 id="title"><?V label ?> for
 	      <a href="/describe?url=<?U puri ?>"><?V puri ?></a>
 	  </h1>
       </div> <!-- hd_l -->
@@ -58,7 +58,7 @@
 
           for(i:=100;i<104;i:=i+1)
           {
-            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%s&sc=%U">%s</a></td></tr>',cast(i as varchar), puri, label_get(cast(i as varchar))));
+            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%U&sc=%U">%V</a></td></tr>',cast(i as varchar), puri, label_get(cast(i as varchar))));
           };
         ?>
       </table>
@@ -88,11 +88,10 @@
                     http('<tr>');
                     for(j:=0;j<length(rs);j:=j+1)
                     {
-                      tmp := rs[j];
-                      if ( isstring(tmp ) and (strstr(tmp,'http://') = 0 or strstr(tmp,'nodeID://')=0))
+                      tmp := __bft (rs[j], 2);
+                      if (isstring(tmp) and (strstr(tmp,'http://') = 0 or strstr(tmp,'https://') = 0 or strstr(tmp,'nodeID://')=0))
                       {
-		        http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), tmp));
-                        http ('</td>');
+		        http (sprintf ('<td><a class="uri" href="/describe/?url=%U">%V</a></td>', tmp, tmp));
                       }
                       else
                       {
