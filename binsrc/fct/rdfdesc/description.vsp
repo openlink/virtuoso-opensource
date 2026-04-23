@@ -298,7 +298,7 @@ again:
 	  refr := 0;
 	  if (DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (doc))
 	    {
-              -- We're user SPARQL at this point
+              -- We are the SPARQL user at this point
               DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%s>', _G), 'dba');
             }
         }
@@ -578,7 +578,7 @@ again:
         id="sp_link" rel="nofollow">Sponge
     </a>
     &nbsp;
-    <a class="desc_permalink" href="<?vsp http (sprintf ('%s&amp;distinct=%d', plink_href, equ (dist, 0))); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator">
+    <a class="desc_permalink" href="<?vsp http (sprintf ('%s&amp;distinct=%d', plink_href, equ (dist, 0))); ?>" title="This link enables you to toggle between normalized and un-normalized views of data by applying or not applying a DISTINCT operator">
     <?vsp if (dist) http ('Not'); ?>Distinct
     </a>
     &nbsp;

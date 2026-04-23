@@ -125,7 +125,7 @@ In order to do this, please perform the following steps:</i>
 <?vsp
 if (not isstring (host_ur))
   {
-    htt ('http://host:port/conductor');
+    http('http://host:port/conductor');
   }
 else
   {

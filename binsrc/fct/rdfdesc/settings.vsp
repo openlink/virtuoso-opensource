@@ -2,7 +2,7 @@
 <html lang="en">
 
 <?vsp
-  declare host,gr,page_resource_uri,_S varhar;
+  declare host,gr,page_resource_uri,_S varchar;
   declare sid,ses_parms  varchar;
   declare arr any;
   declare pageUrl varchar;
