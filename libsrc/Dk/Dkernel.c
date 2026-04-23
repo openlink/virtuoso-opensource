@@ -193,9 +193,6 @@ static int check_inputs_action_count = 0;
 /* true when some thread is running a scheduling cycle */
 static int scheduling_in_progress = 0;	/* XXX remove this */
 
-
-static int suck_avidly = 0;
-
 /* Protects the free threads table */
 dk_mutex_t *thread_mtx;
 
@@ -725,8 +722,7 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 		    }
 		}
 	    }
-	  if (!suck_avidly)
-	    break;
+	  break;
 	}
     }
 
@@ -2751,13 +2747,6 @@ dk_thread_free (void *data)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
   dk_free (dkt, sizeof (dk_thread_t));
   --future_thread_count;
-}
-
-
-void
-PrpcSuckAvidly (int mode)
-{
-  suck_avidly = mode;
 }
 
 

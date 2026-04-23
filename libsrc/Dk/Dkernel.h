@@ -880,7 +880,6 @@ EXE_EXPORT (dk_session_t *, dk_session_allocate, (int sesclass));
 dk_session_t * dk_session_alloc_box (int sesclass, int in_len);
 
 void timeout_round (TAKE_G dk_session_t * ses);
-void PrpcSuckAvidly (int mode);
 void PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush);
 void PrpcAnswerHead (du_thread_t * thr, int is_partial);
 void PrpcAnswerTail (dk_session_t * ses, int flush);
