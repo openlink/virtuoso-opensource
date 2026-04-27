@@ -94,7 +94,7 @@
                   </table>
                   <table width="98%" border="0" cellspacing="0" cellpadding="3" class="ctl_grp" xmlns:xhtml="http://www.w3.org/1999/xhtml">
                     <v:form name="event_form" type="simple" method="POST" action="robot_sched.vspx">
-                      <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+                      <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
                       <v:before-data-bind>
                         <![CDATA[
                           declare _host, _root, _name, _store_type, store_prefix varchar;

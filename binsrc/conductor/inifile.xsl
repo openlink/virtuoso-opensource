@@ -117,7 +117,7 @@
 
   <v:form name="inifile_editor_page_form" type="simple"  method="POST" action="">
     <input type="hidden" name="what" value="post"/>
-    <input type="hidden" name="page" value="<?= get_keyword ('page', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="page" value="<?V get_keyword ('page', self.vc_page.vc_event.ve_params) ?>"/>
 
           <v:on-post>
             <v:script>
@@ -291,7 +291,7 @@
 
    <v:template name="load_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='load')">
     <v:form name="inifile_load_form" type="simple"  method="POST" action="">
-    <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="section" value="<?V get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
 
           <v:on-post>
             <v:script>
@@ -456,9 +456,9 @@
 
    <v:template name="saveas_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='saveas'  )">
     <v:form name="inifile_saveas_form" type="simple"  method="POST" action="">
-    <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="page" value="<?= get_keyword ('page', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="section" value="<?V get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="page" value="<?V get_keyword ('page', self.vc_page.vc_event.ve_params) ?>"/>
 
           <v:on-post>
             <v:script>
@@ -620,8 +620,8 @@
 
    <v:template name="save_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='save'  )">
     <v:form name="inifile_save_form" type="simple"  method="POST" action="">
-    <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="section" value="<?V get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
           <v:on-post>
             <v:script>
               <![CDATA[
@@ -742,8 +742,8 @@
 <!-- Result message dialog-->
    <v:template name="result_message_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='result'  )">
     <v:form name="inifile_result_form" type="simple"  method="POST" action="">
-    <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="section" value="<?V get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
           <v:on-post>
             <v:script>
               <![CDATA[  {
@@ -771,8 +771,8 @@
 <!-- Error message dialog-->
    <v:template name="error_message_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) ='error'  )">
     <v:form name="inifile_error_form" type="simple"  method="POST" action="">
-    <input type="hidden" name="section" value="<?= get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="section" value="<?V get_keyword ('section', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword ('mode', self.vc_page.vc_event.ve_params) ?>"/>
           <v:on-post>
             <v:script>
               <![CDATA[  {

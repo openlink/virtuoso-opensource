@@ -137,11 +137,11 @@
                   </tr>
                   <tr>
                     <td>User Name</td>
-                    <td><input type="text" name="n_uid" value="<?=_n_uid?>"/></td>
+                    <td><input type="text" name="n_uid" value="<?V _n_uid ?>"/></td>
                   </tr>
                   <tr>
                     <td>Password</td>
-                    <td><input type="password" name="n_pwd" value="<?=_n_pwd?>"/></td>
+                    <td><input type="password" name="n_pwd" value="<?V _n_pwd ?>"/></td>
                   </tr>
                 </table>
                 <?vsp

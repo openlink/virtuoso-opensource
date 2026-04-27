@@ -94,8 +94,8 @@
                 <!-- MAIN AREA -->
                   <v:template name="template1" type="simple" enabled="--case when ( get_keyword('mode', e.ve_params) = 'query' or get_keyword('mode', e.ve_params) = 'retry') then 1 else 0 end">
                     <vm:form name="xq_execute_form" type="simple" method="POST" action="">
-                      <input type="hidden" name="context" value="<?= self.ctx_value ?>" />
-                      <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+                      <input type="hidden" name="context" value="<?V self.ctx_value ?>" />
+                      <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
                       <vm:attrs border="0" class="ctl_grp" width="100%" cellspacing="0" cellpadding="5" align="center"/>
                       <vm:events>
                         <v:on-post>
@@ -441,8 +441,8 @@
                   <!-- Template for the last screen - execute and save  -->
                   <v:template name="template2" type="simple" enabled="--case when ( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'store') then 1 else 0 end">
                     <vm:form name="xq_store_form" type="simple" method="POST" action="">
-                      <input type="hidden" name="context" value="<?= self.ctx_value ?>" />
-                      <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+                      <input type="hidden" name="context" value="<?V self.ctx_value ?>" />
+                      <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
                       <vm:attrs border="0" class="ctl_grp" width="100%" cellspacing="0" cellpadding="5" align="center" />
                       <vm:events>
                         <v:on-post>

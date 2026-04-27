@@ -53,7 +53,7 @@
         </div>
       </div>
       <div class="dialog_buttons">
-        <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
+        <input type="hidden" name="graph_name" value="<?V get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
         <v:on-post>
           <![CDATA[
             if (get_keyword ('remove', self.vc_page.vc_event.ve_params, '') <> '' )
@@ -86,10 +86,10 @@
   ?>
   <v:form name="rename_form" type="simple" method="POST" action="graphs_page.vspx?page=1">
     <div class="dialog_buttons">
-      <input type="text" name="new_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" size="100" />
+      <input type="text" name="new_name" value="<?V get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" size="100" />
     </div>
     <div class="dialog_buttons">
-      <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
+      <input type="hidden" name="graph_name" value="<?V get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
       <v:on-post>
         <![CDATA[
           if (get_keyword ('rename', self.vc_page.vc_event.ve_params, '') <> '' )

@@ -360,8 +360,8 @@
       ?>
       <form name="main_form" method="POST" action="admin_dav_document_search.vsp">
         <input type="hidden" name="trf_doc" value=""/>
-        <!--input type=hidden name=sid value="<?=_sid_id?>"-->
-        <input type="hidden" name="qtype" value="<?=_qtype ?>"/>
+        <!--input type=hidden name=sid value="<?V _sid_id ?>"-->
+        <input type="hidden" name="qtype" value="<?V _qtype ?>"/>
         <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
           <TR>
             <TD CLASS="AdmBorders">
@@ -394,7 +394,7 @@
                 <TR>
                   <TD CLASS="genlisthead" NOWRAP="1">Max. no of results</TD>
                   <TD COLSPAN="2">
-                    <INPUT TYPE="text" NAME="maxres" value="<?= _maxres ?>"/>
+                    <INPUT TYPE="text" NAME="maxres" value="<?V _maxres ?>"/>
                   </TD>
                 </TR>
                 <?vsp
@@ -476,7 +476,7 @@
                 </TR>
                 <TR>
                   <TD CLASS="genlisthead">Output Stylesheet</TD>
-                    <TD><input type="text" size="30" name="out_style_sheet" value="<?= _out_style_sheet ?>"/></TD>
+                    <TD><input type="text" size="30" name="out_style_sheet" value="<?V _out_style_sheet ?>"/></TD>
                     <TD><input type="submit" name="dav_out_st" value="Browse..."/></TD>
                 </TR>
                 <?vsp
@@ -486,7 +486,7 @@
                 <TR>
                   <TD CLASS="genlisthead">Save result as</TD>
                     <TD>
-                      <input type="text" size="30" name="save_as" value="<?= _save_as ?>"/>
+                      <input type="text" size="30" name="save_as" value="<?V _save_as ?>"/>
                     </TD>
                     <TD>
                       <input type="submit" name="dav_save_as" value="Browse..."/>
@@ -534,7 +534,7 @@
                 ?>
                 <TR>
                   <TD CLASS="genlisthead" NOWRAP="1">Size of Result Excerpt</TD>
-                  <TD COLSPAN="2"><input type="text" name="cutat" value="<?= _cutat ?>" size="5"/></TD>
+                  <TD COLSPAN="2"><input type="text" name="cutat" value="<?V _cutat ?>" size="5"/></TD>
                 </TR>
               <?vsp
                 }
@@ -545,7 +545,7 @@
                   <TD ALIGN="center">
                     <input type="hidden" name="caller_uri" value="/admin/admin_dav/admin_dav_document_search.vsp?qtype=<?V_qtype?>"/>
                     <input type="hidden" name="load_template" value=""/>
-                    <input type="hidden" name="saved_file" value="<?= get_keyword ('saved_file', params, '') ?>"/>
+                    <input type="hidden" name="saved_file" value="<?V get_keyword ('saved_file', params, '') ?>"/>
                     <input type="submit" name="xecute" value="Execute"/>
                     <input type="submit" name="save" value="Save" onClick="savetemplate('');"/>
                     <?vsp

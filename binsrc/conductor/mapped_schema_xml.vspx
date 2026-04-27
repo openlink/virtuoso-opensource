@@ -66,7 +66,7 @@
        </tr>
 
         <v:form name="mapped_schema_form" type="simple" method="POST" action="">
-         <input type="hidden" name="res" value="<?= get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
+         <input type="hidden" name="res" value="<?V get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
          <v:on-post>
           <v:script>
            <![CDATA[
@@ -136,7 +136,7 @@
 <v:template name="mapped_schema_import_template" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
     <table width="100%" border="0" cellspacing="0" cellpadding="5">
         <v:form name="mapped_schema_import_form" type="simple" method="POST" action="">
-         <input type="hidden" name="res" value="<?= get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
+         <input type="hidden" name="res" value="<?V get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
          <v:on-post>
           <v:script>
            <![CDATA[
@@ -194,7 +194,7 @@
          </td>
        </tr>
         <v:form name="mapped_schema_save_form" type="simple" method="POST" action="">
-         <input type="hidden" name="page" value="<?= get_keyword('page', control.vc_page.vc_event.ve_params) ?>"/>
+         <input type="hidden" name="page" value="<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>"/>
          <v:on-post>
           <v:script>
            <![CDATA[

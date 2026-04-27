@@ -1027,7 +1027,7 @@
 
 		<vm:form name="xddl_commands_form" type="simple" method="POST" action="">
 		<!--
-		 <input type="hidden" name="page" value="<?= get_keyword('page', control.vc_page.vc_event.ve_params)?>" />
+		 <input type="hidden" name="page" value="<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>" />
 		 -->
 		 <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
 		 <vm:events>
@@ -4071,10 +4071,10 @@ Here is the tabs
 	 <v:template name="column_exist_template" type="simple" condition="( self.mode = 'column_exist' )">
 		<vm:form name="column_exist_xddl_form" type="simple" method="POST" action="">
 <!--
-		 <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-		 <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-		 <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
-		 <input type="hidden" name="kind" value="<?= get_keyword('kind', control.vc_page.vc_event.ve_params)?>" />
+		 <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+		 <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+		 <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
+		 <input type="hidden" name="kind" value="<?V get_keyword('kind', control.vc_page.vc_event.ve_params) ?>" />
 -->
 		 <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
 		 <vm:events>
@@ -4932,7 +4932,7 @@ Here is the tabs
 
 	 <v:template name="template_view_drop" type="simple" enabled="--case when ( self.mode = 'xddl_view_drop' ) then 1 else 0 end">
 		<vm:form name="xddl_view_drop_form" type="simple" method="POST" action="">
-		 <input type="hidden" name="view_name" value="<?= get_keyword('view_name', control.vc_page.vc_event.ve_params)?>" />
+		 <input type="hidden" name="view_name" value="<?V get_keyword('view_name', control.vc_page.vc_event.ve_params) ?>" />
 		 <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
 		 <vm:events>
 			<v:on-post>
@@ -4992,7 +4992,7 @@ Here is the tabs
 
 	 <v:template name="template_procedure_drop" type="simple" enabled="--case when ( self.mode = 'xddl_procedure_drop' ) then 1 else 0 end">
 		<vm:form name="xddl_procedure_drop_form" type="simple" method="POST" action="">
-		 <input type="hidden" name="procedure_name" value="<?= get_keyword('procedure_name', control.vc_page.vc_event.ve_params)?>" />
+		 <input type="hidden" name="procedure_name" value="<?V get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ?>" />
 		 <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
 		 <vm:events>
 			<v:on-post>

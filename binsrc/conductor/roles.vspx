@@ -37,8 +37,8 @@
   <vm:if test="self.mode2 in ('create', 'edit')">
     <table class="ctl_form">
       <v:form name="edit_roles_form" type="simple" method="POST" action="accounts_page.vspx?page=2">
-        <input type="hidden" name="role_name" value="<?= get_keyword ('role_name', self.vc_page.vc_event.ve_params, '') ?>"/>
-        <input type="hidden" name="mode" value="<?= self.mode2 ?>"/>
+        <input type="hidden" name="role_name" value="<?V get_keyword ('role_name', self.vc_page.vc_event.ve_params, '') ?>"/>
+        <input type="hidden" name="mode" value="<?V self.mode2 ?>"/>
 
         <v:on-post>
           <![CDATA[

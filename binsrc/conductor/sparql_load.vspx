@@ -136,7 +136,7 @@
                         <img src="images/icons/apps_16.png" alt="Persisted SPARQL" title="Persisted SPARQL"/>
                       </td>
                       <td class="listing_col">
-                        <a href="<?= WS.WS.STR_TO_URI (RES_FULL_PATH)?>" target="_blank">
+                        <a href="<?V WS.WS.STR_TO_URI (RES_FULL_PATH) ?>" target="_blank">
                           <?vsp http (RES_FULL_PATH); ?>
                         </a>
                       </td>

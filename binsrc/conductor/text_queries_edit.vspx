@@ -54,8 +54,8 @@
     <vm:pagebody>
       <table width="98%" border="0" cellspacing="0" cellpadding="5" class="MainSubData" xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <v:form name="event_form" type="simple" method="POST" action="text_queies_edit_edit.vspx">
-          <input type="hidden" name="name" value="<?= get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
           <v:on-post>
             <v:script>
               <![CDATA[

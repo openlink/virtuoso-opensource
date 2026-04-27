@@ -454,10 +454,10 @@
                 <a href="sec_acl_edit.vspx?EDIT=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">edit</a>
               </td>
               <td class="listing_col_action">
-                <a href="sec_acl_edit.vspx?move=top&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">top</a>
-                <a href="sec_acl_edit.vspx?move=up&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">up</a>
-                <a href="sec_acl_edit.vspx?move=down&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">down</a>
-                <a href="sec_acl_edit.vspx?move=bottom&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">bottom</a>
+                <a href="sec_acl_edit.vspx?move=top&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">top</a>
+                <a href="sec_acl_edit.vspx?move=up&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">up</a>
+                <a href="sec_acl_edit.vspx?move=down&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">down</a>
+                <a href="sec_acl_edit.vspx?move=bottom&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">bottom</a>
               </td>
 <?vsp
               http ('</tr>');
@@ -653,7 +653,7 @@
                         <tr>
                           <td>Destination (IP mask)</td>
                           <td>
-                            <INPUT type="text" name="dest" value="<?=dest?>" size="15"/>
+                            <INPUT type="text" name="dest" value="<?V dest ?>" size="15"/>
                           </td>
                         </tr>
                         <?vsp
@@ -664,13 +664,13 @@
                         <tr>
                           <td class="genlisthead">Object</td>
                           <td>
-                            <input type="text" name="obj" value="<?=obj?>" size="15"/>
+                            <input type="text" name="obj" value="<?V obj ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>
                           <td class="genlisthead">Mode</td>
                           <td>
-                            <input type="text" name="mod" value="<?=mod?>" size="15"/>
+                            <input type="text" name="mod" value="<?V mod ?>" size="15"/>
                           </td>
                         </tr>
                         <?vsp
@@ -697,13 +697,13 @@
                         <tr>
         <td class="genlisthead">Rate</td>
                           <td>
-                            <input type="text" name="rate" value="<?=_rate?>" size="15"/>
+                            <input type="text" name="rate" value="<?V _rate ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>
 			    <td class="genlisthead">Limit</td>
                           <td>
-                            <input type="text" name="limit" value="<?=_limit?>" size="15"/>
+                            <input type="text" name="limit" value="<?V _limit ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>

@@ -71,7 +71,7 @@
           ?>
           <tr>
             <td CLASS="SubInfo">
-              <A HREF="<?= WS.WS.STR_TO_URI(RES_FULL_PATH)?>" TARGET="_blank"><?vsp http( RES_FULL_PATH); ?></A>
+              <A HREF="<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>" TARGET="_blank"><?vsp http( RES_FULL_PATH); ?></A>
             </td>
             <td CLASS="SubInfo">
               <?vsp http(rupd); ?>
@@ -115,7 +115,7 @@
             <td class="MainData">
               <table width="100%" border="0" cellspacing="0" cellpadding="5">
                 <v:form name="query_remove_form" type="simple" method="POST" action="">
-                  <input type="hidden" name="res" value="<?= get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
+                  <input type="hidden" name="res" value="<?V get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
                   <v:on-post>
                     <v:script>
                       <![CDATA[

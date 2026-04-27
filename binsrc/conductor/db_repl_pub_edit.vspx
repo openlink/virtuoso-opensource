@@ -859,7 +859,7 @@
                   if (TI_TYPE = 3)
                   {
                 ?>
-                <select name="proc_mode_<?=TI_ITEM?>">
+                <select name="proc_mode_<?V TI_ITEM ?>">
                   <option value="1" selected="<?V select_if('Calls', _opt) ?>">Calls</option>
                   <option value="2" selected="<?V select_if('Definition', _opt) ?>">Definition</option>
                   <option value="3" selected="<?V select_if('Both', _opt) ?>">Both</option>

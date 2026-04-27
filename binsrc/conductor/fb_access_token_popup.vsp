@@ -137,7 +137,7 @@ auth_err: ;
   <?vsp } ?>
 
   <?vsp if (oauth_token is not null) { ?>
-    <p>The Linked Data Generator hosted by application <em><?=fb_app_name ?></em> now has access to your Facebook-hosted Data Space.</p>
+    <p>The Linked Data Generator hosted by application <em><?V fb_app_name ?></em> now has access to your Facebook-hosted Data Space.</p>
     <!--
     <p><?vsp http (oauth_token); ?></p>
     <?vsp if (oauth_token_expiry is not null) { ?>
@@ -159,14 +159,14 @@ auth_err: ;
       <p>Here are a variety of Linked Data oriented views of your Facebook profile:</p>
       <div>
       <ol>
-      <li><a href="<?=about_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
-      <li><a href="<?=describe_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
+      <li><a href="<?V about_sponge_uri ?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
+      <li><a href="<?V describe_sponge_uri ?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
       </ol>
       </div>
       <h3>Revoking your access token</h3>
       <p>
       You have authorised the Sponger to interact with you Facebook account. You can revoke access to your profile at any time by removing this application
-      (<em><?=fb_app_name ?></em>) from the list of authorised applications shown in your Facebook profile. To remove an application,
+      (<em><?V fb_app_name ?></em>) from the list of authorised applications shown in your Facebook profile. To remove an application,
       <a href="http://www.facebook.com/settings/?tab=privacy">access your Facebook privacy settings</a>, follow the <strong>Edit your settings</strong>
       link under the heading <strong>Apps and websites</strong>, then select the application you wish to remove.
       </p>

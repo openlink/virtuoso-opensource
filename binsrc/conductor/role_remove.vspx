@@ -47,7 +47,7 @@
           </div>
 
           <div class="dialog_buttons">
-            <input type="hidden" name="role_name" value="<?= get_keyword ('role_name', self.vc_page.vc_event.ve_params) ?>" />
+            <input type="hidden" name="role_name" value="<?V get_keyword ('role_name', self.vc_page.vc_event.ve_params) ?>" />
             <v:on-post>
               <![CDATA[
                 declare role_name varchar;

@@ -152,8 +152,8 @@
 
 
     <vm:form name="business_entity_form" type="simple" method="POST" action="">
-     <input type="hidden" name="business_key" value="<?= get_keyword('business_key', self.params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="business_key" value="<?V get_keyword('business_key', self.params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -313,9 +313,9 @@
 
 
     <vm:form name="service_create_form" type="simple" method="POST" action="">
-     <input type="hidden" name="business_key" value="<?= get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
-     <input type="hidden" name="service_key" value="<?= get_keyword('service_key', self.params) ?>"/>
+     <input type="hidden" name="business_key" value="<?V get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="service_key" value="<?V get_keyword('service_key', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -415,8 +415,8 @@
    <v:template name="model_create_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='tmodel' ) then 1 else 0 end">
 
     <vm:form name="tmodel_form" type="simple" method="POST" action="">
-     <input type="hidden" name="tmodel_key" value="<?= get_keyword('tmodel_key', self.params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="tmodel_key" value="<?V get_keyword('tmodel_key', self.params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
      <!--ches
    <v:text type="hidden" name="tmodel_key" value="--get_keyword('tmodel_key', params)"/>
    <v:text type="hidden" name="mode" value="--get_keyword('mode', params)"/>
@@ -581,9 +581,9 @@
     </table>
 
     <vm:form name="contact_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="business_key" value="<?= get_keyword('business_key', self.params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
-     <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', self.params) ?>"/>
+     <input type="hidden" name="business_key" value="<?V get_keyword('business_key', self.params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -668,8 +668,8 @@
     </table>
 
     <vm:form name="email_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -751,8 +751,8 @@
     </table>
 
     <vm:form name="phone_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -834,8 +834,8 @@
     </table>
 
     <vm:form name="address_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -946,10 +946,10 @@
     </table>
 
     <vm:form name="description_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.params) ?>"/>
-     <input type="hidden" name="owner" value="<?= get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.params) ?>"/>
+     <input type="hidden" name="owner" value="<?V get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1056,9 +1056,9 @@
     </table>
 
     <vm:form name="discovery_entry_form" type="simple" method="POST" action="">
-     <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="owner" value="<?= get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="owner" value="<?V get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1129,9 +1129,9 @@
    <!--Identify Create -->
    <v:template name="identify_create_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='identify' ) then 1 else 0 end">
     <vm:form name="identify_create_form" type="simple" method="POST" action="">
-     <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="owner" value="<?= get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="owner" value="<?V get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1238,10 +1238,10 @@
    <!--Category Create -->
    <v:template name="category_create_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='category'  ) then 1 else 0 end">
     <vm:form name="category_create_form" type="simple" method="POST" action="">
-     <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="owner" value="<?= get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="owner" value="<?V get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1436,10 +1436,10 @@
     </table>
 
     <vm:form name="binding_url_define_form" type="simple" method="POST" action="">
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
-     <!--input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/-->
-     <input type="hidden" name="business_key" value="<?= get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <!--input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/-->
+     <input type="hidden" name="business_key" value="<?V get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1557,11 +1557,11 @@
     </table>
 
     <vm:form name="binding_redirect_business_form" type="simple" method="POST" action="">
-     <!--input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="owner" value="<?= get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/-->
-     <input type="hidden" name="binding_key" value="<?= get_keyword('binding_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <!--input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="owner" value="<?V get_keyword('owner', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/-->
+     <input type="hidden" name="binding_key" value="<?V get_keyword('binding_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>
@@ -1645,9 +1645,9 @@
     </table>
 
     <vm:form name="binding_redirect_service_form" type="simple" method="POST" action="">
-     <input type="hidden" name="business_key" value="<?= get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="binding_key" value="<?= get_keyword('binding_key', self.params) ?>"/>
+     <input type="hidden" name="business_key" value="<?V get_keyword('business_key', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="binding_key" value="<?V get_keyword('binding_key', self.params) ?>"/>
 
 
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
@@ -1782,9 +1782,9 @@
     </table>
 
     <vm:form name="binding_instance_info_form" type="simple" method="POST" action="">
-     <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
-     <input type="hidden" name="instance_key" value="<?= get_keyword('instance_key', self.params) ?>"/>
-     <input type="hidden" name="binding_key" value="<?= get_keyword('binding_key', self.params) ?>"/>
+     <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+     <input type="hidden" name="instance_key" value="<?V get_keyword('instance_key', self.params) ?>"/>
+     <input type="hidden" name="binding_key" value="<?V get_keyword('binding_key', self.params) ?>"/>
      <vm:attrs border="0" width="100%" cellspacing="0" cellpadding="5" align="center"/>
      <vm:events>
       <v:on-post>

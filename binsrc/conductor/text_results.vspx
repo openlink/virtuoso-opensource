@@ -171,14 +171,14 @@
                       <table border="0">
                         <tr>
                           <td CLASS="SubAction">
-                            <a class="tablelistaction" href="text_results.vspx?tth_d_id=<?=TTH_D_ID?>&tt_id=<?=_tt_id?>&del=1&sid=<?=_sid_id?>">Remove</a>
+                            <a class="tablelistaction" href="text_results.vspx?tth_d_id=<?V TTH_D_ID ?>&tt_id=<?V _tt_id ?>&del=1&sid=<?V _sid_id ?>">Remove</a>
                           </td>
                           <td CLASS="SubAction">
                             <?vsp
                               if (isstring (RES_TYPE) and strstr (RES_TYPE, 'xml') is not null)
                               {
                             ?>
-                            <a class="tablelistaction" href="text_results.vspx?tt_id=<?=_tt_id?>&tth_d_id=<?=TTH_D_ID?>&dav_st=1&sid=<?=_sid_id?>">Transform</a>
+                            <a class="tablelistaction" href="text_results.vspx?tt_id=<?V _tt_id ?>&tth_d_id=<?V TTH_D_ID ?>&dav_st=1&sid=<?V _sid_id ?>">Transform</a>
                             <?vsp
                               }
                               else
@@ -198,8 +198,8 @@
                 http ('<td colspan=4 class="SubAction" align=center>*** No hits registered ***</td>');
             ?>
           </table>
-          <input type="hidden" name="tt_id" value="<?=_tt_id?>"/>
-          <input type="hidden" name="sid" value="<?=_sid_id?>"/>
+          <input type="hidden" name="tt_id" value="<?V _tt_id ?>"/>
+          <input type="hidden" name="sid" value="<?V _sid_id ?>"/>
         </form>
         <?vsp
           }

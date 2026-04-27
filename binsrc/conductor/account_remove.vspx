@@ -51,7 +51,7 @@
           </div>
 
           <div class="dialog_buttons">
-            <input type="hidden" name="user_name" value="<?= get_keyword ('user_name', self.vc_page.vc_event.ve_params) ?>" />
+            <input type="hidden" name="user_name" value="<?V get_keyword ('user_name', self.vc_page.vc_event.ve_params) ?>" />
             <v:on-post>
               <![CDATA[
                 declare user_name varchar;

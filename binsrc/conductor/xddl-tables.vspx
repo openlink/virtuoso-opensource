@@ -158,8 +158,8 @@
             </vm:events>
 
   <vm:form name="xddl_list_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table" value="<?= get_keyword('table', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table" value="<?V get_keyword('table', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -285,8 +285,8 @@
 
 
         <vm:form name="xddl_table_edit_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -530,10 +530,10 @@
                     </v:before-data-bind>
             </vm:events>
         <vm:form name="xddl_column_edit_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -830,9 +830,9 @@
                     </v:before-data-bind>
             </vm:events>
         <vm:form name="xddl_create_column_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -1081,10 +1081,10 @@
 
       <v:template name="template5" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'column_remove' )">
         <vm:form name="xddl_remove_column_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -1159,9 +1159,9 @@
             </vm:events>
 
         <vm:form name="xddl_primary_key_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
     <input type="hidden" name="reload_entry" value="1" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
@@ -1516,7 +1516,7 @@
 
 
         <vm:form name="xddl_table_create_form" type="simple" method="POST" action="">
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -1763,7 +1763,7 @@
 
       <v:template name="template9" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'table_exist' )">
         <vm:form name="table_exist_xddl_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
     <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -1792,9 +1792,9 @@
 
       <v:template name="template10" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'column_exist' )">
         <vm:form name="column_exist_xddl_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
     <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -1847,12 +1847,12 @@
             </vm:events>
 
         <vm:form name="xddl_foreign_key_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="ref_table_name" value="<?= get_keyword('ref_table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="what" value="<?= get_keyword('what', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="ref_table_name" value="<?V get_keyword('ref_table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="what" value="<?V get_keyword('what', control.vc_page.vc_event.ve_params) ?>" />
     <input type="hidden" name="reload_entry" value="1" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
@@ -2075,10 +2075,10 @@
             </vm:events>
 -->
         <vm:form name="xddl_foreign_key_actions_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="ref_table_name" value="<?= get_keyword('ref_table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="ref_table_name" value="<?V get_keyword('ref_table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -2213,10 +2213,10 @@
 <v:template name="template12" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'column_select_foreign' )">
 
         <vm:form name="xddl_select_column_foreign_key_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
     <input type="hidden" name="reload_entry" value="1" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
@@ -2305,11 +2305,11 @@
 
       <v:template name="template14" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'foreign_key_remove' )">
         <vm:form name="xddl_foreign_key_remove_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="ref_table_name" value="<?= get_keyword('ref_table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="column_name" value="<?= get_keyword('column_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
-    <input type="hidden" name="back" value="<?= get_keyword('back', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="ref_table_name" value="<?V get_keyword('ref_table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="column_name" value="<?V get_keyword('column_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
+    <input type="hidden" name="back" value="<?V get_keyword('back', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
@@ -2471,8 +2471,8 @@
 
       <v:template name="template17" type="simple" condition="( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'table_remove' )">
         <vm:form name="xddl_table_remove_form" type="simple" method="POST" action="">
-          <input type="hidden" name="table_name" value="<?= get_keyword('table_name', control.vc_page.vc_event.ve_params)?>" />
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', control.vc_page.vc_event.ve_params)?>" />
+          <input type="hidden" name="table_name" value="<?V get_keyword('table_name', control.vc_page.vc_event.ve_params) ?>" />
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', control.vc_page.vc_event.ve_params) ?>" />
           <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
           <vm:events>
             <v:on-post>
