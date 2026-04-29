@@ -3419,7 +3419,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *cast_args = NULL;
   int alen;
   caddr_t a;
-  int len = 0, wlen = 0, fill = 0;
+  int len = 0, wlen = 0, fill = 0, is_rdf_box;
   caddr_t res;
   int haveWides = 0, haveWeirds = 0;
   dtp_t dtp1;
@@ -3429,6 +3429,16 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
+      is_rdf_box = 0;
+      if (DV_RDF == dtp1)
+        {
+          rdf_box_t *rb = (rdf_box_t *)a;
+          if (!rb->rb_is_complete)
+            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+          a = rb->rb_box;
+          dtp1 = DV_TYPE_OF (a);
+          is_rdf_box = 1;
+        }
       switch (dtp1)
 	{
 	case DV_DB_NULL:
@@ -3436,7 +3446,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	case DV_STRING:
 	case DV_UNAME:
 	  len += box_length (a) - 1;
-	  if (DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8 so we try */
+	  if (is_rdf_box || DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8 so we try */
 	    {
 	      size_t wide_len = wide_char_length_of_utf8_string (a, box_length (a) - 1);
 	      if (wide_len >= 0)
@@ -3550,6 +3560,15 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
+      is_rdf_box = 0;
+      if (DV_RDF == dtp1)
+        {
+          rdf_box_t *rb = (rdf_box_t *)a;
+          /* completed in 1st loop */
+          a = rb->rb_box;
+          dtp1 = DV_TYPE_OF (a);
+          is_rdf_box = 1;
+        }
       switch (dtp1)
 	{
 	case DV_DB_NULL:
@@ -3559,7 +3578,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (haveWides)
 	    {
 	      alen = box_length (a) - 1;
-	      if (DV_STRING_MAYBE_UTF8 (a) && (!cast_args || !cast_args[inx]))
+	       if ((is_rdf_box || DV_STRING_MAYBE_UTF8 (a)) && (!cast_args || !cast_args[inx]))
 		alen = (size_t) box_utf8_as_wide_char (a, res + fill * sizeof_char, alen, len - fill);
 	      else
 		box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst), err_ret, 1);
