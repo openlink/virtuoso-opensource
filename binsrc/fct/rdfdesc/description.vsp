@@ -520,7 +520,7 @@ again:
       <?vsp } ?>
       <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?U b3s_u2w(_S) ?><?V ses_parms ?>" class="sel" rel="nofollow">Description</a></li>
       <li id="mnu_usage">
-        <a href="/fct/rdfdesc/usage.vsp?g=<?U _S ?><?V ses_parms ?>" rel="nofollow">Metadata</a>
+        <a href="usage.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>" rel="nofollow">Metadata</a>
       </li>
       <li id="mnu_settings"><a href="/fct/rdfdesc/settings.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>" rel="nofollow">Settings</a>
         <div id="settings_popup" style="display: none">

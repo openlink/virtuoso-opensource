@@ -1620,7 +1620,7 @@ create procedure b3s_uri_percent_decode (in uri any)
     du := sprintf_inverse(uri, '%U', 0);
     uri := case when length(du) > 0 then du[0] else uri end;
   }
-  return uri;
+  return __bft(uri,2);
 }
 ;
 

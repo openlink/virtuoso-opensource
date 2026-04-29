@@ -90,7 +90,7 @@
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/usage.vsp', sprintf ('g=%U', page_resource_uri));
 
-  _S := page_resource_uri;
+  _S := __bft(page_resource_uri, 2);
 
   proxy_iri := page_resource_uri;
 
@@ -124,6 +124,8 @@
 
   if (not length (label))
     label := page_resource_uri;
+
+  __box_flags_set(label, 2);
 
   tp := atoi (get_keyword ('tp', params, '1'));
 
@@ -195,7 +197,7 @@
 	  if (length (label))
 	    http_value (label);
 	  else
-	    http (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
+	      http_value (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
 	  http ('</a>\n');
         }
       else
@@ -264,9 +266,9 @@
 	      {
           declare grvar any;
           declare tot, phy integer;
-          grvar := graph_usages[row_ctr][0];
-          tot := graph_usages[row_ctr][1];
-          phy := graph_usages[row_ctr][2];
+          grvar := __bft(graph_usages[row_ctr][0], 2);
+          tot := __bft(graph_usages[row_ctr][1], 2);
+          phy := __bft(graph_usages[row_ctr][2], 2);
 	  has_data := 1;
           http ('<tr>');
           if (position (grvar, grs))
@@ -296,7 +298,7 @@
         order by desc 2 limit 20) do
         {
           http ('<tr>');
-          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', "syn", ses_params, b3s_uri_curie ("syn")));
+          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', __bft("syn", 2), ses_params, __bft(b3s_uri_curie ("syn"), 2)));
           http (sprintf ('<td align="right">%.6g</td>', "rnk"));
           http ('</tr>\n');
         }
