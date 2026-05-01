@@ -45,7 +45,6 @@ dist_doc_DATA = \
 	$(srcdir)/README.GIT.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
-	$(srcdir)/README.jsse.md \
 	$(srcdir)/README.php5.md \
 	$(srcdir)/README.sesame2.md \
 	$(srcdir)/README.sesame3.md \
@@ -119,7 +118,6 @@ EXTRA_DIST = \
 	$(srcdir)/README.GIT.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
-	$(srcdir)/README.jsse.md \
 	$(srcdir)/README.php5.md \
 	$(srcdir)/README.sesame2.md \
 	$(srcdir)/README.sesame3.md \
