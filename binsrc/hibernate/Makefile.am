@@ -44,7 +44,9 @@ HIBERNATE_SRC= \
 
 HIBERNATE_CLASSPATH=lib/hibernate3.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
-all-am:	$(TARGETS)
+all-am:
+
+build: $(TARGETS)
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/hibernate"
