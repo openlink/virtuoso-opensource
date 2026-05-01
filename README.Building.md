@@ -2,9 +2,9 @@
 
 *Copyright (C) 1998-2026 OpenLink Software <vos.admin@openlinksw.com>*
 
-## Jena, Sesame v3 and JDBC Drivers
+## Jena, RDF4j and JDBC Drivers
 
-Virtuoso JDBC drivers as well as Jena, Sesame and RDF4j providers can be downloaded from [Maven Central](https://central.sonatype.com/search?q=com.openlinksw).
+Virtuoso JDBC drivers as well as Jena and RDF4j providers can be downloaded from [Maven Central](https://central.sonatype.com/search?q=com.openlinksw).
 
 
 ## Package Dependencies

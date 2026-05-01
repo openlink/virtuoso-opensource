@@ -26,7 +26,7 @@ VOS includes an HTTP(S) Application Server Platform for deploying web applicatio
   * Upgrading from [previous versions](README.UPGRADE.md)
 
 * Optional Components
-  * JDBC drivers and providers for Jena, Sesame and RDF4j are available from [Maven Central](https://central.sonatype.com/search?q=com.openlinksw)
+  * JDBC drivers and providers for Jena and RDF4j are available from [Maven Central](https://central.sonatype.com/search?q=com.openlinksw)
   * Integration with [GeoSPARQL](README.GeoSPARQL.md)
 
 * [Recent commits](https://github.com/openlink/virtuoso-opensource/commits/develop/7/), [News](NEWS.md) and [ChangeLog](https://raw.githubusercontent.com/openlink/virtuoso-opensource/refs/heads/develop/7/ChangeLog)

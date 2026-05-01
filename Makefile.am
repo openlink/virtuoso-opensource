@@ -46,8 +46,6 @@ dist_doc_DATA = \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.php5.md \
-	$(srcdir)/README.sesame2.md \
-	$(srcdir)/README.sesame3.md \
 	$(srcdir)/README.UPGRADE.md \
 	$(srcdir)/README.WINDOWS.md
 
@@ -119,8 +117,6 @@ EXTRA_DIST = \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.php5.md \
-	$(srcdir)/README.sesame2.md \
-	$(srcdir)/README.sesame3.md \
 	$(srcdir)/README.UPGRADE.md \
 	$(srcdir)/README.WINDOWS.md \
 	$(srcdir)/SECURITY.md \
