@@ -63,8 +63,9 @@ TESTSUITE_SRC= \
 
 JENA_CLASSPATH=.:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4_2.jar:virt_jena5.jar:lib/jena-arq-5.3.0.jar:lib/jena-iri-5.3.0.jar:lib/jena-core-5.3.0.jar:lib/jena-base-5.3.0.jar:lib/commons-lang3-3.17.0.jar:lib/commons-compress-1.27.1.jar:lib/libthrift-0.21.0.jar:lib/collection-0.7.jar:lib/commons-cli-1.9.0.jar:lib/commons-codec-1.17.2.jar:lib/commons-csv-1.13.0.jar:lib/commons-io-2.18.0.jar:lib/jena-rdfconnection-5.3.0.jar:lib/jena-tdb1-5.3.0.jar:lib/jena-tdb2-5.3.0.jar:lib/gson-2.11.0.jar:lib/caffeine-3.1.8.jar:lib/commons-collections4-4.4.jar:lib/error_prone_annotations-2.27.0.jar:lib/jakarta.json-2.0.1.jar:lib/jcl-over-slf4j-2.0.16.jar:lib/jena-cmds-5.3.0.jar:lib/jena-dboe-base-5.3.0.jar:lib/jena-dboe-index-5.3.0.jar:lib/jena-dboe-storage-5.3.0.jar:lib/jena-dboe-trans-data-5.3.0.jar:lib/jena-dboe-transaction-5.3.0.jar:lib/jena-iri3986-5.3.0.jar:lib/jena-ontapi-5.3.0.jar:lib/jena-rdfpatch-5.3.0.jar:lib/jena-shacl-5.3.0.jar:lib/jena-shex-5.3.0.jar:lib/log4j-api-2.24.3.jar:lib/log4j-core-2.24.3.jar:lib/log4j-slf4j2-impl-2.24.3.jar:lib/protobuf-java-4.29.3.jar:lib/RoaringBitmap-1.3.0.jar:lib/slf4j-api-2.0.16.jar:lib/titanium-json-ld-1.4.1.jar
 
-all-am: $(TARGETS)
+all-am:
 
+build: $(TARGETS)
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/jena5"

@@ -206,7 +206,7 @@
 	- Fixed length calculation in `REPEAT` (fixes #1282)
 	- Fixed offset overflow (fixes #1281)
 	- Fixed issue trying to normalize an invalid numeric (fixes #1279)
-	- Fixed unfolded bifs have to have serial to distinguish separate calls (fixes #1276)
+	- Fixed unfolded BIFs needing serial to distinguish separate calls (fixes #1276)
 	- Fixed 64-bit arith overflow (fixes #1270)
 	- Fixed missing check for star (fixes #1269)
 	- Fixed set dc type on grouping sets (Fixed #1268)
@@ -304,7 +304,7 @@
     - Fixed issue with scalar subq (fixes #1183)
     - Fixed issue with `select (select ... union ...)` or similar expressions
     - Fixed issue with setting type before col assign function (fixes #1178)
-    - Fixed issue with sql fragment that has div operation
+    - Fixed issue with sql fragment having div operation
     - Fixed issue with status for non `dba` user
     - Fixed issue with user aggregates
     - Fixed issue with with dfe true/false shortcuts (fixes #1196)

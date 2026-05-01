@@ -1,13 +1,12 @@
-# Virtuoso GeoSPARQL support
+# Virtuoso GeoSPARQL Support
 
-_Copyright (C) 2018-2026 OpenLink Software_
+*Copyright (C) 1998-2026 OpenLink Software <vos.admin@openlinksw.com>*
 
 ## Introduction
-Release 7.2.6 marked the addition of GeoSPARQL function support to Virtuoso Open Source Edition,
-with additional enhancements in subsequent versions.
 
-Besides a number of enhancements to the core Virtuoso engine, OpenLink added three plugins that
-extend Virtuoso's functionality:
+Release 7.2.6 marked the addition of GeoSPARQL function support to Virtuoso Open Source Edition, with additional enhancements in subsequent versions.
+
+Besides a number of enhancements to the core Virtuoso engine, OpenLink added three plugins that extend Virtuoso's functionality:
 
 * `proj4`
 * `geos`
@@ -16,19 +15,19 @@ extend Virtuoso's functionality:
 
 ## Requirements
 
-The `proj4` and `geos` plugins can only be built against very specific versions of third party 
-libraries, which may not be available on every OS distribution, so will probably need to be 
-built by you prior to building Virtuoso.
+The `proj4` and `geos` plugins can only be built against very specific versions of third-party libraries, which may not be available on every OS distribution, so you probably need to build them prior to building Virtuoso.
+
 ```pre
 Package         Version         From
 -------         -------         ---------------------------
 proj            4.9.3           https://proj4.org
 geo             3.5.1           https://www.osgeo.org/geos/
 ```
-The new plugins are automatically added to the build process if the third party libraries and 
-header files are found when running the `configure` tool.
+
+The new plugins are automatically added to the build process if the third-party libraries and header files are found when running the `configure` tool.
 
 The following new options have been added:
+
 ```pre
 $ ./configure --help
 ...
@@ -43,25 +42,21 @@ $ ./configure --help
 ...
 ```
 
-OpenLink provides pre-built binary releases of Virtuoso Open Source edition for a number of platforms
-including Linux, macOS, and Windows.
+OpenLink provides pre-built binary releases of Virtuoso Open Source Edition for a number of platforms including Linux, macOS and Windows.
 
 
 ## New Plugins
 
-### The `proj4` plugin
+### The `proj4` Plugin
 
-The `proj4` plugin adds an interface between the Virtuoso engine and the 
-[__`PROJ`__ library](https://proj4.org) currently maintained by Frank Warmerdam et al.
+The `proj4` plugin adds an interface between the Virtuoso engine and the [__`PROJ`__ library](https://proj4.org) currently maintained by Frank Warmerdam et al.
 
-This plugin adds support for transforming geospatial coordinates from one coordinate 
-reference system (CRS) to another, including both cartographic projections and geodetic
-transformations.
+This plugin adds support for transforming geospatial coordinates from one coordinate reference system (CRS) to another, including both cartographic projections and geodetic transformations.
 
-The `proj4` plugin currently requires __`v4.9.3`__ of the library, which can be 
-[downloaded here](https://download.osgeo.org/proj/proj-4.9.3.tar.gz).
+The `proj4` plugin currently requires __`v4.9.3`__ of the library, which can be [downloaded here](https://download.osgeo.org/proj/proj-4.9.3.tar.gz).
 
 The `PROJ` library uses the following license:
+
 ```
 All source, data files and other contents of the PROJ.4 package are
 available under the following terms.  Note that the PROJ 4.3 and earlier
@@ -97,96 +92,97 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
 
-### The `geos` plugin
+### The `geos` Plugin
 
-The `geos` plugin adds an interface between the Virtuoso engine and the 
-[__`GEOS`__ library](https://www.osgeo.org/projects/geos/) currently 
-maintained by the Open Source Geospatial Foundation.
+The `geos` plugin adds an interface between the Virtuoso engine and the [__`GEOS`__ library](https://www.osgeo.org/projects/geos/) currently maintained by the Open Source Geospatial Foundation.
 
 According to their website:
 
-> `GEOS` (Geometry Engine - Open Source) is a C++ port of the Topology Suite (JTS). As such, it aims
-> to contain the complete functionality of JTS in C++. This includes all the GIS Simple Features for
-> SQL spatial predicate functions and spatial operators, as well as specific JTS enhanced topology
-> functions.
+> `GEOS` (Geometry Engine - Open Source) is a C++ port of the Topology Suite (JTS). As such, it aims to contain the complete functionality of JTS in C++. This includes all the GIS Simple Features for SQL spatial predicate functions and spatial operators, as well as specific JTS enhanced topology functions.
 
 This plugin adds support for GeoSPARQL functions to the Virtuoso engine.
 
-The `geos` plugin currently requires __`v3.5.1`__ of the library which can be 
-[downloaded here](http://download.osgeo.org/geos/geos-3.5.1.tar.bz2).
+The `geos` plugin currently requires __`v3.5.1`__ of the library which can be [downloaded here](http://download.osgeo.org/geos/geos-3.5.1.tar.bz2).
 
-The GEOS library is licensed under the terms of the [GNU Lesser General Public License
-v2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html).
+The GEOS library is licensed under the terms of the [GNU Lesser General Public License v2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html).
 
 
-### The `shapefileio` plugin
+### The `shapefileio` Plugin
 
-The `shapefileio` plugin adds an interface between the Virtuoso engine and the 
-[__`Shapefile`__ C Library](https://shapelib.maptools.org) currently maintained by 
-Frank Warmerdam et al.
+The `shapefileio` plugin adds an interface between the Virtuoso engine and the [__`Shapefile`__ C Library](https://shapelib.maptools.org) currently maintained by Frank Warmerdam et al.
 
 This plugin adds support for reading ESRI Shapefiles.
 
-At this time, a version of this library is embedded in the Virtuoso codebase, so no external 
-packages are required.
+At this time, a version of this library is embedded in the Virtuoso codebase, so no external packages are required.
 
 The `shapefile` library uses the following license:
+
 ```pre
 LICENSE
-The source for the Shapefile C Library is (c) 1998 Frank Warmerdam, and released under the following
-conditions. The intent is that anyone can do anything with the code, but that I do not assume any
-liability, nor express any warranty for this code.  As of Shapelib 1.2.6 the core portions of the
-library are made available under two possible licenses. The licensee can choose to use the code
-under either the Library GNU Public License (LGPL) described in COPYING or under the following MIT
-style license. Any files in the Shapelib distribution without explicit copyright license terms (such
-as this documentation, the Makefile and so forth) should be considered to have the following
-licensing terms. Some auxilary portions of Shapelib, notably some of the components in the contrib
-directory come under slightly different license restrictions. Check the source files that you are
-actually using for conditions.
+The source for the Shapefile C Library is (c) 1998 Frank Warmerdam,
+and released under the following conditions. The intent is that anyone
+can do anything with the code, but that I do not assume any liability,
+nor express any warranty for this code.  As of Shapelib 1.2.6 the
+core portions of the library are made available under two possible
+licenses. The licensee can choose to use the code under either the
+Library GNU Public License (LGPL) described in COPYING or under the
+following MIT style license. Any files in the Shapelib distribution
+without explicit copyright license terms (such as this documentation,
+the Makefile and so forth) should be considered to have the following
+licensing terms. Some auxiliary portions of Shapelib, notably some of
+the components in the contrib directory come under slightly different
+license restrictions. Check the source files that you are actually using
+for conditions.
 
 DEFAULT LICENSE TERMS
 Copyright (c) 1999, Frank Warmerdam
-This software is available under the following "MIT Style" license, or at the option of the
-licensee under the LGPL (see COPYING). This option is discussed in more detail in shapelib.html.
+This software is available under the following "MIT Style" license, or
+at the option of the licensee under the LGPL (see COPYING). This option
+is discussed in more detail in shapelib.html.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial
-portions of the Software.
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
-OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
 
 SHAPELIB MODIFICATIONS
-I am pleased to receive bug fixes, and improvements for Shapelib. Unless the submissions indicate
-otherwise I will assume that changes submitted to me remain under the the above "dual license"
-terms. If changes are made to the library with the intention that those changes should be protected
-by the LGPL then I should be informed upon submission. Note that I will not generally incorporate
-changes into the core of Shapelib that are protected under the LGPL as this would effectively limit
-the whole file and distribution to LGPL terms.
+I am pleased to receive bug fixes, and improvements for Shapelib. Unless
+the submissions indicate otherwise I will assume that changes submitted
+to me remain under the above "dual license" terms. If changes are
+made to the library with the intention that those changes should be
+protected by the LGPL then I should be informed upon submission. Note
+that I will not generally incorporate changes into the core of Shapelib
+that are protected under the LGPL as this would effectively limit the
+whole file and distribution to LGPL terms.
 
 Opting for LGPL
-For licensee's opting to use Shapelib under LGPL as opposed to the MIT Style license above, and
-wishing to redistribute the software based on Shapelib, I would ask that all "dual license" modules
-be updated to indicate that only the LGPL (and not the MIT Style license) applies. This action
-represents opting for the LGPL, and thereafter LGPL terms apply to any redistribution and
-modification of the affected modules.
+For licensee's opting to use Shapelib under LGPL as opposed to the MIT
+Style license above, and wishing to redistribute the software based
+on Shapelib, I would ask that all "dual license" modules be updated to
+indicate that only the LGPL (and not the MIT Style license) applies. This
+action represents opting for the LGPL, and thereafter LGPL terms apply
+to any redistribution and modification of the affected modules.
 ```
 
 
 
 ## Changes to `virtuoso.ini`
 
-After building and installing the new plugins, you may need to add them to the __`Plugins`__ 
-section of any existing `virtuoso.ini` file. You need to make sure that each _`Load`_ line uses 
-a unique number, although numbering does not have to be sequential.
+After building and installing the new plugins, you may need to add them to the __`Plugins`__ section of any existing `virtuoso.ini` file. Ensure each _`Load`_ line uses a unique number, although numbering does not have to be sequential.
+
 ```pre
 [Plugins]
 ...
@@ -196,9 +192,8 @@ Load21 = plain, geos
 Load22 = plain, shapefileio
 ```
 
-The `proj4` plugin requires access to a number of data files from the `proj` project which are 
-normally installed in `/usr/share/proj`. For this, you need to change your `virtuoso.ini` file, 
-and add this directory to the existing __`DirsAllowed`__ setting, like this:
+The `proj4` plugin requires access to a number of data files from the `proj` project which are normally installed in `/usr/share/proj`. For this, you need to change your `virtuoso.ini` file and add this directory to the existing __`DirsAllowed`__ setting, like this:
+
 ```pre
 [Parameters]
 ..
@@ -208,14 +203,13 @@ DirsAllowed                     = ., /opt/virtuoso-opensource/vad, /usr/share/pr
 ..
 ```
 
-After making these modifications to the `virtuoso.ini` file, you need to restart the virtuoso engine
-to make these additional functions available.
+After making these modifications to the `virtuoso.ini` file, you need to restart the virtuoso engine to make these additional functions available.
 
 
 ## Troubleshooting
 
-If the plugins are successfully built and installed, you should see the following lines in your
-`virtuoso.log` file:
+If the plugins are successfully built and installed, expect to see these lines in your `virtuoso.log` file:
+
 ```pre
 12:08:51 { Loading plugin 8: Type `plain', file `proj4' in `/opt/virtuoso-opensource/hosting'
 12:08:51   plain version 3230 from OpenLink Software
@@ -231,16 +225,16 @@ If the plugins are successfully built and installed, you should see the followin
 12:08:51   SUCCESS plugin 10: loaded from /opt/virtuoso-opensource/hosting/shapefileio.so }
 ```
 
-If you see the following lines near the bottom of your `virtuoso.log` file, then you need to install the
-`proj-data` package, if available for your operating system.
+If you see these lines near the bottom of your `virtuoso.log` file, then you need to install the `proj-data` package, if available for your operating system.
+
 ```pre
 12:23:17 PL LOG: Initial setup of DB.DBA.SYS_PROJ4_SRIDS data from files in "/usr/share/proj"
 12:23:17 PL LOG: Error during initial setup of DB.DBA.SYS_PROJ4_SRIDS data: 39000: FA005:
 Can't open file '/usr/share/proj/epsg', error 2
 ```
 
-If the `proj` plugin is initialized successfully, you will see the following lines near the bottom 
-of your `virtuoso.ini` file:
+If the `proj` plugin is initialized successfully, you see these lines near the bottom of your `virtuoso.ini` file:
+
 ```pre
 12:10:08 PL LOG: Initial setup of DB.DBA.SYS_PROJ4_SRIDS data from files in "/usr/share/proj"
 12:10:08 PL LOG: DB.DBA.SYS_PROJ4_SRIDS now contains 8650 spatial reference systems

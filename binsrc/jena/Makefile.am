@@ -60,8 +60,9 @@ TESTSUITE_SRC= \
 
 JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/arq-2.8.1.jar:lib/iri-0.7.jar:lib/jena-2.6.2.jar:lib/jena-2.6.2-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
-all-am: $(TARGETS)
+all-am:
 
+build: $(TARGETS)
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/jena"

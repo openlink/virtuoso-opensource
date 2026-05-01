@@ -1,10 +1,8 @@
-License
-=======
+# License
 
 *Copyright (C) 1998-2026 OpenLink Software <vos.admin@openlinksw.com>*
 
-OpenLink Software's Virtuoso Open-Source (VOS) project
-------------------------------------------------------
+## OpenLink Software's Virtuoso Open-Source (VOS) project
 This software is licensed under the GNU General Public License (see
 [COPYING](COPYING.md)).
 
@@ -12,8 +10,7 @@ Note that the only valid version of the GPL license as far as this project
 is concerned is the original GNU General Public License Version 2, dated
 June 1991.
 
-OpenSSL exemption
------------------
+## OpenSSL exemption
 This project may be compiled/linked with the OpenSSL library. If so, the
 following exemption is added to the above license:
 
@@ -26,8 +23,7 @@ following exemption is added to the above license:
     than "OpenSSL".
 
 
-Client Protocol Driver exemptions
----------------------------------
+## Client Protocol Driver exemptions
 
     In addition, as a special exemption, OpenLink Software gives
     permission to use the unmodified client libraries (ODBC, JDBC,
