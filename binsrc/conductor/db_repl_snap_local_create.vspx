@@ -560,7 +560,7 @@ self.vc_data_bind(e);
           ?>
           <div class="listing_top_ctl_grp">
             <v:template name="result_template_ok" type="simple" enabled="-- equ(self.repl_snap_local_running, 0)">
-              <?vsp self.repl_snap_local_stage := 0;?>
+              <?vsp self.repl_snap_local_stage := 0; ?>
               Replication done.
               <v:button action="simple" value="OK" name="ok" enabled="-- equ(self.repl_snap_local_running , 0)">
                 <v:on-post>

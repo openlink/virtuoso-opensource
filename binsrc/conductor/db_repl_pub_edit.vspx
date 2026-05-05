@@ -850,8 +850,8 @@
               </td>
               <td class="listing_col">
                 <select name="copy_mode_<?V TI_ITEM ?>">
-                  <option value="1" selected="<?V select_if('Drop', _md)?>">Drop</option>
-                  <option value="0" selected="<?V select_if('Keep', _md)?>">Keep</option>
+                  <option value="1" selected="<?V select_if('Drop', _md) ?>">Drop</option>
+                  <option value="0" selected="<?V select_if('Keep', _md) ?>">Keep</option>
                 </select>
               </td>
               <td class="listing_col">
@@ -956,7 +956,7 @@
               <td class="listing_col"><input type="checkbox" name="CB_<?V _num ?>"/></td>
               <td class="listing_col"><?V RS_SUBSCRIBER ?></td>
               <td class="listing_col"><?V _valid ?></td>
-              <input type="hidden" name="CB_SUB_<?V _num?>" value="<?V RS_SUBSCRIBER ?>"/>
+              <input type="hidden" name="CB_SUB_<?V _num ?>" value="<?V RS_SUBSCRIBER ?>"/>
             <?vsp
               http ('</tr>');
               _num := _num + 1;

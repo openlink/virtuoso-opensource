@@ -49,7 +49,7 @@
         <table>
           <tr>
             <td>
-              <p> The BPEL package currently is not installed. Check the <?vsp http(sprintf('<a target="_blank" href="../doc/html/bpel.html#bpelvadinstall">BPEL Installation Guide</a>'));?> for more details.</p>
+              <p> The BPEL package currently is not installed. Check the <?vsp http(sprintf('<a target="_blank" href="../doc/html/bpel.html#bpelvadinstall">BPEL Installation Guide</a>')); ?> for more details.</p>
             </td>
           </tr>
         </table>

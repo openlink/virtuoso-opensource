@@ -383,7 +383,7 @@
         <tr>
           <td>
             <input type="checkbox" name="cb_<?V uid ?>" />
-            <input type="hidden" name="data_<?V uid ?>" value="<?V encode_base64(serialize (vector (uid,name,email,pwd, '')))?>" />
+            <input type="hidden" name="data_<?V uid ?>" value="<?V encode_base64(serialize (vector (uid,name,email,pwd, ''))) ?>" />
             <?V uid ?>
           </td>
           <td><?V name ?></td>

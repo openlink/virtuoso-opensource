@@ -74,7 +74,7 @@
                     </v:on-post>
                     <table class="ctl_grp" border="0" cellpadding="0">
                       <tr>
-                        <td>Selected Site</td><td><b><?V self.site_name  ?></b></td>
+                        <td>Selected Site</td><td><b><?V self.site_name ?></b></td>
                       </tr>
                       <tr>
                         <td colspan="2" align="left">

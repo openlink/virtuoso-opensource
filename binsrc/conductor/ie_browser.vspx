@@ -104,10 +104,10 @@
           </tr>
           <tr>
             <td width="50%">
-              <input type="text" value="<?V self.curpath?>"  name="dump_path" style="width: 98%" title="Path to dump's root directory"/>
+              <input type="text" value="<?V self.curpath ?>"  name="dump_path" style="width: 98%" title="Path to dump's root directory"/>
             </td>
             <td width="50%">
-              <input type="text" value="<?V self.curname?>" name="dump_name" style="width: 98%" title="Backup name"/>
+              <input type="text" value="<?V self.curname ?>" name="dump_name" style="width: 98%" title="Backup name"/>
             </td>
           </tr>
           <tr>

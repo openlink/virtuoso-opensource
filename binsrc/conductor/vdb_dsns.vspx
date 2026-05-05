@@ -70,8 +70,8 @@
               _cnt := _cnt + 1;
         ?>
         <tr>
-          <td class="MainData"><?V ds_dsn?></td>
-          <td class="MainData"><?V ds_uid?></td>
+          <td class="MainData"><?V ds_dsn ?></td>
+          <td class="MainData"><?V ds_uid ?></td>
           <?vsp
             if (mode = 'test' and ( ds_name = '' or ds_name = ds_dsn))
             {

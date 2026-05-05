@@ -99,7 +99,7 @@ order by
     </v:template>
     <v:template type="browse" name-to-remove="table" set-to-remove="both" name="news_groups_browse_template">
       <table class="data_set_container" width="100%" border="2" cellspacing="0" cellpadding="0" id="ds_news_groups">
-	<tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end  ?>">
+	<tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 	  <td class="listing_col">
 	    <v:check-box name="cb_ng_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
 	  </td>

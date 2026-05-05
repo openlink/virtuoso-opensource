@@ -492,7 +492,7 @@ params := e.ve_params;
                       </v:after-data-bind>
                     </v:label>
                   </td>
-<?vsp           http('</tr>');?>
+<?vsp           http('</tr>'); ?>
                 </table>
               </v:template>
             </v:template>

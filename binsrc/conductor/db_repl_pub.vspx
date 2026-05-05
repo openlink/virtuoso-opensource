@@ -68,13 +68,13 @@
               if (ACCOUNT <> '__rdf_repl')
               {
             ?>
-          <a href="db_repl_pub_edit.vspx?acct=<?V ACCOUNT ?>&sid=<?V self.sid?>&realm=<?V self.realm ?>"><?V ACCOUNT ?></a>
+            <a href="db_repl_pub_edit.vspx?acct=<?V ACCOUNT ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>"><?V ACCOUNT ?></a>
             <?vsp
               }
               else
               {
             ?>
-              <a href="db_repl_rdf_pub_edit.vspx?acct=<?V ACCOUNT ?>&sid=<?V self.sid?>&realm=<?V self.realm ?>">RDF Publication</a>
+            <a href="db_repl_rdf_pub_edit.vspx?acct=<?V ACCOUNT ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">RDF Publication</a>
             <?vsp
               }
             ?>

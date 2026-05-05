@@ -483,19 +483,19 @@
                   <?V concat( tbl_qual, '.', tbl_user, '.', tbl_name ) ?>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('t_qual_%d',i)?>" value="<?V dbname() ?>"/>
+                  <input type="text" name="<?V sprintf('t_qual_%d',i) ?>" value="<?V dbname() ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('t_user_%d',i)?>" value="<?V self.ds_name ?>"/>
+                  <input type="text" name="<?V sprintf('t_user_%d',i) ?>" value="<?V self.ds_name ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('t_name_%d',i)?>" value="<?V tbl_name_local ?>"/>
+                  <input type="text" name="<?V sprintf('t_name_%d',i) ?>" value="<?V tbl_name_local ?>"/>
                 </td>
                 <td align="center">
                   <?V vector_print(aref(self.pks_t, i)) ?>
                 </td>
                 <td align="center">
-                  <a href="<?V sprintf('%s&mode=4&class=t&idx=%d',self.return_path,i)?>">
+                  <a href="<?V sprintf('%s&mode=4&class=t&idx=%d',self.return_path,i) ?>">
                     <?vsp
                       if (length(aref(self.pks_t, i)) > 0)
                         http('Change Key'); else http('Define key');
@@ -557,17 +557,17 @@
               <tr class="SubAction">
                 <td><?vsp http(_den); ?><?V concat( tbl_qual, '.', tbl_user, '.', tbl_name ) ?></td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('s_qual_%d',i)?>" value="<?V dbname() ?>"/>
+                  <input type="text" name="<?V sprintf('s_qual_%d',i) ?>" value="<?V dbname() ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('s_user_%d',i)?>" value="<?V self.ds_name ?>"/>
+                  <input type="text" name="<?V sprintf('s_user_%d',i) ?>" value="<?V self.ds_name ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('s_name_%d',i)?>" value="<?V tbl_name_local ?>"/>
+                  <input type="text" name="<?V sprintf('s_name_%d',i) ?>" value="<?V tbl_name_local ?>"/>
                 </td>
                 <td align="center"><?V vector_print(aref(self.pks_st, i)) ?></td>
-                <td align="center"><a href="<?V sprintf('%s&mode=4&class=s&idx=%d',self.return_path,i)?>">
-                    <?vsp if(length(aref(self.pks_st, i)) > 0) http('Change Key'); else http('Define key');?></a>
+                <td align="center"><a href="<?V sprintf('%s&mode=4&class=s&idx=%d',self.return_path,i) ?>">
+                    <?vsp if(length(aref(self.pks_st, i)) > 0) http('Change Key'); else http('Define key'); ?></a>
                 </td>
               </tr>
               <?vsp
@@ -618,17 +618,17 @@
               <tr class="SubAction">
                 <td><?vsp http(_den); ?><?V concat( tbl_qual, '.', tbl_user, '.', tbl_name ) ?></td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('v_qual_%d',i)?>" value="<?V dbname() ?>"/>
+                  <input type="text" name="<?V sprintf('v_qual_%d',i) ?>" value="<?V dbname() ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('v_user_%d',i)?>" value="<?V self.ds_name ?>"/>
+                  <input type="text" name="<?V sprintf('v_user_%d',i) ?>" value="<?V self.ds_name ?>"/>
                 </td>
                 <td align="center">
-                  <input type="text" name="<?V sprintf('v_name_%d',i)?>" value="<?V tbl_name_local ?>"/>
+                  <input type="text" name="<?V sprintf('v_name_%d',i) ?>" value="<?V tbl_name_local ?>"/>
                 </td>
                 <td align="center"><?V vector_print(aref(self.pks_v, i)) ?></td>
-                <td align="center"><a href="<?V sprintf('%s&mode=4&class=v&idx=%d',self.return_path,i)?>">
-                    <?vsp if(length(aref(self.pks_v, i)) > 0) http('Change Key'); else http('Define key');?></a>
+                <td align="center"><a href="<?V sprintf('%s&mode=4&class=v&idx=%d',self.return_path,i) ?>">
+                    <?vsp if(length(aref(self.pks_v, i)) > 0) http('Change Key'); else http('Define key'); ?></a>
                 </td>
               </tr>
               <?vsp
@@ -819,7 +819,7 @@
                           cl := 1;
                       ?>
                     <tr class="SubAction">
-                      <td><?V initcap(lcase(ncols[j][0]))?></td>
+                      <td><?V initcap(lcase(ncols[j][0])) ?></td>
                       <td></td>
                       <td><?vsp adm_make_option_list (type1, sprintf('parm_%d_%s_t', i, ncols[j][1]), dt_type, 0); ?></td>
                       <td><?vsp adm_make_option_list (type2, sprintf('parm_%d_%s_s', i, ncols[j][1]), '', 1); ?></td>

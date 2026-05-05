@@ -543,7 +543,7 @@
               <TABLE>
                 <TR>
                   <TD ALIGN="center">
-                    <input type="hidden" name="caller_uri" value="/admin/admin_dav/admin_dav_document_search.vsp?qtype=<?V_qtype?>"/>
+                    <input type="hidden" name="caller_uri" value="/admin/admin_dav/admin_dav_document_search.vsp?qtype=<?V_qtype ?>"/>
                     <input type="hidden" name="load_template" value=""/>
                     <input type="hidden" name="saved_file" value="<?V get_keyword ('saved_file', params, '') ?>"/>
                     <input type="submit" name="xecute" value="Execute"/>
