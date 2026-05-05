@@ -809,6 +809,7 @@ div.confirm_text {
 div.attention_box {
   border: 4px dashed orange;
   padding: 10px;
+  clear: both;
 }
 
 
