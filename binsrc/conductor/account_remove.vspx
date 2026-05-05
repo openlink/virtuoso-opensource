@@ -44,7 +44,7 @@
             </div>
             <div>
               <br />
-              The account <?vsp http(sprintf('<b> %s </b>',get_keyword ('user_name', self.vc_page.vc_event.ve_params, ''))); ?> will be removed permanently and there is no way to restore it.
+              The account <b><?V get_keyword ('user_name', self.vc_page.vc_event.ve_params, '') ?></b> will be removed permanently and there is no way to restore it.
               <br/>
               Are you sure you want to remove this account?
             </div>

@@ -55,9 +55,7 @@
          ?>
 	<br />
 	<div>Mapping Schema View: <i><?V V_NAME ?></i></div>
-        <textarea id="Textarea1" name="code" language="xml"><?vsp
-	http (VTEXT);
-	?></textarea>
+        <textarea id="Textarea1" name="code" language="xml"><?V VTEXT ?></textarea>
         <?vsp
    }
    ?>

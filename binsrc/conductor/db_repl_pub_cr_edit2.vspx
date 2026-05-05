@@ -63,7 +63,7 @@
           <tr class="ctl_grp_title">
             <td>
               <?vsp
-                http(sprintf('Edit Conflict Resolver %s', self._proc));
+                http(sprintf('Edit Conflict Resolver %V', self._proc));
               ?>
             </td>
           </tr>

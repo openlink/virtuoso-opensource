@@ -57,7 +57,7 @@
       <h1 class="page_title">
         <?vsp
           if (self.mode = 'edit')
-            http(sprintf('Editing Account ''%s''', self.user_name));
+            http(sprintf('Editing Account ''%V''', self.user_name));
           else
             http('New Account');
         ?>

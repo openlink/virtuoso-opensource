@@ -409,7 +409,7 @@
              else if ( self.page ='3'  )
                http('List of the Procedures from current database.');
            } else if (self.xddl_source_type=2) {
-            http(sprintf('Editing  %s.', self.xddl_source_name));
+            http(sprintf('Editing  %V.', self.xddl_source_name));
            } else if (self.xddl_source_type=0) {
              http('Editing New Schema.');
            }
@@ -493,7 +493,7 @@
            if (self.xddl_source_type=1) {
               http('List of the tables from current database.');
            } else if (self.xddl_source_type=2) {
-            http(sprintf('Editing  %s.', self.xddl_source_name));
+            http(sprintf('Editing  %V.', self.xddl_source_name));
            } else if (self.xddl_source_type=0) {
              http('Editing New Schema.');
            }
@@ -668,7 +668,7 @@
                                if (self.xddl_source_type=1) {
                                 http('List of the Views from current database.');
                                } else if (self.xddl_source_type=2) {
-                                http(sprintf('Editing  %s.', self.xddl_source_name));
+                                http(sprintf('Editing  %V.', self.xddl_source_name));
                                } else if (self.xddl_source_type=0) {
                                   http('Editing New Schema.');
                               }
@@ -842,7 +842,7 @@
                                if (self.xddl_source_type=1) {
                                 http('List of the Procedures from current database.');
                                } else if (self.xddl_source_type=2) {
-                                http(sprintf('Editing %s.', self.xddl_source_name));
+                                http(sprintf('Editing %V.', self.xddl_source_name));
                                } else if (self.xddl_source_type=0) {
                                   http('Editing New Schema.');
              }
@@ -1280,7 +1280,7 @@ Here is the tabs
 				<b>
 				 <?vsp
           if (  self.wrong_entry is not null ) {
-                 http(sprintf('<span class="attention_marker">Error:  %s </span>', self.wrong_entry));
+                 http(sprintf('<span class="attention_marker">Error:  %V </span>', self.wrong_entry));
 								 self.wrong_entry := null;
 					}
           ?>
@@ -2414,7 +2414,7 @@ Here is the tabs
 			       <td colspan="4"><b>
 				      <?vsp
                 if (  self.wrong_entry is not null ) {
-                    http(sprintf('<span class="attention_marker">Error:  %s </span>', self.wrong_entry));
+                    http(sprintf('<span class="attention_marker">Error:  %V </span>', self.wrong_entry));
 								    self.wrong_entry := null;
 					      }
               ?>
@@ -3563,7 +3563,7 @@ Here is the tabs
 				<b>
 				 <?vsp
     if (  self.wrong_entry is not null )
-           http(sprintf('<span class="attention_marker">Wrong Foreign Key Defintion:  %s </span>', self.wrong_entry));
+           http(sprintf('<span class="attention_marker">Wrong Foreign Key Definition:  %V </span>', self.wrong_entry));
     ?>
 				</b>
 			 </td>

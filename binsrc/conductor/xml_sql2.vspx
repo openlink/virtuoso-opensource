@@ -71,7 +71,7 @@
           ?>
           <tr>
             <td CLASS="SubInfo">
-              <A HREF="<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>" TARGET="_blank"><?vsp http( RES_FULL_PATH); ?></A>
+              <A HREF="<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>" TARGET="_blank"><?V RES_FULL_PATH ?></A>
             </td>
             <td CLASS="SubInfo">
               <?vsp http(rupd); ?>

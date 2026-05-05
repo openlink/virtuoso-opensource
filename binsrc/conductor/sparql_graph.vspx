@@ -46,8 +46,7 @@
       <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
       <div class="confirm_text">
         <div>
-          The graph
-          <?vsp http(sprintf('<b> %s </b>', self.graph_name)); ?>
+	  The graph <b><?V self.graph_name) ?></b>
           will be removed permanently and there is no way to restore it. <br/>
           Are you sure you want to remove this graph?
         </div>

@@ -62,7 +62,7 @@
         fb_login_dialog_url := fb_login_dialog_url || '&scope=offline_access';
 
       http ('<script>');
-      http (sprintf ('top.location.href=\'%s\';', fb_login_dialog_url));
+      http (sprintf ('top.location.href=\'%H\';', fb_login_dialog_url));
       http ('</script>');
     }
 
@@ -159,8 +159,8 @@ auth_err: ;
       <p>Here are a variety of Linked Data oriented views of your Facebook profile:</p>
       <div>
       <ol>
-      <li><a href="<?V about_sponge_uri ?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
-      <li><a href="<?V describe_sponge_uri ?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
+      <li><a href="<?V about_sponge_uri ?>"><?vsp http (sprintf ('%V (Facebook ID: %V)', og_user_name, og_user_id)); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
+      <li><a href="<?V describe_sponge_uri ?>"><?vsp http (sprintf ('%V (Facebook ID: %V)', og_user_name, og_user_id)); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
       </ol>
       </div>
       <h3>Revoking your access token</h3>

@@ -125,7 +125,7 @@
                   if (TI_TYPE = 2)
                     http(sprintf('<a href=\"db_repl_pub_cr.vspx?item=%U&acct=%U&sid=%U&realm=%U\">%V</a>', encode_base64(serialize(TI_ITEM)), self.acct, self.sid, self.realm, TI_ITEM));
                   else
-                    http(TI_ITEM);
+                    http_value(TI_ITEM);
                 ?>
               </td>
               <td class="listing_col">

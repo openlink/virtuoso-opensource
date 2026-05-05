@@ -61,7 +61,7 @@
           <tr class="ctl_grp_title">
             <th colspan="2">
               <?vsp
-                http(sprintf('Create Conflict Resolver for table %s', self._item));
+                http(sprintf('Create Conflict Resolver for table %V', self._item));
               ?>
             </th>
           </tr>

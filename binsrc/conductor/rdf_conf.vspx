@@ -260,7 +260,7 @@
                     <?vsp
                       for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL' do
                       {
-                        http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
+                        http(sprintf ('<option value=\"%V=%V\">%V (%V)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
                       }
                     ?>
                   </select>

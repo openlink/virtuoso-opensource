@@ -41,9 +41,7 @@
             <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
             <div class="confirm_text">
               <p>Remove Confirmation of Scheduled Event: <i>
-              <?vsp
-                http(cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar));
-              ?></i>
+              <?V cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar) ?></i>
             </p>
           </div>
           <div class="dialog_buttons">

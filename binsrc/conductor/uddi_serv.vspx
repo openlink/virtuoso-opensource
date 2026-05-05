@@ -120,13 +120,13 @@
                                 else
                                   http('<tr class="listing_row_odd">');
                                 http('<td class="listing_col">');
-                                http(BE_NAME);
+                                http_value(BE_NAME);
                                 http('</td>');
                                 http('<td class="listing_col">');
-                                http(BE_AUTHORIZED_NAME);
+                                http_value(BE_AUTHORIZED_NAME);
                                 http('</td>');
                                 http('<td class="listing_col">');
-                                http(BE_OPERATOR);
+                                http_value(BE_OPERATOR);
                                 http('</td>');
                                 http('<td class="listing_col_action"><a   class="uddi"');
                                 http(sprintf(' href="uddi_remove.vspx?page=entity&business_key=%U&sid=%U&realm=%U"', BE_BUSINESS_KEY, self.sid ,self.realm ));
@@ -185,15 +185,15 @@
             else
               http('<tr class="listing_row_odd">');
             http('<td class="listing_col">');
-            http(TM_NAME);
+            http_value(TM_NAME);
             http('</td>');
 
             http('<td class="listing_col">');
-            http(TM_OPERATOR);
+            http_value(TM_OPERATOR);
             http('</td>');
 
             http('<td class="listing_col">');
-            http(TM_AUTHORIZED_NAME);
+            http_value(TM_AUTHORIZED_NAME);
             http('</td>');
 
             http('<td class="listing_col"><a class="uddi"');

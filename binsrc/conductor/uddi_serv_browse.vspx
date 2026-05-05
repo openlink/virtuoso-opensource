@@ -356,7 +356,7 @@
                     cnt := 0;
                     for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  business_id and UD_TYPE = 'businessEntity' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(UD_DESC);
+                        http_value(UD_DESC);
                         http('</td>');
                         http('<td class="SubInfo">');
                           http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=1&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
@@ -450,11 +450,11 @@
               for select  CO_CONTACT_KEY, CO_USE_TYPE,  CO_PERSONAL_NAME from UDDI..CONTACTS where CO_BUSINESS_ID = self.uuid_value  do {
                 http('<tr>');
                 http('<td class="SubInfo" width="50%">');
-                http(CO_PERSONAL_NAME);
+                http_value(CO_PERSONAL_NAME);
                 http('</td>');
 
                 http('<td class="SubInfo" width="50%">');
-                http(CO_USE_TYPE);
+                http_value(CO_USE_TYPE);
                 http('</td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
@@ -516,11 +516,11 @@
                       http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&mode=edit&page_back=4&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
-                        http(IB_KEY_NAME);
+                        http_value(IB_KEY_NAME);
                         http('</td></tr>');
 
                         http('<tr><td class="SubInfo" width="100%">Key Value: ');
-                        http(IB_KEY_VALUE);
+                        http_value(IB_KEY_VALUE);
                         http('</td></tr>');
 
 
@@ -575,11 +575,11 @@
                       http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=5&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
-                        http(CB_KEY_NAME);
+                        http_value(CB_KEY_NAME);
                         http('</td></tr>');
 
                         http('<tr><td class="SubInfo" width="100%">Key Value: ');
-                        http(CB_KEY_VALUE);
+                        http_value(CB_KEY_VALUE);
                         http('</td></tr>');
 
 
@@ -622,14 +622,14 @@
 
                     for select   DU_DISCOVERY_KEY, DU_URL, DU_USE_TYPE  from UDDI..DISCOVERY_URL where  DU_PARENT_ID  =  business_id and  DU_PARENT_TYPE = 'businessEntity' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(sprintf('<a class="uddi" href="http://%s">%V</a>',DU_URL, DU_URL));
+                        http(sprintf('<a class="uddi" href="http://%V">%V</a>',DU_URL, DU_URL));
                         http('</td><td class="SubInfo">');
                         http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=discovery&mode=delete&page_back=6&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
                       http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&mode=edit&page_back=6&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Use type:');
-                        http(DU_USE_TYPE);
+                        http_value(DU_USE_TYPE);
                         http('</td></tr>');
 
                         http('<tr><td><br/></td></tr>');
@@ -689,7 +689,7 @@
                     cnt := 0;
                     for select  UD_LANG ,   UD_DESC , UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  contact_id and UD_TYPE = 'contacts' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(UD_DESC);
+                        http_value(UD_DESC);
                         http('</td><td class="SubInfo">');
                           http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=11&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
@@ -732,7 +732,7 @@
                   for select EM_EMAIL_KEY, EM_ADDR as email_addr,  EM_USE_TYPE as use_type from UDDI..EMAIL  where  EM_CONTACT_KEY = contact_id do {
 
                         http('<tr><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href=mailto:%s>%V</a>',email_addr,email_addr));
+                        http(sprintf('<a class="uddi" href="mailto:%V">%V</a>',email_addr,email_addr));
                         http('</td>');
                         http('<td class="SubInfo">');
                         http(use_type );
@@ -872,7 +872,7 @@
                     cnt := 0;
                     for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  service_id and UD_TYPE = 'businessService' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(UD_DESC);
+                        http_value(UD_DESC);
                         http('</td><td class="SubInfo">');
                           http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=21&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
@@ -916,7 +916,7 @@
                 http('<tr>');
                 http('<td class="SubInfo" width="50%">');
                 if (BT_ACCESS_POINT is not null) {
-                http(BT_ACCESS_POINT);
+                http_value(BT_ACCESS_POINT);
                 } else if (BT_HOSTING_REDIRECTOR is not null) {
                   select BS_NAME, BE_NAME  into service_bound_name, business_bound_name  from UDDI..BUSINESS_SERVICE  join UDDI..BUSINESS_ENTITY on  BE_BUSINESS_KEY = BS_BUSINESS_KEY  where BS_SERVICE_KEY    = BT_HOSTING_REDIRECTOR;
                   http(service_bound_name);
@@ -925,7 +925,7 @@
 
                 http('<td class="SubInfo" width="50%">');
                 if (BT_ACCESS_POINT is not null and BT_URL_TYPE is not null ) {
-                  http(BT_URL_TYPE);
+                  http_value(BT_URL_TYPE);
                 }
                 http('</td>');
 
@@ -994,11 +994,11 @@
                       http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=23&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
-                        http(CB_KEY_NAME);
+                        http_value(CB_KEY_NAME);
                         http('</td></tr>');
 
                         http('<tr><td class="SubInfo" width="100%">Key Value: ');
-                        http(CB_KEY_VALUE);
+                        http_value(CB_KEY_VALUE);
                         http('</td></tr>');
 
 
@@ -1065,7 +1065,7 @@
                     cnt := 0;
                     for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  binding_id and UD_TYPE = 'bindingTemplate' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(UD_DESC);
+                        http_value(UD_DESC);
                         http('</td><td class="SubInfo">');
                           http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=31&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
@@ -1109,7 +1109,7 @@
                 select TM_NAME   into tmodel_name from UDDI..TMODEL   where  TM_TMODEL_KEY   = ID_TMODEL_KEY;
                 http('<tr>');
                 http('<td class="SubInfo">');
-                http(ID_PARMS);
+                http_value(ID_PARMS);
                 http('</td>');
 
                 http('<td class="SubInfo">');

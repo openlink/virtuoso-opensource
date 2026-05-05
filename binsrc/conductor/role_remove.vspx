@@ -42,7 +42,7 @@
           <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
           <div class="confirm_text">
             <br />
-            The role <?vsp http(sprintf('<b> %s </b>',get_keyword ('role_name', self.vc_page.vc_event.ve_params, ''))); ?> will be removed permanently and there is no way to restore it. <br/>
+            The role <b><?V get_keyword ('role_name', self.vc_page.vc_event.ve_params, '') ?></b> will be removed permanently and there is no way to restore it. <br/>
             Are you sure you want to remove this role?
           </div>
 

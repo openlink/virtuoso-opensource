@@ -191,12 +191,12 @@
                   http('<tr><td>&nbsp;</td><td valign="top">');
                   if ( size_of_tables = 0 )
                   {
-                    http(sprintf('<select disabled="true" name="%s_remote_tbls" multiple="true">',DS_DSN));
+                    http(sprintf('<select disabled="true" name="%V_remote_tbls" multiple="true">',DS_DSN));
                     http ('<option>-No Remote Tables Linked-</option>');
                   }
                   else
                   {
-                    http(sprintf('<select name="%s_remote_tbls" multiple="true">',DS_DSN));
+                    http(sprintf('<select name="%V_remote_tbls" multiple="true">',DS_DSN));
                     for select RT_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_DSN = DS_DSN do {
                         http (sprintf ('<option>%V</option>', RT_NAME));
                   }
@@ -205,12 +205,12 @@
 
                 if (size_of_procs = 0 )
                 {
-                  http(sprintf('<select disabled="true" name="%s_remote_procs" multiple="true">',DS_DSN));
+                  http(sprintf('<select disabled="true" name="%V_remote_procs" multiple="true">',DS_DSN));
                   http ('<option>-No Remote Procedures Linked-</option>');
                 }
                 else
                 {
-                  http(sprintf('<select name="%s_remote_procs" multiple="true">', DS_DSN));
+                  http(sprintf('<select name="%V_remote_procs" multiple="true">', DS_DSN));
                   for select P_NAME from DB.DBA.SYS_PROCEDURES where
                       P_NAME not like '%.vsp' and (
                       ( --proc_is_remote(P_NAME) and

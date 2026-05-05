@@ -236,7 +236,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbt_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
+                    http(sprintf('<tr class="SubAction"><td>%V%V</td><td align="center"><input type="checkbox" name="cbt_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
                     i := i+1;
                   }
                 }
@@ -258,7 +258,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbs_%d" value="%V"/></td></tr>', _den, _name, i, _value));
+                    http(sprintf('<tr class="SubAction"><td>%V%V</td><td align="center"><input type="checkbox" name="cbs_%d" value="%V"/></td></tr>', _den, _name, i, _value));
                     i := i+1;
                   }
                 }
@@ -280,7 +280,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbv_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
+                    http(sprintf('<tr class="SubAction"><td>%V%V</td><td align="center"><input type="checkbox" name="cbv_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
                     i := i+1;
                   }
                 }
@@ -311,7 +311,7 @@
                         _den := '<span class="attention_marker">*</span>';
                         _deni := _deni + 1;
                     }
-                    http(sprintf( '<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbp_%d" value="%V"/></td></tr>',
+                    http(sprintf( '<tr class="SubAction"><td>%V%V</td><td align="center"><input type="checkbox" name="cbp_%d" value="%V"/></td></tr>',
                                   _den, _name, i, _value ));
                     i := i+1;
                   }
