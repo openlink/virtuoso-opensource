@@ -445,9 +445,9 @@
 		?>
 	       <tr class="listing_row_odd">
 		 <td style="width:16px;"> </td>
-		 <td>Logical Path</td>
-		 <td>Type</td>
-		 <td>Executes as</td>
+                 <td><b>Logical Path</b></td>
+                 <td><b>Type</b></td>
+		 <td><b>Executes as</b></td>
 		 <td>
 		 </td>
 	       </tr>

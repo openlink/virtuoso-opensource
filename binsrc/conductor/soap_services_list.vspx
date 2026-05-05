@@ -115,10 +115,10 @@
             <v:template name="ds_paths_header1" type="simple" name-to-remove="table" set-to-remove="bottom">
               <table class="listing">
                 <tr class="listing_header_row">
-                  <th/>
-                  <th>Logical Path</th>
-                  <th>Executes as</th>
-                  <th>Action</th>
+                  <td/>
+                  <td><b>Logical Path</b></td>
+                  <td><b>Executes as</b></td>
+                  <td><b>Action</b></td>
                 </tr>
               </table>
             </v:template>

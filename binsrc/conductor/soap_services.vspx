@@ -158,12 +158,11 @@
 	         if (control.tn_open) {
 	       ?>
 	       <tr class="listing_row_odd">
-		 <th style="width:16px;"> </th>
-		 <th>Logical Path</th>
-		 <th>Type</th>
-		 <th>Executes as</th>
-		 <th>
-		 </th>
+		 <td style="width:16px;">&nbsp;</td>
+                 <td><b>Logical Path</b></td>
+                 <td><b>Type</b></td>
+                 <td><b>Executes as</b></td>
+		 <td>&nbsp;</td>
 	       </tr>
 	       <?vsp } ?>
                <v:node/>
@@ -179,7 +178,7 @@
 		if (xpath_eval ('@lpath', xt) is not null) {
 		?>
 	      <tr class="<?V case when mod(control.tn_position,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-		<td> </td>
+		<td>&nbsp;</td>
 		<td>
 		<img src="images/icons/apps_16.png" alt="Virtual directory" title="Virtual directory"/>
 		<v:url name="label21" value="" url="" xhtml_target="_blank">
