@@ -104,22 +104,22 @@ order by
 	    <v:check-box name="cb_ng_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
 	  </td>
           <td align="left" nowrap="1">
-            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%s" width="80" active="--(1)" name="data_set_browse_messages_url" url="--(concat('msg_news_group_messages.vspx','?','NG_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'&','NS_ID=',cast(self.ns_id as varchar)))" />
+            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%V" width="80" active="--(1)" name="data_set_browse_messages_url" url="--(concat('msg_news_group_messages.vspx','?','NG_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'&','NS_ID=',cast(self.ns_id as varchar)))" />
 <!--
-            <v:label width="80" format="%s" name="news_groups_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+            <v:label width="80" format="%V" name="news_groups_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
 -->
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="news_groups_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+            <v:label width="80" format="%V" name="news_groups_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="news_groups_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+            <v:label width="80" format="%V" name="news_groups_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="news_groups_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
+            <v:label width="80" format="%V" name="news_groups_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="news_groups_browse_label_5" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] = 0 then 'NO' else 'YES' end)" />
+            <v:label width="80" format="%V" name="news_groups_browse_label_5" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] = 0 then 'NO' else 'YES' end)" />
           </td>
           <td align="left" nowrap="1" class="listing_col_action">
 	    <v:button action="simple" style="image" name="news_groups_delete"

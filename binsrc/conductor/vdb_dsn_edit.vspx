@@ -34,10 +34,10 @@
     <v:variable name="ds_login" persist="1" type="varchar" default="''" />
 
     <vm:menu>
-      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%s" url="vdb_dsns.vspx" />
-      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%s" url="vdb_resources.vspx" />
-      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx" />
-      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%s" url="vdb_main.vspx" />
+      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%V" url="vdb_dsns.vspx" />
+      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%V" url="vdb_resources.vspx" />
+      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%V" url="vdb_link.vspx" />
+      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%V" url="vdb_main.vspx" />
     </vm:menu>
 
     <vm:rawheader>

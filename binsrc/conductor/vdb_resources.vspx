@@ -33,9 +33,9 @@
     <v:variable persist="1" name="folder_mask" type="varchar" default="''" />
 
     <vm:menu>
-      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%s" url="vdb_dsns.vspx" />
+      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%V" url="vdb_dsns.vspx" />
       <vm:menuitem value="Known Remote Resources" />
-      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx?mode=1" />
+      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%V" url="vdb_link.vspx?mode=1" />
     </vm:menu>
 
     <vm:rawheader>

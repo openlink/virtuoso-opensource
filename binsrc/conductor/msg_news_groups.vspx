@@ -81,12 +81,12 @@
                     </tr>
                     <tr>
                       <td align="right" colspan="5">
-                        <v:url value="Subscribe to newsgroups" format="%s" width="80" active="--(1)" name="url_group_subscribe" url="--(concat('msg_news_group_subscribe.vspx','?','NS_ID=',cast(self.ns_id as varchar),'&', 'RETRIEVE=YES'))" />
+                        <v:url value="Subscribe to newsgroups" format="%V" width="80" active="--(1)" name="url_group_subscribe" url="--(concat('msg_news_group_subscribe.vspx','?','NS_ID=',cast(self.ns_id as varchar),'&', 'RETRIEVE=YES'))" />
                       </td>
                     </tr>
                     <tr>
                       <td align="left" colspan="5">
-                        <v:url name="back_to_server_list" value="Back to servers list" active="--(1)" format="%s" url="msg_news_conf.vspx" width="80"/>
+                        <v:url name="back_to_server_list" value="Back to servers list" active="--(1)" format="%V" url="msg_news_conf.vspx" width="80"/>
                       </td>
                     </tr>
                   </table>

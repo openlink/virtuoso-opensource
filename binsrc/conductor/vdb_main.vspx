@@ -398,13 +398,13 @@ params := e.ve_params;
 			      xhtml_title="Refresh page" url="vdb_main.vspx">
 		    </v:button>
                     <th>
-                      <v:label name="dsn_h_l" value="'DSN'" format="%s" width="80"/>
+                      <v:label name="dsn_h_l" value="'DSN'" format="%V" width="80"/>
                     </th>
                     <th>
-                      <v:label name="desc_h_l" value="'Description'" format="%s" width="80"/>
+                      <v:label name="desc_h_l" value="'Description'" format="%V" width="80"/>
                     </th>
                     <th>
-                      <v:label name="cred_h_l" value="'Access Credentials'" format="%s" width="80"/>
+                      <v:label name="cred_h_l" value="'Access Credentials'" format="%V" width="80"/>
                     </th>
                     <th>
                     </th>
@@ -443,17 +443,17 @@ params := e.ve_params;
                   <td>
                     <v:label name="dsn_l"
                              value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
-                             format="%s"
+                             format="%V"
                              width="40"/>
                   </td>
                   <td>
                     <v:label name="descr_l"
                              value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                             format="%s"
+                             format="%V"
                              width="40"/>
                   </td>
                   <td  class="listing_col_action">
-                    <v:label name="acc_cred_cmd_l" value="" format="%s" width="80">
+                    <v:label name="acc_cred_cmd_l" value="" format="%V" width="80">
                       <v:after-data-bind>
                           <![CDATA[
                             if ((control.vc_parent as vspx_row_template).te_rowset[2] = 0)
@@ -478,7 +478,7 @@ params := e.ve_params;
                     </v:label>
                   </td>
                   <td>
-                    <v:label name="label6D" value="" format="%s" width="80">
+                    <v:label name="label6D" value="" format="%V" width="80">
                       <v:after-data-bind>
                         <v:script>
                           <![CDATA[

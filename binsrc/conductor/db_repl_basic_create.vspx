@@ -433,7 +433,7 @@
                     </v:template>
                     <v:template name="query_view" type="simple" name-to-remove="" set-to-remove="" enabled="--neq(self.open_edit_templ,self.ds_src_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr)">
                       <td class="listing_col">
-                        <v:label name="l_src_item" value="--(control.vc_parent.vc_parent as vspx_row_template).te_rowset" format="%s"/>
+                        <v:label name="l_src_item" value="--(control.vc_parent.vc_parent as vspx_row_template).te_rowset" format="%V"/>
                       </td>
                       <td class="listing_col_action">
                         <v:button name="ds_src_list_oedit" action="simple" value="edit" style="url">
@@ -688,7 +688,7 @@ self.vc_data_bind(e);
                       <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                     </td>
                     <td class="listing_col">
-                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -883,7 +883,7 @@ self.vc_data_bind(e);
                         http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                   ?>
                     <td class="listing_col">
-                      <v:label name="l_dst_item" value="--(control.vc_parent as vspx_row_template).te_rowset" format="%s"/>
+                      <v:label name="l_dst_item" value="--(control.vc_parent as vspx_row_template).te_rowset" format="%V"/>
                     </td>
                     <td class="listing_col_action">
                       <sup>*</sup>
@@ -1178,7 +1178,7 @@ self.vc_data_bind(e);
       </v:template>
       <div>
         <hr />
-	    <vm:url name="db_repl_basic_ref" format="%s" value="Back to Snapshot Replication List" url="--'db_repl_basic.vspx'"/>
+	    <vm:url name="db_repl_basic_ref" format="%V" value="Back to Snapshot Replication List" url="--'db_repl_basic.vspx'"/>
       </div>
       </td></tr></table>
     </vm:pagebody>

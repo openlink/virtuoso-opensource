@@ -55,10 +55,10 @@
               <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+              <v:url name="b_url43" value="Text Indexing" format="%V" url="cont_page.vspx?page=3" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+              <v:url name="b_url42" value="Resource Types" format="%V" url="cont_page.vspx?page=4" />
             </div>
             <table class="tab_page">
               <tr>

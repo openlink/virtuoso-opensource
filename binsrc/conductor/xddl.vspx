@@ -386,16 +386,16 @@
 					 <tr>
 						 <td class="page_tab<?vsp if (self.page ='1' or  self.page is null) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url21" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+							 <v:url name="b_url21" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab<?vsp if ( self.page ='2' ) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url12" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url12" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab<?vsp if ( self.page ='3' ) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url13" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url13" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -423,12 +423,12 @@
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url12" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url12" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url13" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url13" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -439,14 +439,14 @@
 						<v:template name="tabTemplate2" type="simple" enabled="--case when ( self.page ='2' ) then 1 else 0 end">
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url21" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+							 <v:url name="b_url21" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_selected" align="center">
 							<nobr>&nbsp;&nbsp;Views&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url23" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url23" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -456,12 +456,12 @@
 						<v:template name="tabTemplate3" type="simple" enabled="--case when ( self.page ='3' ) then 1 else 0 end">
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url31" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>
+							 <v:url name="b_url31" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url32" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url32" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 
@@ -610,7 +610,7 @@
 								end of Filter -->
 
 							<img src="images/icons/add_table_16.png" alt="New Table" title="New Table" />
-							<v:url name="n_table_url" value="--'New table'" format="%s" url="--'xddl.vspx?entry=1&mode=table_edit&kind=create&table_editor_page=1'" xhtml_class="uddi"/>
+							<v:url name="n_table_url" value="--'New table'" format="%V" url="--'xddl.vspx?entry=1&mode=table_edit&kind=create&table_editor_page=1'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -780,7 +780,7 @@
 							-->
 
 							<img src="images/icons/add_view_16.png" alt="New View" title="New View" />
-							<v:url name="n_view_url" value="--'New View'" format="%s" url="--'xddl.vspx?entry=1&mode=view_dialog_create'" xhtml_class="uddi"/>
+							<v:url name="n_view_url" value="--'New View'" format="%V" url="--'xddl.vspx?entry=1&mode=view_dialog_create'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -961,7 +961,7 @@
 							-->
 
 							<img src="images/icons/add_script_16.png" alt="New Stored Procedure" title="New Stored Procedure" />
-							<v:url name="n_sp_url" value="--'New Stored Procedure'" format="%s" url="--'xddl.vspx?entry=1&mode=procedure_dialog_create'" xhtml_class="uddi"/>
+							<v:url name="n_sp_url" value="--'New Stored Procedure'" format="%V" url="--'xddl.vspx?entry=1&mode=procedure_dialog_create'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -1296,7 +1296,7 @@ Here is the tabs
 					 <v:template name="template101a" type="simple"  enabled="--case when (self.kind = 'edit') then 1 else 0 end">
 
 						<b>
-						 <v:label name="l_table_name" value="--self.table_name" format="%s"/>
+						 <v:label name="l_table_name" value="--self.table_name" format="%V"/>
 						</b>
 					 </v:template>
 					 <v:template name="template101b" type="simple"  enabled="--case when (self.kind = 'create') then 1 else 0 end">
@@ -1390,43 +1390,43 @@ Here is the tabs
 						<tr>
 						 <td align="center">
 							<b>
-							 <v:label name="label1H" value="'Key'" format="%s" width="80"/>
+							 <v:label name="label1H" value="'Key'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label2H" value="'Name'" format="%s" width="80"/>
+							 <v:label name="label2H" value="'Name'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label3H" value="'Type'" format="%s" width="80"/>
+							 <v:label name="label3H" value="'Type'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label4H" value="'Prec'" format="%s" width="80"/>
+							 <v:label name="label4H" value="'Prec'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label5H" value="'Scale'" format="%s" width="80"/>
+							 <v:label name="label5H" value="'Scale'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label6H" value="'Nullable'" format="%s" width="80"/>
+							 <v:label name="label6H" value="'Nullable'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label7H" value="'Identity'" format="%s" width="80"/>
+							 <v:label name="label7H" value="'Identity'" format="%V" width="80"/>
 							</b>
 						 </td>
 					 <v:template name="showAdvancedLabelTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
 						 <td align="center">
 							<b>
-							 <v:label name="label8H" value="'Advanced'" format="%s" width="80"/>
+							 <v:label name="label8H" value="'Advanced'" format="%V" width="80"/>
 							</b>
 						 </td>
 					 </v:template>
@@ -1793,9 +1793,9 @@ Here is the tabs
 					<v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
 					 <table rules="groups" width="100%">
 						<tr>
-						 <td> <v:label name="brws_key" value="--case when(  xpath_eval(sprintf('/table/pk/field[@col = \'%s\']/@col', xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) ),xml_tree_doc(self.current_table) ) = xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)  ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+						 <td> <v:label name="brws_key" value="--case when(  xpath_eval(sprintf('/table/pk/field[@col = \'%s\']/@col', xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) ),xml_tree_doc(self.current_table) ) = xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)  ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 <!--
-							<v:label name="brws_key"  format="%s" width="80">
+							<v:label name="brws_key"  format="%V" width="80">
 							 <v:after-data-bind>
 								<script><![CDATA[
 							     declare col_name varchar;
@@ -1816,7 +1816,7 @@ Here is the tabs
 -->
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_name" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80">
+							<v:label name="brws_name" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" format="%V" width="80">
 							 <v:after-data-bind>
 								<script><![CDATA[
 							     declare col_name varchar;
@@ -1828,19 +1828,19 @@ Here is the tabs
 							</v:label>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_type" value="--xpath_eval('@type-text',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80"/>
+							<v:label name="brws_type" value="--xpath_eval('@type-text',(control.vc_parent as vspx_row_template).te_rowset)" format="%V" width="80"/>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_prec" value="--case when (xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) = '2147483647') then '&nbsp' else  xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							<v:label name="brws_prec" value="--case when (xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) = '2147483647') then '&nbsp' else  xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_scale" value="--case when (xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) is null) then '&nbsp' else  xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							<v:label name="brws_scale" value="--case when (xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) is null) then '&nbsp' else  xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						 </td>
 						 <td align="center" nowrap="1">
-							<v:label name="brws_nullable" value="--case when ( xpath_eval('@nullable',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+							<v:label name="brws_nullable" value="--case when ( xpath_eval('@nullable',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 						 </td>
 						 <td align="center" nowrap="1">
-							<v:label name="brws_identity" value="--case when ( xpath_eval('@identity',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+							<v:label name="brws_identity" value="--case when ( xpath_eval('@identity',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 						 </td>
 						 <v:template name="showAdvancedBrowseTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
 						 <td><!--Advanced option --></td>
@@ -1881,17 +1881,17 @@ Here is the tabs
 							  <table>
 								  <tr><td>Collation</td>
 						      <td align="left" nowrap="1">
-							      <v:label name="brws_collation" value="--case when (xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset)='xsi:nil') then '' else xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							      <v:label name="brws_collation" value="--case when (xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset)='xsi:nil') then '' else xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						       </td>
 									</tr>
 								  <tr><td>Identified By</td>
 						       <td align="left" nowrap="1">
-							     <v:label name="brws_identified" value="--case when (xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) = 'xsi:nil') then '' else xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							     <v:label name="brws_identified" value="--case when (xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) = 'xsi:nil') then '' else xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						       </td>
 									</tr>
 								  <tr><td>Default</td>
 						        <td align="left" nowrap="1">
-							      <v:label name="brws_default" value="--case  when cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) is null then '' else cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) end" format="%s" width="80"/>
+							      <v:label name="brws_default" value="--case  when cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) is null then '' else cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) end" format="%V" width="80"/>
 						        </td>
 									</tr>
 								</table>
@@ -2425,12 +2425,12 @@ Here is the tabs
 
 						 <td align="center" width="10%">
 							<b>
-							 <v:label name="constr_label1" value="'Name'" format="%s" width="80"/>
+							 <v:label name="constr_label1" value="'Name'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center" width="100%">
 							<b>
-							 <v:label name="constr_label2" value="'Condition'" format="%s" width="512"/>
+							 <v:label name="constr_label2" value="'Condition'" format="%V" width="512"/>
 							</b>
 						 </td>
 						 <td align="center">&nbsp;</td>
@@ -2538,10 +2538,10 @@ Here is the tabs
 					 <table rules="groups" width="100%">
 						<tr>
 						 <td>
-							<v:label name="brws_constraint_name" value="--cast (xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%s" width="80"/>
+							<v:label name="brws_constraint_name" value="--cast (xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%V" width="80"/>
 						 </td>
 						 <td>
-							<v:label name="brws_constraint" value="--cast (xpath_eval('./code/text()',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%s" width="80"/>
+							<v:label name="brws_constraint" value="--cast (xpath_eval('./code/text()',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%V" width="80"/>
 						 </td>
 						 <td nowrap="1">
 							<v:button name="ds_constr_edit" action="simple" value="Edit"/>
@@ -5801,7 +5801,7 @@ Show Procedures
     			 </v:template>
 				 </td>
          <td class="listing_col">
-					<v:label name="chooser_labelName" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+					<v:label name="chooser_labelName" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V" width="80"/>
 				 </td>
          <?vsp http ('</tr>'); ?>
 			 </table>

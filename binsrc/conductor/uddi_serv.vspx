@@ -51,9 +51,9 @@
                       <td class="page_tab_selected" align="center">
                         <nobr>&nbsp;&nbsp;Businesses&nbsp;&nbsp;</nobr>
                       </td>
-                      <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url12" value="--'Bindings'" format="%s" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td -->
+                      <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url12" value="--'Bindings'" format="%V" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td -->
                       <td class="page_tab" align="center">
-                        <nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'tModels'" format="%V" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         &amp;nbsp;
@@ -61,13 +61,13 @@
                     </v:template>
                     <v:template name="tabTemplate2" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2' ) then 1 else 0 end">
                       <td class="page_tab" align="center">
-                        <nobr>&nbsp;&nbsp;<v:url name="b_url21" value="--'Businesses'" format="%s" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url21" value="--'Businesses'" format="%V" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_selected" align="center">
                         <nobr>&nbsp;&nbsp;Bindings&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab" align="center">
-                        <nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'tModels'" format="%V" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         &amp;nbsp;
@@ -75,9 +75,9 @@
                     </v:template>
                     <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
                       <td class="page_tab" align="center">
-                        <nobr>&nbsp;&nbsp;<v:url name="b_url31" value="--'Businesses'" format="%s" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url31" value="--'Businesses'" format="%V" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
-                      <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url32" value="--'Bindings'" format="%s" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td-->
+                      <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url32" value="--'Bindings'" format="%V" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td-->
                       <td class="page_tab_selected" align="center">
                         <nobr>&nbsp;&nbsp;tModels&nbsp;&nbsp;</nobr>
                       </td>
@@ -107,7 +107,7 @@
                             <th>Operator</th>
                             <th colspan="2"></th>
                             <th class="HeaderButton">
-                              <v:url name="n_ent_url" value="--'New business'" format="%s" url="--'uddi_serv_create.vspx?page=entity&mode=create'" xhtml_class="uddi"/>
+                              <v:url name="n_ent_url" value="--'New business'" format="%V" url="--'uddi_serv_create.vspx?page=entity&mode=create'" xhtml_class="uddi"/>
                             </th>
                           </tr>
                             <?vsp
@@ -172,7 +172,7 @@
                                 <th>Authorized name</th>
                                 <th/>
                                 <th>
-                                  <v:url name="n_model_url" value="--'New model'" format="%s" url="--'uddi_serv_create.vspx?page=tmodel&mode=create'" xhtml_class="uddi"/>
+                                  <v:url name="n_model_url" value="--'New model'" format="%V" url="--'uddi_serv_create.vspx?page=tmodel&mode=create'" xhtml_class="uddi"/>
                                 </th>
         </tr></thead>
         <tbody>

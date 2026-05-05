@@ -158,7 +158,7 @@
               <?vsp http (self.ord_show (self.ord, self.ord_seq, 'edit')); ?>
             </th>
             <th class="action new_item">
-              <v:url name="account_create_ref" format="%s" value="--'Create Account'" url="--'account_create.vspx?mode=create'" />
+              <v:url name="account_create_ref" format="%V" value="--'Create Account'" url="--'account_create.vspx?mode=create'" />
             </th>
           </tr>
         </thead>
@@ -178,18 +178,18 @@
         <tr>
           <td nowrap="1">
             <img src="images/icons/user_16.png" alt="User" title="User"/>
-            <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+            <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
          </td>
          <td nowrap="1">
            <v:label name="label5"
                     value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                    format="%s"
+                    format="%V"
                     width="80"/>
          </td>
          <td nowrap="1">
            <v:label name="label6"
                     value="--date_fmt ((control.vc_parent as vspx_row_template).te_rowset[2])"
-                    format="%s"
+                    format="%V"
            />
          </td>
          <td nowrap="1">

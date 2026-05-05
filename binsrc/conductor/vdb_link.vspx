@@ -53,10 +53,10 @@
     <v:variable name="v_msgs" persist="0" type="any" default="''" />
     <v:variable name="p_msgs" persist="0" type="any" default="''" />
     <vm:menu>
-      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%s" url="vdb_dsns.vspx" />
-      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%s" url="vdb_resources.vspx" />
+      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%V" url="vdb_dsns.vspx" />
+      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%V" url="vdb_resources.vspx" />
       <vm:menuitem value="Link Remote Resources" />
-      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%s" url="vdb_main.vspx" />
+      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%V" url="vdb_main.vspx" />
     </vm:menu>
     <vm:rawheader>
       <td>

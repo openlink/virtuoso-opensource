@@ -105,19 +105,19 @@
         <tr valign='top'>
           <td>
             <div class="page_tab_selected">
-              <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" />
+              <v:url name="b_url31" value="Users" format="%V" url="--'accounts_page.vspx?page=1'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" />
+              <v:url name="b_url32" value="Roles" format="%V" url="--'accounts_page.vspx?page=2'" />
             </div>
             <div class="page_tab">
               <v:url name="b_url14" value="Grants" url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" />
+              <v:url name="b_url15" value="LDAP Import" format="%V" url="--'accounts_page.vspx?page=4'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" />
+              <v:url name="b_url15" value="LDAP Servers" format="%V" url="--'accounts_page.vspx?page=5'" />
             </div>
             <div class="tab_page_new">
                         <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
@@ -218,7 +218,7 @@
                                     <td>
                                       <v:text name="t_full_name"
                                               value="--y_utf2wide (self.full_name)"
-                                              format="%s"
+                                              format="%V"
                                               xhtml_onblur="--case when self.mode='edit' then '' else 'onExitAccountName()' end"
                                               xhtml_tabindex="1"/>
                                     </td>

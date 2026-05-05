@@ -109,8 +109,8 @@
 	      <td nowrap="nowrap" width="16px">
                 <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[1])" initial-checked="0" />
               </td>
-              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
-              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/></td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/></td>
             </tr>
         </v:template>
 	<v:template name="dg_empty" type="if-not-exists">
@@ -276,7 +276,7 @@
               <v:check-box name="cb1" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="1" width="184" height="24" />
             </td>
             <td nowrap="nowrap">
-              <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+              <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
             </td>
             <td nowrap="nowrap" ALIGN="right">
               <v:check-box name="cr" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />

@@ -161,7 +161,7 @@
             <v:template type="browse" name="ds_browse">
               <tr>
                 <td class="listing_col"><img class="listing_icon" src="images/icons/alarm_16.png" alt="Event" title="Event"/>
-                  <v:label format="%s" name="ds_label_1" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                  <v:label format="%V" name="ds_label_1" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td class="listing_col">
                   <?vsp
@@ -176,16 +176,16 @@
                   ?>
                 </td>
                 <td class="listing_col">
-                  <v:label format="%s" name="ds_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" fmt-function="yac_hum_datefmt" />
+                  <v:label format="%V" name="ds_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" fmt-function="yac_hum_datefmt" />
                 </td>
                 <td class="listing_col">
-                  <v:label format="%s" name="ds_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt" />
+                  <v:label format="%V" name="ds_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt" />
                 </td>
                 <td class="listing_col">
-                  <v:label format="%s" name="ds_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset[5])" fmt-function="yac_hum_min_to_dur" />
+                  <v:label format="%V" name="ds_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset[5])" fmt-function="yac_hum_min_to_dur" />
                 </td>
                 <td class="listing_col">
-                  <v:label format="%s" name="ds_label_5" value="--((yac_hum_min_to_dur ((control.vc_parent as vspx_row_template).te_rowset[3])))" />
+                  <v:label format="%V" name="ds_label_5" value="--((yac_hum_min_to_dur ((control.vc_parent as vspx_row_template).te_rowset[3])))" />
                 </td>
                 <td class="listing_col_action">
                   <v:button action="simple" style="image" name="url1"

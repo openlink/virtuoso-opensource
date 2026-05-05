@@ -917,7 +917,7 @@
 
 
       		<v:template type="simple" name="pub_procs2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 1) then 1 else 0 end">
-  	        <h3>Publish Procedures for user <v:label name="l_add_pr_user" value="--self.soapuser" format="%s"/></h3>
+  	        <h3>Publish Procedures for user <v:label name="l_add_pr_user" value="--self.soapuser" format="%V"/></h3>
             <table class="ctl_grp">
               <tr>
                 <td>
@@ -1014,11 +1014,11 @@
                         <input type="checkbox" name="cb_add_pr" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.roles_grant_list) then 'Published' else '' end" format="%s" />
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.roles_grant_list) then 'Published' else '' end" format="%V" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
-                        <v:label name="l_add_pr" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                        <v:label name="l_add_pr" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                       </td>
                       <td class="listing_col">
                         <v:label name="l_add_pr_desc" value="" >
@@ -1186,7 +1186,7 @@
 		      </v:template>
 
       		<v:template type="simple" name="pub_mod2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 2) then 1 else 0 end">
-  	        <h3>Publish PL Modules for user <v:label name="l_add_mod_user" value="--self.soapuser" format="%s"/></h3>
+  	        <h3>Publish PL Modules for user <v:label name="l_add_mod_user" value="--self.soapuser" format="%V"/></h3>
             <table class="ctl_grp">
               <tr>
                 <td>
@@ -1280,11 +1280,11 @@
                         <input type="checkbox" name="cb_add_mod" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.mod_grant_list) then 'Published' else '' end" format="%s" />
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.mod_grant_list) then 'Published' else '' end" format="%V" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/script_16.png" alt="PL Module" title="PL Module"/>
-                        <v:label name="l_add_mod" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                        <v:label name="l_add_mod" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                       </td>
                       <td class="listing_col">
                         N/A
@@ -1359,7 +1359,7 @@
   	      </v:template>
 
       		<v:template type="simple" name="pub_udt2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 3) then 1 else 0 end">
-  	        <h3>Publish User Defined Types for user <v:label name="l_add_udt_user" value="--self.soapuser" format="%s"/></h3>
+  	        <h3>Publish User Defined Types for user <v:label name="l_add_udt_user" value="--self.soapuser" format="%V"/></h3>
             <table class="ctl_grp">
               <tr>
                 <td>
@@ -1451,11 +1451,11 @@
                         <input type="checkbox" name="cb_add_udt" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                                            <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.udt_grant_list) then 'Published' else '' end" format="%s" />
+                                            <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.udt_grant_list) then 'Published' else '' end" format="%V" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
-                        <v:label name="l_add_udt" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                        <v:label name="l_add_udt" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                       </td>
                       <td class="listing_col">
                         N/A
@@ -1548,7 +1548,7 @@
   	      </v:template>
 
       		<v:template type="simple" name="pub_xml2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 4) then 1 else 0 end">
-  	        <h3>Publish Saved Queries for user <v:label name="l_add_xml_user" value="--self.soapuser" format="%s"/></h3>
+  	        <h3>Publish Saved Queries for user <v:label name="l_add_xml_user" value="--self.soapuser" format="%V"/></h3>
                                   <v:data-set
                                     name="ds_add_xml"
                                     sql="select RES_FULL_PATH
@@ -1589,11 +1589,11 @@
                         <input type="checkbox" name="cb_add_xml" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.xml_grant_list) then 'Published' else '' end" format="%s" />
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.xml_grant_list) then 'Published' else '' end" format="%V" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/apps_16.png" alt="Saved Query" title="Saved Query"/>
-                        <v:label name="l_add_xml" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                        <v:label name="l_add_xml" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                       </td>
                       <td class="listing_col">
                         <v:label name="l_add_xml_desc" value="" >

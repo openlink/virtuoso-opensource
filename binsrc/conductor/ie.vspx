@@ -36,12 +36,12 @@
               Import
             </div>
             <div class="page_tab">
-              <v:url name="b_url13" value="--'Export'" format="%s" url="--'ie.vspx?page=2'" />
+              <v:url name="b_url13" value="--'Export'" format="%V" url="--'ie.vspx?page=2'" />
             </div>
           </v:template>
           <v:template name="tabTemplate4" type="simple" enabled="--equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '2')">
             <div class="page_tab">
-              <v:url name="b_url31" value="--'Import'" format="%s" url="--'ie.vspx?page=1'" />
+              <v:url name="b_url31" value="--'Import'" format="%V" url="--'ie.vspx?page=1'" />
             </div>
             <div class="page_tab_selected">
               Export

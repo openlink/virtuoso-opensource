@@ -267,14 +267,14 @@
       <li>
         <xsl:choose>
           <xsl:when test="@type='hot' or @url">
-            <v:url format="%s">
+            <v:url format="%V">
               <xsl:copy-of select="@name" />
               <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
               <xsl:attribute name="url">--'<xsl:value-of select="@url"/>'</xsl:attribute>
             </v:url>
           </xsl:when>
           <xsl:when test="@ref">
-            <v:url format="%s">
+            <v:url format="%V">
               <xsl:copy-of select="@name" />
               <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
               <xsl:attribute name="url">--<xsl:value-of select="@ref"/></xsl:attribute>

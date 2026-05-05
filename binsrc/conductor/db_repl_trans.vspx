@@ -40,10 +40,10 @@
       </v:before-data-bind>
       <div class="main_tab_page">
         <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url31" value="--'Publications'" format="%s" url="--'db_repl_trans.vspx?page=1'"/>
+          <v:url name="b_url31" value="--'Publications'" format="%V" url="--'db_repl_trans.vspx?page=1'"/>
         </div>
         <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+          <v:url name="b_url13" value="--'Subscriptions'" format="%V" url="--'db_repl_trans.vspx?page=2'"/>
         </div>
         <div class="tab_page_new">
           <v:template name="ent_template" type="simple" enabled="--equ (self.page, '1')">

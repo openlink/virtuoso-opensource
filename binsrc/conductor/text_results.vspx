@@ -42,16 +42,16 @@
       <table>
         <tr>
           <td class="SubInfo">
-            <vm:url name="ind_mode_ref" format="%s" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
+            <vm:url name="ind_mode_ref" format="%V" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
           </td>
           <td class="SubInfo">
-            <vm:url name="search_tr_ref" format="%s" value="--'Search'" url="--'text_search.vspx'"/>
+            <vm:url name="search_tr_ref" format="%V" value="--'Search'" url="--'text_search.vspx'"/>
           </td>
           <td class="SubInfo">
-            <vm:url name="trig_que_ref" format="%s" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
+            <vm:url name="trig_que_ref" format="%V" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
           </td>
           <td class="SubInfo">
-            <vm:url name="trigger_result_ref" format="%s" value="--'Trigger Results'" url="--'text_results.vspx'"/>
+            <vm:url name="trigger_result_ref" format="%V" value="--'Trigger Results'" url="--'text_results.vspx'"/>
           </td>
         </tr>
       </table>

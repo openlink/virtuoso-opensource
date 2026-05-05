@@ -33,9 +33,9 @@
   <vm:pagewrapper>
     <vm:menu>
       <vm:menuitem value="Known Datasources" />
-      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%s" url="vdb_resources.vspx" />
-      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx?mode=1" />
-      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%s" url="vdb_main.vspx" />
+      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%V" url="vdb_resources.vspx" />
+      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%V" url="vdb_link.vspx?mode=1" />
+      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%V" url="vdb_main.vspx" />
     </vm:menu>
 
     <vm:rawheader>

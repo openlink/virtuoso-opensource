@@ -133,7 +133,7 @@ _done:
           <tr>
             <td width="100%">
               <span class="Warning">
-                <v:label name="error_label" value="--(self.error_message)" format="%s"/>
+                <v:label name="error_label" value="--(self.error_message)" format="%V"/>
               </span>
             </td>
           </tr>
@@ -142,7 +142,7 @@ _done:
           <tr>
             <td width="100%">
               <span class="Warning">
-                <v:label name="processing_headers" value="Downloading message headers. Please wait..." format="%s"/>
+                <v:label name="processing_headers" value="Downloading message headers. Please wait..." format="%V"/>
               </span>
             </td>
           </tr>
@@ -160,7 +160,7 @@ _done:
           </tr>
           <tr>
             <td align="right" colspan="5">
-              <v:url value="Get more messages" format="%s" width="80" active="--(1)" name="url_group_messages_more" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=1'))" >
+              <v:url value="Get more messages" format="%V" width="80" active="--(1)" name="url_group_messages_more" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=1'))" >
                 <v:before-render>
                   <v:script>
                     <![CDATA[
@@ -178,7 +178,7 @@ _done:
           </tr>
           <tr>
             <td align="right" colspan="5">
-              <v:url value="Get new messages" format="%s" width="80" active="--(1)" name="url_group_messages_new" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=0'))" >
+              <v:url value="Get new messages" format="%V" width="80" active="--(1)" name="url_group_messages_new" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=0'))" >
                 <v:before-render>
                   <v:script>
                     <![CDATA[
@@ -197,7 +197,7 @@ _done:
         </v:template>
         <tr>
           <td align="left" colspan="5">
-            <v:url name="back_to_groups_list" value="Back to groups list" active="--(1)" format="%s" url="--(concat('msg_news_groups.vspx?NS_ID=',cast(self.ns_id as varchar)))" width="80"/>
+            <v:url name="back_to_groups_list" value="Back to groups list" active="--(1)" format="%V" url="--(concat('msg_news_groups.vspx?NS_ID=',cast(self.ns_id as varchar)))" width="80"/>
           </td>
         </tr>
       </table>

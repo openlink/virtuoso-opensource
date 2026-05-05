@@ -731,7 +731,7 @@
 
      <div>
              <hr />
-       <vm:url name="db_repl_sub_ref" format="%s" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
+       <vm:url name="db_repl_sub_ref" format="%V" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
      </div>
         </td>
       </tr>

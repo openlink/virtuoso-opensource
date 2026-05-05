@@ -121,7 +121,7 @@
                         <th>Group URI</th>
                         <th class="action">
                           <v:url value='<img src="images/icons/add_16.png" hspace="3" border="0"/>Add New'
-                                 format="%s"
+                                 format="%V"
                                  name="uadd"
                                  url="sec_auth_sponger_1.vspx?add=1"
                                  render-only="1"
@@ -143,7 +143,7 @@
                         </td>
                         <td class="action">
                           <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
-                                 format="%s"
+                                 format="%V"
                                  name="uedit"
                                  url="--sprintf ('sec_auth_sponger_1.vspx?edit=%U', AG_GROUP)"
                                  render-only="1"
@@ -151,7 +151,7 @@
                                  xhtml_alt="Edit"
                           />
                           <v:url value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-                                 format="%s"
+                                 format="%V"
                                  name="udel"
                                  url="--sprintf ('sec_auth_sponger_1.vspx?del=%U', AG_GROUP)"
                                  render-only="1"

@@ -249,7 +249,7 @@
                 <tr>
                   <td>
                     <b>There are no entries in Existing Hosted Domain list of ODS Site Settings and no existing non-default HTTP listeners.</b><br/>
-                    To create new domain first <v:url name="site_creatre_create_ref" format="%s" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
+                    To create new domain first <v:url name="site_creatre_create_ref" format="%V" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
                   </td>
                 </tr>
                 <tr>

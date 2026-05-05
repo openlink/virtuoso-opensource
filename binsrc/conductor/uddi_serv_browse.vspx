@@ -165,132 +165,132 @@
 </v:template>
 <v:template name="tabTemplate1" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
       <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url12" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url13" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url14" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url15" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url16" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
-                                 <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url17" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td -->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back1" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url12" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url13" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url14" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url15" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url16" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url17" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td -->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back1" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
 </v:template>
 <v:template name="tabTemplate2" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url21" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url21" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Services&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url23" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url24" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url25" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url26" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
-                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url27" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back2" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url23" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url24" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url25" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url26" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url27" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back2" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate3" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url31" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url32" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url31" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url32" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Contacts&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url34" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url35" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url36" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
-                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url37" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back3" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url34" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url35" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url36" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url37" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back3" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='4' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url41" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url42" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url43" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url41" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url42" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url43" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Identifiers&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url45" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url46" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
-                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url47" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back4" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url45" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url46" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url47" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back4" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate5" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='5' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url51" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url52" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url53" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url54" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url51" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url52" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url53" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url54" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Categories&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url56" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
-                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url57" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back5" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url56" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url57" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back5" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate6" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='6' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url61" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url62" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url63" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url64" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url65" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url61" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url62" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url63" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url64" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url65" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Discovery URLs&nbsp;&nbsp;</nobr></td>
-                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url67" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back6" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url67" value="--'Relationships'" format="%V" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back6" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate7" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='7' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url71" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url72" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url73" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url74" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url75" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url76" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url71" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url72" value="--'Services'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url73" value="--'Contacts'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url74" value="--'Identifiers'" format="%V" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url75" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url76" value="--'Discovery URLs'" format="%V" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
                                  <!--td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Relationships&nbsp;&nbsp;</nobr></td-->
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back7" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back7" value="--'Back'" format="%V" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
 <!-- This is the contact items-->
               <v:template name="tabTemplate11" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='11') then 1 else 0 end">
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url112" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url113" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url114" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back11" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url112" value="--'E-Mail'" format="%V" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url113" value="--'Phone'" format="%V" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url114" value="--'Address'" format="%V" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back11" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate12" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='12' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url121" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url121" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;E-Mail&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url123" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url124" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back12" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url123" value="--'Phone'" format="%V" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url124" value="--'Address'" format="%V" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back12" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate13" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='13' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url131" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url132" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url131" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url132" value="--'E-Mail'" format="%V" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Phone&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url134" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back13" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url134" value="--'Address'" format="%V" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back13" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate14" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='14' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url141" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url142" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url143" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url141" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url142" value="--'E-Mail'" format="%V" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url143" value="--'Phone'" format="%V" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Address&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back14" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back14" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
 <!-- Service -->
               <v:template name="tabTemplate21" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='21') then 1 else 0 end">
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url212" value="--'Bindings'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url213" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back21" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url212" value="--'Bindings'" format="%V" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url213" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back21" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate22" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='22' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url221" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url221" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Bindings&nbsp;&nbsp;</nobr></td>
-                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url223" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back22" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url223" value="--'Categories'" format="%V" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back22" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate23" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='23' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url231" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url232" value="--'Bindings'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url231" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url232" value="--'Bindings'" format="%V" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Categories&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back23" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back23" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
 
               <v:template name="tabTemplate31" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='31') then 1 else 0 end">
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url312" value="--'Instance Info'" format="%s" url="--'uddi_serv_browse.vspx?page=32'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back31" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url312" value="--'Instance Info'" format="%V" url="--'uddi_serv_browse.vspx?page=32'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back31" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
                                 </v:template>
               <v:template name="tabTemplate32" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='32' ) then 1 else 0 end">
-                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url321" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=31'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url321" value="--'Summary'" format="%V" url="--'uddi_serv_browse.vspx?page=31'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
                                   <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Instance Info&nbsp;&nbsp;</nobr></td>
-                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back32" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back32" value="--'Back'" format="%V" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
                                </v:template>
                             </tr>
                     </table>
@@ -442,7 +442,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Contact to:</b></td>
                       <td class="ListHeader" width="50%" colspan="3"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=contact&mode=create&business_key=%U',self.uuid_value)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=contact&mode=create&business_key=%U',self.uuid_value)"/>
                       </td>
                   </tr>
               <?vsp
@@ -720,7 +720,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4" ><b>E-Mails</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_email_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=email&mode=create&contact_key=%U',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_email_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=email&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -764,7 +764,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4"><b>Phones</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_phone_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=phone&mode=create&contact_key=%U',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_phone_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=phone&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -809,7 +809,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4" ><b>Addresses</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_address_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=address&mode=create&contact_key=%U',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_address_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=address&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -905,7 +905,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Bounded services</b></td>
                       <td class="ListHeader" width="50%" colspan="3"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_binding_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=binding&mode=create&binding_service_key=%U', self.service_ident )"/>
+                        <v:url xhtml_class="uddi" name="b_url_binding_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=binding&mode=create&binding_service_key=%U', self.service_ident )"/>
                       </td>
                   </tr>
               <?vsp
@@ -1098,7 +1098,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Instance Infos</b></td>
                       <td class="ListHeader" width="50%" colspan="4"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_instance_info_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=instance_info&mode=create&binding_key=%U', self.binding_ident )"/>
+                        <v:url xhtml_class="uddi" name="b_url_instance_info_create" value="--'Add'" format="%V" url="--sprintf('uddi_serv_create.vspx?page=instance_info&mode=create&binding_key=%U', self.binding_ident )"/>
                       </td>
                   </tr>
               <?vsp

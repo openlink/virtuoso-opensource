@@ -137,18 +137,18 @@
                       <v:check-box name="cb_foreign_keys_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
             		    </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>)
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
+                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>)
                     </td>
                     <td class="listing_col">
-                      <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
-                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%s"/>)
-                      <v:label name="l_upd1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],1)" value="ON UPDATE CASCADE" format="%s"/>
-                      <v:label name="l_upd2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],2)" value="ON UPDATE SET NULL" format="%s"/>
-                      <v:label name="l_upd3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],3)" value="ON UPDATE SET DEFAULT" format="%s"/>
-                      <v:label name="l_del1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],1)" value="ON DELETE CASCADE" format="%s"/>
-                      <v:label name="l_del2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],2)" value="ON DELETE SET NULL" format="%s"/>
-                      <v:label name="l_del3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],3)" value="ON DELETE SET DEFAULT" format="%s"/>
+                      <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%V"/>
+                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%V"/>)
+                      <v:label name="l_upd1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],1)" value="ON UPDATE CASCADE" format="%V"/>
+                      <v:label name="l_upd2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],2)" value="ON UPDATE SET NULL" format="%V"/>
+                      <v:label name="l_upd3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],3)" value="ON UPDATE SET DEFAULT" format="%V"/>
+                      <v:label name="l_del1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],1)" value="ON DELETE CASCADE" format="%V"/>
+                      <v:label name="l_del2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],2)" value="ON DELETE SET NULL" format="%V"/>
+                      <v:label name="l_del3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],3)" value="ON DELETE SET DEFAULT" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -218,10 +218,10 @@
                       <v:check-box name="cb_checks_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
             		    </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                     </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>

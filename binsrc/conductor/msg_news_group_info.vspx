@@ -74,7 +74,7 @@ where
                   <b>Server Name</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -82,7 +82,7 @@ where
                   <b>News Group Name</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -90,7 +90,7 @@ where
                   <b>Last Time Updated</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_3" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[3] is null then '' else sprintf('%02d-%02d-%04d', month((control.vc_parent as vspx_row_template).te_rowset[3]), dayofmonth((control.vc_parent as vspx_row_template).te_rowset[3]), year((control.vc_parent as vspx_row_template).te_rowset[3])) end)" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_3" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[3] is null then '' else sprintf('%02d-%02d-%04d', month((control.vc_parent as vspx_row_template).te_rowset[3]), dayofmonth((control.vc_parent as vspx_row_template).te_rowset[3]), year((control.vc_parent as vspx_row_template).te_rowset[3])) end)" />
                 </td>
               </tr>
               <tr>
@@ -98,7 +98,7 @@ where
                   <b>News Status</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -106,7 +106,7 @@ where
                   <b>Auto Updated</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_5" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] = 0 then 'NO' else 'YES' end)" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_5" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] = 0 then 'NO' else 'YES' end)" />
                 </td>
               </tr>
               <tr>
@@ -114,7 +114,7 @@ where
                   <b>Last Transfer Set</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_6" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[6] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_6" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[6] as varchar))" />
                 </td>
               </tr>
             </table>
@@ -126,7 +126,7 @@ where
                   <b>First Message #</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_7" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[7] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_7" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[7] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -134,7 +134,7 @@ where
                   <b>Last Message #</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_8" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[8] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_8" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[8] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -142,7 +142,7 @@ where
                   <b>Messages to download</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_9" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[9] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_9" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[9] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -150,7 +150,7 @@ where
                   <b>Update Interval (min)</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_10" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[11] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_10" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[11] as varchar))" />
                 </td>
               </tr>
               <tr>
@@ -158,7 +158,7 @@ where
                   <b>Clear Interval (days)</b>
                 </td>
                 <td align="left" nowrap="1" width="50%">
-                  <v:label width="80" format="%s" name="group_info_browse_label_11" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[12] as varchar))" />
+                  <v:label width="80" format="%V" name="group_info_browse_label_11" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[12] as varchar))" />
                 </td>
               </tr>
             </table>
@@ -190,7 +190,7 @@ where
                       <b>Server Name</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_1" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[0] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_1" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[0] as varchar))" />
                       <v:text width="80" type="hidden" error-glyph="*" value="" name="group_info_update_field_1" column="NG_SERVER"/>
                     </td>
                   </tr>
@@ -199,7 +199,7 @@ where
                       <b>News Group Name</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_2" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[2] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_2" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[2] as varchar))" />
                       <v:text width="80" type="hidden" error-glyph="*" value="" name="group_info_update_field_2" column="NG_NAME" />
                     </td>
                   </tr>
@@ -208,7 +208,7 @@ where
                       <b>Last Time Updated</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_3" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[3] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_3" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[3] as varchar))" />
                     </td>
                   </tr>
                   <tr>
@@ -216,7 +216,7 @@ where
                       <b>News Status</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_4" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[4] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_4" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[4] as varchar))" />
                     </td>
                   </tr>
                   <tr>
@@ -289,7 +289,7 @@ else {
                       <b>Last Transfer Set</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_6" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[6] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_6" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[6] as varchar))" />
                     </td>
                   </tr>
                 </table>
@@ -301,7 +301,7 @@ else {
                       <b>First Message #</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_7" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[7] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_7" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[7] as varchar))" />
                     </td>
                   </tr>
                   <tr>
@@ -309,7 +309,7 @@ else {
                       <b>Last Message #</b>
                     </td>
                     <td align="left" nowrap="1" width="50%">
-                      <v:label width="80" format="%s" name="group_info_update_label_8" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[8] as varchar))" />
+                      <v:label width="80" format="%V" name="group_info_update_label_8" value="--(cast(((self.vc_find_descendant_control('group_info') as vspx_data_set).ds_current_row).te_rowset[8] as varchar))" />
                     </td>
                   </tr>
                   <tr>

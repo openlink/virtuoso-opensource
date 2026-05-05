@@ -58,10 +58,10 @@
               <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+              <v:url name="b_url43" value="Text Indexing" format="%V" url="cont_page.vspx?page=3" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+              <v:url name="b_url42" value="Resource Types" format="%V" url="cont_page.vspx?page=4" />
             </div>
             <table class="tab_page">
               <tr>
@@ -70,7 +70,7 @@
                     <tr>
                       <td align="right">
                         <v:form name="robot_form1" type="simple" method="POST" action="">
-                          <v:button action="simple" value="Import Queues" name="robot_button36" format="%s">
+                          <v:button action="simple" value="Import Queues" name="robot_button36" format="%V">
                             <v:on-post>
                               <![CDATA[
                                 http_request_status('HTTP/1.1 302 Found');
@@ -79,7 +79,7 @@
                               ]]>
                             </v:on-post>
                           </v:button>
-                          <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%s">
+                          <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%V">
                             <v:on-post>
                               <![CDATA[
                                 http_request_status ('HTTP/1.1 302 Found');

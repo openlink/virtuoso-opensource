@@ -101,10 +101,10 @@
                 </v:template>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                <v:label format="%V" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])"/>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_4" value="">
+                <v:label format="%V" name="data_set1_browse_label_4" value="">
                   <v:after-data-bind>
                     control.ufl_value := 'table';
                     if ((control.vc_parent as vspx_row_template).te_rowset[1] = 1)
@@ -113,10 +113,10 @@
                 </v:label>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt"/>
+                <v:label format="%V" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt"/>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_3" value="--'REPL_UPDATE_SNAPSHOT ' || ((control.vc_parent as vspx_row_template).te_rowset[0])" fmt-function="interval_fmt"/>
+                <v:label format="%V" name="data_set1_browse_label_3" value="--'REPL_UPDATE_SNAPSHOT ' || ((control.vc_parent as vspx_row_template).te_rowset[0])" fmt-function="interval_fmt"/>
               </td>
               <td class="listing_col_action">
                 <!--
@@ -136,9 +136,9 @@
                   </v:on-post>
                 </v:button>
                 -->
-                <v:url name="url1" value="--'Subscriptions'" format="%s" url="--concat('db_repl_bi_edit.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
-                <v:url name="url3" value="--'Conflict Resolvers'" format="%s" url="--concat('db_repl_bi_cr.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
-                <v:url name="url2" value="--'Delete'" format="%s" url="--concat('db_repl_bi_remove.vspx?item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                <v:url name="url1" value="--'Subscriptions'" format="%V" url="--concat('db_repl_bi_edit.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                <v:url name="url3" value="--'Conflict Resolvers'" format="%V" url="--concat('db_repl_bi_cr.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                <v:url name="url2" value="--'Delete'" format="%V" url="--concat('db_repl_bi_remove.vspx?item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
               </td>
               </tr>
           </v:template>

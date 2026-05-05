@@ -2537,7 +2537,7 @@
                           <vm:label for="dav_link" value="Source (*)" />
                         </th>
                         <td>
-                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%s" xhtml_disabled="disabled">
+                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%V" xhtml_disabled="disabled">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('link') then ' disabled' else '' end);
@@ -2559,7 +2559,7 @@
                         <td>
                           <v:text name="rdfGraph_prefix" xhtml_id="rdfGraph_prefix" type="hidden" value="--self.detGraphUI2 ()" />
                           <v:text name="rdfBase_prefix"  xhtml_id="rdfBase_prefix" type="hidden" value="--WEBDAV.DBA.host_url () || WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dir_path))" />
-                          <v:text name="dav_name"        xhtml_id="dav_name" xhtml_autofocus="" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
+                          <v:text name="dav_name"        xhtml_id="dav_name" xhtml_autofocus="" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%V" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('name') then ' disabled' else '' end);
@@ -2568,7 +2568,7 @@
                           </v:text>
                           <v:text name="dav_name_save" xhtml_id="dav_name_save" type="hidden" />
                           <v:text name="dav_name_save_mime" xhtml_id="dav_name_save_mime" type="hidden" />
-                          <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                          <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%V" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                           <span>&amp;nbsp;<v:label xhtml_for="label_dav_id" value="--sprintf('Id: %s', DB.DBA.SYS_SQL_VAL_PRINT(DB.DBA.DAV_SEARCH_ID(self.dav_path, self.dav_type)))" enabled="--atoi(registry_get('conductor_dav_debug','0'))" /></span>
                         </td>
                       </tr>
@@ -2580,7 +2580,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_onchange="javascript: WEBDAV.nameByMimeType();">
+                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%V" xhtml_disabled="disabled" xhtml_onchange="javascript: WEBDAV.nameByMimeType();">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('mime') then ' disabled' else '' end);
@@ -2802,7 +2802,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_owner" xhtml_id="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled">
+                            <v:text name="dav_owner" xhtml_id="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'ownerName'))" format="%V" xhtml_disabled="disabled">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end);
@@ -2853,7 +2853,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_group" xhtml_id="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled">
+                            <v:text name="dav_group" xhtml_id="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'groupName'))" format="%V" xhtml_disabled="disabled">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('group') then ' disabled' else '' end);
@@ -4536,7 +4536,7 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_mime" xhtml_id="prop_mime" xhtml_autofocus="" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <v:text name="prop_mime" xhtml_id="prop_mime" xhtml_autofocus="" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4558,7 +4558,7 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4580,7 +4580,7 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4916,7 +4916,7 @@
                             ?>
                           </td>
                           <td>
-                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MF_NAME')" format="%s"/>
+                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MF_NAME')" format="%V"/>
                           </td>
                           <td class="action">
                             <v:button action="simple" style="url" value="Create Filter" name="filterUpdate">
@@ -5027,7 +5027,7 @@
                   </th>
                   <td>
                     <input type="hidden" id="imapOwner" name="imapOwner" value="<?V DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C')) ?>" />
-                    <v:text name="imap_filterName" format="%s" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
+                    <v:text name="imap_filterName" format="%V" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
                   </td>
                 </tr>
                 <tr>
@@ -5530,7 +5530,7 @@
                                     http (sprintf ('<a %s href="%H" %s title="%s - %V" class="WEBDAV_a"><img src="%H" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
-                                    <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
+                                    <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%V" /></i>
                                   </v:template>
                                 </td>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#2')">
@@ -5806,7 +5806,7 @@
             <v:label for="dav_oMail_FolderName" value="WebMail folder name" />
           </th>
           <td>
-            <v:text name="dav_oMail_FolderName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_oMail_FolderName" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'NULL');
@@ -5822,7 +5822,7 @@
             <v:label for="dav_oMail_NameFormat" value="WebMail name format" />
           </th>
           <td>
-            <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text _validate_">
+            <v:text name="dav_oMail_NameFormat" format="%V" xhtml_disabled="disabled" xhtml_class="field-text _validate_">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_NameFormat', self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^');
@@ -5844,7 +5844,7 @@
             <v:label for="dav_PropFilter_SearchPath" value="Search path" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_SearchPath" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_SearchPath" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_PropFilter_SearchPath', self.dav_path, 'virt:PropFilter-SearchPath', WEBDAV.DBA.path_show (self.dir_path));
@@ -5858,7 +5858,7 @@
             <v:label for="dav_PropFilter_PropName" value="Property name" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_PropName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_PropName" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
@@ -5873,7 +5873,7 @@
             <v:label for="dav_PropFilter_PropValue" value="Property value" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_PropValue" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_PropValue" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_PropFilter_PropValue', self.dav_path, 'virt:PropFilter-PropValue', '');
@@ -5909,7 +5909,7 @@
             <vm:label for="dav_S3_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_S3_checkInterval" xhtml_id="dav_S3_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_S3_checkInterval" xhtml_id="dav_S3_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_checkInterval', self.dav_path, 'virt:S3-checkInterval', '15');
@@ -5923,7 +5923,7 @@
             <v:label for="dav_S3_AccessKeyID" value="Access Key ID (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
@@ -5937,7 +5937,7 @@
             <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
@@ -6097,7 +6097,7 @@
         <v:template name="t3" type="simple" enabled="-- case when (equ(self.command_mode, 10)) then 1 else 0 end">
           <tr>
             <th>
-              <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
+              <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%V" />
             </th>
             <td>
               <v:button name="template_vc" style="url" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
@@ -6272,7 +6272,7 @@
               Root version
             </th>
             <td>
-              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
+              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%V" xhtml_disabled="disabled" xhtml_tabindex="-1">
                 <v:on-post>
                   <![CDATA[
                     declare _path varchar;
@@ -6328,7 +6328,7 @@
                     <table>
                       <tr>
                         <td nowrap="nowrap">
-                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
+                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%V" xhtml_disabled="disabled" xhtml_tabindex="-1">
                             <v:on-post>
                               <![CDATA[
                                 declare _path varchar;
@@ -6549,7 +6549,7 @@
             <vm:label for="dav_IMAP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_IMAP_checkInterval" xhtml_id="dav_IMAP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_IMAP_checkInterval" xhtml_id="dav_IMAP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_checkInterval', self.dav_path, 'virt:IMAP-checkInterval', '15');
@@ -6581,7 +6581,7 @@
             <vm:label for="dav_IMAP_server" value="Server Address" />
           </th>
           <td>
-            <v:text name="dav_IMAP_server" xhtml_id="dav_IMAP_server" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();" >
+            <v:text name="dav_IMAP_server" xhtml_id="dav_IMAP_server" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();" >
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_server', self.dav_path, 'virt:IMAP-server', '');
@@ -6595,7 +6595,7 @@
             <vm:label for="dav_IMAP_port" value="Server Port" />
           </th>
           <td>
-            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_port', self.dav_path, 'virt:IMAP-port', '143');
@@ -6609,7 +6609,7 @@
             <vm:label for="dav_IMAP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_IMAP_user" xhtml_id="dav_IMAP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text name="dav_IMAP_user" xhtml_id="dav_IMAP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_user', self.dav_path, 'virt:IMAP-user', '');
@@ -6623,7 +6623,7 @@
             <vm:label for="dav_IMAP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -6694,7 +6694,7 @@
             <vm:label for="dav_GDrive_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_GDrive_checkInterval" xhtml_id="dav_GDrive_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_GDrive_checkInterval" xhtml_id="dav_GDrive_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_GDrive_checkInterval', self.dav_path, 'virt:GDrive-checkInterval', '15');
@@ -6771,7 +6771,7 @@
             <vm:label for="dav_Dropbox_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_Dropbox_checkInterval" xhtml_id="dav_Dropbox_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_Dropbox_checkInterval" xhtml_id="dav_Dropbox_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_Dropbox_checkInterval', self.dav_path, 'virt:Dropbox-checkInterval', '15');
@@ -6846,7 +6846,7 @@
             <vm:label for="dav_SkyDrive_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_SkyDrive_checkInterval" xhtml_id="dav_SkyDrive_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_SkyDrive_checkInterval" xhtml_id="dav_SkyDrive_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_SkyDrive_checkInterval', self.dav_path, 'virt:SkyDrive-checkInterval', '15');
@@ -6921,7 +6921,7 @@
             <vm:label for="dav_Box_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_Box_checkInterval" xhtml_id="dav_Box_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_Box_checkInterval" xhtml_id="dav_Box_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_Box_checkInterval', self.dav_path, 'virt:Box-checkInterval', '15');
@@ -6996,7 +6996,7 @@
             <vm:label for="dav_WebDAV_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_checkInterval" xhtml_id="dav_WebDAV_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_WebDAV_checkInterval" xhtml_id="dav_WebDAV_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_checkInterval', self.dav_path, 'virt:WebDAV-checkInterval', '15');
@@ -7010,7 +7010,7 @@
             <v:label for="dav_WebDAV_path" value="WebDAV path" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_path" xhtml_id="dav_WebDAV_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_WebDAV_path" xhtml_id="dav_WebDAV_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_path', self.dav_path, 'virt:WebDAV-path', '');
@@ -7072,7 +7072,7 @@
             <v:label for="dav_WebDAV_onBehalfOf" value="On Behalf Of (WebID)" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_onBehalfOf" xhtml_id="dav_WebDAV_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_WebDAV_onBehalfOf" xhtml_id="dav_WebDAV_onBehalfOf" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_onBehalfOf', self.dav_path, 'virt:WebDAV-onBehalfOf', '');
@@ -7128,7 +7128,7 @@
             <vm:label for="dav_WebDAV_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_user" xhtml_id="dav_WebDAV_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_WebDAV_user" xhtml_id="dav_WebDAV_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_user', self.dav_path, 'virt:WebDAV-user', '');
@@ -7142,7 +7142,7 @@
             <vm:label for="dav_WebDAV_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_WebDAV_password" xhtml_id="dav_WebDAV_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_WebDAV_password" xhtml_id="dav_WebDAV_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7198,7 +7198,7 @@
             <vm:label for="dav_RACKSPACE_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_checkInterval" xhtml_id="dav_RACKSPACE_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_RACKSPACE_checkInterval" xhtml_id="dav_RACKSPACE_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_checkInterval', self.dav_path, 'virt:RACKSPACE-checkInterval', '15');
@@ -7228,7 +7228,7 @@
             <vm:label for="dav_RACKSPACE_User" value="Account name (*)" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_User" xhtml_id="dav_RACKSPACE_User" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_RACKSPACE_User" xhtml_id="dav_RACKSPACE_User" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_User', self.dav_path, 'virt:RACKSPACE-User', '');
@@ -7242,7 +7242,7 @@
             <vm:label for="dav_RACKSPACE_API_Key" value="API Key (*)" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'RACKSPACE\', \'Container\', [\'Type\', \'User\', \'Container\', \'API_Key\']);">
+            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'RACKSPACE\', \'Container\', [\'Type\', \'User\', \'Container\', \'API_Key\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_API_Key', self.dav_path, 'virt:RACKSPACE-API_Key', '');
@@ -7319,7 +7319,7 @@
             <vm:label for="dav_FTP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_FTP_checkInterval" xhtml_id="dav_FTP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_FTP_checkInterval" xhtml_id="dav_FTP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_checkInterval', self.dav_path, 'virt:FTP-checkInterval', '15');
@@ -7333,7 +7333,7 @@
             <vm:label for="dav_FTP_host" value="FTP - host" />
           </th>
           <td>
-            <v:text name="dav_FTP_host" xhtml_id="dav_FTP_host" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_FTP_host" xhtml_id="dav_FTP_host" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_host', self.dav_path, 'virt:FTP-host', '');
@@ -7347,7 +7347,7 @@
             <vm:label for="dav_FTP_path" value=" path" />
           </th>
           <td>
-            <v:text name="dav_FTP_path" xhtml_id="dav_FTP_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_FTP_path" xhtml_id="dav_FTP_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_path', self.dav_path, 'virt:FTP-path', '');
@@ -7361,7 +7361,7 @@
             <vm:label for="dav_FTP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_FTP_user" xhtml_id="dav_FTP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_FTP_user" xhtml_id="dav_FTP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_user', self.dav_path, 'virt:FTP-user', '');
@@ -7375,7 +7375,7 @@
             <vm:label for="dav_FTP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_FTP_password" xhtml_id="dav_FTP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_FTP_password" xhtml_id="dav_FTP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7419,7 +7419,7 @@
             <vm:label for="dav_LDP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_LDP_checkInterval" xhtml_id="dav_LDP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_LDP_checkInterval" xhtml_id="dav_LDP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_checkInterval', self.dav_path, 'virt:LDP-checkInterval', '15');
@@ -7433,7 +7433,7 @@
             <vm:label for="dav_LDP_path" value="LDP path" />
           </th>
           <td>
-            <v:text name="dav_LDP_path" xhtml_id="dav_LDP_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_LDP_path" xhtml_id="dav_LDP_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_path', self.dav_path, 'virt:LDP-path', '');
@@ -7495,7 +7495,7 @@
             <vm:label for="dav_LDP_onBehalfOf" value="On Behalf Of (WebID)" />
           </th>
           <td>
-            <v:text name="dav_LDP_onBehalfOf" xhtml_id="dav_LDP_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_LDP_onBehalfOf" xhtml_id="dav_LDP_onBehalfOf" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_onBehalfOf', self.dav_path, 'virt:LDP-onBehalfOf', '');
@@ -7551,7 +7551,7 @@
             <vm:label for="dav_LDP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_LDP_user" xhtml_id="dav_LDP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_LDP_user" xhtml_id="dav_LDP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_user', self.dav_path, 'virt:LDP-user', '');
@@ -7565,7 +7565,7 @@
             <vm:label for="dav_LDP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_LDP_password" xhtml_id="dav_LDP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_LDP_password" xhtml_id="dav_LDP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7621,7 +7621,7 @@
             <vm:label for="dav_AZURE_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_AZURE_checkInterval" xhtml_id="dav_AZURE_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_AZURE_checkInterval" xhtml_id="dav_AZURE_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_checkInterval', self.dav_path, 'virt:AZURE-checkInterval', '15');
@@ -7635,7 +7635,7 @@
             <vm:label for="dav_AZURE_account" value="Account (*)" />
           </th>
           <td>
-            <v:text name="dav_AZURE_account" xhtml_id="dav_AZURE_account" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_AZURE_account" xhtml_id="dav_AZURE_account" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_account', self.dav_path, 'virt:AZURE-account', '');
@@ -7649,7 +7649,7 @@
             <vm:label for="dav_AZURE_API_key" value="Key (*)" />
           </th>
           <td>
-            <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
+            <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_key', self.dav_path, 'virt:AZURE-key', '');

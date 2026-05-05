@@ -96,27 +96,27 @@ order by
 ?>
         <!-- tr -->
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="group_messages_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
           </td>
           <td align="left" nowrap="1">
 <!--
-            <v:label width="80" format="%s" name="group_messages_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
 -->
-            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" format="%s" width="80" active="--(1)" name="data_set_browse_mesage_url" url="--(concat('msg_news_group_message_body.vspx?NM_BODY_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[7] as varchar)))" />
+            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" format="%V" width="80" active="--(1)" name="data_set_browse_mesage_url" url="--(concat('msg_news_group_message_body.vspx?NM_BODY_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[7] as varchar)))" />
           </td>
           <!--
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="group_messages_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="group_messages_browse_label_3" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[4] is null then '' else sprintf('%02d-%02d-%04d', month((control.vc_parent as vspx_row_template).te_rowset[4]), dayofmonth((control.vc_parent as vspx_row_template).te_rowset[4]), year((control.vc_parent as vspx_row_template).te_rowset[4])) end)" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_3" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[4] is null then '' else sprintf('%02d-%02d-%04d', month((control.vc_parent as vspx_row_template).te_rowset[4]), dayofmonth((control.vc_parent as vspx_row_template).te_rowset[4]), year((control.vc_parent as vspx_row_template).te_rowset[4])) end)" />
           </td>
           -->
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="group_messages_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
           </td>
           <td align="left" nowrap="1">
-            <v:label width="80" format="%s" name="group_messages_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[6] as varchar))" />
+            <v:label width="80" format="%V" name="group_messages_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[6] as varchar))" />
           </td>
           <td align="right" nowrap="1" class="listing_col_action">
 		    <v:button action="simple" style="image" name="group_messages_delete"

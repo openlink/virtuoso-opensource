@@ -49,22 +49,22 @@
       </v:on-init>
       <div class="main_tab_page">
         <div class="page_tab">
-          <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" />
+          <v:url name="url1" value="Extractor Cartridges" format="%V" url="rdf_filters.vspx" />
         </div>
         <div class="page_tab">
-          <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" />
+          <v:url name="url2" value="Meta Cartridges" format="%V" url="rdf_filters_pp.vspx" />
         </div>
         <div class="page_tab">
-          <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" />
+          <v:url name="url1" value="Stylesheets" format="%V" url="sparql_filters.vspx" />
         </div>
         <div class="page_tab">
-          <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" />
+          <v:url name="url1" value="Entity URIs" format="%V" url="entity_uri_patterns.vspx" />
         </div>
         <div class="page_tab_selected">
           Console
         </div>
         <div class="page_tab">
-          <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" />
+          <v:url name="url4" value="Configuration" format="%V" url="rdf_conf.vspx" />
         </div>
 
         <div class="tab_page_new">
@@ -119,7 +119,7 @@
                 <td>
                   <v:url name="ur1"
                     value='--concat (&apos;<img src="images/icons/view_16.png" hspace="3" border="0"/>&apos;, mses)'
-                    format="%s"
+                    format="%V"
                     url="--sprintf ('rdf_console.vspx?view=%U', case when mses = self.ses then '' else mses end)"
                     xhtml_title="Expand"
                     xhtml_alt="Expand"
@@ -130,7 +130,7 @@
                 <td></td>
                 <td class="listing_col_action">
                   <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-                    format="%s"
+                    format="%V"
                     url="--sprintf ('rdf_console.vspx?del=%U', mses)"
                     xhtml_title="Delete"
                     xhtml_alt="Delete"
@@ -153,7 +153,7 @@
                 </td>
                 <td class="listing_col_action">
                   <v:url name="ur2" value='<img src="images/icons/view_16.png" hspace="3" border="0"/>Details'
-                    format="%s"
+                    format="%V"
                     url="--sprintf ('rdf_console.vspx?detail=%U&id=%d', mses, ML_ID)"
                     xhtml_title="Details"
                     xhtml_alt="Details"

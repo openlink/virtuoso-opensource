@@ -253,10 +253,10 @@
               <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+              <v:url name="b_url43" value="Text Indexing" format="%V" url="cont_page.vspx?page=3" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+              <v:url name="b_url42" value="Resource Types" format="%V" url="cont_page.vspx?page=4" />
             </div>
             <table class="tab_page">
               <tr>
@@ -667,7 +667,7 @@
                       </tr>
                       <tr>
                         <td align="center" colspan="2">
-                          <v:button action="simple" value="Cancel" name="robot_button1" format="%s">
+                          <v:button action="simple" value="Cancel" name="robot_button1" format="%V">
                             <v:on-post>
                               <![CDATA[
                                 http_request_status ('HTTP/1.1 302 Found');

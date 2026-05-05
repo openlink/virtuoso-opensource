@@ -106,7 +106,7 @@
               <tr><td class="SubInfo">
              <xsl:choose>
                 <xsl:when test="@type='hot'">
-                  <v:url name="{@name}" value="--'{@value}'" format="%s" url="--'{@url}'"/>
+                  <v:url name="{@name}" value="--'{@value}'" format="%V" url="--'{@url}'"/>
                 </xsl:when>
                 <xsl:otherwise>
                   <xsl:value-of select="@value"/>

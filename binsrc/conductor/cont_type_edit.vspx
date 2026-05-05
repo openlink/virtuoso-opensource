@@ -53,13 +53,13 @@
         <tr valign='top'>
           <td>
             <div class="page_tab">
-              <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" />
+              <v:url name="b_url21" value="--'Repository'" format="%V" url="--'cont_page.vspx?page=1'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" />
+              <v:url name="b_url12" value="Content Imports" format="%V" url="--'cont_page.vspx?page=2'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" />
+              <v:url name="b_url13" value="--'Settings'" format="%V" url="--'cont_page.vspx?page=3'" />
             </div>
             <div class="page_tab_selected">
               Resource Types

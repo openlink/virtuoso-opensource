@@ -32,10 +32,10 @@
     <vm:header caption="Content Import Queues">
       <vm:raw>
         <td class="SubInfo">
-          <vm:url name="robot_control_ref" format="%s" value="--'Import Targets'" url="--'robot_control.vspx'"/>
+          <vm:url name="robot_control_ref" format="%V" value="--'Import Targets'" url="--'robot_control.vspx'"/>
         </td>
         <td class="SubInfo">
-          <vm:url name="robot_sites_ref" format="%s" value="--'Retrieved Sites'" url="--'robot_sites.vspx'"/>
+          <vm:url name="robot_sites_ref" format="%V" value="--'Retrieved Sites'" url="--'robot_sites.vspx'"/>
         </td>
       </vm:raw>
     </vm:header>

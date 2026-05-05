@@ -126,7 +126,7 @@
           <td><?V GRAPH_IRI ?></td>
           <td nowrap="nowrap">
             <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Rename'
-                   format="%s"
+                   format="%V"
                    name="uedit"
                    url="--sprintf ('graphs_page.vspx?page=1&mode=edit&graph_name=%U', GRAPH_IRI)"
                    render-only="1"
@@ -134,7 +134,7 @@
                    xhtml_alt="Rename"
             />
             <v:url value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
-                   format="%s"
+                   format="%V"
                    name="udel"
                    url="--sprintf ('graphs_page.vspx?page=1&mode=delete&graph_name=%U', GRAPH_IRI)"
                    render-only="1"

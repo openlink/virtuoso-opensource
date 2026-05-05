@@ -413,7 +413,7 @@ sync_user_nf:
     <table>
        <tr>
         <td class="SubInfo">
-          <vm:url name="db_repl_sub_ref" format="%s" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
+          <vm:url name="db_repl_sub_ref" format="%V" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
         </td>
        </tr>
     </table>

@@ -146,13 +146,13 @@
                               <img class="icon" src="images/icons/database_16.png" alt="database"/>
                             </td>
                             <td>
-                              <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                              <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                             </td>
                             <td>
-                              <v:label name="type_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
+                              <v:label name="type_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%V"/>
                             </td>
                             <td>
-                              <v:label name="descr_l" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%s"/>
+                              <v:label name="descr_l" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%V"/>
                             </td>
                             <td class="action">
                               <v:button action="simple"

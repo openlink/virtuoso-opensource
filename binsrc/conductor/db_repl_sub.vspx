@@ -60,26 +60,26 @@
           <v:template type="browse" name="data_set1_browse">
             <tr>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                <v:label format="%V" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_2"
+                <v:label format="%V" name="data_set1_browse_label_2"
                   value="--( case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__rdf_repl' then 'RDF Publication' else (control.vc_parent as vspx_row_template).te_rowset[1] end)" />
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_3" value="--(coalesce((select DS_UID from SYS_DATA_SOURCE where DS_DSN = (select DB_ADDRESS from SYS_SERVERS as s where s.SERVER = cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))), ''))" />
+                <v:label format="%V" name="data_set1_browse_label_3" value="--(coalesce((select DS_UID from SYS_DATA_SOURCE where DS_DSN = (select DB_ADDRESS from SYS_SERVERS as s where s.SERVER = cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))), ''))" />
               </td>
               <td class="listing_col_num">
                 <v:label format="%d" name="data_set1_browse_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_no_fmt"/>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_user_fmt"/>
+                <v:label format="%V" name="data_set1_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_user_fmt"/>
               </td>
               <td class="listing_col_num">
-                <v:label format="%s" name="data_set1_browse_label_6" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_shed_fmt"/>
+                <v:label format="%V" name="data_set1_browse_label_6" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_shed_fmt"/>
               </td>
               <td class="listing_col">
-                <v:label format="%s" name="data_set1_browse_label_5" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_sch_fmt"/>
+                <v:label format="%V" name="data_set1_browse_label_5" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_sch_fmt"/>
               </td>
               <td class="action">
                 <?vsp

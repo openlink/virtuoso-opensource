@@ -402,7 +402,7 @@ ORDER BY sch_name"
                               </td>
                               <td>
                                 <img src="images/icons/table_16.png" alt="Table" title="Table"/>
-                                <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                               </td>
                               <td>
                                 <v:button name="b_table_def"
@@ -574,7 +574,7 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/view_16.png" alt="View" title="View"/>
-                                  <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td  class="listing_col_action">
                                   <v:button action="simple"
@@ -793,10 +793,10 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
-                                  <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td>
-                                  <v:label name="l_proc_type" value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%s"/>
+                                  <v:label name="l_proc_type" value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%V"/>
                                 </td>
                                 <td class="listing_col_action">
                                   <v:button action="simple"
@@ -943,10 +943,10 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
-                                  <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td>
-                                  <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%s"/>
+                                  <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%V"/>
                                 </td>
                                 <td align="left" valign="center">
                                   <v:button name="b_udt_grants"

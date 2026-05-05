@@ -423,7 +423,7 @@ self.vc_data_bind(e);
                       <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                     </td>
                     <td class="listing_col">
-                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -841,7 +841,7 @@ self.vc_data_bind(e);
       </v:template>
       <div>
         <hr />
-	    <vm:url name="db_repl_snap_ref" format="%s" value="Back to Snapshot Replication List" url="--'db_repl_snap.vspx'"/>
+	    <vm:url name="db_repl_snap_ref" format="%V" value="Back to Snapshot Replication List" url="--'db_repl_snap.vspx'"/>
       </div>
     </vm:pagebody>
   </vm:pagewrapper>
