@@ -90,7 +90,7 @@
             self.uri1 := make_cert_iri ('id_rsa');
         ]]>
       </v:on-init>
-      <script tyep="text/javascript">
+      <script type="text/javascript">
         <![CDATA[
         function guessFileType (f, sel_name)
           {

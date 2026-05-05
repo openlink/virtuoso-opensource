@@ -142,7 +142,7 @@
 	      if (length (self.edit_lpath) = 0)
 	        self.edit_lpath := self.lpath;
 
-              -- load settings from choosen path
+              -- load settings from chosen path
               declare _ppath, _defpage, _vspuser, _soapuser, _security, _auth_realm, _auth_func, _after_func,
                       _sesvars, _soap_opt, _auth_opt, _global_opts varchar;
               declare _dirbrowsing, _is_dav, _defdir integer;
@@ -351,7 +351,7 @@
                         {
                           declare t_mode varchar;
                           t_mode := self.dl_temppaths.ufl_value;
-                          -- load settings from choosen path
+                          -- load settings from chosen path
                           declare _ppath, _defpage, _vspuser, _soapuser, _security, _auth_realm, _auth_func, _after_func,
                                   _sesvars, _soap_opt, _auth_opt, _global_opts varchar;
                           declare _dirbrowsing, _is_dav, _defdir integer;

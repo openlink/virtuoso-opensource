@@ -75,7 +75,7 @@
           }
           else
           {
-            self.vc_error_message := 'There are no object selected to perform operation delete.';
+            self.vc_error_message := 'There are no objects selected to perform delete operation.';
             self.vc_is_valid := 0;
           }
         ]]>
@@ -104,7 +104,7 @@
           }
           else
           {
-            self.vc_error_message := 'There are no object selected to perform privileges operations.';
+            self.vc_error_message := 'There are no objects selected to perform privileges operations.';
             self.vc_is_valid := 0;
           }
         ]]>

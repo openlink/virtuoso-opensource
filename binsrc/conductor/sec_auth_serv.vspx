@@ -105,7 +105,7 @@
       </v:method>
 
       <v:on-init>
-        <!-- XXX: do not make change to columns or their number w/o having same in array manipulation bellow -->
+        <!-- XXX: do not make change to columns or their number w/o having same in array manipulation below -->
         if (self.acl_list is null)
         {
           declare dta, mta any;

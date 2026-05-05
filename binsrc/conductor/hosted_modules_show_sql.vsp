@@ -41,7 +41,7 @@
   <table>
     <tr CLASS="CtrlMain">
       <th>
-        SQL Proxy statment for class <?V mtd_name ?>
+        SQL Proxy statement for class <?V mtd_name ?>
       </th>
     </tr>
     <tr>

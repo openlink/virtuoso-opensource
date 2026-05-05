@@ -186,8 +186,8 @@
             self.lpath := get_keyword('path', self.vc_page.vc_event.ve_params, self.lpath);
             self.roles_grant_list := vector();
 
-            -- load settings from choosen path
-            if( self.mode = 'edit' )
+            -- load settings from chosen path
+            if (self.mode = 'edit')
             {
               select HP_PPATH, HP_DEFAULT, HP_DIR_BROWSEABLE, HP_RUN_VSP_AS, HP_RUN_SOAP_AS,
                      HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_PERSIST_SES_VARS,
@@ -437,7 +437,7 @@
                           return;
                         };
 
-                        -- load settings from choosen path
+                        -- load settings from chosen path
                         t_mode := self.dl_temppaths.ufl_value;
                         select HP_PPATH, HP_DEFAULT, HP_DIR_BROWSEABLE, HP_RUN_VSP_AS, HP_RUN_SOAP_AS,
                                HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_PERSIST_SES_VARS,

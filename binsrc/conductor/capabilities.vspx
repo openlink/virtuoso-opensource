@@ -20,7 +20,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="capabilites"
+<v:page name="capabilities"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"

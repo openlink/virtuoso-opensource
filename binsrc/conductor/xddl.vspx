@@ -4093,7 +4093,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('You cannot create column <b>%s</b> for <b>%s</b>  table. It already exists.',self.column_name , self.table_name ) );
+				<?vsp http(sprintf('You cannot create column <b>%s</b> for table <b>%s</b>. It already exists.',self.column_name , self.table_name ) );
         ?>
 			 </td>
 			</vm:raw>

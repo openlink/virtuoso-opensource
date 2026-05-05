@@ -65,7 +65,7 @@
     </vm:rawheader>
     <vm:pagebody>
       <vm:help id="account_create" sect="" />
-      <script tyep="text/javascript">
+      <script type="text/javascript">
         <![CDATA[
         function guessFileType (f, key_name, sel_name)
           {
@@ -702,7 +702,7 @@
                                     error_message := 'No key(s) are selected.';
                                   else
                                     error_message := concat ('The following keys:', error_message,' are used for ACME account(s) or orders.',
-                                            'Must revoke corresponding certificates before to drop keys.');
+                                            'Must revoke corresponding certificates before dropping keys.');
                                   self.vc_redirect (sprintf ('account_create.vspx?mode=edit&user_name=%U&error=%U',username, error_message));
                                   return;
                                 }
@@ -1094,7 +1094,7 @@
       {
         self.vc_is_valid := 0;
         self.ldap_auth_s.ufl_failed := 1;
-        self.ldap_auth_s.vc_error_message := 'LDAP authentication is selected but no server is choosen.';
+        self.ldap_auth_s.vc_error_message := 'LDAP authentication is selected but no server is chosen.';
         self.ldap_auth_s.ufl_error := self.ldap_auth_s.vc_error_message;
         return;
       }

@@ -182,7 +182,7 @@
 			   }
 			 else
 			   {
-			     self.vc_error_message := 'There are no object selected to perform operation.';
+                      self.vc_error_message := 'There are no objects selected to perform operation.';
 			     self.vc_is_valid := 0;
 			   }
 			  ]]>
@@ -220,7 +220,7 @@
 			   }
 			 else
 			   {
-			     self.vc_error_message := 'There are no object selected to perform operation.';
+                      self.vc_error_message := 'There are no objects selected to perform operation.';
 			     self.vc_is_valid := 0;
 			   }
 			  ]]>

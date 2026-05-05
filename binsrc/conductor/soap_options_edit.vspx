@@ -73,7 +73,7 @@
 
                 self.lpath := get_keyword('path', self.vc_page.vc_event.ve_params, self.lpath);
 
-                -- load settings from choosen path
+                -- load settings from chosen path
                 declare _soapuser, _soap_opt varchar;
 
                 select HP_RUN_SOAP_AS, deserialize (HP_SOAP_OPTIONS) into _soapuser, _soap_opt
