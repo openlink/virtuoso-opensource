@@ -330,7 +330,7 @@
                         if( self.referer <> '' )
                           http_header (sprintf('Location: %s', self.referer));
                         else
-                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          http_header (sprintf('Location: soap_services.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -408,7 +408,7 @@
                         if( self.referer <> '' )
                           http_header (sprintf('Location: %s', self.referer));
                         else
-                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          http_header (sprintf('Location: soap_services.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                       }
                       ]]>
                     </v:script>

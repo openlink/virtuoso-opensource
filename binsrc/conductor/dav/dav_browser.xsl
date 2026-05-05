@@ -2816,7 +2816,7 @@
                               </v:after-data-bind>
                             </v:text>
                             <vm:if test="self.editField ('owner') and self.dav_enable and WEBDAV.DBA.check_admin (self.account_id)">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -2861,7 +2861,7 @@
                               </v:before-render>
                             </v:text>
                             <vm:if test="self.editField ('group') and self.dav_enable">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4559,7 +4559,7 @@
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
@@ -6287,7 +6287,7 @@
                     }
 
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, _path));
+                    http_header (sprintf ('Location: view.vsp?sid=%U&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, _path));
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>

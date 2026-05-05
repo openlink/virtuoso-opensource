@@ -141,7 +141,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: caps_browser.vspx?sid=%s&realm=%s&user_name=%s\r\n',self.sid, self.realm, self.user_name));
+                            http_header( sprintf('Location: caps_browser.vspx?sid=%U&realm=%U&user_name=%U\r\n',self.sid, self.realm, self.user_name));
                           ]]>
                         </v:on-post>
                       </v:button>
@@ -200,7 +200,7 @@
                               exec( str_gr, null, null, vector(), 0, mtd, dta);
                             }
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: caps_browser.vspx?sid=%s&realm=%s&user_name=%s\r\n',self.sid, self.realm, self.user_name));
+                            http_header( sprintf('Location: caps_browser.vspx?sid=%U&realm=%U&user_name=%U\r\n',self.sid, self.realm, self.user_name));
                           ]]>
                         </v:on-post>
                       </v:button>

@@ -49,7 +49,7 @@
             {
             error:
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+              http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
               return;
             }
 
@@ -72,7 +72,7 @@
                 if ('00000' <> state)
                 {
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                  http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
@@ -95,7 +95,7 @@
                 if ('00000' <> state)
                 {
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                  http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
@@ -108,11 +108,11 @@
               }
             }
             http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+            http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           ]]>
         </v:on-post>
-        <a href="vdb_resources.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&what=openall">Open All</a>
-        <a href="vdb_resources.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&what=closeall">Close All</a>
+        <a href="vdb_resources.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&what=openall">Open All</a>
+        <a href="vdb_resources.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&what=closeall">Close All</a>
         <table class="MainSubData" border="0" cellspacing="0" cellpadding="3">
           <?vsp
             declare size_of_tables, size_of_procs, cnt, dsn_no, flag, _all, total_count integer;
@@ -170,13 +170,13 @@
               http('<td  width="32">');
 
               if (flag = ascii('1'))
-                http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=close#%d"><img src="images/Open-folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=close#%d"><img src="images/Open-folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
               else
               {
                 if (size_of_tables > 0 or size_of_procs > 0 )
-                  http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=open#%d"><img src="images/Folder-full.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                  http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=open#%d"><img src="images/Folder-full.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
                 else
-                  http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=open#%d"><img src="images/Folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                  http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=open#%d"><img src="images/Folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
               }
 
               http(sprintf('<td align="left"><b>%s</b></td><td>&nbsp;</td>', DS_DSN ));

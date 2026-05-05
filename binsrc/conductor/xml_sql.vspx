@@ -121,7 +121,7 @@ will be removed permanently.
                           DAV_DELETE_INT (res, 0, null, null, 0);
                         }
                       http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: xml_sql.vspx?page=2&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      http_header (sprintf('Location: xml_sql.vspx?page=2&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                     ]]>
                 </v:on-post>
                      <v:button action="submit" name="xml_view_delete" value="Delete" xhtml_style="size:64;"/>
@@ -367,7 +367,7 @@ will be removed permanently.
 		 if (get_keyword ('cancel', params) is not null)
 		   {
 		     http_request_status ('HTTP/1.1 302 Found');
-		     http_header (sprintf ('Location: xml_sql.vspx?page=2&mode=list&sid=%s&realm=%s\r\n',
+		     http_header (sprintf ('Location: xml_sql.vspx?page=2&mode=list&sid=%U&realm=%U\r\n',
 					   self.sid ,self.realm));
 		     return;
 		   }
@@ -1874,12 +1874,12 @@ will be removed permanently.
                                                </td>
                                                <td  class="listing_col_action">
                                                <?vsp
-					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%s&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>',
+					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%U&sid=%U&realm=%U"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>',
 						 RES_FULL_PATH, self.sid ,self.realm ));
 					       ?>
 
 				               <?vsp
-                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%s&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>',
+                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%U&sid=%U&realm=%U"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>',
                                                                 RES_FULL_PATH, self.sid ,self.realm ));
                                                ?>
                                              </td>

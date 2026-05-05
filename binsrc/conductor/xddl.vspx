@@ -516,7 +516,7 @@
 							self.vc_data_bind(e);
 
 --							http_request_status ('HTTP/1.1 302 Found');
---							http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--							http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 							return;
 
 						} else  if ( get_keyword('tables_filter_reset', params) is not null ) {
@@ -527,7 +527,7 @@
 							self.page := '1';
 							self.vc_data_bind(e);
 --							http_request_status ('HTTP/1.1 302 Found');
---							http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--							http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 							return;
 						}
 				]]></v:script>
@@ -641,12 +641,12 @@
                  http('<tr><td><img src="images/icons/table_16.png" alt="Table" title="Table" /></td>');
                  if (drop_flag = 'true') {
                     http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                    http(sprintf('<td><a href="xddl.vspx?mode=xddl_table_drop&kind=undrop&table_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                    http(sprintf('<td><a href="xddl.vspx?mode=xddl_table_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
                     http(sprintf('<td>%s</td>',  name) );
-                    http(sprintf('<td><a href="xddl.vspx?entry=1&mode=table_edit&kind=edit&table_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_table_drop&kind=drop&table_name=%s&sid=%s&realm=%s">Drop</a>', name,self.sid ,self.realm ));
-                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
+                    http(sprintf('<td><a href="xddl.vspx?entry=1&mode=table_edit&kind=edit&table_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_table_drop&kind=drop&table_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
+                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
                  }
                  http('</tr>');
 --              }
@@ -694,7 +694,7 @@
 						self.page := '2';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 
 						]]></v:script>
@@ -811,17 +811,17 @@
                  http('<tr><td><img src="images/icons/view_16.png" alt="View" title="View" /></td>');
                  if (drop_flag = 'true') {
                   http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_view_drop&kind=undrop&view_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_view_drop&kind=undrop&view_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
                   http(sprintf('<td>%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_view_drop&kind=drop&view_name=%s&sid=%s&realm=%s">Drop</a>', name,self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
+                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_view_drop&kind=drop&view_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
                  }
                  http('</tr>');
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%s&sid=%s&realm=%s">Edit</a>
---                &nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">Drop</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">View</a></td><td>&nbsp;</td></tr>',
+--                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>
+--                &nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">View</a></td><td>&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm, name, self.sid ,self.realm));
 --              }
             i:= i + 1;
@@ -863,7 +863,7 @@
 						self.page := '3';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 
 							} else  if ( get_keyword('procs_filter_reset', params) is not null ) {
@@ -874,7 +874,7 @@
 						self.page := '3';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 						}
 
@@ -993,16 +993,16 @@
                 http('<tr><td><img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure" /></td>');
                 if (drop_flag = 'true') {
                   http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_procedure_drop&kind=undrop&table_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_procedure_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                 } else {
                   http(sprintf('<td>%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_procedure_drop&kind=drop&procedure_name=%s&sid=%s&realm=%s">Drop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_procedure_drop&kind=drop&procedure_name=%U&sid=%U&realm=%U">Drop</a></td>', name,self.sid ,self.realm ));
                 }
                 http('</tr>');
 
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%s&sid=%s&realm=%s">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
+--                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm));
 --              }
             i:= i + 1;
@@ -1041,7 +1041,7 @@
 	    self.mode := 'xddl_load';
 	    self.vc_data_bind(e);
 --		            http_request_status ('HTTP/1.1 302 Found');
---				  http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--				  http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 				return;
               }
             if ( get_keyword('common_save_command', params) is not null ) {
@@ -1049,7 +1049,7 @@
 	    self.vc_data_bind(e);
 
 --		           http_request_status ('HTTP/1.1 302 Found');
---			  http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--			  http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 				return;
               }
 		      if (get_keyword('common_init_command',params) is not null) {
@@ -1058,7 +1058,7 @@
 	    self.vc_data_bind(e);
 
 --						http_request_status ('HTTP/1.1 302 Found');
---						http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--						http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 						return;
 		      }
 		      if (get_keyword('common_exec_command',params) is not null) {
@@ -1082,7 +1082,7 @@
 						self.table_name :=  table_name;
 						self.vc_data_bind(e);
 --					    	http_request_status ('HTTP/1.1 302 Found');
---					    	http_header (sprintf('Location: xddl.vspx?mode=exec_xddl_denied&table_name=%s&sid=%s&realm=%s\r\n',table_name, self.sid ,self.realm));
+--					    	http_header (sprintf('Location: xddl.vspx?mode=exec_xddl_denied&table_name=%U&sid=%U&realm=%U\r\n',table_name, self.sid ,self.realm));
 					    	return;
 					   }
 				         difference := xddl_diff(xddl_get_base(),obj);
@@ -1102,7 +1102,7 @@
 				self.vc_data_bind(e);
 				return;
 --			    http_request_status ('HTTP/1.1 302 Found');
---			    http_header (sprintf('Location: xddl.vspx?mode=exec_xddl&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--			    http_header (sprintf('Location: xddl.vspx?mode=exec_xddl&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('common_delete_command',params) is not null) {
@@ -1118,7 +1118,7 @@
 			self.vc_data_bind(e);
 			return;
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 
@@ -1127,7 +1127,7 @@
 			    self.vc_data_bind(e);
 			    return;
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?mode=revert_edit_buffer&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?mode=revert_edit_buffer&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('common_clear_command',params) is not null) {
@@ -1143,7 +1143,7 @@
 			return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		    	    ]]></script>
@@ -4085,7 +4085,7 @@ Here is the tabs
 			 return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?mode=table_edit&kind=%s&sid=%s&realm=%s&table_name=%s\r\n', self.kind, self.sid ,self.realm, get_keyword('table_name', params)));
+		    http_header (sprintf('Location: xddl.vspx?mode=table_edit&kind=%U&sid=%U&realm=%U&table_name=%U\r\n', self.kind, self.sid ,self.realm, get_keyword('table_name', params)));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -4125,7 +4125,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_view_apply_command',params) is not null) {
@@ -4138,7 +4138,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4197,7 +4197,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_view_create_apply_command',params) is not null) {
@@ -4216,7 +4216,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4283,7 +4283,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_procedure_create_apply_command',params) is not null) {
@@ -4306,7 +4306,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4374,7 +4374,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_procedure_apply_command',params) is not null) {
@@ -4386,7 +4386,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4497,7 +4497,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,self.sid ,self.realm));
 		    return;
 		   }
 		  if (get_keyword('xddl_save_command',params) is not null) {
@@ -4512,7 +4512,7 @@ Here is the tabs
 			    self.wrong_entry := 'Path to save result does exist. Enter another path.';
 
 --                          http_request_status ('HTTP/1.1 302 Found');
---	                    http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--	                    http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 --                          return;
                               goto try_again;
 			}   else {
@@ -4554,7 +4554,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    try_again: ;
 		   }
@@ -4717,7 +4717,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		   }
 
@@ -4739,7 +4739,7 @@ Here is the tabs
 					self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
 
 					http_request_status ('HTTP/1.1 302 Found');
-					http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+					http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 					return;
 				};
 
@@ -4768,7 +4768,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    try_again: ;
 		   }
@@ -4830,7 +4830,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('init_apply_command',params) is not null) {
@@ -4846,7 +4846,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4884,7 +4884,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_table_apply_command',params) is not null) {
@@ -4901,7 +4901,7 @@ Here is the tabs
 
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4946,7 +4946,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_view_apply_command',params) is not null) {
@@ -4962,7 +4962,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -5006,7 +5006,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_procedure_apply_command',params) is not null) {
@@ -5023,7 +5023,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -5066,7 +5066,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_execute_apply_command',params) is not null) {
@@ -5114,7 +5114,7 @@ Here is the tabs
 		      return;
 
 			  http_request_status ('HTTP/1.1 302 Found');
-			  http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+			  http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 			  return;
 			} else {
 		      self.mode := 'xddl_execute_error';
@@ -5122,7 +5122,7 @@ Here is the tabs
 		      return;
 
 			  http_request_status ('HTTP/1.1 302 Found');
-			  http_header (sprintf('Location: xddl.vspx?mode=xddl_execute_error&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+			  http_header (sprintf('Location: xddl.vspx?mode=xddl_execute_error&sid=%U&realm=%U\r\n', self.sid ,self.realm));
         		  return;
 			}
 		      }
@@ -5174,7 +5174,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -5297,7 +5297,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -5335,7 +5335,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_revert_apply_command',params) is not null) {
@@ -5352,7 +5352,7 @@ Here is the tabs
 							self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
 
 							http_request_status ('HTTP/1.1 302 Found');
-							http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+							http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 							return;
 						};
 					}
@@ -5364,7 +5364,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -5664,7 +5664,7 @@ Show Procedures
 		      return;
 
 							http_request_status ('HTTP/1.1 302 Found');
-							http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser_exists&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+							http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser_exists&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 							return;
 					} else {
 		      self.mode := null;
@@ -5673,7 +5673,7 @@ Show Procedures
 		      return;
 
 						http_request_status ('HTTP/1.1 302 Found');
-						http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+						http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 						return;
 					}
 				}	else if (get_keyword('chooser_all',params) is not null or get_keyword('chooser_clear',params) is not  null) {
@@ -5841,7 +5841,7 @@ Show Procedures
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>

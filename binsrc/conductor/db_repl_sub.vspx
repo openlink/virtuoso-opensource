@@ -210,7 +210,7 @@
         <v:on-post>
           <![CDATA[
             http_request_status('HTTP/1.1 302 Found');
-            http_header(sprintf('Location: db_repl_sub_create.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            http_header(sprintf('Location: db_repl_sub_create.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
             return;
           ]]>
         </v:on-post>
@@ -219,7 +219,7 @@
         <v:on-post>
           <![CDATA[
             http_request_status('HTTP/1.1 302 Found');
-            http_header(sprintf('Location: db_repl_sub_image.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            http_header(sprintf('Location: db_repl_sub_image.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
             return;
           ]]>
         </v:on-post>
@@ -230,7 +230,7 @@
             for select SERVER from SYS_SERVERS where SERVER <> repl_this_server() do
               repl_disconnect(SERVER);
             http_request_status('HTTP/1.1 302 Found');
-            http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+            http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%U&realm=%U\r\n', self.sid, self.realm));
             return;
           ]]>
         </v:on-post>

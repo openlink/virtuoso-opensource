@@ -217,7 +217,7 @@
 
 <xsl:template match="reference" mode="cond">
 http('&lt;a href="');
-http(sprintf('<xsl:value-of select="@url"/>?sid=%s&amp;realm=%s<xsl:if test="count(param) > 0">&amp;<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>',self.sid,self.realm</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
+http(sprintf('<xsl:value-of select="@url"/>?sid=%U&amp;realm=%s<xsl:if test="count(param) > 0">&amp;<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>',self.sid,self.realm</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
 <xsl:choose>
   <xsl:when test="@kind='static'"><xsl:if test="@type='string'">'</xsl:if><xsl:value-of select="@value"/><xsl:if test="@type='string'">'</xsl:if></xsl:when>
   <xsl:when test="@kind='dynamic'">get_keyword('<xsl:value-of select="@value"/>',params)</xsl:when>

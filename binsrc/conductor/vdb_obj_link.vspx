@@ -479,7 +479,7 @@
                                       }
                                     }
                                     self.sel_pk := null;
-                                    self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%s', self.current_dsn, self.ret_bmk));
+                                    self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%U', self.current_dsn, self.ret_bmk));
                                   ]]>
                                 </v:on-post>
                                 <div class="scroll_area" style="margin: 0;">

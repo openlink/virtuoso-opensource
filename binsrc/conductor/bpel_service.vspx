@@ -31,7 +31,7 @@
       declare url varchar;
       if ( DB.DBA.check_package('bpel4ws') = 1 )
       {
-        url := vspx_uri_add_parameters ('configure.vspx', sprintf ('sid=%s&realm=%s',self.sid,self.realm));
+        url := vspx_uri_add_parameters ('configure.vspx', sprintf ('sid=%s&realm=%U',self.sid,self.realm));
         http_request_status ('HTTP/1.1 302 Found');
         http_header ('Location: ../BPELGUI/'||url||'\r\n');
         return;

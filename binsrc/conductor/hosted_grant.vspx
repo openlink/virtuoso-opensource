@@ -154,7 +154,7 @@
             <td><?V _type ?></td>
             <td><?V user_name ?></td>
             <td>
-	      <a class="tablelistaction" href="hosted_page.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&r1=<?V g_user ?>&r2=<?V g_op ?>&r3=<?V g_object ?>&r4=<?V g_col ?>&page=3"><img src="images/icons/del_16.png" border="0" />&nbsp;Remove</a>
+	      <a class="tablelistaction" href="hosted_page.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&r1=<?U g_user ?>&r2=<?U g_op ?>&r3=<?U g_object ?>&r4=<?U g_col ?>&page=3"><img src="images/icons/del_16.png" border="0" />&nbsp;Remove</a>
             </td>
           </tr>
           <?vsp

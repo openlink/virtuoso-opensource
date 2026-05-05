@@ -342,7 +342,7 @@
                       </v:textarea>
 
                       <?vsp
-                        http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
+                        http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
                                      self.sid ,self.realm));
                       ?>
                     </td>
@@ -397,7 +397,7 @@
                         </v:textarea>
 
                         <?vsp
-                          http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
+                          http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
                                        self.sid ,self.realm));
                         ?>
                       </td>
@@ -1070,7 +1070,7 @@ self.vc_data_bind(e);
               {
                 declare _header, _line varchar;
                 _header := http_header_get();
-                _line := sprintf('Refresh: %d;URL=db_repl_basic_create.vspx?sid=%s&realm=%s&\r\n', self.repl_basic_autorefresh , self.sid ,self.realm);
+                _line := sprintf('Refresh: %d;URL=db_repl_basic_create.vspx?sid=%U&realm=%U&\r\n', self.repl_basic_autorefresh , self.sid ,self.realm);
                 if(_header is null)
                   {
                     _header := _line;

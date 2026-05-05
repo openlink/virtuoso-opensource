@@ -43,7 +43,7 @@ if(self.first = 1) {
   _ns_id := get_keyword('NS_ID', e.ve_params);
   self.ns_id := cast(_ns_id as integer);
   _header := http_header_get();
-  _line := sprintf('Refresh: 1; URL=msg_news_group_subscribe.vspx?NS_ID=%s&RETRIEVE=YES&FIRST=0&sid=%s&realm=%s\r\n', _ns_id, _sid, _realm);
+  _line := sprintf('Refresh: 1; URL=msg_news_group_subscribe.vspx?NS_ID=%U&RETRIEVE=YES&FIRST=0&sid=%U&realm=%U\r\n', _ns_id, _sid, _realm);
   if(_header is null) {
     _header := _line;
   }

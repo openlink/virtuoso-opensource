@@ -786,7 +786,7 @@
                                   }
                               }
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%U&realm=%U&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -850,7 +850,7 @@
                                           }
                                         }
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%U&realm=%U&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -896,7 +896,7 @@
                                         USER_CERT_REGISTER (username, get_keyword ('ca_value', params), self.ca_pwd.ufl_value, self.ca_type.ufl_value);
 
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%U&realm=%U&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -909,7 +909,7 @@
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf ('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                                      http_header (sprintf ('Location: accounts_page.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                                       return;
                                     ]]>
                                   </v:on-post>
@@ -1212,7 +1212,7 @@
     else if (check_grants(connection_get ('vspx_user'), '') = 1)
       {
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header (sprintf('Location: accounts_page.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
       }
                                     ]]>
                                   </v:on-post>

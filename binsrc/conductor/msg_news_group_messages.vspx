@@ -42,7 +42,7 @@ if(_first_time = 'YES') {
   self.ng_id := cast(_ng_id as integer);
   self.mode := 'download_messages';
   _header := http_header_get();
-  _line := sprintf('Refresh: 1; URL=msg_news_group_messages.vspx?MODE=%s&RETRIEVE=YES&NG_ID=%s&NS_ID=%s&sid=%s&realm=%s\r\n', _mode, _ng_id, _ns_id, _sid, _realm);
+  _line := sprintf('Refresh: 1; URL=msg_news_group_messages.vspx?MODE=%U&RETRIEVE=YES&NG_ID=%U&NS_ID=%U&sid=%U&realm=%U\r\n', _mode, _ng_id, _ns_id, _sid, _realm);
   if(_header is null) {
     _header := _line;
   }

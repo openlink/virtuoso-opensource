@@ -289,7 +289,7 @@
 
                                         http ('</td>');
                                         http ('<td class="action">');
-                                        http (sprintf ('&nbsp;<a href="vdb_obj_link_pk.vspx?sid=%s&realm=%s&tbl=%U&pks=%U&dsn=%U"><img src="images/icons/edit_16.png" border="0" alt="Edit" title="Edit" />&nbsp;Edit</a>', self.sid, self.realm, rtbl_name, encode_base64 (serialize (pkeys)), self.current_dsn));
+                                        http (sprintf ('&nbsp;<a href="vdb_obj_link_pk.vspx?sid=%U&realm=%U&tbl=%U&pks=%U&dsn=%U"><img src="images/icons/edit_16.png" border="0" alt="Edit" title="Edit" />&nbsp;Edit</a>', self.sid, self.realm, rtbl_name, encode_base64 (serialize (pkeys)), self.current_dsn));
                                         http ('</td></tr>');
 
                                         i := i + 1;

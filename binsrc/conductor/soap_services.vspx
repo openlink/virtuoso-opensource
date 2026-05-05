@@ -143,7 +143,7 @@
 
 		        --control.vu_url := sprintf (
 		        control.bt_url := sprintf (
-		          'soap_services_edit.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
+		          'soap_services_edit.vspx?mode=add1&_host=%U&_port=%U&_httphost=%U',
 			  _host, _port, _httphost);
 		    ]]></v:after-data-bind>
 		   <!--</v:url>-->
@@ -204,7 +204,7 @@
 		        proto := 'https';
 
 		      control.ufl_value := xp;
-		      control.vu_url := sprintf ('/vsmx/vsmx.vspx?wsdl=%s://%U%U/services.wsdl', proto, thost, xp);
+		      control.vu_url := sprintf ('/vsmx/vsmx.vspx?wsdl=%U://%U%U/services.wsdl', proto, thost, xp);
 		      control.vu_l_pars := '';
 		      ]]></v:after-data-bind>
 		  </v:url>
@@ -255,7 +255,7 @@
 		      www_split_host (_httphost1, _httphost, tmp);
 
 		        control.bt_url := sprintf (
-		          'soap_services_edit.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+		          'soap_services_edit.vspx?mode=edit&_host=%U&_port=%U&_httphost=%U&path=%U',
 			  _host, _port, _httphost, _path);
 		   ]]></v:after-data-bind>
 		  </v:button>
@@ -280,7 +280,7 @@
 		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
 
 		        control.bt_url := sprintf (
-		          'soap_del_path.vspx?lhost=%s&vhost=%s&lpath=%s&caller=soap_services.vspx',
+		          'soap_del_path.vspx?lhost=%U&vhost=%U&lpath=%U&caller=soap_services.vspx',
 			  _host1, _httphost1, _path);
 		  ]]></v:after-data-bind>
 		  </v:button>

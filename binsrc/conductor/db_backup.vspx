@@ -143,7 +143,7 @@
               declare _header, _line varchar;
 
               _header := http_header_get();
-              _line := sprintf('Refresh: %d; URL=db_backup.vspx?sid=%s&realm=%s\r\n', self.refresh, self.sid ,self.realm);
+              _line := sprintf('Refresh: %d; URL=db_backup.vspx?sid=%U&realm=%U\r\n', self.refresh, self.sid ,self.realm);
               if (self.refresh < 16)
                 self.refresh := self.refresh * 2;
 
@@ -415,7 +415,7 @@
                             <v:text name="t_dir" error-glyph="*">
                               <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
                             </v:text>
-                            <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
+                            <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?U self.sid ?>&realm=<?U self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
                             <v:button name="dir_add" action="simple" value="Add" />
                             <br /><br />
                           </td>
@@ -512,7 +512,7 @@
                           commit work;
                           exec ('checkpoint');
                           http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf ('Location: db_backup.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          http_header (sprintf ('Location: db_backup.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                           http_flush();
                           self.p_mode := '1';
 

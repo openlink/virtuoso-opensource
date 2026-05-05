@@ -458,14 +458,14 @@ params := e.ve_params;
                           <![CDATA[
                             if ((control.vc_parent as vspx_row_template).te_rowset[2] = 0)
                               control.ufl_value :=
-                                sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=add_cred&dsn=%s">Add</a>',
+                                sprintf ('<a href="vdb_main.vspx?sid=%U&realm=%U&mode=add_cred&dsn=%U">Add</a>',
                                          self.sid,
                                          self.realm,
                                          (control.vc_parent as vspx_row_template).te_rowset[0]);
                             else if ((control.vc_parent as vspx_row_template).te_rowset[2] = 1)
                               {
                                 control.ufl_value :=
-                                  sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=edit_cred&dsn=%s">Edit</a>&nbsp;<a href="vdb_main.vspx?sid=%s&realm=%s&mode=remove_cred&dsn=%s">Remove</a>&nbsp;&nbsp;&nbsp;',
+                                  sprintf ('<a href="vdb_main.vspx?sid=%U&realm=%U&mode=edit_cred&dsn=%U">Edit</a>&nbsp;<a href="vdb_main.vspx?sid=%U&realm=%U&mode=remove_cred&dsn=%U">Remove</a>&nbsp;&nbsp;&nbsp;',
                                            self.sid,
                                            self.realm,
                                            (control.vc_parent as vspx_row_template).te_rowset[0],
@@ -483,7 +483,7 @@ params := e.ve_params;
                         <v:script>
                           <![CDATA[
                             control.ufl_value :=
-                              sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=link_objects&dsn=%s">Link objects</a>',
+                              sprintf ('<a href="vdb_main.vspx?sid=%U&realm=%U&mode=link_objects&dsn=%U">Link objects</a>',
                                        self.sid,
                                        self.realm,
                                        (control.vc_parent as vspx_row_template).te_rowset[0]);
@@ -802,12 +802,12 @@ if (objects > 0)
             http (sprintf ('<td><input type="checkbox" name="cbt_%s_%d" value="%s" border="0" /></td>',
                            aref (self.linked_objects, obj), n, encode_base64 (lname)));
             http ('<td><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
-            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
                            self.sid ,self.realm , lname, lname));
             http (sprintf ('<td>%s</td>', l_dsn));
             http (sprintf ('<td>%s</td>',
                            rname));
-            http (sprintf ('<td><a href="vdb_main.vspx?sid=%s&realm=%s&mode=unlink_table&rname=%s&lname=%s&dsn=%s">Unlink</a></td>',
+            http (sprintf ('<td><a href="vdb_main.vspx?sid=%U&realm=%U&mode=unlink_table&rname=%U&lname=%U&dsn=%U">Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
             http ('</tr>');
 
@@ -830,11 +830,11 @@ if (objects > 0)
             http (sprintf ('<td><input type="checkbox" name="cbp_%s_%d" value="%s" border="0" /></td>',
                            aref (self.linked_objects, obj), n, encode_base64 (lname)));
             http ('<td><img src="images/icons/script_16.png" alt="Procedure" title="Stored Procedure"/></td>');
-            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
                            self.sid ,self.realm , lname, lname));
             http (sprintf ('<td>%s</td>', l_dsn));
             http (sprintf ('<td>%s</td>', rname));
-            http (sprintf ('<td><a href="vdb_main.vspx?sid=%s&realm=%s&mode=unlink_proc&rname=%s&lname=%s&dsn=%s">Unlink</a></td>',
+            http (sprintf ('<td><a href="vdb_main.vspx?sid=%U&realm=%U&mode=unlink_proc&rname=%U&lname=%U&dsn=%U">Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
             http('</tr>');
             n := n + 2;

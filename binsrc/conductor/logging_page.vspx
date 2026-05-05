@@ -124,7 +124,7 @@
                       xmlhttp = new XMLHttpRequest();
 
                     page = '_tab';
-                    url = 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>';
+                    url = 'logging' + page + '.vspx?page=<?U get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?U self.sid ?>&amp;realm=<?U self.realm ?>';
                     if (params)
                     {
                       for(var i = 0;i &lt; params.length;i = i+2)

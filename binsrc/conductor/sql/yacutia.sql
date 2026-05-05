@@ -6074,7 +6074,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('pki_certs_list1', 1, vector ('pki_cert_rule1
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
     '/issuer/([^/]*)/([^/]*)/([^/]*)\x24',
     vector('m', 'uid', 'id'), 1,
-    '/issuer/%s?key_name=%s&username=%U', vector('m', 'id', 'uid'),
+    '/issuer/%s?key_name=%U&username=%U', vector('m', 'id', 'uid'),
     null,
     null,
     2);

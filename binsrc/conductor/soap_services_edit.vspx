@@ -379,7 +379,7 @@
             self.referer := rtrim(self.referer, '\r\n');
             if (strchr(self.referer, '?') is null)
               self.referer := concat(self.referer, '?');
-            self.referer := concat(self.referer, sprintf('sid=%s&realm=%s\r\n', self.sid, self.realm));
+            self.referer := concat(self.referer, sprintf('sid=%s&realm=%U\r\n', self.sid, self.realm));
           }
         ]]>
       </v:after-data-bind>
@@ -420,7 +420,7 @@
                       if( self.referer <> '' )
                         http_header (sprintf('Location: %s', self.referer));
                       else
-                        http_header (sprintf('Location: soap_services_list.vspx?sid=%s&realm=%s&_host=%s&_port=%s&_httphost=%s\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
+                        http_header (sprintf('Location: soap_services_list.vspx?sid=%U&realm=%U&_host=%U&_port=%U&_httphost=%U\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
                     ]]>
                   </v:on-post>
                 </v:button>
@@ -1785,7 +1785,7 @@
                       if( self.referer <> '' )
                         http_header (sprintf('Location: %s', self.referer));
                       else
-                        http_header (sprintf('Location: soap_services_list.vspx?sid=%s&realm=%s&_host=%s&_port=%s&_httphost=%s\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
+                                      http_header (sprintf('Location: soap_services_list.vspx?sid=%U&realm=%U&_host=%U&_port=%U&_httphost=%U\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
                       ]]>
                   </v:on-post>
                 </v:button>
@@ -2076,7 +2076,7 @@
                           if (self.referer <> '')
                             http_header (sprintf('Location: %s', self.referer));
                           else
-                            http_header (sprintf('Location: soap_services_list.vspx?sid=%s&realm=%s&_host=%s&_port=%s&_httphost=%s\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
+                                      http_header (sprintf('Location: soap_services_list.vspx?sid=%U&realm=%U&_host=%U&_port=%U&_httphost=%U\r\n',self.sid ,self.realm, self.edit_host,self.edit_port,self.edit_httphost));
                         }
                       ]]>
                   </v:on-post>

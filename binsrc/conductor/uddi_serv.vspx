@@ -129,13 +129,13 @@
                                 http(BE_OPERATOR);
                                 http('</td>');
                                 http('<td class="listing_col_action"><a   class="uddi"');
-                                http(sprintf(' href="uddi_remove.vspx?page=entity&business_key=%s&sid=%s&realm=%s"', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http(sprintf(' href="uddi_remove.vspx?page=entity&business_key=%U&sid=%U&realm=%U"', BE_BUSINESS_KEY, self.sid ,self.realm ));
                                 http('>Delete</a></td>');
                                 http('<td class="listing_col"><a   class="uddi" href="');
-                                http(sprintf('uddi_serv_create.vspx?page=entity&mode=edit&business_key=%s&sid=%s&realm=%s\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http(sprintf('uddi_serv_create.vspx?page=entity&mode=edit&business_key=%U&sid=%U&realm=%U\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
                                 http('">Edit</a></td>');
                                 http('<td class="listing_col"><a class="uddi" href="');
-                                http(sprintf('uddi_serv_browse.vspx?page=1&business_key=%s&sid=%s&realm=%s\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http(sprintf('uddi_serv_browse.vspx?page=1&business_key=%U&sid=%U&realm=%U\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
                                 http('">Details</a></td>');
                                 http('</tr>');
                                 cnt := cnt +1;
@@ -197,11 +197,11 @@
             http('</td>');
 
             http('<td class="listing_col"><a class="uddi"');
-            http(sprintf(' href="uddi_remove.vspx?page=tmodel&page_back=3&model_key=%s&sid=%s&realm=%s"', TM_TMODEL_KEY , self.sid ,self.realm ));
+            http(sprintf(' href="uddi_remove.vspx?page=tmodel&page_back=3&model_key=%U&sid=%U&realm=%U"', TM_TMODEL_KEY , self.sid ,self.realm ));
             http('>Delete</a></td>');
 
             http('<td class="listing_col_action"><a class="uddi" href="');
-            http(sprintf('uddi_serv_create.vspx?page=tmodel&mode=edit&tmodel_key=%s&sid=%s&realm=%s\r\n', TM_TMODEL_KEY , self.sid ,self.realm ));
+            http(sprintf('uddi_serv_create.vspx?page=tmodel&mode=edit&tmodel_key=%U&sid=%U&realm=%U\r\n', TM_TMODEL_KEY , self.sid ,self.realm ));
             http('">Edit</a></td>');
 
             http('</tr>');

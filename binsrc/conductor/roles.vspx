@@ -87,7 +87,7 @@
                 inx := inx + 1;
               }
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+              http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
             }
             else if (get_keyword ('load_update', params) <> '')
             {
@@ -290,7 +290,7 @@
               <v:on-post>
                 <![CDATA[
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%U&realm=%U\r\n', self.sid, self.realm));
                 ]]>
               </v:on-post>
             </v:button>

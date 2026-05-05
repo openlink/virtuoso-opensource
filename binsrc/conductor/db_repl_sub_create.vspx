@@ -672,7 +672,7 @@
                         {
                           self.stage := 0;
                           http_request_status('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                          http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%U&realm=%U\r\n', self.sid , self.realm));
                         }
                         else
                           self.stage := 2;

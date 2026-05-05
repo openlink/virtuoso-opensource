@@ -116,7 +116,7 @@
                             <v:on-post>
                               <![CDATA[
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                http_header(sprintf('Location: robot_sites.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                                 return;
                               ]]>
                             </v:on-post>

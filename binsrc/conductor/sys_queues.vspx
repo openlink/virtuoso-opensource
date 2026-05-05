@@ -167,7 +167,7 @@
                   <?vsp
                     if (control.te_rowset[4] is not null)
                     {
-                      http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%s&realm=%s&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>', self.sid, self.realm, control.te_rowset[0]));
+                      http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%U&realm=%U&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>', self.sid, self.realm, control.te_rowset[0]));
                     }
                     else
                     {

@@ -411,7 +411,7 @@ ORDER BY sch_name"
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=definition&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                     ]]>
                                   </v:on-post>
                                 </v:button>
@@ -421,7 +421,7 @@ ORDER BY sch_name"
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=indexes&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=indexes&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                     ]]>
                                   </v:on-post>
                                   </v:button>
@@ -432,7 +432,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=triggers&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=triggers&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -447,7 +447,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_table_constraints.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_table_constraints.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -458,7 +458,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -587,7 +587,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_view_edit.vspx?sid=%s&realm=%s&mode=edit&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_view_edit.vspx?sid=%U&realm=%U&mode=edit&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -598,7 +598,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -809,7 +809,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: databases_proc_edit.vspx?sid=%s&realm=%s&mode=edit&type=%s&name=%s\r\n',
+                                        http_header (sprintf ('Location: databases_proc_edit.vspx?sid=%U&realm=%U&mode=edit&type=%U&name=%U\r\n',
                                           self.sid,
                                           self.realm,
                                           case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'Module' else 'Procedure' end,
@@ -825,7 +825,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -956,7 +956,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>

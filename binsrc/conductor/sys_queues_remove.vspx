@@ -51,7 +51,7 @@
               <v:on-post>
                 <![CDATA[
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                   return;
                 ]]>
               </v:on-post>
@@ -83,7 +83,7 @@
                     return;
                   }
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                 ]]>
               </v:on-post>
             </v:button>

@@ -64,7 +64,7 @@
               {
                 self.browse_cat1 :=  get_keyword('catalog1', params);
                 http_request_status ('HTTP/1.1 302 Found');
-                http_header (sprintf('Location: wsdl_services.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                http_header (sprintf('Location: wsdl_services.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
               }
               else if (get_keyword('export', params) is not null)
               {

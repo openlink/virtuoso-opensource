@@ -121,18 +121,18 @@
                               {
                                 http_request_status ('HTTP/1.1 302 Found');
                                 if (self.ctx_value = '2')
-                                  http_header (sprintf ('Location: xquery2.vspx?context=%s&sid=%s&realm=%s\r\n', self.ctx_value, self.sid ,self.realm));
+                                  http_header (sprintf ('Location: xquery2.vspx?context=%U&sid=%U&realm=%U\r\n', self.ctx_value, self.sid ,self.realm));
                                 else if (self.ctx_value in ('1', '3', '4'))
-                                  http_header (sprintf ('Location: xquery.vspx?context=%s&sid=%s&realm=%s\r\n', self.ctx_value, self.sid ,self.realm));
+                                  http_header (sprintf ('Location: xquery.vspx?context=%U&sid=%U&realm=%U\r\n', self.ctx_value, self.sid ,self.realm));
                                 else
-                                  http_header (sprintf ('Location: xquery.vspx?context=%s&sid=%s&realm=%s\r\n', self.ctx_value, self.sid ,self.realm));
+                                  http_header (sprintf ('Location: xquery.vspx?context=%U&sid=%U&realm=%U\r\n', self.ctx_value, self.sid ,self.realm));
                                 return;
                               }
 
                               if (e.ve_button.vc_name = 'cancel')
                               {
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf ('Location: xquery.vspx?context=%s&sid=%s&realm=%s\r\n', self.ctx_value, self.sid ,self.realm));
+                                http_header (sprintf ('Location: xquery.vspx?context=%U&sid=%U&realm=%U\r\n', self.ctx_value, self.sid ,self.realm));
                                 return;
                               }
 
@@ -208,7 +208,7 @@
                                 );
                               }
                               http_request_status ('HTTP/1.1 302 Found');
-                              http_header (sprintf('Location: xquery3.vspx?mode=store&context=%s&sid=%s&realm=%s\r\n', self.ctx_value, self.sid ,self.realm));
+                              http_header (sprintf('Location: xquery3.vspx?mode=store&context=%U&sid=%U&realm=%U\r\n', self.ctx_value, self.sid ,self.realm));
                               return;
                             go_again:;
                             }
@@ -465,13 +465,13 @@
                               if (e.ve_button.vc_name = 'prev_save')
                               {
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf('Location: xquery3.vspx?mode=query&context=%s&sid=%s&realm=%s\r\n',get_keyword('context', params), self.sid ,self.realm));
+                                http_header (sprintf('Location: xquery3.vspx?mode=query&context=%U&sid=%U&realm=%U\r\n',get_keyword('context', params), self.sid ,self.realm));
                                 return;
                               }
                               if (e.ve_button.vc_name = 'cancel_save')
                               {
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf('Location: xquery.vspx?context=%s&sid=%s&realm=%s\r\n',get_keyword('context', params), self.sid ,self.realm));
+                                http_header (sprintf('Location: xquery.vspx?context=%U&sid=%U&realm=%U\r\n',get_keyword('context', params), self.sid ,self.realm));
                                 return;
                               }
                               if (save_path = '' )
@@ -547,7 +547,7 @@
                                 {
                                   err_msg := __SQL_MESSAGE;
                                   http_request_status ('HTTP/1.1 302 Found');
-                                  http_header (sprintf('Location: xquery4.vspx?result=error&sid=%s&realm=%s&error=%s\r\n',self.sid ,self.realm,err_msg));
+                                  http_header (sprintf('Location: xquery4.vspx?result=error&sid=%U&realm=%U&error=%U\r\n',self.sid ,self.realm,err_msg));
                                   return;
                                 };
                                 res_string := y_execute_xq (
@@ -646,7 +646,7 @@
                               }
                               self.query_text := null;
                               http_request_status ('HTTP/1.1 302 Found');
-                              http_header (sprintf('Location: xquery4.vspx?result=ok&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                              http_header (sprintf('Location: xquery4.vspx?result=ok&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                             go_again:;
                             }
                           ]]>

@@ -55,7 +55,7 @@
     -- Get the OAuth code
     if (oauth_code = '0')
     {
-      fb_login_dialog_url := sprintf ('http://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%U', fb_app_id, fb_app_site_url);
+      fb_login_dialog_url := sprintf ('http://www.facebook.com/dialog/oauth?client_id=%U&redirect_uri=%U', fb_app_id, fb_app_site_url);
 
       -- Request a non-expiring token
       if (offline_access)
@@ -67,7 +67,7 @@
     }
 
     -- Get the access token
-    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%U&client_secret=%s&code=%s',
+    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%U&redirect_uri=%U&client_secret=%U&code=%U',
         fb_app_id, fb_app_site_url, fb_app_secret, oauth_code);
 
     oauth_resp := http_client_ext (url=>oauth_url, headers=>oauth_headers);
@@ -80,7 +80,7 @@
     -- dbg_printf ('access_token expiry (secs): %s', oauth_token_expiry);
 
     -- Retrieve the name of the Facebook user granting the access token
-    og_user_url := sprintf ('https://graph.facebook.com/me?access_token=%s', oauth_token);
+    og_user_url := sprintf ('https://graph.facebook.com/me?access_token=%U', oauth_token);
     og_resp := http_client (og_user_url);
     -- dbg_printf ('og_resp: %s', og_resp);
     xt := json_parse (og_resp);

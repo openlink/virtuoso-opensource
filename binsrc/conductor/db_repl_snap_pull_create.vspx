@@ -551,7 +551,7 @@ self.vc_data_bind(e);
               {
                 declare _header, _line varchar;
                 _header := http_header_get();
-                _line := sprintf('Refresh: %d;URL=db_repl_snap_pull_create.vspx?sid=%s&realm=%s&\r\n', self.repl_snap_pull_autorefresh , self.sid ,self.realm);
+                _line := sprintf('Refresh: %d;URL=db_repl_snap_pull_create.vspx?sid=%U&realm=%U&\r\n', self.repl_snap_pull_autorefresh , self.sid ,self.realm);
                 if(_header is null)
                   {
                     _header := _line;

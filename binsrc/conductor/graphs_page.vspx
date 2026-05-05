@@ -38,7 +38,7 @@
       }
       else
       {
-        http (sprintf ('<a class="uddi" href="graphs_page.vspx?page=%s&amp;sid=%s&amp;realm=%s">%V</a>', ndx, self.sid, self.realm, label));
+        http (sprintf ('<a class="uddi" href="graphs_page.vspx?page=%U&amp;sid=%s&amp;realm=%s">%V</a>', ndx, self.sid, self.realm, label));
       }
     ]]>
   </v:method>

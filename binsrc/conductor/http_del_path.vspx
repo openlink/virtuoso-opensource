@@ -71,7 +71,7 @@
             <v:button name="conf_cancel" action="simple" value="Cancel">
               <v:on-post>
                 <![CDATA[
-                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                  self.vc_redirect (sprintf ('%s?openat=%U', self.caller, self.lhost));
                 ]]>
               </v:on-post>
             </v:button>
@@ -99,7 +99,7 @@
                     }
                   }
                   VHOST_REMOVE (self.vhost, self.lhost, self.lpath, 0);
-                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                  self.vc_redirect (sprintf ('%s?openat=%U', self.caller, self.lhost));
                 ]]>
               </v:on-post>
             </v:button>

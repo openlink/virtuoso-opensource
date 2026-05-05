@@ -72,26 +72,26 @@
            <![CDATA[
        if (get_keyword('schema_import', control.vc_page.vc_event.ve_params) is not null ) {
                     http_request_status ('HTTP/1.1 302 Found');
-                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=2&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=2&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
         }
        if (get_keyword('schema_export', control.vc_page.vc_event.ve_params) is not null ) {
              self.schema_text :=  get_keyword('schema_text_control', control.vc_page.vc_event.ve_params);
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: mapped_schema_xml.vspx?page=3&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                    http_header (sprintf('Location: mapped_schema_xml.vspx?page=3&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
         }
         if (get_keyword('schema_new', control.vc_page.vc_event.ve_params) is not null ) {
           self.schema_text := null;
     self.schema_saved := 0;
     self.schema_state := 0;
                     http_request_status ('HTTP/1.1 302 Found');
-                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
         }
         if (get_keyword('schema_declare', control.vc_page.vc_event.ve_params) is not null ) {
            if (self.schema_saved =  1 ) {
         xml_load_mapping_schema_decl ( 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', self.schema_loaded_from, 'UTF-8', 'x-any'  );
 
                     http_request_status ('HTTP/1.1 302 Found');
-                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                   http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
      } else {
         self.error_message := 'Mapping Schema must be saved before to declare it.';
      }
@@ -149,7 +149,7 @@
     self.schema_loaded_from := path;
        }
              http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+              http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
            ]]>
           </v:script>
          </v:on-post>
@@ -227,7 +227,7 @@
     self.schema_loaded_from := path;
        }
              http_request_status ('HTTP/1.1 302 Found');
-             http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+             http_header (sprintf('Location: mapped_schema_xml.vspx?page=1&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 
        try_again: ;
            ]]>

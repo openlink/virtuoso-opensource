@@ -128,7 +128,7 @@
                declare section_name,  param_name , param_value  varchar;
       if (get_keyword('load', params) is not null) {
                   http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_header (sprintf('Location: inifile.vspx?mode=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
                inifile_array := vector();
@@ -144,18 +144,18 @@
                  self.inifile_array := inifile_array;
 
       if (get_keyword('saveas', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=saveas&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?mode=saveas&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
       if (get_keyword('save', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=save&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?mode=save&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
       if (get_keyword('revert', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
 
@@ -279,7 +279,7 @@
         <v:script><![CDATA[ -- here we need to assign the file name to be loaded from  and check the file type (xml/text be its contnt analysis)
         if (get_keyword('softSubmit', params) is not null) {
                   http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?what=redirect&page=%s&sid=%s&realm=%s\r\n', get_keyword('softSubmit', params), self.sid ,self.realm));
+          http_header (sprintf('Location: inifile.vspx?what=redirect&page=%U&sid=%U&realm=%U\r\n', get_keyword('softSubmit', params), self.sid ,self.realm));
           return;
         }
 
@@ -306,7 +306,7 @@
 	                        if ( file_stat (from_file, 1) = 0)  {
 				              self.error_message:= sprintf(' from the server file system. Local file  %s does not exist.',from_file);
 				               http_request_status ('HTTP/1.1 302 Found');
-				              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+				              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
 				              return;
 	                        }
 
@@ -318,12 +318,12 @@
                               self.load_from_mode := from_mode;
                     self.load_from_type:= 'text';
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                   } else  {
                     self.error_message:= sprintf(' from the server file system. Local file %s has  no valid  ini file format.',from_file);
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                   }
                 };
@@ -335,7 +335,7 @@
                 {
                   self.error_message:= sprintf(' from the local file system. Local file %s has  no valid  either ini file or xml format.',from_file);
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
@@ -356,7 +356,7 @@
              if ( not exists(select 1 from WS.WS.SYS_DAV_RES  where RES_FULL_PATH = from_file) ) {
               self.error_message:= sprintf(' from dav. DAV resource %s does not exist.',from_file);
                       http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
               return;
              }
 
@@ -367,7 +367,7 @@
                     self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml  format.', from_file);
 
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                 };
 
@@ -382,7 +382,7 @@
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
 
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
@@ -395,7 +395,7 @@
              } else {
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
             }
                          } else if (from_mode ='3') {
@@ -404,7 +404,7 @@
                      }
                  }
             http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+        http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
         return;
               } ]]>
             </v:script>
@@ -553,11 +553,11 @@
                         string_to_file( concat(virtuoso_ini_path()) , txt_file ,-2);
                        }
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     } else  if ( get_keyword('save_cancel', params) is not null) {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&what=redirect&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&what=redirect&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
 
@@ -713,11 +713,11 @@
                         string_to_file( concat(virtuoso_ini_path()) , txt_file ,-2);
                        }
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?section=%s&mode=result&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?section=%U&mode=result&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     } else  if ( get_keyword('tosave_cancel', params) is not null) {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&what=redirect&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&what=redirect&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
 
@@ -748,7 +748,7 @@
             <v:script>
               <![CDATA[  {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
               ]]>
@@ -777,7 +777,7 @@
             <v:script>
               <![CDATA[  {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
               ]]>

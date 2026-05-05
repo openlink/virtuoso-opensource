@@ -40,7 +40,7 @@
 
     <vm:rawheader>
       <td>Data Sources</td>
-      <td><a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=create&dsn_name=">Add Source Credentials</a></td>
+      <td><a href="vdb_dsn_edit.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=create&dsn_name=">Add Source Credentials</a></td>
     </vm:rawheader>
 
     <vm:pagebody vdb_check="1">
@@ -48,10 +48,10 @@
         <tr>
           <th align="left">Data Source Name</th><th align="left">UserName</th><th align="left">State</th><th>&nbsp;</th>
           <th align="left">
-            <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=remove">Remove All</a>
+            <a href="vdb_dsns.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=remove">Remove All</a>
           </th>
           <th align="left">
-            <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=test">Test All</a>
+            <a href="vdb_dsns.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=test">Test All</a>
           </th>
         </tr>
 
@@ -96,13 +96,13 @@
             }
           ?>
           <td class="MainData">
-            <a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=edit&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Edit</a>
+            <a href="vdb_dsn_edit.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=edit&dsn_name=<?U ds_dsn ?>&login=<?U ds_uid ?>">Edit</a>
           </td>
           <td class="MainData">
-            <a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=remove&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Remove</a>
+            <a href="vdb_dsn_edit.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=remove&dsn_name=<?U ds_dsn ?>&login=<?U ds_uid ?>">Remove</a>
           </td>
           <td class="MainData">
-            <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=test&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Test</a>
+            <a href="vdb_dsns.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&mode=test&dsn_name=<?U ds_dsn ?>&login=<?U ds_uid ?>">Test</a>
           </td>
         </tr>
         <?vsp

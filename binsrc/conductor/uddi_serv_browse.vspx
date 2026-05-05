@@ -72,7 +72,7 @@
                 http(self.business_name);
                 http('</b><nobr></td></tr>');
                } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 20 )  {
-                http(sprintf('<tr><td><a class="uddi"  href="uddi_serv_browse.vspx?page=3&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
+                http(sprintf('<tr><td><a class="uddi"  href="uddi_serv_browse.vspx?page=3&sid=%U&realm=%U\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
                 http(self.business_name);
                 http('</b></nobr></td></tr>');
                 http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/contact.gif" width="16" height="16"/></td><td  class="SubInfo" aligh="left"><nobr><b>');
@@ -80,7 +80,7 @@
                 http('</b><nobr>');
                 http('</td></tr>');
                } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 30 )  {
-                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
+                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%U&realm=%U\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
                 http(self.business_name);
                 http('</b><nobr></td></tr>');
                 http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/service.gif" width="16" height="16"/></td><td  class="SubInfo"  aligh="left"><b>');
@@ -88,7 +88,7 @@
                 http('</b>');
                 http('</td></tr>');
                } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 40 )  {
-                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="3" align="left"><nobr><b>', self.sid ,self.realm));
+                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%U&realm=%U\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="3" align="left"><nobr><b>', self.sid ,self.realm));
                 http(self.business_name);
                 http('</b><nobr></td></tr>');
                 http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/service.gif" width="16" height="16"/></td><td  class="SubInfo" colspan="2" aligh="left"><b>');
@@ -350,7 +350,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a  class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=create&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', business_id, self.sid ,self.realm));
+                    http(sprintf('<a  class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=create&page_back=1&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>', business_id, self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo" ><table border="0" width="100%" cellpadding="2" cellspacing="2">');
                     cnt := 0;
@@ -359,9 +359,9 @@
                         http(UD_DESC);
                         http('</td>');
                         http('<td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=1&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td  class="listing_col_action">');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=edit&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=edit&page_back=1&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt + 1;
                     }
@@ -393,7 +393,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0" width="100%"  cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Services</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=service&mode=create&page_back=2&business_key=%s&sid=%s&realm=%s\r\n">Add</a>', business_id, self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=service&mode=create&page_back=2&business_key=%U&sid=%U&realm=%U\r\n">Add</a>', business_id, self.sid ,self.realm));
 
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
@@ -403,14 +403,14 @@
                         http(BS_NAME );
 
                       http('</td><td class="SubInfo"><a  class="uddi" href="');
-                      http(sprintf('uddi_remove.vspx?page=service&page_back=2&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http(sprintf('uddi_remove.vspx?page=service&page_back=2&service_key=%U&sid=%U&realm=%U\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
                       http('">Delete</a></td>');
                       http('</td><td class="SubInfo"><a  class="uddi" href="');
-                      http(sprintf('uddi_serv_create.vspx?page=service&mode=edit&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http(sprintf('uddi_serv_create.vspx?page=service&mode=edit&service_key=%U&sid=%U&realm=%U\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
                       http('">Edit</a></td>');
 
                       http('<td class="SubInfo"><a class="uddi" href="');
-                      http(sprintf('uddi_serv_browse.vspx?page=21&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http(sprintf('uddi_serv_browse.vspx?page=21&service_key=%U&sid=%U&realm=%U\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
                       http('">Details</a></td>');
 
 
@@ -442,7 +442,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Contact to:</b></td>
                       <td class="ListHeader" width="50%" colspan="3"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=contact&mode=create&business_key=%s',self.uuid_value)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=contact&mode=create&business_key=%U',self.uuid_value)"/>
                       </td>
                   </tr>
               <?vsp
@@ -458,16 +458,16 @@
                 http('</td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_remove.vspx?page=contact&page_back=3&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_remove.vspx?page=contact&page_back=3&contact_key=%U&sid=%U&realm=%U\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
                 http('">Delete</a></td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_serv_create.vspx?page=contact&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_serv_create.vspx?page=contact&mode=edit&contact_key=%U&sid=%U&realm=%U\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
                 http('">Edit</a></td>');
 
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_serv_browse.vspx?page=11&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_serv_browse.vspx?page=11&contact_key=%U&sid=%U&realm=%U\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
                 http('">Details</a></td>');
 
                 http('</tr>');
@@ -500,7 +500,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Identifiers</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&owner=businessEntity&mode=create&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&owner=businessEntity&mode=create&page_back=4&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>',  business_id , self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -511,9 +511,9 @@
                         http('<tr><td class="SubInfo" width="100%">Identification Scheme: ');
                         http(tmodel_name);
                         http('</td><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=identify&mode=delete&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=identify&mode=delete&page_back=4&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&mode=edit&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&mode=edit&page_back=4&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
                         http(IB_KEY_NAME);
@@ -559,7 +559,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Categories</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessEntity&mode=create&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessEntity&mode=create&page_back=5&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>',  business_id , self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -570,9 +570,9 @@
                         http('<tr><td class="SubInfo" width="100%">Categorization Scheme: ');
                         http(tmodel_name);
                         http('</td><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=5&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=5&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
                         http(CB_KEY_NAME);
@@ -615,7 +615,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Discovery URLs</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&owner=businessEntity&mode=create&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&owner=businessEntity&mode=create&page_back=4&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>',  business_id , self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -624,9 +624,9 @@
                         http('<tr><td class="SubInfo" width="100%">');
                         http(sprintf('<a class="uddi" href="http://%s">%s</a>',DU_URL, DU_URL));
                         http('</td><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=discovery&mode=delete&page_back=6&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=discovery&mode=delete&page_back=6&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&mode=edit&page_back=6&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&mode=edit&page_back=6&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Use type:');
                         http(DU_USE_TYPE);
@@ -683,7 +683,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=create&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', contact_id, self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=create&page_back=11&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>', contact_id, self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -691,9 +691,9 @@
                         http('<tr><td class="SubInfo" width="100%">');
                         http(UD_DESC);
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=11&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=edit&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=edit&page_back=11&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt + 1;
                     }
@@ -720,7 +720,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4" ><b>E-Mails</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_email_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=email&mode=create&contact_key=%s',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_email_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=email&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -737,9 +737,9 @@
                         http('<td class="SubInfo">');
                         http(use_type );
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=email&page_back=12&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', EM_EMAIL_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=email&page_back=12&contact_key=%U&sid=%U&realm=%U\r\n">Delete</a>', EM_EMAIL_KEY, self.sid ,self.realm));
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=email&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', EM_EMAIL_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=email&mode=edit&contact_key=%U&sid=%U&realm=%U\r\n">Edit</a>', EM_EMAIL_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt+1;
                     }
@@ -764,7 +764,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4"><b>Phones</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_phone_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=phone&mode=create&contact_key=%s',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_phone_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=phone&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -782,9 +782,9 @@
                         http('<td class="SubInfo">');
                         http(use_type );
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=phone&page_back=13&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', PH_PHONE_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=phone&page_back=13&contact_key=%U&sid=%U&realm=%U\r\n">Delete</a>', PH_PHONE_KEY, self.sid ,self.realm));
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=phone&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', PH_PHONE_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=phone&mode=edit&contact_key=%U&sid=%U&realm=%U\r\n">Edit</a>', PH_PHONE_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt+1;
                     }
@@ -809,7 +809,7 @@
                <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
                 <tr><td class="ListHeader" width="100%" colspan="4" ><b>Addresses</b></td>
                   <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_contact_address_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=address&mode=create&contact_key=%s',self.contact_ident)"/>
+                        <v:url xhtml_class="uddi" name="b_url_contact_address_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=address&mode=create&contact_key=%U',self.contact_ident)"/>
                   </td>
                 </tr>
               <?vsp
@@ -826,9 +826,9 @@
                         http('<td class="SubInfo">');
                         http(use_type );
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=address&page_back=14&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=address&page_back=14&contact_key=%U&sid=%U&realm=%U\r\n">Delete</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
                         http('</td><td>');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=address&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=address&mode=edit&contact_key=%U&sid=%U&realm=%U\r\n">Edit</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt+1;
                     }
@@ -866,7 +866,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=create&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', service_id, self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=create&page_back=21&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>', service_id, self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -874,9 +874,9 @@
                         http('<tr><td class="SubInfo" width="100%">');
                         http(UD_DESC);
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=21&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=edit&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=edit&page_back=21&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt + 1;
                     }
@@ -905,7 +905,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Bounded services</b></td>
                       <td class="ListHeader" width="50%" colspan="3"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_binding_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=binding&mode=create&binding_service_key=%s', self.service_ident )"/>
+                        <v:url xhtml_class="uddi" name="b_url_binding_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=binding&mode=create&binding_service_key=%U', self.service_ident )"/>
                       </td>
                   </tr>
               <?vsp
@@ -930,16 +930,16 @@
                 http('</td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_remove.vspx?page=binding&page_back=22&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_remove.vspx?page=binding&page_back=22&binding_key=%U&sid=%U&realm=%U\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
                 http('">Delete</a></td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_serv_create.vspx?page=binding&mode=edit&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_serv_create.vspx?page=binding&mode=edit&binding_key=%U&sid=%U&realm=%U\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
                 http('">Edit</a></td>');
 
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_serv_browse.vspx?page=31&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_serv_browse.vspx?page=31&binding_key=%U&sid=%U&realm=%U\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
                 http('">Details</a></td>');
                 cnt := cnt +1;
                 http('</tr>');
@@ -978,7 +978,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Categories</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessService&mode=create&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  self.service_ident , self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessService&mode=create&page_back=23&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>',  self.service_ident , self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -989,9 +989,9 @@
                         http('<tr><td class="SubInfo" width="100%">Categorization Scheme: ');
                         http(tmodel_name);
                         http('</td><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=23&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=23&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
                         http('</td></tr>');
                         http('<tr><td class="SubInfo" width="100%">Key Name: ');
                         http(CB_KEY_NAME);
@@ -1059,7 +1059,7 @@
 
                   http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
-                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=create&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', binding_id, self.sid ,self.realm));
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=create&page_back=31&uuid_key=%U&sid=%U&realm=%U\r\n">Add</a>', binding_id, self.sid ,self.realm));
                     http('</td></tr>');
                     http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
                     cnt := 0;
@@ -1067,9 +1067,9 @@
                         http('<tr><td class="SubInfo" width="100%">');
                         http(UD_DESC);
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=31&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
-                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=edit&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=edit&page_back=31&uuid_key=%U&sid=%U&realm=%U\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt + 1;
                     }
@@ -1098,7 +1098,7 @@
                   <tr><td class="ListHeader" width="50%"><b>Instance Infos</b></td>
                       <td class="ListHeader" width="50%" colspan="4"/>
                       <td class="HeaderButton" align="center">
-                        <v:url xhtml_class="uddi" name="b_url_instance_info_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=instance_info&mode=create&binding_key=%s', self.binding_ident )"/>
+                        <v:url xhtml_class="uddi" name="b_url_instance_info_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=instance_info&mode=create&binding_key=%U', self.binding_ident )"/>
                       </td>
                   </tr>
               <?vsp
@@ -1117,11 +1117,11 @@
                 http('</td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_remove.vspx?page=instance_info&page_back=32&instance_key=%s&sid=%s&realm=%s\r\n', ID_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_remove.vspx?page=instance_info&page_back=32&instance_key=%U&sid=%U&realm=%U\r\n', ID_KEY, self.sid ,self.realm ));
                 http('">Delete</a></td>');
 
                 http('<td class="SubInfo"><a  class="uddi" href="');
-                http(sprintf('uddi_serv_create.vspx?page=instance_info&mode=edit&instance_key=%s&sid=%s&realm=%s\r\n', ID_KEY, self.sid ,self.realm ));
+                http(sprintf('uddi_serv_create.vspx?page=instance_info&mode=edit&instance_key=%U&sid=%U&realm=%U\r\n', ID_KEY, self.sid ,self.realm ));
                 http('">Edit</a></td>');
                 cnt := cnt +1;
                 http('</tr>');

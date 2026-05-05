@@ -171,14 +171,14 @@
                       <table border="0">
                         <tr>
                           <td CLASS="SubAction">
-                            <a class="tablelistaction" href="text_results.vspx?tth_d_id=<?V TTH_D_ID ?>&tt_id=<?V _tt_id ?>&del=1&sid=<?V _sid_id ?>">Remove</a>
+                            <a class="tablelistaction" href="text_results.vspx?tth_d_id=<?U TTH_D_ID ?>&tt_id=<?U _tt_id ?>&del=1&sid=<?U _sid_id ?>">Remove</a>
                           </td>
                           <td CLASS="SubAction">
                             <?vsp
                               if (isstring (RES_TYPE) and strstr (RES_TYPE, 'xml') is not null)
                               {
                             ?>
-                            <a class="tablelistaction" href="text_results.vspx?tt_id=<?V _tt_id ?>&tth_d_id=<?V TTH_D_ID ?>&dav_st=1&sid=<?V _sid_id ?>">Transform</a>
+                            <a class="tablelistaction" href="text_results.vspx?tt_id=<?U _tt_id ?>&tth_d_id=<?U TTH_D_ID ?>&dav_st=1&sid=<?U _sid_id ?>">Transform</a>
                             <?vsp
                               }
                               else
@@ -227,7 +227,7 @@
           ?>
           <tr>
             <td CLASS="SubAction"><?V TT_COMMENT ?></td>
-            <td CLASS="SubAction"><a href="text_results.vspx?tt_id=<?V tid ?>&sid=<?V _sid_id ?>"><?V _qryt ?></a></td>
+            <td CLASS="SubAction"><a href="text_results.vspx?tt_id=<?U tid ?>&sid=<?U _sid_id ?>"><?V _qryt ?></a></td>
             <td CLASS="SubAction"><?V _cnt ?></td>
           </tr>
           <?vsp
