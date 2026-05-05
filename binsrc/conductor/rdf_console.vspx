@@ -113,7 +113,7 @@
                <tr>
                 <td style="width:5px; padding: 0 3px;">
                   <?vsp
-                    http (sprintf ('<input type="checkbox" name="cb_item" value="%s">', mses));
+                    http (sprintf ('<input type="checkbox" name="cb_item" value="%V">', mses));
                   ?>
                 </td>
                 <td>

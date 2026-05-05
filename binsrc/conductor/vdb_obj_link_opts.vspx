@@ -246,9 +246,9 @@
                                           http (sprintf('<td style="background-color: #f0f0f0;">%s</td>', _r_tbl[2]));
                                           rtbl_name := '..' || _r_tbl[2];
                                         }
-                                        http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%s" style="width: 100%%; max-width: 10em;"/></td>', pref, i, case when length (_l_tbl[0]) then _l_tbl[0] else 'DB' end));
-                                        http (sprintf('<td><input type="text" name="%s_schema_%d" value="%s" style="width: 100%%; max-width: 20em;" /></td>', pref, i, _l_tbl[1]));
-                                        http (sprintf('<td><input type="text" name="%s_name_%d" value="%s" style="width: 100%%; max-width: 40em;" /></td>', pref, i, _l_tbl[2]));
+                                        http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%V" style="width: 100%%; max-width: 10em;"/></td>', pref, i, case when length (_l_tbl[0]) then _l_tbl[0] else 'DB' end));
+                                        http (sprintf('<td><input type="text" name="%s_schema_%d" value="%V" style="width: 100%%; max-width: 20em;" /></td>', pref, i, _l_tbl[1]));
+                                        http (sprintf('<td><input type="text" name="%s_name_%d" value="%V" style="width: 100%%; max-width: 40em;" /></td>', pref, i, _l_tbl[2]));
                                         http ('<td>');
 
                                         pkeys := get_keyword (rtbl_name, self.sel_pk);
@@ -365,9 +365,9 @@
                                       {
                                         http ('<tr style="background-color: #fff;">');
                                         http (sprintf('<td style="background-color: #f0f0f0;">%s</td>', aref(self.s_procs,i)));
-                                        http (sprintf('<td><input type="text" name="catalog_%d" value="%s" style="width: 100%%; max-width: 10em;"/></td>', i, coalesce (aref (self.s_procs, i + 1), 'DB')));
-                                        http (sprintf('<td><input type="text" name="schema_%d" value="%s" style="width: 100%%; max-width: 20em;"/></td>', i, aref (self.s_procs, i + 2)));
-                                        http (sprintf('<td><input type="text" name="name_%d" value="%s" style="width: 100%%; max-width: 40em;"/></td>', i, aref (self.s_procs, i + 3)));
+                                        http (sprintf('<td><input type="text" name="catalog_%d" value="%V" style="width: 100%%; max-width: 10em;"/></td>', i, coalesce (aref (self.s_procs, i + 1), 'DB')));
+                                        http (sprintf('<td><input type="text" name="schema_%d" value="%V" style="width: 100%%; max-width: 20em;"/></td>', i, aref (self.s_procs, i + 2)));
+                                        http (sprintf('<td><input type="text" name="name_%d" value="%V" style="width: 100%%; max-width: 40em;"/></td>', i, aref (self.s_procs, i + 3)));
                                         --http (sprintf('<td><input type="text" name="COMMENT_%d" value="" /></td>', i));
                                         http (sprintf('<td><input type="button" name="sh_%d" value="Show Options" onclick="ShowHideOptions(this,%d)"/></td>', i,i));
                                         http ('</tr>');
@@ -403,7 +403,7 @@
 
                                           while (l < k)
                                           {
-                                            http (sprintf ('<option value="%s"', aref (tmp_vec, l)));
+                                            http (sprintf ('<option value="%V"', aref (tmp_vec, l)));
 
                                             if (aref (tmp_vec, l) = upper (col_mode))
                                               http ('selected="true"');
@@ -421,7 +421,7 @@
 
                                           while (l < k)
                                           {
-                                            http (sprintf ('<option value="%s"', aref (tmp_vec,l) ));
+                                            http (sprintf ('<option value="%V"', aref (tmp_vec,l) ));
                                             if (aref (tmp_vec,l) = upper (col_type))
                                               http ('selected="true"');
                                             http (sprintf ('>%s</option>\n',aref (tmp_vec,l)));
@@ -436,7 +436,7 @@
 
                                           while (l < k)
                                           {
-                                            http (sprintf ('<option value="%s"', aref (tmp_vec,l+1) ));
+                                            http (sprintf ('<option value="%V"', aref (tmp_vec,l+1) ));
                                             http (sprintf ('>%s</option>\n',aref (tmp_vec,l) ));
                                             l := l + 2;
                                           }

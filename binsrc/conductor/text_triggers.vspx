@@ -360,7 +360,7 @@
             {
               mimeType := self.mimeTypes[N];
               S := case when (position (mimeType, V)) then 'checked="checked"' else '' end;
-              http (sprintf ('<label><input type="checkbox" name="mimeType_%d" value="%s" %s /> %s</label><br />', N, mimeType, S, mimeType));
+              http (sprintf ('<label><input type="checkbox" name="mimeType_%d" value="%V" %s /> %s</label><br />', N, mimeType, S, mimeType));
             }
           ?>
         </td>

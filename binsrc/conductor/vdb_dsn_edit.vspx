@@ -97,7 +97,7 @@
           <table class="MainSubData" width="100%" border="0" cellspacing="0" cellpadding="0">
             <tr>
               <?vsp
-                http(sprintf('<input type="hidden" name="dsn_name" value="%s"/>', self.ds_name));
+                http(sprintf('<input type="hidden" name="dsn_name" value="%V"/>', self.ds_name));
                 http('<td>Data Source Name');
                 if( self.p_mode = 'edit' )
                 {
@@ -132,7 +132,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%s" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%s</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     idx := 0;
@@ -144,7 +144,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%s" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%s</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     http('</select>');

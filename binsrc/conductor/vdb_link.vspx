@@ -119,7 +119,7 @@
                           <?vsp
                             for (select ds_dsn, ds_uid from sys_data_source) do
                             {
-                              http(sprintf('<option value="%s">%s</option>', ds_dsn, ds_dsn ));
+                              http(sprintf('<option value="%V">%s</option>', ds_dsn, ds_dsn ));
                             }
                           ?>
                         </select>
@@ -236,7 +236,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbt_%d" value="%s"/></td></tr>', _den, _name, i, _value ));
+                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbt_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
                     i := i+1;
                   }
                 }
@@ -258,7 +258,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbs_%d" value="%s"/></td></tr>', _den, _name, i, _value));
+                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbs_%d" value="%V"/></td></tr>', _den, _name, i, _value));
                     i := i+1;
                   }
                 }
@@ -280,7 +280,7 @@
                     }
                     else
                       _den := '';
-                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbv_%d" value="%s"/></td></tr>', _den, _name, i, _value ));
+                    http(sprintf('<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbv_%d" value="%V"/></td></tr>', _den, _name, i, _value ));
                     i := i+1;
                   }
                 }
@@ -311,7 +311,7 @@
                         _den := '<span class="attention_marker">*</span>';
                         _deni := _deni + 1;
                     }
-                    http(sprintf( '<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbp_%d" value="%s"/></td></tr>',
+                    http(sprintf( '<tr class="SubAction"><td>%s%s</td><td align="center"><input type="checkbox" name="cbp_%d" value="%V"/></td></tr>',
                                   _den, _name, i, _value ));
                     i := i+1;
                   }
@@ -973,7 +973,7 @@
                         j := j + 1;
                       }
                     next_:
-                      http( sprintf('<option value="%s"%s>%s</option>', fields[i], selected, fields[i] ) );
+                      http( sprintf('<option value="%V"%s>%s</option>', fields[i], selected, fields[i] ) );
                       i := i + 1;
                     }
                   ?>

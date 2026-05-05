@@ -273,7 +273,7 @@
 
           <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
             <![CDATA[
-              return sprintf ('<option value="%s" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
+              return sprintf ('<option value="%V" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
             ]]>
           </v:method>
 
@@ -1688,12 +1688,12 @@
             ]]>
           </v:after-data-bind>
           <?vsp
-            http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
-            http (sprintf ('<input type="hidden" name="davPath" id="dirPath" value="%s" />', WEBDAV.DBA.real_path (self.dir_path)));
-            http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
-            http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%s" />', self.returnType));
+            http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%V" />', self.tabNo));
+            http (sprintf ('<input type="hidden" name="davPath" id="dirPath" value="%V" />', WEBDAV.DBA.real_path (self.dir_path)));
+            http (sprintf ('<input type="hidden" name="retname" id="retname" value="%V" />', self.returnName));
+            http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%V" />', self.returnType));
             if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap')))
-              http (sprintf ('<input type="hidden" name="a" id="a" value="%s" />', self.dav_action));
+              http (sprintf ('<input type="hidden" name="a" id="a" value="%V" />', self.dav_action));
           ?>
           <div class="toolbar">
             <?vsp
@@ -6421,7 +6421,7 @@
             <v:label for="ts_max" value="Max Results" />
           </th>
           <td>
-            <?vsp http (sprintf ('<input type="text" name="ts_max" value="%s" size="5" />', WEBDAV.DBA.dc_get (self.search_dc, 'options', 'max', '100'))); ?>
+            <?vsp http (sprintf ('<input type="text" name="ts_max" value="%V" size="5" />', WEBDAV.DBA.dc_get (self.search_dc, 'options', 'max', '100'))); ?>
           </td>
         </tr>
         <tr>
@@ -6496,7 +6496,7 @@
                 aValues := WEBDAV.DBA.syncml_versions ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6511,7 +6511,7 @@
                 aValues := WEBDAV.DBA.syncml_types ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6571,7 +6571,7 @@
                 aValue := self.get_fieldProperty ('dav_IMAP_connection', self.dav_path, 'virt:IMAP-connection', '');
                 aValues := vector ('none', 'None', 'ssl', 'SSL/TLS');
                 for (N := 0; N < length (aValues); N := N + 2)
-                  http (sprintf ('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http (sprintf ('<option value="%V" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
               ?>
             </select>
           </td>
@@ -6715,7 +6715,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=GDrive&service=google';
-              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Google Drive DAV authenticate\', \'GDrive\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Google Drive DAV authenticate\', \'GDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_GDrive_throbber" alt="Athenticate GDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6792,7 +6792,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Dropbox&service=dropbox';
-              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Dropbox DAV authenticate\', \'Dropbox\', 1100);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Dropbox DAV authenticate\', \'Dropbox\', 1100);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_Dropbox_throbber" alt="Athenticate Dropbox" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6867,7 +6867,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=SkyDrive&service=windowslive';
-              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'OneDrive DAV authenticate\', \'SkyDrive\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'OneDrive DAV authenticate\', \'SkyDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_SkyDrive_throbber" alt="Athenticate SkyDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6942,7 +6942,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Box&service=boxnet';
-              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Box DAV authenticate\', \'Box\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Box DAV authenticate\', \'Box\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_Box_throbber" alt="Athenticate Box Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -7118,7 +7118,7 @@
 
               _name := 'Authenticate';
               _url := '/ods/access_service.vsp?m=webdav&p=WebDAV';
-              http (sprintf ('<input type="button" id="dav_WebDAV_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'WebDAV ODS authenticate\', \'WebDAV\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_WebDAV_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'WebDAV ODS authenticate\', \'WebDAV\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_WebDAV_throbber" alt="Athenticate WebDAV Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -7541,7 +7541,7 @@
 
               _name := 'Authenticate';
               _url := '/ods/access_service.vsp?m=webdav&p=LDP';
-              http (sprintf ('<input type="button" id="dav_LDP_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'LDP ODS authenticate\', \'LDP\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_LDP_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'LDP ODS authenticate\', \'LDP\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_LDP_throbber" alt="Athenticate LDP Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>

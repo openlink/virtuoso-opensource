@@ -738,7 +738,7 @@
                         if (get_keyword ('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
                         {
                           http('<input type="submit" name="_upd" value="Update">');
-                          http(sprintf ('<input type="hidden" name="vec_o" value="%s">', _vec_o));
+                          http(sprintf ('<input type="hidden" name="vec_o" value="%V">', _vec_o));
                         }
                         else
                           http('<input type="submit" name="_add" value="Add">');
