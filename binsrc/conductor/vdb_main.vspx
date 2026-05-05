@@ -802,10 +802,10 @@ if (objects > 0)
             http (sprintf ('<td><input type="checkbox" name="cbt_%s_%d" value="%V" border="0" /></td>',
                            aref (self.linked_objects, obj), n, encode_base64 (lname)));
             http ('<td><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
-            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%V</a></td>',
                            self.sid ,self.realm , lname, lname));
-            http (sprintf ('<td>%s</td>', l_dsn));
-            http (sprintf ('<td>%s</td>',
+            http (sprintf ('<td>%V</td>', l_dsn));
+            http (sprintf ('<td>%V</td>',
                            rname));
             http (sprintf ('<td><a href="vdb_main.vspx?sid=%U&realm=%U&mode=unlink_table&rname=%U&lname=%U&dsn=%U">Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
@@ -830,10 +830,10 @@ if (objects > 0)
             http (sprintf ('<td><input type="checkbox" name="cbp_%s_%d" value="%V" border="0" /></td>',
                            aref (self.linked_objects, obj), n, encode_base64 (lname)));
             http ('<td><img src="images/icons/script_16.png" alt="Procedure" title="Stored Procedure"/></td>');
-            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%V</a></td>',
                            self.sid ,self.realm , lname, lname));
-            http (sprintf ('<td>%s</td>', l_dsn));
-            http (sprintf ('<td>%s</td>', rname));
+            http (sprintf ('<td>%V</td>', l_dsn));
+            http (sprintf ('<td>%V</td>', rname));
             http (sprintf ('<td><a href="vdb_main.vspx?sid=%U&realm=%U&mode=unlink_proc&rname=%U&lname=%U&dsn=%U">Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
             http('</tr>');
@@ -1518,7 +1518,7 @@ self.vc_data_bind (e);
                   http (sprintf ('<td><input type="checkbox" name="cbu_%d" value="%V"/></td>',
                                  n, table_value));
                   http ('<td><img class="icon" src="images/icons/table_16.png" title="Table" alt="Table"/></td>');
-                  http (sprintf ('<td>%s</td>', table_name));
+                  http (sprintf ('<td>%V</td>', table_name));
                   http ('</tr>');
                 }
               n := n + 1;
@@ -1566,7 +1566,7 @@ self.vc_data_bind (e);
                  http (sprintf ('<td><input type="checkbox" name="cbv_%d" value="%V"/></td>',
                                 n, table_value));
                  http ('<td><img class="icon" src="images/icons/view_16.png" title="View" alt="View"/></td>');
-                 http (sprintf ('<td>%s</td>', table_name));
+                 http (sprintf ('<td>%V</td>', table_name));
                  http ('</tr>');
                }
              n := n + 1;
@@ -1609,7 +1609,7 @@ self.vc_data_bind (e);
               http (sprintf ('<td><input type="checkbox" name="cbp_%d" value="%V"/></td>',
                              n, table_value));
               http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
-              http (sprintf ('<td>%s</td>', table_name));
+              http (sprintf ('<td>%V</td>', table_name));
               http ('</tr>');
 
               n := n + 1;
@@ -1695,7 +1695,7 @@ if (self.page = 1)
             while (i < len)
               {
                 dsn := aref (aref (self.dsn_list, i),0);
-                http (sprintf ('<option value="%V">%s</option>', dsn, dsn));
+                http (sprintf ('<option value="%V">%V</option>', dsn, dsn));
                 i := i + 1;
               }
 
@@ -2117,7 +2117,7 @@ if (len > 0)
     while (i < len)
       {
         http ('<tr class="">');
-        http (sprintf('<td>%s</td>',aref(self.s_procs,i)));
+        http (sprintf('<td>%V</td>',aref(self.s_procs,i)));
         http (sprintf('<td><input type="text" name="catalog_%d" value="%V" /></td>', i, aref (self.s_procs, i + 1)));
         http (sprintf('<td><input type="text" name="schema_%d" value="%V" /></td>', i, aref (self.s_procs, i + 2)));
         http (sprintf('<td><input type="text" name="name_%d" value="%V" /></td>', i, aref (self.s_procs, i + 3)));
@@ -2155,12 +2155,12 @@ if (len > 0)
                 if (aref (tmp_vec, l) = upper (col_mode))
                   http ('selected="true"');
 
-                http (sprintf ('>%s</option>', aref (tmp_vec, l)));
+                http (sprintf ('>%V</option>', aref (tmp_vec, l)));
                 l := l + 1;
               }
 
             http ('</select></td>');
-            http (sprintf ('<td>%s</td>', col_name));
+            http (sprintf ('<td>%V</td>', col_name));
             http (sprintf ('<td><select name="parm_%d_%s_t">', i, col_name));
             tmp_vec := get_vdb_data_types ();
             k := length (tmp_vec);
@@ -2171,7 +2171,7 @@ if (len > 0)
                 http (sprintf ('<option value="%V"', aref (tmp_vec,l) ));
                 if (aref (tmp_vec,l) = upper (col_type))
                   http ('selected="true"');
-                http (sprintf ('>%s</option>',aref (tmp_vec,l)));
+                http (sprintf ('>%V</option>',aref (tmp_vec,l)));
                 l := l + 1;
               }
 
@@ -2184,7 +2184,7 @@ if (len > 0)
             while (l < k)
               {
                 http (sprintf ('<option value="%V"', aref (tmp_vec,l) ));
-                http (sprintf ('>%s</option>',aref (tmp_vec,l + 1) ));
+                http (sprintf ('>%V</option>',aref (tmp_vec,l + 1) ));
                 l := l + 2;
               }
             http ('</select></td></tr>');

@@ -71,9 +71,9 @@
                     fl := 1;
                     mtd_name := params[idx + 1];
                     http ('<tr>');
-                    http (sprintf ('<td>%s</td><td>%s</td>',
+                    http (sprintf ('<td>%V</td><td>%V</td>',
                     mtd_name, file_name));
-                    http (sprintf ('<td>%s</td>',  import_file (mtd_name, file_name)));
+                    http (sprintf ('<td>%V</td>',  import_file (mtd_name, file_name)));
                     http ('</tr>');
                   }
                   idx := idx + 2;

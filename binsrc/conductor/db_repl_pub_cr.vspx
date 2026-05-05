@@ -151,7 +151,7 @@
       </v:form>
       <?vsp
         if (self.error_edit_str <> '' and self.error_edit_str is not null)
-          http(sprintf('<table class="warning">%s</table>', self.error_edit_str));
+          http(sprintf('<table class="warning">%V</table>', self.error_edit_str));
         self.error_edit_str := '';
       ?>
     </vm:pagebody>

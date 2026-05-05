@@ -211,7 +211,7 @@
    <?vsp
      if (self.error_str1 <> '')
      {
-       http(sprintf('<tr><td colspan="3"></td>%s</tr>', self.error_str1));
+       http(sprintf('<tr><td colspan="3"></td>%V</tr>', self.error_str1));
        self.error_str1 := '';
      }
    ?>

@@ -132,7 +132,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%V" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%V</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     idx := 0;
@@ -144,7 +144,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%V" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%V</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     http('</select>');

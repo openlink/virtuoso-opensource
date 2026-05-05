@@ -136,12 +136,12 @@
       sel_uid := sel_u[0];
       sel_name := sel_u[1];
       link_params := tweak_by_keywords (params, 'set', 'roles_by_subrole', sel_name, 'delete', 'roles_by_like', '', 'delete', 'uors_page', '');
-      http (sprintf ('<th valign="top" style="text-align: center;"><a href="%H">%s</a>', self.rgs_uri (link_params), sel_name));
+      http (sprintf ('<th valign="top" style="text-align: center;"><a href="%H">%V</a>', self.rgs_uri (link_params), sel_name));
       http ('<div style="padding-left: 1em; text-align: left;">');
       for (select ug.GI_DIRECT as gdirect, u.U_NAME as gname from DB.DBA.SYS_ROLE_GRANTS ug join DB.DBA.SYS_USERS u on (ug.GI_SUB = u.U_ID) where ug.GI_SUPER = sel_uid order by 2) do
       {
         link_params := tweak_by_keywords (params, 'set', 'roles_by_subrole', gname, 'delete', 'roles_by_like', '', 'delete', 'uors_page', '');
-        http (sprintf ('<br /><font size="1">has <a href="%H">%s</a> %s</font>', self.rgs_uri (link_params), gname, case (gdirect) when 0 then '' else ' directly' end));
+        http (sprintf ('<br /><font size="1">has <a href="%H">%V</a> %s</font>', self.rgs_uri (link_params), gname, case (gdirect) when 0 then '' else ' directly' end));
       }
       http ('</div>');
       http ('</th>\n');
@@ -176,7 +176,7 @@
         if (0 = n_users)
           http ('<td valign="top">Role has no users</td>\n');
         else if (max_perms = min_perms)
-          http (sprintf ('<td valign="top">All %d users has<br/>%s</td>\n', n_users, self.rgs_pexplain (min_perms)));
+          http (sprintf ('<td valign="top">All %d users has<br/>%V</td>\n', n_users, self.rgs_pexplain (min_perms)));
         else
           http (sprintf ('<td valign="top">%d users with perms<br/>from %s<br/>to %s</td>\n', n_users, self.rgs_pexplain (min_perms), self.rgs_pexplain (max_perms)));
       }

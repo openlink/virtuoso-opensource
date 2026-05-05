@@ -243,7 +243,7 @@
                                         }
                                         else
                                         {
-                                          http (sprintf('<td style="background-color: #f0f0f0;">%s</td>', _r_tbl[2]));
+                                          http (sprintf('<td style="background-color: #f0f0f0;">%V</td>', _r_tbl[2]));
                                           rtbl_name := '..' || _r_tbl[2];
                                         }
                                         http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%V" style="width: 100%%; max-width: 10em;"/></td>', pref, i, case when length (_l_tbl[0]) then _l_tbl[0] else 'DB' end));
@@ -364,7 +364,7 @@
                                       while (i < len)
                                       {
                                         http ('<tr style="background-color: #fff;">');
-                                        http (sprintf('<td style="background-color: #f0f0f0;">%s</td>', aref(self.s_procs,i)));
+                                        http (sprintf('<td style="background-color: #f0f0f0;">%V</td>', aref(self.s_procs,i)));
                                         http (sprintf('<td><input type="text" name="catalog_%d" value="%V" style="width: 100%%; max-width: 10em;"/></td>', i, coalesce (aref (self.s_procs, i + 1), 'DB')));
                                         http (sprintf('<td><input type="text" name="schema_%d" value="%V" style="width: 100%%; max-width: 20em;"/></td>', i, aref (self.s_procs, i + 2)));
                                         http (sprintf('<td><input type="text" name="name_%d" value="%V" style="width: 100%%; max-width: 40em;"/></td>', i, aref (self.s_procs, i + 3)));
@@ -408,12 +408,12 @@
                                             if (aref (tmp_vec, l) = upper (col_mode))
                                               http ('selected="true"');
 
-                                            http (sprintf ('>%s</option>', aref (tmp_vec, l)));
+                                            http (sprintf ('>%V</option>', aref (tmp_vec, l)));
                                             l := l + 1;
                                           }
 
                                           http ('</select></td>');
-                                          http (sprintf ('<td>%s</td>', col_name));
+                                          http (sprintf ('<td>%V</td>', col_name));
                                           http (sprintf ('<td><select name="parm_%d_%s_t">', i, col_name));
                                           tmp_vec := get_vdb_data_types ();
                                           k := length (tmp_vec);
@@ -424,7 +424,7 @@
                                             http (sprintf ('<option value="%V"', aref (tmp_vec,l) ));
                                             if (aref (tmp_vec,l) = upper (col_type))
                                               http ('selected="true"');
-                                            http (sprintf ('>%s</option>\n',aref (tmp_vec,l)));
+                                            http (sprintf ('>%V</option>\n',aref (tmp_vec,l)));
                                             l := l + 1;
                                           }
 
@@ -437,7 +437,7 @@
                                           while (l < k)
                                           {
                                             http (sprintf ('<option value="%V"', aref (tmp_vec,l+1) ));
-                                            http (sprintf ('>%s</option>\n',aref (tmp_vec,l) ));
+                                            http (sprintf ('>%V</option>\n',aref (tmp_vec,l) ));
                                             l := l + 2;
                                           }
                                           http ('</select>\n</td></tr>');

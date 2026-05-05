@@ -622,7 +622,7 @@
 
                     for select   DU_DISCOVERY_KEY, DU_URL, DU_USE_TYPE  from UDDI..DISCOVERY_URL where  DU_PARENT_ID  =  business_id and  DU_PARENT_TYPE = 'businessEntity' do {
                         http('<tr><td class="SubInfo" width="100%">');
-                        http(sprintf('<a class="uddi" href="http://%s">%s</a>',DU_URL, DU_URL));
+                        http(sprintf('<a class="uddi" href="http://%s">%V</a>',DU_URL, DU_URL));
                         http('</td><td class="SubInfo">');
                         http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=discovery&mode=delete&page_back=6&uuid_key=%U&sid=%U&realm=%U\r\n">Delete</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
                         http('</td><td class="SubInfo">');
@@ -732,7 +732,7 @@
                   for select EM_EMAIL_KEY, EM_ADDR as email_addr,  EM_USE_TYPE as use_type from UDDI..EMAIL  where  EM_CONTACT_KEY = contact_id do {
 
                         http('<tr><td class="SubInfo">');
-                        http(sprintf('<a class="uddi" href=mailto:%s>%s</a>',email_addr,email_addr));
+                        http(sprintf('<a class="uddi" href=mailto:%s>%V</a>',email_addr,email_addr));
                         http('</td>');
                         http('<td class="SubInfo">');
                         http(use_type );

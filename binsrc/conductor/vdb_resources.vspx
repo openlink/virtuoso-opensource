@@ -76,8 +76,8 @@
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_STATE, '')));
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_MESSAGE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_STATE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_MESSAGE, '')));
                   http ('</TABLE>');
                   return;
                 }
@@ -99,8 +99,8 @@
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_STATE, '')));
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_MESSAGE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_STATE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_MESSAGE, '')));
                   http ('</TABLE>');
                   return;
                 }
@@ -179,7 +179,7 @@
                   http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=open#%d"><img src="images/Folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
               }
 
-              http(sprintf('<td align="left"><b>%s</b></td><td>&nbsp;</td>', DS_DSN ));
+              http(sprintf('<td align="left"><b>%V</b></td><td>&nbsp;</td>', DS_DSN ));
               http('</tr>');
 
               if (flag = ascii('1'))
@@ -198,7 +198,7 @@
                   {
                     http(sprintf('<select name="%s_remote_tbls" multiple="true">',DS_DSN));
                     for select RT_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_DSN = DS_DSN do {
-                        http (sprintf ('<option>%s</option>', RT_NAME));
+                        http (sprintf ('<option>%V</option>', RT_NAME));
                   }
                   http('</select></td><td valign="top">');
                 }
@@ -220,7 +220,7 @@
                         regexp_match(sprintf('\-\-"DSN:%s ',DS_DSN), coalesce(P_TEXT, blob_to_string(P_MORE))) is not null)
                       ) do
                   {
-                    http (sprintf ('<option>%s</option>', P_NAME));
+                    http (sprintf ('<option>%V</option>', P_NAME));
                   }
                 }
                 http('</select></td></tr>');

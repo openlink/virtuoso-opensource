@@ -137,7 +137,7 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BE_NAME  into owner_name from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY  = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b>', owner_name));
+                        http(sprintf('Parameters of <b>%V</b>', owner_name));
                       } else {
                         http('Parameters of new business');
                       }
@@ -297,10 +297,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BS_NAME, BE_NAME   into owner_name,   business_name  from UDDI..BUSINESS_SERVICE  join UDDI..BUSINESS_ENTITY on BS_BUSINESS_KEY = BE_BUSINESS_KEY  where  BS_SERVICE_KEY  = get_keyword('service_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b> service for business <b>%s</b> ', owner_name, business_name));
+                        http(sprintf('Parameters of <b>%V</b> service for business <b>%V</b> ', owner_name, business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new service for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new service for business <b>%V</b>', business_name));
                       }
                     }
                   ?>
@@ -567,10 +567,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select CO_PERSONAL_NAME, BE_NAME   into owner_name,   business_name  from UDDI..CONTACTS  join UDDI..BUSINESS_ENTITY on CO_BUSINESS_ID = BE_BUSINESS_KEY  where  CO_CONTACT_KEY  = get_keyword('contact_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b> contact for business <b>%s</b> ', owner_name, business_name));
+                        http(sprintf('Parameters of <b>%V</b> contact for business <b>%V</b> ', owner_name, business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new contact for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new contact for business <b>%V</b>', business_name));
                       }
                     }
                   ?>
@@ -931,12 +931,12 @@
                         select BT_ACCESS_POINT ,  BT_HOSTING_REDIRECTOR  into access_point, redirector  from UDDI..BINDING_TEMPLATE where   BT_BINDING_KEY = parent_key;
                         if (redirector is not null) {
                           select BS_NAME into binding_value  from  UDDI..BUSINESS_SERVICE   where BS_SERVICE_KEY = redirector;
-                          http(sprintf('Description for binding of <b>%s</b> to service <b>%s</b>', owner_name, binding_value));
+                          http(sprintf('Description for binding of <b>%V</b> to service <b>%V</b>', owner_name, binding_value));
                         } else if (access_point is not null) {
-                          http(sprintf('Description for binding of <b>%s</b> to access point <b>%s</b>', owner_name, access_point));
+                          http(sprintf('Description for binding of <b>%V</b> to access point <b>%V</b>', owner_name, access_point));
                         }
                       } else
-                          http(sprintf('Description for <b>%s</b>', owner_name));
+                          http(sprintf('Description for <b>%V</b>', owner_name));
                     }
                   ?>
 
@@ -1043,10 +1043,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BE_NAME   into  business_name  from UDDI..DISCOVERY_URL join UDDI..BUSINESS_ENTITY on DU_PARENT_ID = BE_BUSINESS_KEY  where  DU_DISCOVERY_KEY  = get_keyword('uuid_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters  for business <b>%s</b> ',  business_name));
+                        http(sprintf('Parameters  for business <b>%V</b> ',  business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('uuid_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new service for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new service for business <b>%V</b>', business_name));
                       }
                     }
                   ?>

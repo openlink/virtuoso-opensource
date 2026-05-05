@@ -66,7 +66,7 @@
                     mtd_vec := import_get_types (vsp_temp_vec[idx]);
                     while (idx_mtd < length (mtd_vec))
                     {
-		      http(sprintf ('<tr><td>%s</td><td>%s</td></tr>',  mtd_vec[idx_mtd], subseq (vsp_temp_vec[idx], length (server_root()))));
+		      http(sprintf ('<tr><td>%V</td><td>%V</td></tr>',  mtd_vec[idx_mtd], subseq (vsp_temp_vec[idx], length (server_root()))));
                       idx_mtd := idx_mtd + 1;
                     }
                     idx := idx + 1;

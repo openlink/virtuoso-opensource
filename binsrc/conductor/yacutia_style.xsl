@@ -617,7 +617,7 @@
 <xsl:element name="v:url">
 <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
 <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-<xsl:attribute name="format">%s</xsl:attribute>
+<xsl:attribute name="format">%V</xsl:attribute>
 <xsl:attribute name="url">--sprintf('<xsl:value-of select="@url"/><xsl:if test="count(param) > 0">?<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>'</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
 <xsl:choose>
   <xsl:when test="@kind='static'"><xsl:if test="@type='string'">'</xsl:if><xsl:value-of select="@value"/><xsl:if test="@type='string'">'</xsl:if></xsl:when>
@@ -655,7 +655,7 @@ http('"&gt;<xsl:value-of select="@value"/>&lt;/a&gt;');
 <xsl:if test="count(text) > 0">
 http(sprintf('<xsl:for-each select="text">
 <xsl:choose>
-  <xsl:when test="@type='string'">%s</xsl:when>
+  <xsl:when test="@type='string'">%V</xsl:when>
   <xsl:when test="@type='integer'">%d</xsl:when>
 </xsl:choose>
 <xsl:if test="position() != last()"><xsl:text>&#x20;</xsl:text></xsl:if>

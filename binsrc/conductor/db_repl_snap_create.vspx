@@ -99,7 +99,7 @@
                       sel := '';
                       if (_dsn = DS_DSN)
                         sel := 'selected';
-                      http(sprintf('<option value="%V" %s>%s</option>', DS_DSN, sel, DS_DSN));
+                      http(sprintf('<option value="%V" %s>%V</option>', DS_DSN, sel, DS_DSN));
                       i := i + 2;
                     }
                   ?>
@@ -600,7 +600,7 @@ self.vc_data_bind(e);
                 http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                 http ('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
                 http(sprintf ('<td>%V</td>', _tblname));
-                http(sprintf ('<td><sup>*</sup><input type="checkbox" name="LTB_cr_%s" value="on" checked="checked"/>%s<br>', _tblname, quote_dotted (self.repl_snap_dsn, name_part (_tblname, 2))));
+                http(sprintf ('<td><sup>*</sup><input type="checkbox" name="LTB_cr_%s" value="on" checked="checked"/>%V<br>', _tblname, quote_dotted (self.repl_snap_dsn, name_part (_tblname, 2))));
                 http(sprintf ('<sup>**</sup><input type="text" size="3" name="LTBQ_%s" value="%V"/>.', _tblname, name_part(_attached_name, 0)));
                 http(sprintf ('<input type="text" size="15" name="LTBO_%s" value="%V">.', _tblname, name_part(_attached_name, 1)));
                 http(sprintf ('<input type="text" size="30" name="LTBN_%s" value="%V">', _tblname, name_part(_attached_name, 2)));

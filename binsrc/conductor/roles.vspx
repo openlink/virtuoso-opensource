@@ -228,7 +228,7 @@
                       {
                         if (isnull (self.roles_grant_list) or (position (U_NAME, self.roles_grant_list) = 0))
                         {
-                          http (sprintf ('<option>%s</option>', U_NAME));
+                          http (sprintf ('<option>%V</option>', U_NAME));
                         }
                       }
                     }

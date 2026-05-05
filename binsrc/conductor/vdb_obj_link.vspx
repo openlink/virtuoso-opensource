@@ -644,7 +644,7 @@
                                           http ('<tr">');
                                           http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbp_%d" value="%V"/></td>', n, table_value));
                                           http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
-                                          http (sprintf ('<td>%s</td>', table_name));
+                                          http (sprintf ('<td>%V</td>', table_name));
                                           http ('</tr>');
                                         }
 

@@ -5612,7 +5612,7 @@ create procedure y_col_dts (in t varchar)
 	 TYPE_NAME := 'integer';
        if (TYPE_NAME = 'decimal')
 	 TYPE_NAME := 'double precision';
-       http (sprintf ('<option %s>%s</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
+       http (sprintf ('<option %s>%V</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
     }
   http (sprintf ('<option %s>ANY</option>', case when 'ANY' = t then 'selected' else '' end));
 }

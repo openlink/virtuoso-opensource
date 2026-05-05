@@ -217,7 +217,7 @@
       </span>
       <?vsp
         if (self.error_str198 <> '' and self.error_str198 is not null)
-          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+          http(sprintf('<table class="warning"><tr><td>%V</td></tr></table>', self.error_str198));
         self.error_str198 := '';
       ?>
     </vm:pagebody>

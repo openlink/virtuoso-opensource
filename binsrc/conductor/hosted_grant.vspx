@@ -102,7 +102,7 @@
                 <?vsp
                   for (select u_name, u_id from sys_users where u_id = u_group and u_sql_enable = 1) do
                   {
-                    http(sprintf('<option value="%i">%s</option>', u_id + 1, u_name));
+                    http(sprintf('<option value="%i">%V</option>', u_id + 1, u_name));
                   }
                 ?>
               </select>

@@ -43,7 +43,7 @@
               ?>
             <?vsp
               if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'error' )
-                http(sprintf( ' <span style="{color:red}">%s</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
+                http(sprintf( ' <span style="{color:red}">%V</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
             ?>
 	  </div>
 	  <div class="dialog_buttons">

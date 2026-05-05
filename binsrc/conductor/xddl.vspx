@@ -640,10 +640,10 @@
 --                if ( self.tables_browse_mask = '%'  or ( self.tables_browse_mask <> '%'  and upper (substring(name_part(name,2), 1, mask_len  ) ) =  upper(self.tables_browse_mask) ))
                  http('<tr><td><img src="images/icons/table_16.png" alt="Table" title="Table" /></td>');
                  if (drop_flag = 'true') {
-                    http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
+                    http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
                     http(sprintf('<td><a href="xddl.vspx?mode=xddl_table_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
-                    http(sprintf('<td>%s</td>',  name) );
+                    http(sprintf('<td>%V</td>',  name) );
                     http(sprintf('<td><a href="xddl.vspx?entry=1&mode=table_edit&kind=edit&table_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
                     http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_table_drop&kind=drop&table_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
                     http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
@@ -810,17 +810,17 @@
 
                  http('<tr><td><img src="images/icons/view_16.png" alt="View" title="View" /></td>');
                  if (drop_flag = 'true') {
-                  http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
+                  http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
                   http(sprintf('<td><a href="xddl.vspx?mode=xddl_view_drop&kind=undrop&view_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
-                  http(sprintf('<td>%s</td>',  name) );
+                  http(sprintf('<td>%V</td>',  name) );
                   http(sprintf('<td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
                   http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_view_drop&kind=drop&view_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
                   http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
                  }
                  http('</tr>');
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>
+--                http(sprintf('<tr><td>%V</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>
 --                &nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">View</a></td><td>&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm, name, self.sid ,self.realm));
 --              }
@@ -992,17 +992,17 @@
 
                 http('<tr><td><img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure" /></td>');
                 if (drop_flag = 'true') {
-                  http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
+                  http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
                   http(sprintf('<td><a href="xddl.vspx?mode=xddl_procedure_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                 } else {
-                  http(sprintf('<td>%s</td>',  name) );
+                  http(sprintf('<td>%V</td>',  name) );
                   http(sprintf('<td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
                   http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_procedure_drop&kind=drop&procedure_name=%U&sid=%U&realm=%U">Drop</a></td>', name,self.sid ,self.realm ));
                 }
                 http('</tr>');
 
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
+--                http(sprintf('<tr><td>%V</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm));
 --              }
             i:= i + 1;
@@ -1466,7 +1466,7 @@ Here is the tabs
 		      if (get_keyword('upd_button',params) is not null) {
 				   tmp :=  self.type_name ;
 				   self.column_edit_buff := xml_cut(prev_instance);
---					 xpath_eval('/column',xml_tree_doc(sprintf('<column name="" type="" prec="" identified_by="" collation="" identity=""><default_value>%s</default_value></column>', def_value )) );
+--					 xpath_eval('/column',xml_tree_doc(sprintf('<column name="" type="" prec="" identified_by="" collation="" identity=""><default_value>%V</default_value></column>', def_value )) );
 			      if (  column_oname <> column_name and  prev_instance  is not null ) {
 				      self.mode := 'column_exist';
 				      self.column_name := column_name;
@@ -1483,7 +1483,7 @@ Here is the tabs
 				      if  (def_value is not null) {
 					      XMLAddAttribute(self.column_edit_buff, 2, 'collation', col_value );
 				        XMLAddAttribute(self.column_edit_buff, 2, 'identified_by',  ident_value);
-								self.column_edit_buff := XMLUpdate(self.column_edit_buff,'/column/default_value', xml_tree_doc(sprintf('<default_value>%s</default_value>',def_value)));
+								self.column_edit_buff := XMLUpdate(self.column_edit_buff,'/column/default_value', xml_tree_doc(sprintf('<default_value>%V</default_value>',def_value)));
 		          }
  			        path := sprintf('/table/column[@name=\'%s\']', column_oname);
 			        self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, self.column_edit_buff);
@@ -1943,7 +1943,7 @@ Here is the tabs
 				     XMLAddAttribute(self.column_create_buff, 2, 'identified_by',  get_keyword('add_nullable_control', params) );
 				     XMLAddAttribute(self.column_create_buff, 2, 'collation', get_keyword('add_identity_control', params)  );
 
-			        objs := xpath_eval('/default_value',  xml_tree_doc(sprintf('<default_value>%s</default_value>', default_value)));
+			        objs := xpath_eval('/default_value',  xml_tree_doc(sprintf('<default_value>%V</default_value>', default_value)));
 			        prev_instance := xpath_eval('/column',xml_tree_doc(self.column_create_buff));
 			        XMLAppendChildren(prev_instance , objs);
 						  self.column_create_buff :=  prev_instance;
@@ -2467,7 +2467,7 @@ Here is the tabs
 								goto try_again;
 							}
 
-				      constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%s</code></constraint>', constr_name, constr_value )) );
+				      constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%V</code></constraint>', constr_name, constr_value )) );
 
 
 					    path := sprintf('/table/constraint[@name=\'%s\']',constr_prev_name);
@@ -2575,7 +2575,7 @@ Here is the tabs
 						 <script><![CDATA[
 	   			  declare constr, objs any;
 
-				   constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%s</code></constraint>',
+				   constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%V</code></constraint>',
 					  get_keyword('add_constr_name_control', params),
 						get_keyword('add_constr_control', params) )) );
 
@@ -4093,7 +4093,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('You cannot create column <b>%s</b> for table <b>%s</b>. It already exists.',self.column_name , self.table_name ) );
+				<?vsp http(sprintf('You cannot create column <b>%V</b> for table <b>%V</b>. It already exists.',self.column_name , self.table_name ) );
         ?>
 			 </td>
 			</vm:raw>
@@ -4569,7 +4569,7 @@ Here is the tabs
           if (self.wrong_entry is null)
             http('Specify a path on file to store in. ' );
                                    else {
-                                         http(sprintf('<br><b>%s</b></br>', self.wrong_entry));
+                                         http(sprintf('<br><b>%V</b></br>', self.wrong_entry));
            self.wrong_entry := null;
                  }
                                 ?>
@@ -4783,7 +4783,7 @@ Here is the tabs
              if (self.wrong_entry is null)
                http('Specify a path of xddl file to load from. ' );
                                      else {
-                                           http(sprintf('<br><b>%s</b></br>', self.wrong_entry));
+                                           http(sprintf('<br><b>%V</b></br>', self.wrong_entry));
              self.wrong_entry := null;
                     }
                                        ?>
@@ -4912,9 +4912,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> table from the edit buffer.  Are you sure?', self.table_name ));
+           http(sprintf ('You are about to drop <b>%V</b> table from the edit buffer.  Are you sure?', self.table_name ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> table from the edit buffer.  Are you sure?', self.table_name ));
+            http(sprintf ('You are about to undrop <b>%V</b> table from the edit buffer.  Are you sure?', self.table_name ));
 
         ?>
 			 </td>
@@ -4973,9 +4973,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
+           http(sprintf ('You are about to drop <b>%V</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
+            http(sprintf ('You are about to undrop <b>%V</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
 
         ?>
 			 </td>
@@ -5034,9 +5034,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
+           http(sprintf ('You are about to drop <b>%V</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
+            http(sprintf ('You are about to undrop <b>%V</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
 
         ?>
 			 </td>
@@ -5305,7 +5305,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('Table <b>%s</b> may not be modified, because it has already been modified by other parties since you loaded the current xddl file.', self.table_name ) );
+				<?vsp http(sprintf('Table <b>%V</b> may not be modified, because it has already been modified by other parties since you loaded the current xddl file.', self.table_name ) );
         http('<br/>You may:<br/>- Remove this table from tables edit buffer, or <br/>- Update description of the given table, or <br/>- Do nothing.<br/>In any case you will be forwarded back to the list of db objects and execution will be  canceled.');
         ?>
 			 </td>
@@ -5377,7 +5377,7 @@ Here is the tabs
               if (self.xddl_source_type =  1)
               http(sprintf('You are about to revert edit buffer, loaded from current database.  Are you sure?' ));
         else if (self.xddl_source_type = 2)
-              http(sprintf('You are about to revert edit buffer, loaded from file <b>%s</b>.  Are you sure?', self.xddl_source_name ));
+              http(sprintf('You are about to revert edit buffer, loaded from file <b>%V</b>.  Are you sure?', self.xddl_source_name ));
         ?>
 			 </td>
 			</vm:raw>

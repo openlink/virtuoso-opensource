@@ -119,7 +119,7 @@
                           <?vsp
                             for (select ds_dsn, ds_uid from sys_data_source) do
                             {
-                              http(sprintf('<option value="%V">%s</option>', ds_dsn, ds_dsn ));
+                              http(sprintf('<option value="%V">%V</option>', ds_dsn, ds_dsn ));
                             }
                           ?>
                         </select>
@@ -973,7 +973,7 @@
                         j := j + 1;
                       }
                     next_:
-                      http( sprintf('<option value="%V"%s>%s</option>', fields[i], selected, fields[i] ) );
+                      http( sprintf('<option value="%V"%s>%V</option>', fields[i], selected, fields[i] ) );
                       i := i + 1;
                     }
                   ?>

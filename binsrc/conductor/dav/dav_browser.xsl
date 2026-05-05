@@ -273,7 +273,7 @@
 
           <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
             <![CDATA[
-              return sprintf ('<option value="%V" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
+              return sprintf ('<option value="%V" %s>%V</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
             ]]>
           </v:method>
 
@@ -396,7 +396,7 @@
               declare toolbarEnable integer;
 
               hasLabels := WEBDAV.DBA.settings_tbLabels (self.settings);
-              toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%s</span>', cmdLabel) end;
+              toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%V</span>', cmdLabel) end;
               toolbarEnable := self.toolbarEnable (writePermission, cmd);
               if (toolbarEnable)
               {
@@ -1284,7 +1284,7 @@
               http (sprintf (
                 '<tr id="tr_dav_%s_display_name" style="display: %s"> ' ||
                 '  <th>User name</th> ' ||
-                '  <td id="td_dav_%s_display_name">%s</td> ' ||
+                '  <td id="td_dav_%s_display_name">%V</td> ' ||
                 '</tr> ' ||
                 '<tr id="tr_dav_%s_email" style="display: %s"> ' ||
                 '  <th>User email</th> ' ||
@@ -1449,11 +1449,11 @@
                 {
                   http ('    <tr>');
                   http (sprintf ('<td valign="top"><img src="%H" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
-                  http (sprintf ('<td class="normalWrap" style="color: red;">%s</td>', self.items[i+1]));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
+                  http (sprintf ('<td class="normalWrap" style="color: red;">%V</td>', self.items[i+1]));
                   http ('    </tr>');
                 }
               }
@@ -5548,7 +5548,7 @@
                                         {
                                           N := N + length(tag);
                                           if (N < 20)
-                                            http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag, tag));
+                                            http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%V</a> ', tag, tag, tag));
                                           N := N + 1;
                                         }
                                       }
@@ -5560,7 +5560,7 @@
                                         {
                                           N := N + length(tag);
                                           if (N < 20)
-                                            http (sprintf ('<a id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag, tag));
+                                            http (sprintf ('<a id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%V</a> ', tag, tag, tag));
                                           N := N + 1;
                                         }
                                       }
@@ -5726,7 +5726,7 @@
                             for (N := 2; N < tLength; N := N + 1)
                             {
                               tStyle := self.tag_style(self.dir_tags[N][1], tMin, tMax, 12, 30);
-                              http (sprintf ('<a href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s%s\');" name="btn_%s"><span class="nolink_b" style="%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
+                              http (sprintf ('<a href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s%s\');" name="btn_%s"><span class="nolink_b" style="%s;">%V</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
                             }
                           } else {
                             http ('no tags');
@@ -6087,10 +6087,10 @@
           </th>
           <td>
             <?vsp
-              http (sprintf ('Lock: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
-              http (sprintf ('Version Control: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
-              http (sprintf ('Auto Versioning: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
-              http (sprintf ('Version State: <b>%s</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
+              http (sprintf ('Lock: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
+              http (sprintf ('Version Control: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
+              http (sprintf ('Auto Versioning: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
+              http (sprintf ('Version State: <b>%V</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
             ?>
           </td>
         </tr>
@@ -6496,7 +6496,7 @@
                 aValues := WEBDAV.DBA.syncml_versions ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%V" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%V</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6511,7 +6511,7 @@
                 aValues := WEBDAV.DBA.syncml_types ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%V" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%V</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6571,7 +6571,7 @@
                 aValue := self.get_fieldProperty ('dav_IMAP_connection', self.dav_path, 'virt:IMAP-connection', '');
                 aValues := vector ('none', 'None', 'ssl', 'SSL/TLS');
                 for (N := 0; N < length (aValues); N := N + 2)
-                  http (sprintf ('<option value="%V" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http (sprintf ('<option value="%V" %s>%V</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
               ?>
             </select>
           </td>

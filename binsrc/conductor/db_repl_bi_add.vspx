@@ -82,7 +82,7 @@
                   sel := '';
                   if (_dsn = DS_DSN)
                     sel := 'selected';
-                  http(sprintf('<option value="%V" %s>%s</option>', DS_DSN, sel, DS_DSN));
+                  http(sprintf('<option value="%V" %s>%V</option>', DS_DSN, sel, DS_DSN));
                   i := i + 2;
                 }
               ?>

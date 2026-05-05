@@ -686,9 +686,9 @@
                                 for (select NG_NAME, NG_GROUP from NEWS_GROUPS) do
                                 {
                                   if (obj = NG_GROUP)
-                                    http (sprintf ('<option value="%i" selected="selected">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i" selected="selected">%V</option>', NG_GROUP, NG_NAME));
                                   else
-                                    http (sprintf ('<option value="%i">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i">%V</option>', NG_GROUP, NG_NAME));
                                 }
                               ?>
                             </select>
