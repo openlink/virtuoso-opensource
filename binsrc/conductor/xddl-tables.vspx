@@ -405,10 +405,10 @@
         http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
         http(sprintf('<td>%s</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
         http(sprintf('<td>%s</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
-        http(sprintf('<td  align="center"  class="listing_col_action"><a href="%s">Edit</a></td>',
+        http(sprintf('<td  align="center"  class="listing_col_action"><a href="%H">Edit</a></td>',
 
         sprintf('xddl-tables.vspx?back=edit&mode=column_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
-        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
+        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
         sprintf('xddl-tables.vspx?back=edit&mode=column_remove&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
@@ -434,9 +434,9 @@
         http(sprintf('<td>%s</td>',xpath_eval('./@ord',aref(cols,i)) ));
         http(sprintf('<td>%s</td>', pk_column_name));
 
---        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
+--        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
 --        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
---        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
+--        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
 --        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
@@ -464,7 +464,7 @@
               get_keyword('mode', control.vc_page.vc_event.ve_params) ,
               table_name, ref_table_name,self.sid ,self.realm);
 
-        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
+        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%H">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
         refs := xpath_eval('./reference', aref(cols,i),0  );
         len2 := length(refs);
@@ -474,10 +474,10 @@
           http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@col',aref(refs,i2)) ));
           http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
           --http('<td colspan="2"></td>');
-          http(sprintf('<td  align="left"  class="listing_col_action"><a href="%s">Edit</a>&nbsp;&nbsp;&nbsp;',
+          http(sprintf('<td  align="left"  class="listing_col_action"><a href="%H">Edit</a>&nbsp;&nbsp;&nbsp;',
             sprintf('xddl-tables.vspx?back=%U&what=edit&mode=foreign_key_edit&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U&foreign_key_reference_table_control=%U&foreign_key_reference_columns_control=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) , table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm, xpath_eval('./@ref_table',aref(cols,i)), xpath_eval('./@ref_col',aref(refs,i2))) ));
-          http(sprintf('<a href="%s">Remove</a></td>',
+          http(sprintf('<a href="%H">Remove</a></td>',
             sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_remove&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U',
                get_keyword('mode', control.vc_page.vc_event.ve_params), table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm) ));
           http('</tr>');
@@ -1656,10 +1656,10 @@
         http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
         http(sprintf('<td>%s</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
         http(sprintf('<td>%s</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
-        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
+        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
 
         sprintf('xddl-tables.vspx?back=create&mode=column_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
-        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
+        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
         sprintf('xddl-tables.vspx?back=create&mode=column_remove&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
@@ -1685,9 +1685,9 @@
         http(sprintf('<td>%s</td>',xpath_eval('./@ord',aref(cols,i)) ));
         http(sprintf('<td>%s</td>', pk_column_name));
 
---        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
+--        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
 --        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
---        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
+--        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
 --        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
 
         i := i +1;
@@ -1716,7 +1716,7 @@
               get_keyword('mode', control.vc_page.vc_event.ve_params) ,
               table_name, ref_table_name,self.sid ,self.realm);
 
-        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
+        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%H">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
         refs := xpath_eval('./reference', aref(cols,i),0  );
         len2 := length(refs);
@@ -1726,10 +1726,10 @@
           http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@col',aref(refs,i2)) ));
           http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
           --http('<td colspan="2"></td>');
-          http(sprintf('<td  align="left"><a href="%s">Edit</a>&nbsp;&nbsp;&nbsp;',
+          http(sprintf('<td  align="left"><a href="%H">Edit</a>&nbsp;&nbsp;&nbsp;',
             sprintf('xddl-tables.vspx?back=%U&what=edit&mode=foreign_key_edit&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U&foreign_key_reference_table_control=%U&foreign_key_reference_columns_control=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) , table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm, xpath_eval('./@ref_table',aref(cols,i)), xpath_eval('./@ref_col',aref(refs,i2))) ));
-          http(sprintf('<a href="%s">Remove</a></td>',
+          http(sprintf('<a href="%H">Remove</a></td>',
             sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_remove&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U',
                get_keyword('mode', control.vc_page.vc_event.ve_params), table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm) ));
           http('</tr>');

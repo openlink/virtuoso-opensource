@@ -154,7 +154,7 @@
         }
         if (id > 0)
         {
-          http (sprintf ('<link rel="alternate" title="ODS Briefcase Instance" href="%s" />\n', ODRIVE.WA.forum_iri (id)));
+          http (sprintf ('<link rel="alternate" title="ODS Briefcase Instance" href="%H" />\n', ODRIVE.WA.forum_iri (id)));
           http (sprintf ('<script type="text/turtle" id="API_briefcase">\n@prefix schema: <http://schema.org/> .\n <> schema:relatedLink <%s> .\n </script>', ODRIVE.WA.forum_iri (id)));
         }
       ?>

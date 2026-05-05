@@ -401,13 +401,13 @@
               if (toolbarEnable)
               {
                 http (sprintf ('<span id="tb_%s" class="toolbar" style="cursor: pointer; %s" %s>', cmd, case when (cmdImageGray <> '') and cmdImageAlternate then 'display: none;' else '' end, cmdEvent));
-                http (sprintf ('  <img src="%s" border="0" alt="%s" />%s', self.image_src ('dav/image/' || cmdImage), cmdLabel, toolbarLabel));
+                http (sprintf ('  <img src="%H" border="0" alt="%s" />%s', self.image_src ('dav/image/' || cmdImage), cmdLabel, toolbarLabel));
                 http (         '</span>');
               }
               if ((cmdImageGray <> '') and (not toolbarEnable or cmdImageAlternate))
               {
                 http (sprintf ('<span id="tb_%s_gray" class="toolbar" style="display: inline;">', cmd));
-                http (sprintf ('  <img src="%s" border="0" alt="%s"/>%s', self.image_src ('dav/image/' || cmdImageGray), cmdLabel, toolbarLabel));
+                http (sprintf ('  <img src="%H" border="0" alt="%s"/>%s', self.image_src ('dav/image/' || cmdImageGray), cmdLabel, toolbarLabel));
                 http (         '</span>');
               }
             ]]>
@@ -461,11 +461,11 @@
                 onclick := sprintf ('onclick="javascript: sortPost(this, \'sortColumn\', \'%s\');"', dir_column[0]);
                 if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'desc'))
                 {
-                  image := sprintf ('&nbsp;<img src="%s" border="0" alt="Down"/>', self.image_src ('dav/image/orderdown_16.png'));
+                  image := sprintf ('&nbsp;<img src="%H" border="0" alt="Down"/>', self.image_src ('dav/image/orderdown_16.png'));
                 }
                 else if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'asc'))
                 {
-                  image := sprintf ('&nbsp;<img src="%s" border="0" alt="Up"/>', self.image_src ('dav/image/orderup_16.png'));
+                  image := sprintf ('&nbsp;<img src="%H" border="0" alt="Up"/>', self.image_src ('dav/image/orderup_16.png'));
                 }
               }
               http (sprintf ('<th %s %s>%s%s</th>', case when (self.dir_details) then '' else dir_column[6] end, onclick, dir_column[2], image));
@@ -1072,7 +1072,7 @@
                 '        </td> \n' ||
                 '        <td valign="top" nowrap="nowrap"> \n' ||
                 '          <span class="button pointer" onclick="TBL.createRow(''gf'', null, {fld_1: {mode: 51, formMode: ''u'', tdCssText: ''white-space: nowrap;'', className: ''_validate_''}, fld_2: {mode: 42, value: [1, 1, 0], suffix: ''_grant'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}, fld_3: {mode: 42,  suffix: ''_deny'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
-                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '            <img src="%H" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
                 '          </span><br /><br /> \n' ||
                 '        </td> \n' ||
                 '      </tr> \n' ||
@@ -1119,7 +1119,7 @@
                 '        </td> \n' ||
                 '        <td valign="top" nowrap="nowrap"> \n' ||
                 '          <span class="button pointer" onclick="TBL.createRow(''gs'', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: ''white-space: nowrap;'', className: ''_validate2_ _webid2_''}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
-                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '            <img src="%H" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
                 '          </span><br /><br /> \n' ||
                 '        </td> \n' ||
                 '      </tr> \n' ||
@@ -1448,7 +1448,7 @@
                 if (not WEBDAV.DBA.DAV_ERROR (item))
                 {
                   http ('    <tr>');
-                  http (sprintf ('<td valign="top"><img src="%s" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
+                  http (sprintf ('<td valign="top"><img src="%H" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
@@ -1706,7 +1706,7 @@
               self.toolbarShow (writePermission, 'refresh', 'Refresh', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'refresh\');"', 'ref_32.png', '', 0);
               self.toolbarShow (writePermission, 'up', 'Up', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'up\');"', 'up_32.png', 'grey_up_32.png', 0);
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               if (self.mode <> 'webdav')
               {
@@ -1716,13 +1716,13 @@
 
               if (self.returnName = '')
               {
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'copy', 'Copy', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'copy\');"', 'copy_32.png', 'grey_copy_32.png', 1);
               self.toolbarShow (writePermission, 'move', 'Move', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'move\');"', 'move_32.png', 'grey_move_32.png', 1);
               self.toolbarShow (writePermission, 'delete', 'Delete', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'delete\');"', 'del_32.png', 'grey_del_32.png', 1);
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'properties', 'Properties', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'properties\');"', 'prop_32.png', 'grey_prop_32.png', 1);
               self.toolbarShow (writePermission, 'share', 'Share', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'share\');"', 'share_32.png', 'grey_share_32.png', 1);
@@ -1732,21 +1732,21 @@
               self.toolbarShow (writePermission, 'tag', 'Tag', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tags\');"', 'tag_32.png', 'grey_tag_32.png', 1);
               }
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'create', 'Create', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'create\');"', 'filenew_32.png', 'gray_filenew_32.png', 0);
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'link', 'Create Link', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'link\');"', 'filenew_32.png', 'gray_filenew_32.png', 0);
               if ((self.mode = 'briefcase') and (self.account_role <> 'public'))
               {
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
               self.toolbarShow (writePermission, 'bookmarklet', 'Bookmark', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
               }
               if (self.returnName = '')
               {
               if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
               {
-                http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+                http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
             ?>
             <div class="WEBDAV_menuBar">
               <span id="tb_feeds" class="toolbar menuButton" style="cursor: pointer;" onclick="javascript: WEBDAV.menuPopup(this, 'feedsMenu');">
@@ -1756,11 +1756,11 @@
               </span>
               <div class="WEBDAV_menu" id="feedsMenu" style="display: none;">
                 <?vsp
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rss"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RSS Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RSS Export', 'RSS'));
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=atom" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'Atom Export', self.image_src ('dav/image/rss-icon-16.gif'), 'Atom Export', 'Atom'));
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rdf"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RDF Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RDF Export', 'RDF'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=rss"  target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'RSS Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RSS Export', 'RSS'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=atom" target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'Atom Export', self.image_src ('dav/image/rss-icon-16.gif'), 'Atom Export', 'Atom'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=rdf"  target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'RDF Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RDF Export', 'RDF'));
                   http('<div class="WEBDAV_menuItemSep"></div>');
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=opml" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'OPML Export', self.image_src ('dav/image/blue-icon-16.gif'), 'OPML Export', 'OPML'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=opml" target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'OPML Export', self.image_src ('dav/image/blue-icon-16.gif'), 'OPML Export', 'OPML'));
                 ?>
               </div>
             </div>
@@ -4809,7 +4809,7 @@
                   <v:button action="simple" style="url" name="Back_100" value="Back" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Back" title="Back" /> Back', self.image_src ('dav/image/back_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Back" title="Back" /> Back', self.image_src ('dav/image/back_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4828,7 +4828,7 @@
                   <v:button action="simple" style="url" value="Create Filter" name="filterCreate" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Create Filter" title="Create Filter" /> Create Filter', self.image_src ('dav/image/add_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Create Filter" title="Create Filter" /> Create Filter', self.image_src ('dav/image/add_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4846,7 +4846,7 @@
                   <v:button action="simple" style="url" value="Delete" name="filterDelete" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Delete Filter(s)" title="Delete Filter(s)" /> Delete', self.image_src ('dav/image/trash_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Delete Filter(s)" title="Delete Filter(s)" /> Delete', self.image_src ('dav/image/trash_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4922,7 +4922,7 @@
                             <v:button action="simple" style="url" value="Create Filter" name="filterUpdate">
                               <v:after-data-bind>
                                 <![CDATA[
-                                  control.ufl_value := sprintf ('<img src="%s" border="0" alt="Update Filter" title="Update Filter" />', self.image_src ('dav/image/edit_16.png'));
+                                  control.ufl_value := sprintf ('<img src="%H" border="0" alt="Update Filter" title="Update Filter" />', self.image_src ('dav/image/edit_16.png'));
                                 ]]>
                               </v:after-data-bind>
                               <v:on-post>
@@ -5527,7 +5527,7 @@
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
                                             || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
-                                    http (sprintf ('<a %s href="%s" %s title="%s - %V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                    http (sprintf ('<a %s href="%H" %s title="%s - %V" class="WEBDAV_a"><img src="%H" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
@@ -5629,7 +5629,7 @@
                                     detType := DB.DBA.DAV_DET_NAME (id);
                                     if ((permission <> '') or (self.mode = 'webdav'))
                                     {
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%H" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                     }
                                     if (
                                          (rowset[1] = 'R')
@@ -5672,11 +5672,11 @@
                                     {
                                       if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')) or (detType in ('CalDAV', 'CardDAV')))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%H" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                       else if ((permission = 'W') or (self.mode = 'webdav'))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%s" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%H" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                     }
                                     if (
@@ -5687,7 +5687,7 @@
                                          and (WEBDAV.DBA.det_type (path, rowset[1]) = 'IMAP')
                                        )
                                     {
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="IMAP Filters" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'imap\', \'_path\', \'%V\');" />', self.image_src ('dav/image/filter_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="IMAP Filters" src="%H" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'imap\', \'_path\', \'%V\');" />', self.image_src ('dav/image/filter_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                     }
                                   ?>
                               </td>

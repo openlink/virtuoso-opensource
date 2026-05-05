@@ -499,7 +499,7 @@
           declare link_params any;
 
           link_params := tweak_by_keywords (params, 'set', 'users_by_group', gname, 'delete', 'mode', '', 'delete', 'users_by_like', '', 'delete', 'uors_page', '');
-          http (sprintf ('<font size="1">has <a href="%s">%s</a>%s</font><br />\n', self.rgs_uri (link_params) , gname, case (gdirect) when 0 then '' else ' directly' end));
+          http (sprintf ('<font size="1">has <a href="%H">%s</a>%s</font><br />\n', self.rgs_uri (link_params) , gname, case (gdirect) when 0 then '' else ' directly' end));
         }
         http ('</div>');
         http ('</th>\n');
@@ -524,7 +524,7 @@
           sel_uid := sel_u[0];
           link_params := tweak_by_keywords (params, 'set', 'mode', 'edit', 'set', 'c_user_name', sel_u[1], 'set', 'c_graph_iid', iri_id_num (sel_iid));
           perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (sel_iid, sel_uid);
-          http (sprintf ('<td><a href="%s">%s</a></td>\n', self.rgs_uri (link_params), self.rgs_pexplain (perms)));
+          http (sprintf ('<td><a href="%H">%s</a></td>\n', self.rgs_uri (link_params), self.rgs_pexplain (perms)));
         }
         http ('</tr>\n');
       }

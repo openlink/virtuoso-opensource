@@ -4423,7 +4423,7 @@ create procedure WEBDAV.DBA.ui_creator (
   if (DB.DBA.is_empty_or_null (creator_iri))
     return '';
 
-  return sprintf ('<a href="%s" target="_blank" title="Creator - %s">%s</a>', creator_iri, creator_iri, WEBDAV.DBA.user_iri2name (creator_iri));
+  return sprintf ('<a href="%H" target="_blank" title="Creator - %s">%s</a>', creator_iri, creator_iri, WEBDAV.DBA.user_iri2name (creator_iri));
 }
 ;
 
