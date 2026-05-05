@@ -226,7 +226,7 @@
           self.requested_url := left (self.requested_url, _pos-1);
         }
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf ('Location: %s?sid=%s&realm=%s%s\r\n', self.requested_url, self.sid, self.realm, _params));
+        http_header (sprintf ('Location: %s?sid=%U&realm=%U%s\r\n', self.requested_url, self.sid, self.realm, _params));
         return;
       }
 
@@ -253,7 +253,7 @@
 	    (self.page_owner <> '' and  check_grants (connection_get ('vspx_user'), self.page_owner)  <>  1))
 	 {
            http_request_status ('HTTP/1.1 302 Found');
-           http_header (sprintf ('Location: %s?sid=%s&realm=%s\r\n', 'main_tabs.vspx', self.sid, self.realm));
+          http_header (sprintf ('Location: %s?sid=%U&realm=%U\r\n', 'main_tabs.vspx', self.sid, self.realm));
            return;
          }
       }

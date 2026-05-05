@@ -63,7 +63,7 @@
           <tr class="ctl_grp_title">
             <td>
               <?vsp
-                http(sprintf('Edit Conflict Resolver %s', self._proc));
+                http(sprintf('Edit Conflict Resolver %V', self._proc));
               ?>
             </td>
           </tr>
@@ -79,7 +79,7 @@
                   <v:script>
                     <![CDATA[
                       http_request_status('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: db_repl_pub_cr.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      http_header(sprintf('Location: db_repl_pub_cr.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>
@@ -100,7 +100,7 @@
                          return;
                       }
                       http_request_status('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: db_repl_pub_cr.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      http_header(sprintf('Location: db_repl_pub_cr.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>

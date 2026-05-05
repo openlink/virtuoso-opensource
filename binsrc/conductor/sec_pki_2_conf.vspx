@@ -99,7 +99,7 @@
                                   order by HP_LPATH do
                             {
                               http ('<b>');
-                              http (HP_LPATH);
+                              http_value (HP_LPATH);
                               http ('</b><br/>');
                             }
                           ?>

@@ -59,7 +59,7 @@
                     </p>
                     <?vsp
                       if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'error' )
-                        http(sprintf( ' <span style="{color:red}">%s</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
+                        http(sprintf( ' <span style="{color:red}">%V</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
                     ?>
                     <p>
                     </p>
@@ -72,7 +72,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header (sprintf('Location: xquery.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            http_header (sprintf('Location: xquery.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                           ]]>
                         </v:on-post>
                         <tr>

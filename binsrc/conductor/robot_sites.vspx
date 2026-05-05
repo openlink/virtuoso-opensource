@@ -41,10 +41,10 @@
               <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+              <v:url name="b_url43" value="Text Indexing" format="%V" url="cont_page.vspx?page=3" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+              <v:url name="b_url42" value="Resource Types" format="%V" url="cont_page.vspx?page=4" />
             </div>
             <table class="tab_page">
               <tr>
@@ -56,22 +56,22 @@
                           <table>
                             <tr>
                               <td align="right">
-                                <v:button action="simple" value="Import Targets" name="robot_button29" format="%s">
+                                <v:button action="simple" value="Import Targets" name="robot_button29" format="%V">
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%U&realm=%U\r\n', self.sid , self.realm));
                                       return;
                                     ]]>
                                   </v:on-post>
                                 </v:button>
                               </td>
                               <td align="right">
-                                <v:button action="simple" value="Import Queues" name="robot_button37" format="%s">
+                                <v:button action="simple" value="Import Queues" name="robot_button37" format="%V">
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                      http_header(sprintf('Location: robot_queues.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                                       return;
                                     ]]>
                                   </v:on-post>

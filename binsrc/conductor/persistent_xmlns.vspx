@@ -214,10 +214,10 @@
             <fieldset>
               <br />
               <label for="pref">Prefix</label>
-              <v:text name="pref" xhtml_id="pref" value="--y_utf2wide (self.c_pref)" format="%s" xhtml_size="10" />
+              <v:text name="pref" xhtml_id="pref" value="--y_utf2wide (self.c_pref)" format="%V" xhtml_size="10" />
         <br />
               <label for="uri">URI</label>
-              <v:text name="uri" xhtml_id="uri" value="--y_utf2wide (self.c_uri)" format="%s" xhtml_size="100" />
+              <v:text name="uri" xhtml_id="uri" value="--y_utf2wide (self.c_uri)" format="%V" xhtml_size="100" />
         <br />
         <br />
               <div style="margin-left: 180px; width: 100%">

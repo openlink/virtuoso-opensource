@@ -46,8 +46,7 @@
       <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
       <div class="confirm_text">
         <div>
-          The graph
-          <?vsp http(sprintf('<b> %s </b>', self.graph_name)); ?>
+	  The graph <b><?V self.graph_name) ?></b>
           will be removed permanently and there is no way to restore it. <br/>
           Are you sure you want to remove this graph?
         </div>
@@ -126,7 +125,7 @@
           <td><?V GRAPH_IRI ?></td>
           <td nowrap="nowrap">
             <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Rename'
-                   format="%s"
+                   format="%V"
                    name="uedit"
                    url="--sprintf ('graphs_page.vspx?page=1&mode=edit&graph_name=%U', GRAPH_IRI)"
                    render-only="1"
@@ -134,7 +133,7 @@
                    xhtml_alt="Rename"
             />
             <v:url value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
-                   format="%s"
+                   format="%V"
                    name="udel"
                    url="--sprintf ('graphs_page.vspx?page=1&mode=delete&graph_name=%U', GRAPH_IRI)"
                    render-only="1"

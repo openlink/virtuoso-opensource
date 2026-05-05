@@ -73,7 +73,7 @@
                 <v:on-post>
                   <v:script>
                     <![CDATA[
-                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%U&item_type=%U', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>
@@ -92,7 +92,7 @@
                          self.error_str198 := _msg;
                          return;
                       }
-                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%U&item_type=%U', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>
@@ -103,7 +103,7 @@
       </v:form>
       <?vsp
         if (self.error_str198 <> '' and self.error_str198 is not null)
-          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+          http(sprintf('<table class="warning"><tr><td>%V</td></tr></table>', self.error_str198));
         self.error_str198 := '';
       ?>
     </vm:pagebody>

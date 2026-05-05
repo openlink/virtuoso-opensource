@@ -146,13 +146,13 @@
                               <img class="icon" src="images/icons/database_16.png" alt="database"/>
                             </td>
                             <td>
-                              <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                              <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                             </td>
                             <td>
-                              <v:label name="type_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
+                              <v:label name="type_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%V"/>
                             </td>
                             <td>
-                              <v:label name="descr_l" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%s"/>
+                              <v:label name="descr_l" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%V"/>
                             </td>
                             <td class="action">
                               <v:button action="simple"
@@ -162,7 +162,7 @@
                                 xhtml_alt="Connect"
                                 xhtml_title="Connect"
                                 text="&nbsp;Connect"
-                                url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=add_cred&dsn=%U&bmk=%s',
+                                url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=add_cred&dsn=%U&bmk=%U',
                                   (control.vc_parent as vspx_row_template).te_rowset[0],
                                   'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
                                 )"
@@ -175,7 +175,7 @@
                                 xhtml_alt="Link objects"
                                 xhtml_title="Link objects"
                                 text="&nbsp;Link objects"
-                                url="--sprintf ('vdb_obj_link.vspx?mode=edit_cred&dsn=%s&desc=%s&bmk=%s',
+                                url="--sprintf ('vdb_obj_link.vspx?mode=edit_cred&dsn=%U&desc=%U&bmk=%U',
                                   (control.vc_parent as vspx_row_template).te_rowset[0],
                                   (control.vc_parent as vspx_row_template).te_rowset[1],
                                   'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
@@ -188,7 +188,7 @@
                                 xhtml_alt="Change Credentials"
                                 xhtml_title="Change Credentials"
                                 text="&nbsp;Change Credentials"
-                                url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=edit_cred&dsn=%s&bmk=%s',
+                                url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=edit_cred&dsn=%U&bmk=%U',
                                   (control.vc_parent as vspx_row_template).te_rowset[0],
                                   'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
                                 )"
@@ -200,7 +200,7 @@
                                 xhtml_alt="Disconnect"
                                 xhtml_title="Disconnect"
                                 text="&nbsp;Disconnect"
-                                url="--sprintf ('vdb_conn_dsn_del.vspx?dsn=%U&bmk=%s',
+                                url="--sprintf ('vdb_conn_dsn_del.vspx?dsn=%U&bmk=%U',
                                   (control.vc_parent as vspx_row_template).te_rowset[0],
                                   'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
                                 )"

@@ -92,7 +92,7 @@
                     <th>Endpoint</th>
                     <th>Registration</th>
                     <th class="action">
-                      <v:url name="wa_create_ref" format="%s" value="--'Create Endpoint'" url="--'sec_pki_4.vspx?mode=create'"/>
+                      <v:url name="wa_create_ref" format="%V" value="--'Create Endpoint'" url="--'sec_pki_4.vspx?mode=create'"/>
                     </th>
                   </tr>
                 </thead>
@@ -124,7 +124,7 @@
                                 ]]>
                               </v:after-data-bind>
                             </v:text>
-                            <v:label name="nexist" value="" format="%s">
+                            <v:label name="nexist" value="" format="%V">
                               <v:after-data-bind>
                                 <![CDATA[
                                   declare pos integer;
@@ -227,7 +227,7 @@
                     <v:template type="browse">
                       <tr>
                         <td class="listing_col">
-                          <v:url format="%s" value="" url="">
+                          <v:url format="%V" value="" url="">
                             <v:after-data-bind>
                               declare host, lhost, lpath, sec any;
 

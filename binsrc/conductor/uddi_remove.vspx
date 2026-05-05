@@ -137,7 +137,7 @@
 
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%s&realm=%s\r\n',  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%U&realm=%U\r\n',  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -187,7 +187,7 @@
                     delete from UDDI..BUSINESS_SERVICE  where BS_SERVICE_KEY = get_keyword('service_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -252,7 +252,7 @@
                       delete  from UDDI..TMODEL  where TM_TMODEL_KEY= get_keyword('model_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                   return;
                 }
                 ]]></script>
@@ -320,7 +320,7 @@
 
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -359,7 +359,7 @@
                       delete  from UDDI..EMAIL where EM_EMAIL_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -397,7 +397,7 @@
                       delete  from UDDI..PHONE where PH_PHONE_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -434,7 +434,7 @@
                       delete  from UDDI..ADDRESS_LINE where AL_ADDRESS_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -472,7 +472,7 @@
                       where UD_DESCRIPTION_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -511,7 +511,7 @@
                       where DU_DISCOVERY_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -549,7 +549,7 @@
                       where IB_IDENTIFIER_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -588,7 +588,7 @@
                       where CB_CATEGORY_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -632,7 +632,7 @@
                       where BT_BINDING_KEY = get_keyword('binding_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -674,7 +674,7 @@
                       where ID_KEY = get_keyword('instance_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>

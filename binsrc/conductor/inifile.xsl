@@ -128,7 +128,7 @@
                declare section_name,  param_name , param_value  varchar;
       if (get_keyword('load', params) is not null) {
                   http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_header (sprintf('Location: inifile.vspx?mode=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
                inifile_array := vector();
@@ -144,18 +144,18 @@
                  self.inifile_array := inifile_array;
 
       if (get_keyword('saveas', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=saveas&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?mode=saveas&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
       if (get_keyword('save', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?mode=save&section=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?mode=save&section=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
       if (get_keyword('revert', params) is not null) {
-                  http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
       }
 
@@ -178,71 +178,71 @@
                             <tr>
            <v:template name="tabTemplate1" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Database' )">
                                 <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Database&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url12" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url14" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url15" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url16" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url17" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url12" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url14" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url15" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url16" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url17" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate2" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Parameters' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url21" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url21" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Engine&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url24" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url25" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url26" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url27" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url24" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url25" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url26" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url27" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate3" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='HTTPServer' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url31" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url32" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url31" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url32" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;HTTP Server&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url34" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url35" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url36" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url37" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url34" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url35" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url36" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url37" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate4" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Autorepair' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url41" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url42" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url43" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url41" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url42" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url43" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Autorepair&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url45" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url46" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url47" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url45" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url46" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url47" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate5" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Client' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url51" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url52" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url53" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url54" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url51" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url52" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url53" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url54" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Client&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url56" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url57" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url56" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url57" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate6" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Vdb' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url61" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url62" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url63" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url64" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url65" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url61" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url62" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url63" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url64" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url65" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Vdb&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url67" value="--'Replication'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url67" value="--'Replication'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Replication\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
            <v:template name="tabTemplate7" type="simple" condition="( get_keyword('page', control.vc_page.vc_event.ve_params) ='Replication' )">
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url71" value="--'Database'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url72" value="--'Engine'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url73" value="--'HTTP Server'" format="%s" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url74" value="--'Autorepair'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url75" value="--'Client'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
-                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url76" value="--'Vdb'" format="%s" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url71" value="--'Database'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Database\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url72" value="--'Engine'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Parameters\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url73" value="--'HTTP Server'" format="%V" url="--'#'" xhtml_class="uddi"  xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'HTTPServer\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url74" value="--'Autorepair'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Autorepair\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url75" value="--'Client'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Client\'); return false"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url76" value="--'Vdb'" format="%V" url="--'#'" xhtml_class="uddi" xhtml_onClick="javascript: doPostValue (\'inifile_editor_page_form\', \'softSubmit\',\'Vdb\'); return false"/>&nbsp;&nbsp;</nobr></td>
                                  <td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Replication&nbsp;&nbsp;</nobr></td>
                                 <td class="tabEmpty" align="center" width="100%"><table cellpadding="0" cellspacing="0"><tr><td width="100%" ></td></tr></table></td>
                                </v:template>
@@ -279,7 +279,7 @@
         <v:script><![CDATA[ -- here we need to assign the file name to be loaded from  and check the file type (xml/text be its contnt analysis)
         if (get_keyword('softSubmit', params) is not null) {
                   http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: inifile.vspx?what=redirect&page=%s&sid=%s&realm=%s\r\n', get_keyword('softSubmit', params), self.sid ,self.realm));
+          http_header (sprintf('Location: inifile.vspx?what=redirect&page=%U&sid=%U&realm=%U\r\n', get_keyword('softSubmit', params), self.sid ,self.realm));
           return;
         }
 
@@ -306,7 +306,7 @@
 	                        if ( file_stat (from_file, 1) = 0)  {
 				              self.error_message:= sprintf(' from the server file system. Local file  %s does not exist.',from_file);
 				               http_request_status ('HTTP/1.1 302 Found');
-				              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+				              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
 				              return;
 	                        }
 
@@ -318,12 +318,12 @@
                               self.load_from_mode := from_mode;
                     self.load_from_type:= 'text';
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                   } else  {
                     self.error_message:= sprintf(' from the server file system. Local file %s has  no valid  ini file format.',from_file);
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                   }
                 };
@@ -335,7 +335,7 @@
                 {
                   self.error_message:= sprintf(' from the local file system. Local file %s has  no valid  either ini file or xml format.',from_file);
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
@@ -356,7 +356,7 @@
              if ( not exists(select 1 from WS.WS.SYS_DAV_RES  where RES_FULL_PATH = from_file) ) {
               self.error_message:= sprintf(' from dav. DAV resource %s does not exist.',from_file);
                       http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+              http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
               return;
              }
 
@@ -367,7 +367,7 @@
                     self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml  format.', from_file);
 
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                 };
 
@@ -382,7 +382,7 @@
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
 
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
@@ -395,7 +395,7 @@
              } else {
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
             }
                          } else if (from_mode ='3') {
@@ -404,7 +404,7 @@
                      }
                  }
             http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+        http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
         return;
               } ]]>
             </v:script>
@@ -553,11 +553,11 @@
                         string_to_file( concat(virtuoso_ini_path()) , txt_file ,-2);
                        }
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     } else  if ( get_keyword('save_cancel', params) is not null) {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&what=redirect&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&what=redirect&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
 
@@ -713,11 +713,11 @@
                         string_to_file( concat(virtuoso_ini_path()) , txt_file ,-2);
                        }
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?section=%s&mode=result&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?section=%U&mode=result&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     } else  if ( get_keyword('tosave_cancel', params) is not null) {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&what=redirect&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&what=redirect&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
 
@@ -748,7 +748,7 @@
             <v:script>
               <![CDATA[  {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
               ]]>
@@ -777,7 +777,7 @@
             <v:script>
               <![CDATA[  {
                     http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
+            http_header (sprintf('Location: inifile.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('section', params), self.sid ,self.realm));
             return;
                     }
               ]]>

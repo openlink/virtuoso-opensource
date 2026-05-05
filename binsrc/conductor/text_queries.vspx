@@ -40,16 +40,16 @@
     <vm:header caption="WebDAV Indexing">
       <vm:raw>
         <td class="SubInfo">
-          <vm:url name="ind_mode_ref" format="%s" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
+          <vm:url name="ind_mode_ref" format="%V" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
         </td>
         <td class="SubInfo">
-          <vm:url name="search_tr_ref" format="%s" value="--'Search'" url="--'text_search.vspx'"/>
+          <vm:url name="search_tr_ref" format="%V" value="--'Search'" url="--'text_search.vspx'"/>
         </td>
         <td class="SubInfo">
-          <vm:url name="trig_que_ref" format="%s" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
+          <vm:url name="trig_que_ref" format="%V" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
         </td>
         <td class="SubInfo">
-          <vm:url name="trigger_result_ref" format="%s" value="--'Trigger Results'" url="--'text_results.vspx'"/>
+          <vm:url name="trigger_result_ref" format="%V" value="--'Trigger Results'" url="--'text_results.vspx'"/>
         </td>
       </vm:raw>
     </vm:header>
@@ -96,13 +96,13 @@
             <table width="100%" border="2" cellspacing="0" cellpadding="0">
               <tr>
                 <td align="left" class="SubAction">
-                  <v:label width="80" format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+                  <v:label width="80" format="%V" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
                 </td>
                 <td align="left" class="SubAction">
-                  <v:label width="80" format="%s" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[2])"/>
+                  <v:label width="80" format="%V" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[2])"/>
                 </td>
                 <td align="right" nowrap="0"  class="listing_col_action">
-                  <v:url name="url11_edit" value="--'Edit'" format="%s" url="--concat('text_queries_edit.vspx?mode=edit&name=', cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" width="80" />
+                  <v:url name="url11_edit" value="--'Edit'" format="%V" url="--concat('text_queries_edit.vspx?mode=edit&name=', cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" width="80" />
                   <v:button action="simple" value="Delete" width="64" height="24" name="data_set1_delete" style="url">
                     <v:on-post width="0" height="16">
                       <v:script>

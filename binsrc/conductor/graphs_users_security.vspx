@@ -118,32 +118,32 @@
             c_graph_is_private := isnotnull (dict_get (__rdf_graph_group_of_privates_dict(), c_graph_iid, null));
             c_graph_iri := id_to_iri (c_graph_iid);
           }
-          http ('<h2>Access Permissions of "' || c_user_name || '" on ' || c_graph_iri || '</h2>');
+          http (sprintf ('<h2>Access Permissions of "%V" on %V</h2>', c_user_name, c_graph_iri));
           http ('This page contains all information related to permissions of one specific user at one specific RDF graph.');
           if (USER = 'dba')
           {
-            http ('You are logged in as ' || USER || ', so you can configure the access if needed.');
+            http (sprintf ('You are logged in as %V, so you can configure the access if needed.', USER));
           }
           else
           {
-            http ('You are logged in as ' || USER || ', so you can only browse the permissions but not change them.');
+            http (sprintf ('You are logged in as %V, so you can only browse the permissions but not change them.', USER));
           }
           c_user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = c_user_name);
           if (c_user_id is null)
           {
-            http ('<h3>User account "' || c_user_name || '" does not exist.</h3>There is nothing more to say about it, sorry.');
+            http (sprintf ('<h3>User account "%V" does not exist.</h3>There is nothing more to say about it, sorry.', c_user_name));
             sql_perms := 0;
             c_user_disabled := 1;
           }
           else if ((select U_IS_ROLE from DB.DBA.SYS_USERS where U_ID = c_user_id))
           {
-            http ('<h3>Account "' || c_user_name || '", ID=' || c_user_id || ' belongs to role, not to a user.</h3>Role can not access any data like user, there is no security for it.');
+            http (sprintf ('<h3>Account "%V", ID=%d belongs to role, not to a user.</h3>Role can not access any data like user, there is no security for it.', c_user_name, c_user_id));
             sql_perms := 0;
             c_user_disabled := 1;
           }
           else
           {
-            http ('<h3>Basic information about user account "' || c_user_name || '"</h3>');
+            http (sprintf ('<h3>Basic information about user account "%V"</h3>', c_user_name));
             if ('nobody' = c_user_name)
             {
               http ('<p>User account "nobody" is a special account used to describe default access permissions, not a real user.</p>');
@@ -154,9 +154,9 @@
             }
             for (select U_E_MAIL, U_FULL_NAME, U_ACCOUNT_DISABLED, U_DAV_ENABLE, U_SQL_ENABLE from DB.DBA.SYS_USERS where U_ID = c_user_id) do
             {
-              http ('<p>User ID: ' || c_user_id || '<br/>');
-              http ('Full Name: ' || U_FULL_NAME || '<br/>');
-              http ('E-mail: ' || U_E_MAIL || '<br/>');
+              http (sprintf ('<p>User ID: %V<br/>', c_user_id ));
+              http (sprintf ('Full Name: %V<br/>', U_FULL_NAME));
+              http (sprintf ('E-mail: %V<br/>', U_E_MAIL));
               if (U_ACCOUNT_DISABLED)
               {
                 http ('This account is DISABLED and can not perform any operations.');
@@ -174,7 +174,7 @@
               }
             }
           }
-          http ('<h3>Basic information about RDF graph "' || c_graph_iri || '"</h3>');
+          http (sprintf ('<h3>Basic information about RDF graph "%V"</h3>', c_graph_iri));
           http ('<table class="listing">');
           http ('<thead>\n');
           http ('  <tr style="background-color: #99B3C5;">');
@@ -199,16 +199,16 @@
           disabled := 1;
           http ('<tr>');
           http ('<th align="left">Should the user have some SQL role to use this permission?</th>');
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 0, 1, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 1, 1, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 2, 1, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 3, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 4, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 5, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 6, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 7, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 8, 0, disabled)));
-          http (sprintf ('<td>%s</td>', self.checkbox (1, 9, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 0, 1, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 1, 1, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 2, 1, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 3, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 4, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 5, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 6, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 7, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 8, 0, disabled)));
+          http (sprintf ('<td>%V</td>', self.checkbox (1, 9, 0, disabled)));
           http ('</tr>');
 
           -- 2
@@ -233,7 +233,7 @@
               drct := (select GI_DIRECT from DB.DBA.SYS_ROLE_GRANTS join DB.DBA.SYS_USERS on (U_ID = GI_SUB) where U_NAME = needed_role and GI_SUPER = c_user_id);
               if (drct is null)
               {
-                http (sprintf ('<td>%s</td>', self.checkbox (3, bitctr, 0, disabled)));
+                http (sprintf ('<td>%V</td>', self.checkbox (3, bitctr, 0, disabled)));
                 sql_perms := bit_and (sql_perms, bit_not (bit_shift (1, bitctr)));
               }
               else if (drct)
@@ -261,7 +261,7 @@
           http ('<th align="left">Is the bit set for all users on all ' || case (c_graph_is_private) when 0 then '"world"' else '"private"' end || ' graphs?</th>');
           for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
           {
-            http (sprintf ('<td>%s</td>', self.checkbox (4, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+            http (sprintf ('<td>%V</td>', self.checkbox (4, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
           }
           http ('</tr>');
 
@@ -272,7 +272,7 @@
           http ('<tr><th align="left">Is the bit set for this specific user on all ' || case (c_graph_is_private) when 0 then '"world"' else '"private"' end || ' graphs?</th>');
           for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
           {
-            http (sprintf ('<td>%s</td>', self.checkbox (5, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+            http (sprintf ('<td>%V</td>', self.checkbox (5, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
           }
           http ('</tr>');
 
@@ -284,7 +284,7 @@
           http ('<th align="left">Is the bit set for all users on this specific graph?</th>');
           for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
           {
-            http (sprintf ('<td>%s</td>', self.checkbox (6, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+            http (sprintf ('<td>%V</td>', self.checkbox (6, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
           }
           http ('</tr>');
 
@@ -296,7 +296,7 @@
           http ('<th align="left">Is the bit set for this specific user on this specific graph?</th>');
           for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
           {
-            http (sprintf ('<td>%s</td>', self.checkbox (7, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+            http (sprintf ('<td>%V</td>', self.checkbox (7, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
           }
           http ('</tr>');
 
@@ -307,7 +307,7 @@
           http ('<th align="left">So, can the user use this permission?</th>');
           for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
           {
-            http (sprintf ('<td>%s</td>', self.checkbox (8, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+            http (sprintf ('<td>%V</td>', self.checkbox (8, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
           }
           http ('</tr>');
 
@@ -499,7 +499,7 @@
           declare link_params any;
 
           link_params := tweak_by_keywords (params, 'set', 'users_by_group', gname, 'delete', 'mode', '', 'delete', 'users_by_like', '', 'delete', 'uors_page', '');
-          http (sprintf ('<font size="1">has <a href="%s">%s</a>%s</font><br />\n', self.rgs_uri (link_params) , gname, case (gdirect) when 0 then '' else ' directly' end));
+          http (sprintf ('<font size="1">has <a href="%H">%V</a>%s</font><br />\n', self.rgs_uri (link_params) , gname, case (gdirect) when 0 then '' else ' directly' end));
         }
         http ('</div>');
         http ('</th>\n');
@@ -524,7 +524,7 @@
           sel_uid := sel_u[0];
           link_params := tweak_by_keywords (params, 'set', 'mode', 'edit', 'set', 'c_user_name', sel_u[1], 'set', 'c_graph_iid', iri_id_num (sel_iid));
           perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (sel_iid, sel_uid);
-          http (sprintf ('<td><a href="%s">%s</a></td>\n', self.rgs_uri (link_params), self.rgs_pexplain (perms)));
+          http (sprintf ('<td><a href="%H">%V</a></td>\n', self.rgs_uri (link_params), self.rgs_pexplain (perms)));
         }
         http ('</tr>\n');
       }

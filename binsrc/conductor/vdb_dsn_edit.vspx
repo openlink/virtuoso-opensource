@@ -34,10 +34,10 @@
     <v:variable name="ds_login" persist="1" type="varchar" default="''" />
 
     <vm:menu>
-      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%s" url="vdb_dsns.vspx" />
-      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%s" url="vdb_resources.vspx" />
-      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx" />
-      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%s" url="vdb_main.vspx" />
+      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%V" url="vdb_dsns.vspx" />
+      <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%V" url="vdb_resources.vspx" />
+      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%V" url="vdb_link.vspx" />
+      <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%V" url="vdb_main.vspx" />
     </vm:menu>
 
     <vm:rawheader>
@@ -66,7 +66,7 @@
           self.ds_name := get_keyword ('dsn_name', self.vc_page.vc_event.ve_params, self.ds_name);
 
         self.ds_login := get_keyword ('login', self.vc_page.vc_event.ve_params, '');
-        self.return_path := sprintf('vdb_dsn_edit.vspx?sid=%s&realm=%s&mode=%s&dsn_name=%s',self.sid, self.realm, self.p_mode, self.ds_name);
+        self.return_path := sprintf('vdb_dsn_edit.vspx?sid=%U&realm=%U&mode=%U&dsn_name=%U',self.sid, self.realm, self.p_mode, self.ds_name);
 
         declare i, cnt integer;
         declare ds_pwdo, ds_pwdn varchar;
@@ -82,7 +82,7 @@
           vdd_disconnect_data_source(self.ds_name);
           delete from DB.DBA.SYS_DATA_SOURCE where DS_DSN = self.ds_name AND DS_UID = self.ds_login;
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: vdb_dsns.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+          http_header (sprintf('Location: vdb_dsns.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
           return;
         }
       ?>
@@ -97,7 +97,7 @@
           <table class="MainSubData" width="100%" border="0" cellspacing="0" cellpadding="0">
             <tr>
               <?vsp
-                http(sprintf('<input type="hidden" name="dsn_name" value="%s"/>', self.ds_name));
+                http(sprintf('<input type="hidden" name="dsn_name" value="%V"/>', self.ds_name));
                 http('<td>Data Source Name');
                 if( self.p_mode = 'edit' )
                 {
@@ -132,7 +132,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%s" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%V</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     idx := 0;
@@ -144,7 +144,7 @@
                         selected := 'selected';
                       else
                         selected := '';
-                      http( sprintf('<option value="%s" %s>%s</option>', dsn, selected, dsn ) );
+                      http( sprintf('<option value="%V" %s>%V</option>', dsn, selected, dsn ) );
                       idx := idx + 1;
                     }
                     http('</select>');
@@ -179,7 +179,7 @@
                   <v:on-post>
                     <![CDATA[
                       http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: vdb_dsns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      http_header (sprintf('Location: vdb_dsns.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                     ]]>
                   </v:on-post>
                 </v:button>
@@ -193,7 +193,7 @@
                       {
                     error:
                         http_request_status ('HTTP/1.1 302 Found');
-                        http_header (sprintf('Location: vdb_dsns.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                        http_header (sprintf('Location: vdb_dsns.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                         return;
                       }
                       if ( self.p_mode <> 'edit')
@@ -210,7 +210,7 @@
                       {
                         self.sql_stt := coalesce (__SQL_STATE, '');
                         self.sql_msg := coalesce (__SQL_MESSAGE, '');
-                        self.return_path := sprintf('vdb_dsn_edit.vspx?sid=%s&realm=%s&mode=%s&dsn_name=%s',self.sid, self.realm, self.p_mode, self.ds_name);
+                        self.return_path := sprintf('vdb_dsn_edit.vspx?sid=%U&realm=%U&mode=%U&dsn_name=%U',self.sid, self.realm, self.p_mode, self.ds_name);
                         return;
                       };
                       if ( exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = self.ds_name AND DS_UID = self.ds_login ) )
@@ -220,7 +220,7 @@
                       }
                       vd_remote_data_source (self.ds_name, '', self.ds_login, ds_pwdn);
                       http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: vdb_dsns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      http_header (sprintf('Location: vdb_dsns.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                     ]]>
                   </v:on-post>
                 </v:button>

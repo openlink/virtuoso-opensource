@@ -673,7 +673,7 @@
         <v:form name="inx_form4" type="simple" method="POST">
           <div style="clear: both;">
             <h3>Status</h3>
-            The data is imported in table <a href="#" onclick="javascript: window.open ('isql.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;gen_table_sel=<?V self.tb ?>', 'isql', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800')"><?V self.tb ?></a>. <br/>
+            The data is imported in table <a href="#" onclick="javascript: window.open ('isql.vspx?sid=<?U self.sid ?>&amp;realm=<?U self.realm ?>&amp;gen_table_sel=<?U self.tb ?>', 'isql', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800')"><?V self.tb ?></a>. <br/>
             Total records imported <?V self.nrec ?>.
           </div>
           <div>

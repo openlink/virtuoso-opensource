@@ -34,7 +34,7 @@
             Publications
           </td>
           <td class="page_tab">
-            <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+            <v:url name="b_url13" value="--'Subscriptions'" format="%V" url="--'db_repl_trans.vspx?page=2'"/>
           </td>
         <td class="page_tab_empty"></td>
       </tr>
@@ -80,7 +80,7 @@
                 <v:on-post>
                   <![CDATA[
                     http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                    http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%U&realm=%U\r\n', self.sid , self.realm));
                   ]]>
                 </v:on-post>
               </v:button>
@@ -126,7 +126,7 @@
 
                       REPL_PUBLISH(_acct, _log, _is_updateable, _sync_user);
                       http_request_status('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                      http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%U&realm=%U\r\n', self.sid , self.realm));
                     }
                     else
                     {

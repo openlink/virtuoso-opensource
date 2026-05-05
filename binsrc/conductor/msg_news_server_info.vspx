@@ -53,7 +53,7 @@ where
             <b>Server Address</b>
           </td>
           <td align="left" nowrap="1" width="50%">
-            <v:label width="80" format="%s" name="nntp_server_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+            <v:label width="80" format="%V" name="nntp_server_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
           </td>
         </tr>
         <tr>
@@ -61,7 +61,7 @@ where
             <b>Server Port</b>
           </td>
           <td align="left" nowrap="1" width="50%">
-            <v:label width="80" format="%s" name="nntp_server_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+            <v:label width="80" format="%V" name="nntp_server_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
           </td>
         </tr>
         <tr>
@@ -69,7 +69,7 @@ where
             <b>User</b>
           </td>
           <td align="left" nowrap="1" width="50%">
-            <v:label width="80" format="%s" name="nntp_server_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+            <v:label width="80" format="%V" name="nntp_server_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
           </td>
         </tr>
         <tr>
@@ -77,7 +77,7 @@ where
             <b>Password</b>
           </td>
           <td align="left" nowrap="1" width="50%">
-            <v:label width="80" format="%s" name="nntp_server_browse_label_4" value="--('********')" />
+            <v:label width="80" format="%V" name="nntp_server_browse_label_4" value="--('********')" />
           </td>
         </tr>
       </table>

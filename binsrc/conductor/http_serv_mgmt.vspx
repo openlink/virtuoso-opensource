@@ -67,7 +67,7 @@
         order by HP_LPATH do
     {
       http ('<b>');
-      http (HP_LPATH);
+      http_value (HP_LPATH);
       http('</b><br/>');
     }
               ?>
@@ -139,7 +139,7 @@
                   order by HPD_LPATH do
                 {
                   http ('<b>');
-                  http (HPD_LPATH);
+                  http_value (HPD_LPATH);
                   http('</b><br/>');
                 }
               ?>
@@ -287,7 +287,7 @@
 
 		        --control.vu_url := sprintf (
 		        control.bt_url := sprintf (
-		          'http_add_path.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
+		          'http_add_path.vspx?mode=add1&_host=%U&_port=%U&_httphost=%U',
 			  _host, _port, _httphost);
 		    ]]></v:after-data-bind>
 		   <!--</v:url>-->
@@ -520,11 +520,11 @@
 
 		      if (tp = 'SOAP')
 		        control.bt_url := sprintf (
-		          'soap_services_edit.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+		          'soap_services_edit.vspx?mode=edit&_host=%U&_port=%U&_httphost=%U&path=%U',
 			  _host, _port, _httphost, _path);
 	              else
 		        control.bt_url := sprintf (
-		          'http_add_path.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+		          'http_add_path.vspx?mode=edit&_host=%U&_port=%U&_httphost=%U&path=%U',
 			  _host, _port, _httphost, _path);
 		   ]]></v:after-data-bind>
 		  </v:button>
@@ -548,7 +548,7 @@
 		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
 
 		        control.bt_url := sprintf (
-		          'http_del_path.vspx?lhost=%s&vhost=%s&lpath=%s',
+		          'http_del_path.vspx?lhost=%U&vhost=%U&lpath=%U',
 			  _host1, _httphost1, _path);
 		  ]]></v:after-data-bind>
 		  </v:button>
@@ -573,7 +573,7 @@
 		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
 
 		        control.bt_url := sprintf (
-		          'http_url_rewrite.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+		          'http_url_rewrite.vspx?lhost=%U&vhost=%U&lpath=%U&rule_list=%U',
 			  _host1, _httphost1, _path, urw);
 		  ]]></v:after-data-bind>
 		  </v:button>
@@ -609,7 +609,7 @@
 		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
 
 		        control.bt_url := sprintf (
-		          'vhost_export.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+		          'vhost_export.vspx?lhost=%U&vhost=%U&lpath=%U&rule_list=%U',
 			  _host1, _httphost1, _path, urw);
 		  ]]></v:after-data-bind>
 		  </v:button>

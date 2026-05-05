@@ -53,13 +53,13 @@
         <tr valign='top'>
           <td>
             <div class="page_tab">
-              <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" />
+              <v:url name="b_url21" value="--'Repository'" format="%V" url="--'cont_page.vspx?page=1'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" />
+              <v:url name="b_url12" value="Content Imports" format="%V" url="--'cont_page.vspx?page=2'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" />
+              <v:url name="b_url13" value="--'Settings'" format="%V" url="--'cont_page.vspx?page=3'" />
             </div>
             <div class="page_tab_selected">
               Resource Types
@@ -163,7 +163,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status('HTTP/1.1 302 Found');
-                            http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                            http_header(sprintf('Location: cont_page.vspx?page=4&sid=%U&realm=%U\r\n', self.sid, self.realm));
                             return;
                           ]]>
                         </v:on-post>
@@ -234,7 +234,7 @@
                 </table>
                 <?vsp
                   if (self.error_str1 <> '' and self.error_str1 is not null)
-                    http(sprintf('<table class="Warning" border="1" align="center"><tr><td colspan="2">%s</td></tr>', self.error_str1));
+                    http(sprintf('<table class="Warning" border="1" align="center"><tr><td colspan="2">%V</td></tr>', self.error_str1));
                   self.error_str1 := '';
                 ?>
               </v:form>

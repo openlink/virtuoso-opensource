@@ -77,15 +77,15 @@
               		if (length (errs))
               		  {
               		    self.db_const_errs := errs;
-              		    self.vc_redirect (sprintf('db_const_drop_errs.vspx?name=%s',self.name));
+              		    self.vc_redirect (sprintf('db_const_drop_errs.vspx?name=%U',self.name));
               		  }
               		else
-              		  self.vc_redirect (sprintf('databases_table_constraints.vspx?name=%s',self.name));
+              		  self.vc_redirect (sprintf('databases_table_constraints.vspx?name=%U',self.name));
           		  ]]></v:on-post>
               </v:button>
               <v:button action="simple" name="cancel" value="Go back">
                 <v:on-post>
-            		  self.vc_redirect (sprintf('databases_table_constraints.vspx?name=%s',self.name));
+            		  self.vc_redirect (sprintf('databases_table_constraints.vspx?name=%U',self.name));
                 </v:on-post>
               </v:button>
 	    </div>

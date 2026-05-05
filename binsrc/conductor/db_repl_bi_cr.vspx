@@ -42,9 +42,9 @@
         self._item_type := atoi(get_keyword('item_type', self.vc_page.vc_event.ve_params, '0'));
         http ('<div> for ');
         if (self._item_type = 1)
-          http(sprintf('WebDAV collection <b>%s</b>', self._item));
+          http(sprintf('WebDAV collection <b>%V</b>', self._item));
         else
-          http(sprintf('Table <b>%s</b>', self._item));
+          http(sprintf('Table <b>%V</b>', self._item));
         http('</div><br/>');
       ?>
     </vm:rawheader>
@@ -91,7 +91,7 @@
               <td class="listing_col">
                 <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
               </td>
-              <td class="listing_col"><a href="db_repl_bi_cr_edit.vspx?item=<?V encode_base64(serialize(self._item)) ?>&item_type=<?V self._item_type ?>&proc=<?V encode_base64(serialize(_cr_proc)) ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>"><?V _cr_proc ?></a></td>
+              <td class="listing_col"><a href="db_repl_bi_cr_edit.vspx?item=<?U encode_base64(serialize(self._item)) ?>&item_type=<?U self._item_type ?>&proc=<?U encode_base64(serialize(_cr_proc)) ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>"><?V _cr_proc ?></a></td>
               <td class="listing_col_num"><?V cr_order ?></td>
             </tr>
             <?vsp
@@ -132,7 +132,7 @@
                 <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
               </td>
               <td class="listing_col"><?V cr_type ?></td>
-              <td class="listing_col"><a href="db_repl_bi_cr_edit.vspx?item=<?V encode_base64(serialize(self._item)) ?>&item_type=<?V self._item_type ?>&proc=<?V encode_base64(serialize(_cr_proc)) ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>"><?V _cr_proc ?></a></td>
+              <td class="listing_col"><a href="db_repl_bi_cr_edit.vspx?item=<?U encode_base64(serialize(self._item)) ?>&item_type=<?U self._item_type ?>&proc=<?U encode_base64(serialize(_cr_proc)) ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>"><?V _cr_proc ?></a></td>
               <td class="listing_col_num"><?V cr_order ?></td>
               <?vsp
                   http ('</tr>');
@@ -150,7 +150,7 @@
                 <v:script>
                   <![CDATA[
                     http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: db_repl_bi.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    http_header(sprintf('Location: db_repl_bi.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                   ]]>
                 </v:script>
               </v:on-post>
@@ -194,7 +194,7 @@
                 <v:script>
                   <![CDATA[
                     http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: db_repl_cr_edit.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    http_header(sprintf('Location: db_repl_cr_edit.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                   ]]>
                 </v:script>
               </v:on-post>
@@ -203,7 +203,7 @@
       </v:form>
       <?vsp
         if (self.error_str198 <> '' and self.error_str198 is not null)
-          http(sprintf('<table class="warning">%s</table>', self.error_str198));
+          http(sprintf('<table class="warning">%V</table>', self.error_str198));
         self.error_str198 := '';
        ?>
        <!--

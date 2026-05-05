@@ -142,7 +142,7 @@
 	      if (length (self.edit_lpath) = 0)
 	        self.edit_lpath := self.lpath;
 
-              -- load settings from choosen path
+              -- load settings from chosen path
               declare _ppath, _defpage, _vspuser, _soapuser, _security, _auth_realm, _auth_func, _after_func,
                       _sesvars, _soap_opt, _auth_opt, _global_opts varchar;
               declare _dirbrowsing, _is_dav, _defdir integer;
@@ -338,7 +338,7 @@
                       <![CDATA[
                       self.mode := '';
 		      self.vc_data_bind(e);
-		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%s', self._host));
+		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%U', self._host));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -351,7 +351,7 @@
                         {
                           declare t_mode varchar;
                           t_mode := self.dl_temppaths.ufl_value;
-                          -- load settings from choosen path
+                          -- load settings from chosen path
                           declare _ppath, _defpage, _vspuser, _soapuser, _security, _auth_realm, _auth_func, _after_func,
                                   _sesvars, _soap_opt, _auth_opt, _global_opts varchar;
                           declare _dirbrowsing, _is_dav, _defdir integer;
@@ -473,7 +473,7 @@
                                 'wsrp-from','some@example.domain' );
                             self.auth_opt := '';
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header (sprintf('Location: soap_services_edit.vspx?sid=%s&realm=%s&mode=add2&_host=%s&_port=%s&_httphost=%s\r\n', self.sid, self.realm, self.edit_host, self.edit_port, self.edit_httphost));
+                            http_header (sprintf('Location: soap_services_edit.vspx?sid=%U&realm=%U&mode=add2&_host=%U&_port=%U&_httphost=%U\r\n', self.sid, self.realm, self.edit_host, self.edit_port, self.edit_httphost));
                           }
                           else if (t_mode = '5')
                           {
@@ -577,14 +577,14 @@
               <td>
                 <v:text name="t_ppath" xhtml_id="t_ppath"/>
                 <input type="button" name="browsepath" value="Browse..."
-		 onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_ppath', 't_ppath', 1, document.frm_edit_path.c_is_dav.checked)" />
+		 onClick="javascript: doBrowse('?sid=<?U self.sid ?>&realm=<?U self.realm ?>', 't_ppath', 't_ppath', 1, document.frm_edit_path.c_is_dav.checked)" />
               </td>
             </tr>
             <tr>
               <td><label for="t_defpage">Default page</label></td>
               <td><v:text name="t_defpage" xhtml_id="t_defpage"/>
                 <input type="button" name="browsedefpage" value="Browse..."
-                onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_defpage', 't_ppath', 0, document.frm_edit_path.c_is_dav.checked)" />
+                onClick="javascript: doBrowse('?sid=<?U self.sid ?>&realm=<?U self.realm ?>', 't_defpage', 't_ppath', 0, document.frm_edit_path.c_is_dav.checked)" />
               </td>
             </tr>
             <tr>
@@ -602,7 +602,7 @@
               <td><label for="t_ssbrow">Style Sheet for browsing</label></td>
               <td><v:text name="t_ssbrow" xhtml_id="t_ssbrow"/>
                 <input type="button" name="browse_ssbrow" value="Browse..."
-                onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_ssbrow', 't_ssbrow', 0, document.frm_edit_path.c_is_dav.checked)" />
+                onClick="javascript: doBrowse('?sid=<?U self.sid ?>&realm=<?U self.realm ?>', 't_ssbrow', 't_ssbrow', 0, document.frm_edit_path.c_is_dav.checked)" />
               </td>
             </tr>
             <tr>
@@ -729,7 +729,7 @@
                       <![CDATA[
                       self.mode := '';
                       self.vc_data_bind(e);
-		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%s', self._host));
+		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%U', self._host));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -904,7 +904,7 @@
                       else {
                         self.mode := '';
 			self.vc_data_bind(e);
-			self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%s', self._host));
+			self.vc_redirect (sprintf ('http_serv_mgmt.vspx?openat=%U', self._host));
                       }
                       ]]>
                     </v:script>

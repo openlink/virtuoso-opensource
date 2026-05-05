@@ -124,7 +124,7 @@
     {
       ses := string_output ();
       http ('<?xml version="1.0" ?>\n', ses);
-      http (sprintf ('<?xml-stylesheet href="%U" type="text/xsl" ?>\n', xsl_sheet), ses);
+      http (sprintf ('<?xml-stylesheet href="%H" type="text/xsl" ?>\n', xsl_sheet), ses);
       if (xml_file like '<?xml%')
         xml_file := regexp_replace (xml_file, '<?[^>]+?>');
       http (xml_file, ses);

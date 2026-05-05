@@ -20,7 +20,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="capabilites"
+<v:page name="capabilities"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"
@@ -176,13 +176,13 @@
                   <v:template type="simple" name="tpl_cowntype_2" condition="(control.vc_parent as vspx_row_template).te_rowset[2] <> 1">
                     <img src="images/icons/user_16.png" alt="user" title="user"/>
                   </v:template>
-                  <v:label name="label_utype" value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] = 1 then 'Group' else 'User' end" format="%s" width="80"/>
+                  <v:label name="label_utype" value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] = 1 then 'Group' else 'User' end" format="%V" width="80"/>
                 </td>
           <td>
-                  <v:label name="label61" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"  />
+                  <v:label name="label61" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"  />
                 </td>
           <td nowrap="1">
-                  <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                  <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V" width="80"/>
                 </td>
           <td class="action">
                       <v:button action="simple"

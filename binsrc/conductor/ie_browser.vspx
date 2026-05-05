@@ -72,7 +72,7 @@
                    i:=0;
                    n:=length(dirs);
                    while( i < n ) {
-                      http(sprintf( '<option value="%s"%s>%s</option>',
+                      http(sprintf( '<option value="%V"%s>%V</option>',
                                     dirs[i],
                                     case when dirs[i]=self.curpath then ' selected="true"' else '' end,
                                     dirs[i+1] ) );
@@ -91,7 +91,7 @@
                    i:=0;
                    n:=length(dirs);
                    while( i < n ) {
-                      http(sprintf('<option value="%s">%s</option>', dirs[i], dirs[i+1]) );
+                      http(sprintf('<option value="%V">%V</option>', dirs[i], dirs[i+1]) );
                       i := i + 2;
                    }
                  ?>
@@ -104,10 +104,10 @@
           </tr>
           <tr>
             <td width="50%">
-              <input type="text" value="<?V self.curpath?>"  name="dump_path" style="width: 98%" title="Path to dump's root directory"/>
+              <input type="text" value="<?V self.curpath ?>"  name="dump_path" style="width: 98%" title="Path to dump's root directory"/>
             </td>
             <td width="50%">
-              <input type="text" value="<?V self.curname?>" name="dump_name" style="width: 98%" title="Backup name"/>
+              <input type="text" value="<?V self.curname ?>" name="dump_name" style="width: 98%" title="Backup name"/>
             </td>
           </tr>
           <tr>

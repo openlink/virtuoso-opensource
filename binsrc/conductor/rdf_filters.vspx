@@ -47,19 +47,19 @@
             </div>
             <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
             <div class="page_tab">
-              <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" />
+              <v:url name="url2" value="Meta Cartridges" format="%V" url="rdf_filters_pp.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" />
+              <v:url name="url1" value="Stylesheets" format="%V" url="sparql_filters.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" />
+              <v:url name="url1" value="Entity URIs" format="%V" url="entity_uri_patterns.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" />
+              <v:url name="url3" value="Console" format="%V" url="rdf_console.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" />
+              <v:url name="url4" value="Configuration" format="%V" url="rdf_conf.vspx" />
             </div>
             <?vsp } ?>
 
@@ -342,7 +342,7 @@
                       <v:button style="url" action="simple" name="csv_patterns" value="CSV Patterns" >
                         <v:on-post><![CDATA[
                           http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf('Location: csv_patterns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          http_header (sprintf('Location: csv_patterns.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                         ]]></v:on-post>
                       </v:button>
                       <?vsp } ?>

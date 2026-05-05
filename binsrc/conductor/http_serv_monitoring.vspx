@@ -169,15 +169,15 @@
 </p>
 <table WIDTH="30%" BORDER="1" CELLPADDING="0" CELLSPACING="0">
   <tr>
-    <th><v:label name="label0h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[0]" format="%s"/></th>
-    <th><v:label name="label1h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[1]" format="%s"/></th>
-    <th><v:label name="label2h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[2]" format="%s"/></th>
-    <th><v:label name="label3h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[3]" format="%s"/></th>
-    <th><v:label name="label4h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[4]" format="%s"/></th>
-    <th><v:label name="label5h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[5]" format="%s"/></th>
-    <th><v:label name="label6h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[6]" format="%s"/></th>
-    <th><v:label name="label7h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[7]" format="%s"/></th>
-    <th><v:label name="label8h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[8]" format="%s"/></th>
+    <th><v:label name="label0h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[0]" format="%V"/></th>
+    <th><v:label name="label1h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[1]" format="%V"/></th>
+    <th><v:label name="label2h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[2]" format="%V"/></th>
+    <th><v:label name="label3h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[3]" format="%V"/></th>
+    <th><v:label name="label4h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[4]" format="%V"/></th>
+    <th><v:label name="label5h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[5]" format="%V"/></th>
+    <th><v:label name="label6h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[6]" format="%V"/></th>
+    <th><v:label name="label7h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[7]" format="%V"/></th>
+    <th><v:label name="label8h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[8]" format="%V"/></th>
   </tr>
   <v:rowset />
   <tr>
@@ -190,15 +190,15 @@
 
 <v:template name="dg_rows" type="row">
 <tr>
-  <td nowrap="nowrap"><v:label name="label0" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label3" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[3], 21)" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label4" value="--(control.vc_parent as vspx_row_template).te_rowset[4]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[5]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[6]" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label7" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[7], 27)" format="%s"/></td>
-  <td nowrap="nowrap"><v:label name="label8" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[8], 27)" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label0" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label3" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[3], 21)" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label4" value="--(control.vc_parent as vspx_row_template).te_rowset[4]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[5]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[6]" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label7" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[7], 27)" format="%V"/></td>
+  <td nowrap="nowrap"><v:label name="label8" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[8], 27)" format="%V"/></td>
 </tr>
 </v:template>
 

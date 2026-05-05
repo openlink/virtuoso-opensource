@@ -154,7 +154,7 @@
         }
         if (id > 0)
         {
-          http (sprintf ('<link rel="alternate" title="ODS Briefcase Instance" href="%s" />\n', ODRIVE.WA.forum_iri (id)));
+          http (sprintf ('<link rel="alternate" title="ODS Briefcase Instance" href="%H" />\n', ODRIVE.WA.forum_iri (id)));
           http (sprintf ('<script type="text/turtle" id="API_briefcase">\n@prefix schema: <http://schema.org/> .\n <> schema:relatedLink <%s> .\n </script>', ODRIVE.WA.forum_iri (id)));
         }
       ?>
@@ -174,7 +174,7 @@
           <v:variable persist="0" name="account_role" type="varchar" default="'R'" />
           <v:variable persist="0" name="account_name" type="varchar" default="null"/>
           <v:variable persist="0" name="account_password" type="varchar" default="null"/>
-          <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
+          <input type="hidden" name="mode" id="mode" value="<?V get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav') ?>"/>
           <vm:dav_browser mode="webdav" />
           <script type="text/javascript">
             <![CDATA[

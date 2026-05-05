@@ -45,7 +45,7 @@
         if( self.p_mode <> '1' and self.p_mode <> '2')
           self.p_mode := '1';
 
-        self.return_path := sprintf('ie_import.vspx?sid=%s&realm=%s',self.sid, self.realm);
+        self.return_path := sprintf('ie_import.vspx?sid=%U&realm=%U',self.sid, self.realm);
       ?>
       </v:before_render>
 

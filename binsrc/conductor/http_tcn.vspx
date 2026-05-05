@@ -57,7 +57,7 @@
             <table cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url1" value="URL rewrite rules" format="%s"
+                  <v:url name="url1" value="URL rewrite rules" format="%V"
                          url="--sprintf ('http_url_rewrite.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
                 </td>
                 <td class="page_tab_selected" align="center" nowrap="1">
@@ -128,7 +128,7 @@
                               />
                             </td>
                             <td>
-                              <v:label name="la3" format="%s"
+                              <v:label name="la3" format="%V"
                                        value="--sprintf ('%s qs=%.2f', (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])" />
                             </td>
                             <td>
@@ -138,7 +138,7 @@
                             <td class="action">
                               &nbsp;
                               <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-                                format="%s"
+                                format="%V"
                                 url="--sprintf ('http_tcn.vspx?del=%d&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U',
                                     (control.vc_parent as vspx_row_template).te_rowset[0],
                                     self.rulelist, self.lhost, self.vhost, self.lpath)"

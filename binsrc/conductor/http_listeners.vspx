@@ -84,7 +84,7 @@
                 edit_port := subseq( rowset[1], strchr(rowset[1],':')+1 );
                 edit_httphost := subseq( rowset[0], 0, strchr(rowset[0],':') );
               ?>
-              <a href="http_edit_paths.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&host=<?V host ?>&port=<?V port ?>&httphost=<?V httphost ?>">Paths</a-->
+              <a href="http_edit_paths.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&host=<?U host ?>&port=<?U port ?>&httphost=<?U httphost ?>">Paths</a-->
               <v:button name="item_paths" action="simple" value="Paths" style="url">
                 <v:on-post>
                   <v:script><![CDATA[

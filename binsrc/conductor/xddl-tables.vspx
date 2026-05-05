@@ -166,29 +166,29 @@
               <script><![CDATA[
           if (get_keyword('edit_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?entry_mode=init_table&mode=%s&table_name=%s&sid=%s&realm=%s\r\n','edit',get_keyword('xddl_objects_list_contol',params),self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?entry_mode=init_table&mode=%U&table_name=%U&sid=%U&realm=%U\r\n','edit',get_keyword('xddl_objects_list_contol',params),self.sid ,self.realm));
           return;
           }
           if (get_keyword('create_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?entry_mode=init_table&mode=create&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?entry_mode=init_table&mode=create&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('init_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=init_xddl&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=init_xddl&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('save_command',params) is not null) {
               self.wrong_entry := null;
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_save&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_save&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('load_command',params) is not null) {
               self.wrong_entry := null;
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('exec_command',params) is not null) {
@@ -201,12 +201,12 @@
           self.statements := res;
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=exec_xddl&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=exec_xddl&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('table_remove_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=table_remove&table_name=%s&sid=%s&realm=%s\r\n',get_keyword('xddl_objects_list_contol',params), self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=table_remove&table_name=%U&sid=%U&realm=%U\r\n',get_keyword('xddl_objects_list_contol',params), self.sid ,self.realm));
           return;
           }
 
@@ -295,30 +295,30 @@
           table_name := get_keyword('table_name', params);
           if (get_keyword('cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('apply_command',params) is not null) {
           path := sprintf('/tables/table[@name=\'%s\']',table_name);
           self.objects:=  XMLUpdate(xml_tree_doc(self.objects),path, self.current_table);
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
 
           if (get_keyword('column_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=column_create&table_name=%s&sid=%s&realm=%s\r\n',get_keyword('table_name', control.vc_page.vc_event.ve_params), self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=column_create&table_name=%U&sid=%U&realm=%U\r\n',get_keyword('table_name', control.vc_page.vc_event.ve_params), self.sid ,self.realm));
           return;
           }
           if (get_keyword('pk_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=primary_key_dialog&sid=%s&realm=%s&table_name=%s\r\n',self.sid ,self.realm, get_keyword('table_name', control.vc_page.vc_event.ve_params)));
+          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=primary_key_dialog&sid=%U&realm=%U&table_name=%U\r\n',self.sid ,self.realm, get_keyword('table_name', control.vc_page.vc_event.ve_params)));
           return;
           }
           if (get_keyword('fk_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=column_select_foreign&sid=%s&realm=%s&table_name=%s\r\n',self.sid ,self.realm, get_keyword('table_name', control.vc_page.vc_event.ve_params)));
+          http_header (sprintf('Location: xddl-tables.vspx?back=edit&mode=column_select_foreign&sid=%U&realm=%U&table_name=%U\r\n',self.sid ,self.realm, get_keyword('table_name', control.vc_page.vc_event.ve_params)));
           return;
           }
 
@@ -399,17 +399,17 @@
         } else
             http('&nbsp;');
         http('</td>');
-        http(sprintf('<td>%s</td>',column_name ));
-        http(sprintf('<td>%s</td>',xpath_eval('./@type-text',aref(cols,i)) ));
-        http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@nullable',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
-        http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
-        http(sprintf('<td>%s</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
-        http(sprintf('<td>%s</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
-        http(sprintf('<td  align="center"  class="listing_col_action"><a href="%s">Edit</a></td>',
+        http(sprintf('<td>%V</td>',column_name ));
+        http(sprintf('<td>%V</td>',xpath_eval('./@type-text',aref(cols,i)) ));
+        http(sprintf('<td align="center">%V</td>',case when ( xpath_eval('./@nullable',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
+        http(sprintf('<td align="center">%V</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
+        http(sprintf('<td>%V</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
+        http(sprintf('<td>%V</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
+        http(sprintf('<td  align="center"  class="listing_col_action"><a href="%H">Edit</a></td>',
 
-        sprintf('xddl-tables.vspx?back=edit&mode=column_edit&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, column_name,self.sid ,self.realm) ));
-        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
-        sprintf('xddl-tables.vspx?back=edit&mode=column_remove&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, column_name,self.sid ,self.realm) ));
+        sprintf('xddl-tables.vspx?back=edit&mode=column_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
+        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
+        sprintf('xddl-tables.vspx?back=edit&mode=column_remove&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
       }
@@ -431,13 +431,13 @@
       while (i < len) {
         pk_column_name := xpath_eval('./@col',aref(cols,i));
         http('<tr>');
-        http(sprintf('<td>%s</td>',xpath_eval('./@ord',aref(cols,i)) ));
-        http(sprintf('<td>%s</td>', pk_column_name));
+        http(sprintf('<td>%V</td>',xpath_eval('./@ord',aref(cols,i)) ));
+        http(sprintf('<td>%V</td>', pk_column_name));
 
---        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
---        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, pk_column_name,self.sid ,self.realm) ));
---        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
---        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, pk_column_name,self.sid ,self.realm) ));
+--        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
+--        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
+--        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
+--        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
       }
@@ -460,25 +460,25 @@
 
              ref_table_name := xpath_eval('./@ref_table',aref(cols,i));
 
-        action_anchor:= sprintf('xddl-tables.vspx?back=%s&mode=foreign_key_actions&table_name=%s&ref_table_name=%s&sid=%s&realm=%s',
+        action_anchor:= sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_actions&table_name=%U&ref_table_name=%U&sid=%U&realm=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) ,
               table_name, ref_table_name,self.sid ,self.realm);
 
-        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
+        http(sprintf('<tr><td>&nbsp;</td><td>%V</td><td>On Update:%V</td><td>On Delete:%V</td><td  align="left"><a href="%H">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
         refs := xpath_eval('./reference', aref(cols,i),0  );
         len2 := length(refs);
         i2 := 0;
         while (i2 < len2) {
           http('<tr>');
-          http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@col',aref(refs,i2)) ));
-          http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
+          http(sprintf('<td colspan="1">%V</td>',xpath_eval('./@col',aref(refs,i2)) ));
+          http(sprintf('<td colspan="1">%V</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
           --http('<td colspan="2"></td>');
-          http(sprintf('<td  align="left"  class="listing_col_action"><a href="%s">Edit</a>&nbsp;&nbsp;&nbsp;',
-            sprintf('xddl-tables.vspx?back=%s&what=edit&mode=foreign_key_edit&table_name=%s&ref_table_name=%s&column_name=%s&sid=%s&realm=%s&foreign_key_reference_table_control=%s&foreign_key_reference_columns_control=%s',
+          http(sprintf('<td  align="left"  class="listing_col_action"><a href="%H">Edit</a>&nbsp;&nbsp;&nbsp;',
+            sprintf('xddl-tables.vspx?back=%U&what=edit&mode=foreign_key_edit&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U&foreign_key_reference_table_control=%U&foreign_key_reference_columns_control=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) , table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm, xpath_eval('./@ref_table',aref(cols,i)), xpath_eval('./@ref_col',aref(refs,i2))) ));
-          http(sprintf('<a href="%s">Remove</a></td>',
-            sprintf('xddl-tables.vspx?back=%s&mode=foreign_key_remove&table_name=%s&ref_table_name=%s&column_name=%s&sid=%s&realm=%s',
+          http(sprintf('<a href="%H">Remove</a></td>',
+            sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_remove&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U',
                get_keyword('mode', control.vc_page.vc_event.ve_params), table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm) ));
           http('</tr>');
           i2 := i2 +1;
@@ -547,7 +547,7 @@
 
           if (get_keyword('edit_column_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&table_name=%s&sid=%s&realm=%s\r\n',get_keyword('back', params), table_name,  self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&table_name=%U&sid=%U&realm=%U\r\n',get_keyword('back', params), table_name,  self.sid ,self.realm));
           return;
           }
           if (get_keyword('edit_column_apply_command',params) is not null) {
@@ -560,7 +560,7 @@
       if (  column_nname <> column_name and  xpath_eval ( sprintf('/table/column[@name=\'%s\']',column_nname),xml_tree_doc(self.current_table) ) is not null ) {
         table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
             http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: xddl-tables.vspx?back=%s&mode=column_exist&sid=%s&realm=%s&table_name=%s&column_name=%s\r\n',get_keyword('back',params), self.sid ,self.realm, table_name, column_name));
+            http_header (sprintf('Location: xddl-tables.vspx?back=%U&mode=column_exist&sid=%U&realm=%U&table_name=%U&column_name=%U\r\n',get_keyword('back',params), self.sid ,self.realm, table_name, column_name));
             return;
       }  else {
         XMLAddAttribute(self.column_edit_buff, 2, 'type-text', tmp );
@@ -571,7 +571,7 @@
           self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, self.column_edit_buff);
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n',get_keyword('back',params),self.sid ,self.realm,table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n',get_keyword('back',params),self.sid ,self.realm,table_name));
           return;
        }
           }
@@ -622,7 +622,7 @@
       while (i < len) {
          declare name varchar;
          name := xpath_eval('./@name',aref(t_obj,i));
-         http(sprintf('<tr><td>%s</td></tr>',name));
+         http(sprintf('<tr><td>%V</td></tr>',name));
          i:= i + 1;
       }
 
@@ -844,7 +844,7 @@
 
           if (get_keyword('create_column_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&table_name=%s&sid=%s&realm=%s\r\n',get_keyword('back', params),table_name, self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&table_name=%U&sid=%U&realm=%U\r\n',get_keyword('back', params),table_name, self.sid ,self.realm));
           return;
           }
           if (get_keyword('create_column_apply_command',params) is not null) {
@@ -858,7 +858,7 @@
 
       if (  xpath_eval ( sprintf('/table/column[@name=\'%s\']',column_name),xml_tree_doc(self.current_table) ) is not null ) {
             http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: xddl-tables.vspx?back=%s&mode=column_exist&sid=%s&realm=%s&table_name=%s&column_name=%s\r\n',get_keyword('back',params), self.sid ,self.realm, table_name, column_name));
+            http_header (sprintf('Location: xddl-tables.vspx?back=%U&mode=column_exist&sid=%U&realm=%U&table_name=%U&column_name=%U\r\n',get_keyword('back',params), self.sid ,self.realm, table_name, column_name));
             return;
       }  else {
 
@@ -870,7 +870,7 @@
           self.current_table := objs;
           table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back',params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back',params),self.sid ,self.realm, table_name));
           return;
       }
           }
@@ -915,7 +915,7 @@
       while (i < len) {
          declare name varchar;
          name := xpath_eval('./@name',aref(t_obj,i));
-         http(sprintf('<tr><td>%s</td></tr>',name));
+         http(sprintf('<tr><td>%V</td></tr>',name));
          i:= i + 1;
       }
 
@@ -1095,7 +1095,7 @@
           column_name := get_keyword('column_name', params);
           if (get_keyword('remove_column_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('remove_column_apply_command',params) is not null) {
@@ -1104,7 +1104,7 @@
          path := sprintf('/table/column[@name=\'%s\']', column_name);
         self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, NULL);
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
         ]]></script>
@@ -1113,7 +1113,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You are about to remove column <b>%s</b> from %s table. Are you sure?',
+        <?vsp http(sprintf('You are about to remove column <b>%V</b> from %V table. Are you sure?',
             get_keyword('column_name', control.vc_page.vc_event.ve_params),
       get_keyword('table_name', control.vc_page.vc_event.ve_params)  ));
         ?>
@@ -1176,7 +1176,7 @@
        table_name := get_keyword('table_name', params);
                 if (get_keyword('primary_key_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('primary_key_apply_command',params) is not null) {
@@ -1213,7 +1213,7 @@
           }
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('primary_key_remove_command',params) is not null) {
@@ -1231,7 +1231,7 @@
              self.primary_key :=  tmp_array;
           }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('primary_key_add_command',params) is not null) {
@@ -1240,7 +1240,7 @@
              self.primary_key := vector_concat(self.primary_key,vector( pk_name) );
           }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('primary_key_up_command',params) is not null) {
@@ -1273,7 +1273,7 @@
              }
           }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('primary_key_down_command',params) is not null) {
@@ -1306,7 +1306,7 @@
              }
           }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
 
@@ -1467,13 +1467,13 @@
        declare path, table_name, column_name  varchar;
           if (get_keyword('init_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('init_apply_command',params) is not null) {
                 self.objects := xddl_get(null);
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
         ]]></script>
@@ -1527,20 +1527,20 @@
 
           if (get_keyword('create_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('create_apply_command',params) is not null) {
           if (  xpath_eval ( sprintf('/tables/table[@name=\'%s\']',table_name),self.objects) is not null ) {
             http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: xddl-tables.vspx?mode=table_exist&sid=%s&realm=%s&table_name=%s\r\n',self.sid ,self.realm, table_name));
+            http_header (sprintf('Location: xddl-tables.vspx?mode=table_exist&sid=%U&realm=%U&table_name=%U\r\n',self.sid ,self.realm, table_name));
             return;
           }  else {
         objs := xpath_eval('/tables',self.objects);
         XMLAppendChildren(objs, self.current_table);
         self.objects :=  objs;
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
         return;
               }
           }
@@ -1551,17 +1551,17 @@
           if (get_keyword('create_column_command',params) is not null) {
                 --XMLAddAttribute(self.current_table, 2, 'name', table_name );
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=column_create&table_name=%s&sid=%s&realm=%s\r\n',table_name, self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=column_create&table_name=%U&sid=%U&realm=%U\r\n',table_name, self.sid ,self.realm));
           return;
           }
           if (get_keyword('create_pk_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=primary_key_dialog&sid=%s&realm=%s&table_name=%s\r\n',self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=primary_key_dialog&sid=%U&realm=%U&table_name=%U\r\n',self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('create_fk_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=column_select_foreign&sid=%s&realm=%s&table_name=%s\r\n',self.sid ,self.realm, table_name ));
+          http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=column_select_foreign&sid=%U&realm=%U&table_name=%U\r\n',self.sid ,self.realm, table_name ));
           return;
           }
 
@@ -1650,17 +1650,17 @@
         id_by   :=  xpath_eval('./@identified_by',aref(cols,i));
         http('<tr>');
         http('<td>&nbsp;</td>');
-        http(sprintf('<td>%s</td>',column_name ));
-        http(sprintf('<td>%s</td>',xpath_eval('./@type-text',aref(cols,i)) ));
-        http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@nullable',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
-        http(sprintf('<td align="center">%s</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
-        http(sprintf('<td>%s</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
-        http(sprintf('<td>%s</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
-        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
+        http(sprintf('<td>%V</td>',column_name ));
+        http(sprintf('<td>%V</td>',xpath_eval('./@type-text',aref(cols,i)) ));
+        http(sprintf('<td align="center">%V</td>',case when ( xpath_eval('./@nullable',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
+        http(sprintf('<td align="center">%V</td>',case when ( xpath_eval('./@identity',aref(cols,i)) = '1' ) then '*' else '&nbsp'  end ));
+        http(sprintf('<td>%V</td>',case when ( collation = 'xsi:nil' or collation = '' ) then '&nbsp;' else collation  end ));
+        http(sprintf('<td>%V</td>',case when ( id_by = 'xsi:nil' or id_by = '' ) then '&nbsp;' else id_by  end ));
+        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
 
-        sprintf('xddl-tables.vspx?back=create&mode=column_edit&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, column_name,self.sid ,self.realm) ));
-        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
-        sprintf('xddl-tables.vspx?back=create&mode=column_remove&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, column_name,self.sid ,self.realm) ));
+        sprintf('xddl-tables.vspx?back=create&mode=column_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
+        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
+        sprintf('xddl-tables.vspx?back=create&mode=column_remove&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, column_name,self.sid ,self.realm) ));
         http('</tr>');
         i := i +1;
       }
@@ -1682,13 +1682,13 @@
       while (i < len) {
         pk_column_name := xpath_eval('./@col',aref(cols,i));
         http('<tr>');
-        http(sprintf('<td>%s</td>',xpath_eval('./@ord',aref(cols,i)) ));
-        http(sprintf('<td>%s</td>', pk_column_name));
+        http(sprintf('<td>%V</td>',xpath_eval('./@ord',aref(cols,i)) ));
+        http(sprintf('<td>%V</td>', pk_column_name));
 
---        http(sprintf('<td  align="center"><a href="%s">Edit</a></td>',
---        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, pk_column_name,self.sid ,self.realm) ));
---        http(sprintf('<td  align="center"><a href="%s">Remove</a></td>',
---        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%s&column_name=%s&sid=%s&realm=%s', table_name, pk_column_name,self.sid ,self.realm) ));
+--        http(sprintf('<td  align="center"><a href="%H">Edit</a></td>',
+--        sprintf('xddl-tables.vspx?mode=pk_edit&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
+--        http(sprintf('<td  align="center"><a href="%H">Remove</a></td>',
+--        sprintf('xddl-tables.vspx?mode=pk_remove_column&table_name=%U&column_name=%U&sid=%U&realm=%U', table_name, pk_column_name,self.sid ,self.realm) ));
 
         i := i +1;
       }
@@ -1712,25 +1712,25 @@
 
              ref_table_name := xpath_eval('./@ref_table',aref(cols,i));
 
-        action_anchor:= sprintf('xddl-tables.vspx?back=%s&mode=foreign_key_actions&table_name=%s&ref_table_name=%s&sid=%s&realm=%s',
+        action_anchor:= sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_actions&table_name=%U&ref_table_name=%U&sid=%U&realm=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) ,
               table_name, ref_table_name,self.sid ,self.realm);
 
-        http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
+       http(sprintf('<tr><td>&nbsp;</td><td>%V</td><td>On Update:%V</td><td>On Delete:%V</td><td  align="left"><a href="%H">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
         refs := xpath_eval('./reference', aref(cols,i),0  );
         len2 := length(refs);
         i2 := 0;
         while (i2 < len2) {
           http('<tr>');
-          http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@col',aref(refs,i2)) ));
-          http(sprintf('<td colspan="1">%s</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
+          http(sprintf('<td colspan="1">%V</td>',xpath_eval('./@col',aref(refs,i2)) ));
+          http(sprintf('<td colspan="1">%V</td>',xpath_eval('./@ref_col',aref(refs,i2)) ));
           --http('<td colspan="2"></td>');
-          http(sprintf('<td  align="left"><a href="%s">Edit</a>&nbsp;&nbsp;&nbsp;',
-            sprintf('xddl-tables.vspx?back=%s&what=edit&mode=foreign_key_edit&table_name=%s&ref_table_name=%s&column_name=%s&sid=%s&realm=%s&foreign_key_reference_table_control=%s&foreign_key_reference_columns_control=%s',
+          http(sprintf('<td  align="left"><a href="%H">Edit</a>&nbsp;&nbsp;&nbsp;',
+            sprintf('xddl-tables.vspx?back=%U&what=edit&mode=foreign_key_edit&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U&foreign_key_reference_table_control=%U&foreign_key_reference_columns_control=%U',
               get_keyword('mode', control.vc_page.vc_event.ve_params) , table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm, xpath_eval('./@ref_table',aref(cols,i)), xpath_eval('./@ref_col',aref(refs,i2))) ));
-          http(sprintf('<a href="%s">Remove</a></td>',
-            sprintf('xddl-tables.vspx?back=%s&mode=foreign_key_remove&table_name=%s&ref_table_name=%s&column_name=%s&sid=%s&realm=%s',
+          http(sprintf('<a href="%H">Remove</a></td>',
+            sprintf('xddl-tables.vspx?back=%U&mode=foreign_key_remove&table_name=%U&ref_table_name=%U&column_name=%U&sid=%U&realm=%U',
                get_keyword('mode', control.vc_page.vc_event.ve_params), table_name, xpath_eval('./@ref_table',aref(cols,i)) , xpath_eval('./@col',aref(refs,i2)),self.sid ,self.realm) ));
           http('</tr>');
           i2 := i2 +1;
@@ -1769,7 +1769,7 @@
             <v:on-post>
               <script><![CDATA[
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?mode=create&sid=%s&realm=%stable_name=%s\r\n',self.sid ,self.realm, get_keyword('table_name', params)));
+        http_header (sprintf('Location: xddl-tables.vspx?mode=create&sid=%U&realm=%Utable_name=%s\r\n',self.sid ,self.realm, get_keyword('table_name', params)));
         return;
         ]]></script>
             </v:on-post>
@@ -1777,7 +1777,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You cannot create table %s. It already exists.',get_keyword('table_name', control.vc_page.vc_event.ve_params) ) );
+        <?vsp http(sprintf('You cannot create table %V. It already exists.',get_keyword('table_name', control.vc_page.vc_event.ve_params) ) );
         ?>
       </td>
     </vm:raw>
@@ -1800,7 +1800,7 @@
             <v:on-post>
               <script><![CDATA[
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n',get_keyword('back', params), self.sid ,self.realm, get_keyword('table_name', params)));
+        http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n',get_keyword('back', params), self.sid ,self.realm, get_keyword('table_name', params)));
         return;
         ]]></script>
             </v:on-post>
@@ -1808,7 +1808,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You cannot create column %s for %s  table. It already exists.',get_keyword('column_name', control.vc_page.vc_event.ve_params) , get_keyword('table_name', control.vc_page.vc_event.ve_params) ) );
+        <?vsp http(sprintf('You cannot create column %V for %V  table. It already exists.',get_keyword('column_name', control.vc_page.vc_event.ve_params) , get_keyword('table_name', control.vc_page.vc_event.ve_params) ) );
         ?>
       </td>
     </vm:raw>
@@ -1869,7 +1869,7 @@
        column_name := get_keyword('column_name', params);
                 if (get_keyword('foreign_key_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
 
@@ -1921,7 +1921,7 @@
              self.current_table := objs;
           }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
 
@@ -2093,7 +2093,7 @@
        ref_table_name := get_keyword('ref_table_name', params);
                 if (get_keyword('foreign_key_actions_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('foreign_key_actions_apply_command',params) is not null) {
@@ -2103,7 +2103,7 @@
                 --XMLAddAttribute(objs, 2, path, ref_table_name );
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
 
@@ -2231,7 +2231,7 @@
        table_name := get_keyword('table_name', params);
                 if (get_keyword('column_select_foreign_key_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
                 if (get_keyword('column_select_foreign_key_apply_command',params) is not null) {
@@ -2239,7 +2239,7 @@
                 column_name :=  get_keyword('columns_list_reference_table_control',params);
           if (column_name is not null) {
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?what=create&mode=foreign_key_edit&back=%s&sid=%s&realm=%s&table_name=%s&column_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name, column_name));
+        http_header (sprintf('Location: xddl-tables.vspx?what=create&mode=foreign_key_edit&back=%U&sid=%U&realm=%U&table_name=%U&column_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name, column_name));
         return;
           }
           }
@@ -2322,7 +2322,7 @@
           column_name := get_keyword('column_name', params);
           if (get_keyword('foreign_key_remove_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
           if (get_keyword('foreign_key_remove_apply_command',params) is not null) {
@@ -2339,7 +2339,7 @@
         }
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=%U&sid=%U&realm=%U&table_name=%U\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
           }
         ]]></script>
@@ -2348,7 +2348,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You are about to remove foreign key <b>%s</b> from <b>%s</b> table. Are you sure?',
+        <?vsp http(sprintf('You are about to remove foreign key <b>%V</b> from <b>%V</b> table. Are you sure?',
             get_keyword('column_name', control.vc_page.vc_event.ve_params),
       get_keyword('table_name', control.vc_page.vc_event.ve_params)  ));
         ?>
@@ -2373,7 +2373,7 @@
              declare objs xml_tree;
           if (get_keyword('xddl_execute_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
           }
           if (get_keyword('xddl_execute_apply_command',params) is not null) {
@@ -2389,20 +2389,20 @@
           err_msg := sprintf(' Execution Error: %s', __SQL_MESSAGE);
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_execute_error&error=%s&sid=%s&realm=%s\r\n',err_msg, self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_execute_error&error=%U&sid=%U&realm=%U\r\n',err_msg, self.sid ,self.realm));
                 return;
         };
         err_sqlstate := '00000';
         exec (res, err_sqlstate, err_msg, vector(),100, m_dta, xq_res);
         if ('00000' <> err_sqlstate)    {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_execute_error&error=%s&sid=%s&realm=%s\r\n',err_msg, self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_execute_error&error=%U&sid=%U&realm=%U\r\n',err_msg, self.sid ,self.realm));
           return;
         }
 
          }
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n', self.sid ,self.realm));
           return;
           }
         ]]></script>
@@ -2448,7 +2448,7 @@
             <v:on-post>
               <script><![CDATA[
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n', self.sid ,self.realm));
         return;
         ]]></script>
             </v:on-post>
@@ -2456,7 +2456,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('Error appeared at statements execution. %s', get_keyword('error', control.vc_page.vc_event.ve_params)) );
+        <?vsp http(sprintf('Error appeared at statements execution. %V', get_keyword('error', control.vc_page.vc_event.ve_params)) );
         ?>
       </td>
     </vm:raw>
@@ -2483,7 +2483,7 @@
 
           if (get_keyword('table_remove_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n', self.sid ,self.realm));
           return;
           }
           if (get_keyword('table_remove_apply_command',params) is not null) {
@@ -2492,7 +2492,7 @@
          self.objects := XMLUpdate(self.objects,path, NULL);
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n', self.sid ,self.realm));
           return;
           }
         ]]></script>
@@ -2501,7 +2501,7 @@
           <vm:row>
           <vm:raw>
       <td colspan="6">
-        <?vsp http(sprintf('You are about to remove <b>%s</b> table. Are you sure?',
+        <?vsp http(sprintf('You are about to remove <b>%V</b> table. Are you sure?',
       get_keyword('table_name', control.vc_page.vc_event.ve_params)  ));
         ?>
       </td>
@@ -2533,7 +2533,7 @@
                   declare tmp varchar;
             if (get_keyword('xddl_cancel_command',params) is not null) {
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
         return;
        }
       if (get_keyword('xddl_save_command',params) is not null) {
@@ -2544,7 +2544,7 @@
       if (save_path = '' or exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = save_path)) {
           self.wrong_entry := 'Path to save result is incorrect. Enter a  correct path.';
                             http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_save&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_save&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                             return;
       }
       user_perm:='';
@@ -2563,7 +2563,7 @@
       DAV_RES_UPLOAD (get_keyword('save_path',params),  string_output_string (result ) , 'text/xml',user_perm, 'dav', 'dav','dav','dav');
 
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n', self.sid ,self.realm));
         return;
 
        }
@@ -2576,7 +2576,7 @@
       <td colspan="6">
         <?vsp http('Specify a path and permissions for xddl file. ' );
            if (self.wrong_entry is not null)
-       http(sprintf('<br><b>%s</b></br>', self.wrong_entry));
+       http(sprintf('<br><b>%V</b></br>', self.wrong_entry));
         ?>
       </td>
     </vm:raw>
@@ -2717,7 +2717,7 @@
 
             if (get_keyword('xddl_load_cancel_command',params) is not null) {
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
         return;
        }
 
@@ -2730,7 +2730,7 @@
           self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
 
           http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
           return;
         };
 
@@ -2740,7 +2740,7 @@
         self.objects := xml_tree_doc (xml_file );
 
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header (sprintf('Location: xddl-tables.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
         return;
        }
 

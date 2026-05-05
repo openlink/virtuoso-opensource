@@ -64,7 +64,7 @@
               {
                 self.browse_cat1 :=  get_keyword('catalog1', params);
                 http_request_status ('HTTP/1.1 302 Found');
-                http_header (sprintf('Location: wsdl_services.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                http_header (sprintf('Location: wsdl_services.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
               }
               else if (get_keyword('export', params) is not null)
               {
@@ -211,7 +211,7 @@
             </v:radio-button>
           </td>
           <td>
-            <v:label width="100" format="%s" name="label1" value="--('DAV resource name:')"/>
+            <v:label width="100" format="%V" name="label1" value="--('DAV resource name:')"/>
             <v:text width="200" type="simple" value="" name="filename" />
             <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="filename"/>
           </td>

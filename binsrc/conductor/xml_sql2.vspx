@@ -71,19 +71,19 @@
           ?>
           <tr>
             <td CLASS="SubInfo">
-              <A HREF="<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>" TARGET="_blank"><?vsp http( RES_FULL_PATH); ?></A>
+              <A HREF="<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>" TARGET="_blank"><?V RES_FULL_PATH ?></A>
             </td>
             <td CLASS="SubInfo">
               <?vsp http(rupd); ?>
             </td>
             <td  class="listing_col_action">
               <?vsp
-                http(sprintf('<a class="" href="xml_sql.vspx?mode=edit&res=%s&sid=%s&realm=%s">Edit</a>',RES_FULL_PATH, self.sid ,self.realm ));
+                http(sprintf('<a class="" href="xml_sql.vspx?mode=edit&res=%U&sid=%U&realm=%U">Edit</a>',RES_FULL_PATH, self.sid ,self.realm ));
               ?>
             </td>
             <td CLASS="SubInfo">
               <?vsp
-                http(sprintf('<a class="" href="xml_sql2.vspx?mode=delete&res=%s&sid=%s&realm=%s">Delete</a>',RES_FULL_PATH, self.sid ,self.realm ));
+                http(sprintf('<a class="" href="xml_sql2.vspx?mode=delete&res=%U&sid=%U&realm=%U">Delete</a>',RES_FULL_PATH, self.sid ,self.realm ));
               ?>
             </td>
           </tr>
@@ -132,7 +132,7 @@
                           DAV_DELETE(res, 0,'dav','dav');
                         }
                         http_request_status ('HTTP/1.1 302 Found');
-                        http_header (sprintf('Location: xml_sql2.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                        http_header (sprintf('Location: xml_sql2.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                       ]]>
                     </v:script>
                   </v:on-post>

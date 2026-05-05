@@ -43,7 +43,7 @@
         <![CDATA[
 
           http_request_status('HTTP/1.1 302 Found');
-          http_header(sprintf('Location: db_repl_snap_create.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_header(sprintf('Location: db_repl_snap_create.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           http_flush();
 
           declare continue handler for SQLSTATE '*' {

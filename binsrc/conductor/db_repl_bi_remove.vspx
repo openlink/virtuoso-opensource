@@ -87,7 +87,7 @@
           </div>
         <?vsp
           if (self.error_str1 <> '' and self.error_str1 is not null)
-            http(sprintf('<table class="warning"><tr><td colspan="2">%s</td></tr>', self.error_str1));
+            http(sprintf('<table class="warning"><tr><td colspan="2">%V</td></tr>', self.error_str1));
           self.error_str1 := '';
         ?>
       </v:form>

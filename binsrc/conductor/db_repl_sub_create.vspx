@@ -110,7 +110,7 @@
                       sel := '';
                       if (_dsn = DS_DSN)
                         sel := 'selected';
-                      http(sprintf('<option value="%s" %s>%s</option>', DS_DSN, sel, DS_DSN));
+                      http(sprintf('<option value="%V" %s>%V</option>', DS_DSN, sel, DS_DSN));
                       i := i + 2;
                     }
                   ?>
@@ -672,7 +672,7 @@
                         {
                           self.stage := 0;
                           http_request_status('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                          http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%U&realm=%U\r\n', self.sid , self.realm));
                         }
                         else
                           self.stage := 2;
@@ -731,7 +731,7 @@
 
      <div>
              <hr />
-       <vm:url name="db_repl_sub_ref" format="%s" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
+       <vm:url name="db_repl_sub_ref" format="%V" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
      </div>
         </td>
       </tr>

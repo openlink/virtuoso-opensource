@@ -58,7 +58,7 @@
       	if (length (arr) &gt; 1)
       	  {
       	    self.db_const_to_drop := arr;
-      	    self.vc_redirect (sprintf('db_const_drop_conf.vspx?name=%s',self.name));
+      	    self.vc_redirect (sprintf('db_const_drop_conf.vspx?name=%U',self.name));
       	  }
   	  </v:method>
       <script language="JavaScript">
@@ -137,18 +137,18 @@
                       <v:check-box name="cb_foreign_keys_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
             		    </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>)
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
+                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>)
                     </td>
                     <td class="listing_col">
-                      <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
-                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%s"/>)
-                      <v:label name="l_upd1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],1)" value="ON UPDATE CASCADE" format="%s"/>
-                      <v:label name="l_upd2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],2)" value="ON UPDATE SET NULL" format="%s"/>
-                      <v:label name="l_upd3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],3)" value="ON UPDATE SET DEFAULT" format="%s"/>
-                      <v:label name="l_del1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],1)" value="ON DELETE CASCADE" format="%s"/>
-                      <v:label name="l_del2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],2)" value="ON DELETE SET NULL" format="%s"/>
-                      <v:label name="l_del3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],3)" value="ON DELETE SET DEFAULT" format="%s"/>
+                      <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%V"/>
+                      (<v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%V"/>)
+                      <v:label name="l_upd1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],1)" value="ON UPDATE CASCADE" format="%V"/>
+                      <v:label name="l_upd2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],2)" value="ON UPDATE SET NULL" format="%V"/>
+                      <v:label name="l_upd3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[4],3)" value="ON UPDATE SET DEFAULT" format="%V"/>
+                      <v:label name="l_del1" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],1)" value="ON DELETE CASCADE" format="%V"/>
+                      <v:label name="l_del2" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],2)" value="ON DELETE SET NULL" format="%V"/>
+                      <v:label name="l_del3" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[5],3)" value="ON DELETE SET DEFAULT" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -218,10 +218,10 @@
                       <v:check-box name="cb_checks_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
             		    </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                     </td>
                     <td class="listing_col">
-                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                       <v:label name="l_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>
                     </td>
                   <?vsp http ('</tr>'); ?>
                 </table>
@@ -260,7 +260,7 @@
               value="indexes"
               action="simple"  style="url">
                 <v:on-post><v:script><![CDATA[
-                   self.vc_redirect(sprintf('databases_table_edit.vspx?mode=indexes&name=%s', self.name));
+                   self.vc_redirect(sprintf('databases_table_edit.vspx?mode=indexes&name=%U', self.name));
                 ]]></v:script></v:on-post>
               </v:button>
              section to see unique constraints.
@@ -269,7 +269,7 @@
           <v:button action="simple" name="b_def_ok" value="Back to tables list" >
             <v:on-post><v:script><![CDATA[
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+              http_header (sprintf('Location: databases.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
             ]]></v:script></v:on-post>
           </v:button>
         </v:form>

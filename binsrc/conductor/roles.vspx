@@ -87,7 +87,7 @@
                 inx := inx + 1;
               }
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+              http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
             }
             else if (get_keyword ('load_update', params) <> '')
             {
@@ -228,7 +228,7 @@
                       {
                         if (isnull (self.roles_grant_list) or (position (U_NAME, self.roles_grant_list) = 0))
                         {
-                          http (sprintf ('<option>%s</option>', U_NAME));
+                          http (sprintf ('<option>%V</option>', U_NAME));
                         }
                       }
                     }
@@ -290,7 +290,7 @@
               <v:on-post>
                 <![CDATA[
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%U&realm=%U\r\n', self.sid, self.realm));
                 ]]>
               </v:on-post>
             </v:button>
@@ -439,10 +439,10 @@
           <tr>
             <td nowrap="1">
               <img src="images/icons/group_16.png" alt="User" title="User"/>
-              <v:label name="ds2_label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+              <v:label name="ds2_label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
            </td>
             <td nowrap="1">
-              <v:label name="ds2_label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+              <v:label name="ds2_label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>
            </td>
            <td class="action">
              <v:button action="simple"

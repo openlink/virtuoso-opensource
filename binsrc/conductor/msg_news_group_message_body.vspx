@@ -105,7 +105,7 @@
                         <b>Message-ID:</b>
                       </td>
                       <td align="left" nowrap="1" width="75%">
-                        <v:label width="80" format="%s" name="message_body_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                        <v:label width="80" format="%V" name="message_body_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
                       </td>
                     </tr>
                     <tr>
@@ -113,7 +113,7 @@
                         <b>From:</b>
                       </td>
                       <td align="left" nowrap="1" width="75%">
-                        <v:label width="80" format="%s" name="message_body_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+                        <v:label width="80" format="%V" name="message_body_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
                       </td>
                     </tr>
                     <tr>
@@ -121,7 +121,7 @@
                         <b>Subject:</b>
                       </td>
                       <td align="left" nowrap="1" width="75%">
-                        <v:label width="80" format="%s" name="message_body_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+                        <v:label width="80" format="%V" name="message_body_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
                       </td>
                     </tr>
                     <tr>
@@ -129,7 +129,7 @@
                         <b>Date:</b>
                       </td>
                       <td align="left" nowrap="1" width="75%">
-                        <v:label width="80" format="%s" name="message_body_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+                        <v:label width="80" format="%V" name="message_body_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
                       </td>
                     </tr>
                     <tr>
@@ -138,7 +138,7 @@
                       </td>
                       <td valign="top" align="left" width="75%">
                         <pre><font size="-1">
-                        <v:label width="80" format="%s" name="message_body_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
+                        <v:label width="80" format="%V" name="message_body_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
                         </font></pre>
                       </td>
                     </tr>

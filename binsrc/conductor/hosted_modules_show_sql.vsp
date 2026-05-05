@@ -34,14 +34,14 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="<?V adm_what_css() ?>">
-    <title>SQL Proxy statment for <?V mtd_name ?></title>
+    <title>SQL Proxy statement for <?V mtd_name ?></title>
     <meta name="AUTHOR" content="OpenLink Software"/>
   </head>
   <body>
   <table>
     <tr CLASS="CtrlMain">
       <th>
-        SQL Proxy statment for class <?V mtd_name ?>
+        SQL Proxy statement for class <?V mtd_name ?>
       </th>
     </tr>
     <tr>

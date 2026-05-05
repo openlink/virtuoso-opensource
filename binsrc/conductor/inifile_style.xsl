@@ -68,7 +68,7 @@
                         tmp_value:= concat(tmp_value,', ');
                     tmp_value:= concat(tmp_value,aref(params,n+1));
                   } else {
-	                  res_xml := sprintf('%s<parameter name="%s" value="%s"/>', res_xml,tmp,tmp_value);
+	                  res_xml := sprintf('%s<parameter name="%s" value="%V"/>', res_xml,tmp,tmp_value);
        	           tmp:= aref(params,n);
              		     tmp_value:=aref(params,n+1);
                   }

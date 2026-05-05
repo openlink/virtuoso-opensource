@@ -41,9 +41,7 @@
             <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
             <div class="confirm_text">
               <p>Remove Confirmation of Scheduled Event: <i>
-              <?vsp
-                http(cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar));
-              ?></i>
+              <?V cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar) ?></i>
             </p>
           </div>
           <div class="dialog_buttons">
@@ -51,7 +49,7 @@
               <v:on-post>
                 <![CDATA[
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                   return;
                 ]]>
               </v:on-post>
@@ -83,7 +81,7 @@
                     return;
                   }
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                 ]]>
               </v:on-post>
             </v:button>

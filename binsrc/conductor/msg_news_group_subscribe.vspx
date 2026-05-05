@@ -43,7 +43,7 @@ if(self.first = 1) {
   _ns_id := get_keyword('NS_ID', e.ve_params);
   self.ns_id := cast(_ns_id as integer);
   _header := http_header_get();
-  _line := sprintf('Refresh: 1; URL=msg_news_group_subscribe.vspx?NS_ID=%s&RETRIEVE=YES&FIRST=0&sid=%s&realm=%s\r\n', _ns_id, _sid, _realm);
+  _line := sprintf('Refresh: 1; URL=msg_news_group_subscribe.vspx?NS_ID=%U&RETRIEVE=YES&FIRST=0&sid=%U&realm=%U\r\n', _ns_id, _sid, _realm);
   if(_header is null) {
     _header := _line;
   }
@@ -412,22 +412,22 @@ if(self.first = 0) {
 	    <v:check-box name="cb_ngs_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
 	  </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
                               </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
                               </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
                               </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
                               </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
                               </td>
                               <td align="left" nowrap="1">
-                                <v:label width="80" format="%s" name="groups_available_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
+                                <v:label width="80" format="%V" name="groups_available_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
                               </td>
                               <td align="right" nowrap="1" class="listing_col_action">
                                 <v:button active="--(1)" action="simple" value="Subscribe" width="64" height="24" name="groups_available_subscribe" style="url">
@@ -495,19 +495,19 @@ if(self.first = 0) {
             </v:template>
             <!--v:template name="if_error" type="simple" enabled="-#- neq(self.error_message, '')">
               <span class="Warning">
-                <v:label name="error_label" value="-#-(self.error_message)" format="%s"/>
+                <v:label name="error_label" value="-#-(self.error_message)" format="%V"/>
               </span>
             </v:template-->
             <v:template name="if_wait" type="simple" enabled="-- equ(self.first, 1)">
               <span class="Warning">
-                <v:label name="processing_label" value="Downloading available groups list. Please wait..." format="%s"/>
+                <v:label name="processing_label" value="Downloading available groups list. Please wait..." format="%V"/>
               </span>
             </v:template>
           </td>
         </tr>
         <tr>
           <td align="left" colspan="5">
-            <v:url name="back_to_server_list" value="Back to servers list" active="--(1)" format="%s" url="msg_news_conf.vspx" width="80"/>
+            <v:url name="back_to_server_list" value="Back to servers list" active="--(1)" format="%V" url="msg_news_conf.vspx" width="80"/>
           </td>
         </tr>
       </table>

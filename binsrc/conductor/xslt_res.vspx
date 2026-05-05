@@ -80,7 +80,7 @@
       http_rewrite ();
       http_header ('Content-Type: text/xml\r\n');
       http ('<?xml version="1.0" ?>\n');
-      http (sprintf ('<?xml-stylesheet href="%U" type="text/xsl" ?>\n', xsl_sheet));
+      http (sprintf ('<?xml-stylesheet href="%H" type="text/xsl" ?>\n', xsl_sheet));
       if (xml_file like '<?xml%')
         xml_file := regexp_replace (xml_file, '<?[^>]+?>');
       http (xml_file);

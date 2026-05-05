@@ -137,7 +137,7 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BE_NAME  into owner_name from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY  = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b>', owner_name));
+                        http(sprintf('Parameters of <b>%V</b>', owner_name));
                       } else {
                         http('Parameters of new business');
                       }
@@ -177,7 +177,7 @@
                      }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                   return;
                 }
                 ]]></script>
@@ -297,10 +297,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BS_NAME, BE_NAME   into owner_name,   business_name  from UDDI..BUSINESS_SERVICE  join UDDI..BUSINESS_ENTITY on BS_BUSINESS_KEY = BE_BUSINESS_KEY  where  BS_SERVICE_KEY  = get_keyword('service_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b> service for business <b>%s</b> ', owner_name, business_name));
+                        http(sprintf('Parameters of <b>%V</b> service for business <b>%V</b> ', owner_name, business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new service for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new service for business <b>%V</b>', business_name));
                       }
                     }
                   ?>
@@ -341,7 +341,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=2&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=2&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 ]]></script>
       </v:on-post>
      </vm:events>
@@ -445,7 +445,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 
                 }
                 ]]></script>
@@ -567,10 +567,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select CO_PERSONAL_NAME, BE_NAME   into owner_name,   business_name  from UDDI..CONTACTS  join UDDI..BUSINESS_ENTITY on CO_BUSINESS_ID = BE_BUSINESS_KEY  where  CO_CONTACT_KEY  = get_keyword('contact_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of <b>%s</b> contact for business <b>%s</b> ', owner_name, business_name));
+                        http(sprintf('Parameters of <b>%V</b> contact for business <b>%V</b> ', owner_name, business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('business_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new contact for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new contact for business <b>%V</b>', business_name));
                       }
                     }
                   ?>
@@ -605,7 +605,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -690,7 +690,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=12&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=12&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -773,7 +773,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=13&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=13&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -856,7 +856,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=14&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=14&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -931,12 +931,12 @@
                         select BT_ACCESS_POINT ,  BT_HOSTING_REDIRECTOR  into access_point, redirector  from UDDI..BINDING_TEMPLATE where   BT_BINDING_KEY = parent_key;
                         if (redirector is not null) {
                           select BS_NAME into binding_value  from  UDDI..BUSINESS_SERVICE   where BS_SERVICE_KEY = redirector;
-                          http(sprintf('Description for binding of <b>%s</b> to service <b>%s</b>', owner_name, binding_value));
+                          http(sprintf('Description for binding of <b>%V</b> to service <b>%V</b>', owner_name, binding_value));
                         } else if (access_point is not null) {
-                          http(sprintf('Description for binding of <b>%s</b> to access point <b>%s</b>', owner_name, access_point));
+                          http(sprintf('Description for binding of <b>%V</b> to access point <b>%V</b>', owner_name, access_point));
                         }
                       } else
-                          http(sprintf('Description for <b>%s</b>', owner_name));
+                          http(sprintf('Description for <b>%V</b>', owner_name));
                     }
                   ?>
 
@@ -972,7 +972,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1043,10 +1043,10 @@
 
                       if ( get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' ) {
                         select BE_NAME   into  business_name  from UDDI..DISCOVERY_URL join UDDI..BUSINESS_ENTITY on DU_PARENT_ID = BE_BUSINESS_KEY  where  DU_DISCOVERY_KEY  = get_keyword('uuid_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters  for business <b>%s</b> ',  business_name));
+                        http(sprintf('Parameters  for business <b>%V</b> ',  business_name));
                       } else {
                         select BE_NAME   into   business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY   = get_keyword('uuid_key', self.vc_page.vc_event.ve_params);
-                        http(sprintf('Parameters of new service for business <b>%s</b>', business_name));
+                        http(sprintf('Parameters of new service for business <b>%V</b>', business_name));
                       }
                     }
                   ?>
@@ -1079,7 +1079,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=6&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=6&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1153,7 +1153,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=4&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=4&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1264,7 +1264,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1356,10 +1356,10 @@
                   select BT_ACCESS_POINT,  BT_HOSTING_REDIRECTOR  into access_point,  redirector  from UDDI..BINDING_TEMPLATE where  BT_BINDING_KEY =binding_id;
                     if (access_point is not null) {
                               http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_url&mode=edit&binding_key=%s&sid=%s&realm=%s\r\n', binding_id, self.sid ,self.realm));
+                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_url&mode=edit&binding_key=%U&sid=%U&realm=%U\r\n', binding_id, self.sid ,self.realm));
                     } else if (redirector is not null) {
                               http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_business&binding_key=%s&mode=edit&sid=%s&realm=%s\r\n',  binding_id, self.sid ,self.realm));
+                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_business&binding_key=%U&mode=edit&sid=%U&realm=%U\r\n',  binding_id, self.sid ,self.realm));
                     }
                     return;
              }
@@ -1388,14 +1388,14 @@
                     b_type := get_keyword('binding_type',params);
                     if (b_type ='0') {
                               http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_url&mode=create&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_url&mode=create&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                     } else {
                               http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_business&mode=create&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                      http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_business&mode=create&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                     }
                   } else {
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                    http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                   }
                   return;
                 }
@@ -1460,7 +1460,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1569,11 +1569,11 @@
                 {
                   if (get_keyword('binding_redirect_business_next', params) is not null) {
                             http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_service&business_key=%s&mode=%s&binding_key=%s&sid=%s&realm=%s\r\n', get_keyword('binding_redirect_business', params), get_keyword('mode', params), get_keyword('binding_key', params), self.sid ,self.realm));
+                    http_header (sprintf('Location: uddi_serv_create.vspx?page=binding_redirect_service&business_key=%U&mode=%U&binding_key=%U&sid=%U&realm=%U\r\n', get_keyword('binding_redirect_business', params), get_keyword('mode', params), get_keyword('binding_key', params), self.sid ,self.realm));
                     return;
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1669,7 +1669,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=22&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>
@@ -1804,7 +1804,7 @@
                     }
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=32&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=32&sid=%U&realm=%U\r\n', self.sid ,self.realm));
                 }
                 ]]></script>
       </v:on-post>

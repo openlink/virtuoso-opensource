@@ -88,7 +88,7 @@
               <img src="images/icons/script_16.png" alt="Procedure" title="Procedure"/>
             </td>
             <td class="listing_col"><?V CR_TYPE ?></td>
-            <td class="listing_col"><a href="db_repl_pub_cr_edit2.vspx?acct=<?V self.acct ?>&item=<?V encode_base64(serialize(self._item)) ?>&item_type=<?V self._item_type ?>&proc=<?V encode_base64(serialize(_cr_proc)) ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>"><?V _cr_proc ?></a></td>
+            <td class="listing_col"><a href="db_repl_pub_cr_edit2.vspx?acct=<?U self.acct ?>&item=<?U encode_base64(serialize(self._item)) ?>&item_type=<?U self._item_type ?>&proc=<?U encode_base64(serialize(_cr_proc)) ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>"><?V _cr_proc ?></a></td>
             <td class="listing_col"><?V CR_ORDER ?></td>
           <?vsp
             http ('</tr>');
@@ -103,7 +103,7 @@
               <v:script>
                 <![CDATA[
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: db_repl_pub_edit.vspx?sid=%s&realm=%s&acct=%s\r\n', self.sid, self.realm, self.acct));
+                  http_header(sprintf('Location: db_repl_pub_edit.vspx?sid=%U&realm=%U&acct=%U\r\n', self.sid, self.realm, self.acct));
                 ]]>
               </v:script>
             </v:on-post>
@@ -113,7 +113,7 @@
               <v:script>
                 <![CDATA[
                   http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: db_repl_pub_cr_edit.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                  http_header(sprintf('Location: db_repl_pub_cr_edit.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                 ]]>
               </v:script>
             </v:on-post>
@@ -151,7 +151,7 @@
       </v:form>
       <?vsp
         if (self.error_edit_str <> '' and self.error_edit_str is not null)
-          http(sprintf('<table class="warning">%s</table>', self.error_edit_str));
+          http(sprintf('<table class="warning">%V</table>', self.error_edit_str));
         self.error_edit_str := '';
       ?>
     </vm:pagebody>

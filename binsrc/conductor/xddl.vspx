@@ -386,16 +386,16 @@
 					 <tr>
 						 <td class="page_tab<?vsp if (self.page ='1' or  self.page is null) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url21" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+							 <v:url name="b_url21" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab<?vsp if ( self.page ='2' ) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url12" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url12" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab<?vsp if ( self.page ='3' ) http('_selected'); ?>" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url13" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url13" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -409,7 +409,7 @@
              else if ( self.page ='3'  )
                http('List of the Procedures from current database.');
            } else if (self.xddl_source_type=2) {
-            http(sprintf('Editing  %s.', self.xddl_source_name));
+            http(sprintf('Editing  %V.', self.xddl_source_name));
            } else if (self.xddl_source_type=0) {
              http('Editing New Schema.');
            }
@@ -423,12 +423,12 @@
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url12" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url12" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url13" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url13" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -439,14 +439,14 @@
 						<v:template name="tabTemplate2" type="simple" enabled="--case when ( self.page ='2' ) then 1 else 0 end">
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url21" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+							 <v:url name="b_url21" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_selected" align="center">
 							<nobr>&nbsp;&nbsp;Views&nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url23" value="--'Stored Procedures'" format="%s" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
+							 <v:url name="b_url23" value="--'Stored Procedures'" format="%V" url="--'xddl.vspx?page=3'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab_empty" align="center" width="100%">
@@ -456,12 +456,12 @@
 						<v:template name="tabTemplate3" type="simple" enabled="--case when ( self.page ='3' ) then 1 else 0 end">
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url31" value="--'Tables'" format="%s" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>
+							 <v:url name="b_url31" value="--'Tables'" format="%V" url="--'xddl.vspx?page=1'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 						 <td class="page_tab" align="center">
 							<nobr>&nbsp;&nbsp;
-							 <v:url name="b_url32" value="--'Views'" format="%s" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
+							 <v:url name="b_url32" value="--'Views'" format="%V" url="--'xddl.vspx?page=2'" xhtml_class="uddi"/>
 &nbsp;&nbsp;</nobr>
 						 </td>
 
@@ -493,7 +493,7 @@
            if (self.xddl_source_type=1) {
               http('List of the tables from current database.');
            } else if (self.xddl_source_type=2) {
-            http(sprintf('Editing  %s.', self.xddl_source_name));
+            http(sprintf('Editing  %V.', self.xddl_source_name));
            } else if (self.xddl_source_type=0) {
              http('Editing New Schema.');
            }
@@ -516,7 +516,7 @@
 							self.vc_data_bind(e);
 
 --							http_request_status ('HTTP/1.1 302 Found');
---							http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--							http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 							return;
 
 						} else  if ( get_keyword('tables_filter_reset', params) is not null ) {
@@ -527,7 +527,7 @@
 							self.page := '1';
 							self.vc_data_bind(e);
 --							http_request_status ('HTTP/1.1 302 Found');
---							http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--							http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 							return;
 						}
 				]]></v:script>
@@ -610,7 +610,7 @@
 								end of Filter -->
 
 							<img src="images/icons/add_table_16.png" alt="New Table" title="New Table" />
-							<v:url name="n_table_url" value="--'New table'" format="%s" url="--'xddl.vspx?entry=1&mode=table_edit&kind=create&table_editor_page=1'" xhtml_class="uddi"/>
+							<v:url name="n_table_url" value="--'New table'" format="%V" url="--'xddl.vspx?entry=1&mode=table_edit&kind=create&table_editor_page=1'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -640,13 +640,13 @@
 --                if ( self.tables_browse_mask = '%'  or ( self.tables_browse_mask <> '%'  and upper (substring(name_part(name,2), 1, mask_len  ) ) =  upper(self.tables_browse_mask) ))
                  http('<tr><td><img src="images/icons/table_16.png" alt="Table" title="Table" /></td>');
                  if (drop_flag = 'true') {
-                    http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                    http(sprintf('<td><a href="xddl.vspx?mode=xddl_table_drop&kind=undrop&table_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                    http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
+                    http(sprintf('<td><a href="xddl.vspx?mode=xddl_table_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
-                    http(sprintf('<td>%s</td>',  name) );
-                    http(sprintf('<td><a href="xddl.vspx?entry=1&mode=table_edit&kind=edit&table_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_table_drop&kind=drop&table_name=%s&sid=%s&realm=%s">Drop</a>', name,self.sid ,self.realm ));
-                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
+                    http(sprintf('<td>%V</td>',  name) );
+                    http(sprintf('<td><a href="xddl.vspx?entry=1&mode=table_edit&kind=edit&table_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_table_drop&kind=drop&table_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
+                    http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
                  }
                  http('</tr>');
 --              }
@@ -668,7 +668,7 @@
                                if (self.xddl_source_type=1) {
                                 http('List of the Views from current database.');
                                } else if (self.xddl_source_type=2) {
-                                http(sprintf('Editing  %s.', self.xddl_source_name));
+                                http(sprintf('Editing  %V.', self.xddl_source_name));
                                } else if (self.xddl_source_type=0) {
                                   http('Editing New Schema.');
                               }
@@ -694,7 +694,7 @@
 						self.page := '2';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 
 						]]></v:script>
@@ -780,7 +780,7 @@
 							-->
 
 							<img src="images/icons/add_view_16.png" alt="New View" title="New View" />
-							<v:url name="n_view_url" value="--'New View'" format="%s" url="--'xddl.vspx?entry=1&mode=view_dialog_create'" xhtml_class="uddi"/>
+							<v:url name="n_view_url" value="--'New View'" format="%V" url="--'xddl.vspx?entry=1&mode=view_dialog_create'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -810,18 +810,18 @@
 
                  http('<tr><td><img src="images/icons/view_16.png" alt="View" title="View" /></td>');
                  if (drop_flag = 'true') {
-                  http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_view_drop&kind=undrop&view_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
+                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_view_drop&kind=undrop&view_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                  } else {
-                  http(sprintf('<td>%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_view_drop&kind=drop&view_name=%s&sid=%s&realm=%s">Drop</a>', name,self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
+                  http(sprintf('<td>%V</td>',  name) );
+                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_view_drop&kind=drop&view_name=%U&sid=%U&realm=%U">Drop</a>', name,self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="#" onclick="javascript: window.open (\'isql.vspx?sid=%U&realm=%U&gen_table_sel=%U\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">View</a></td><td>&nbsp;</td>', self.sid ,self.realm , name));
                  }
                  http('</tr>');
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%s&sid=%s&realm=%s">Edit</a>
---                &nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">Drop</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">View</a></td><td>&nbsp;</td></tr>',
+--                http(sprintf('<tr><td>%V</td><td><a href="xddl.vspx?entry=1&page=view_dialog_edit&mode=edit&view_name=%U&sid=%U&realm=%U">Edit</a>
+--                &nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">View</a></td><td>&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm, name, self.sid ,self.realm));
 --              }
             i:= i + 1;
@@ -842,7 +842,7 @@
                                if (self.xddl_source_type=1) {
                                 http('List of the Procedures from current database.');
                                } else if (self.xddl_source_type=2) {
-                                http(sprintf('Editing %s.', self.xddl_source_name));
+                                http(sprintf('Editing %V.', self.xddl_source_name));
                                } else if (self.xddl_source_type=0) {
                                   http('Editing New Schema.');
              }
@@ -863,7 +863,7 @@
 						self.page := '3';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 
 							} else  if ( get_keyword('procs_filter_reset', params) is not null ) {
@@ -874,7 +874,7 @@
 						self.page := '3';
 						self.vc_data_bind(e);
 --						http_request_status ('HTTP/1.1 302 Found');
---		http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--		http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 		return;
 						}
 
@@ -961,7 +961,7 @@
 							-->
 
 							<img src="images/icons/add_script_16.png" alt="New Stored Procedure" title="New Stored Procedure" />
-							<v:url name="n_sp_url" value="--'New Stored Procedure'" format="%s" url="--'xddl.vspx?entry=1&mode=procedure_dialog_create'" xhtml_class="uddi"/>
+							<v:url name="n_sp_url" value="--'New Stored Procedure'" format="%V" url="--'xddl.vspx?entry=1&mode=procedure_dialog_create'" xhtml_class="uddi"/>
 
 							<table class="listing" rules="groups">
                 <colgroup/><colgroup/>
@@ -992,17 +992,17 @@
 
                 http('<tr><td><img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure" /></td>');
                 if (drop_flag = 'true') {
-                  http(sprintf('<td style="text-decoration: line-through; ">%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_procedure_drop&kind=undrop&table_name=%s&sid=%s&realm=%s">Undrop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td style="text-decoration: line-through; ">%V</td>',  name) );
+                  http(sprintf('<td><a href="xddl.vspx?mode=xddl_procedure_drop&kind=undrop&table_name=%U&sid=%U&realm=%U">Undrop</a></td>', name,self.sid ,self.realm ));
                 } else {
-                  http(sprintf('<td>%s</td>',  name) );
-                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%s&sid=%s&realm=%s">Edit</a>', name,  self.sid ,self.realm ));
-                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_procedure_drop&kind=drop&procedure_name=%s&sid=%s&realm=%s">Drop</a></td>', name,self.sid ,self.realm ));
+                  http(sprintf('<td>%V</td>',  name) );
+                  http(sprintf('<td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>', name,  self.sid ,self.realm ));
+                  http(sprintf('&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?mode=xddl_procedure_drop&kind=drop&procedure_name=%U&sid=%U&realm=%U">Drop</a></td>', name,self.sid ,self.realm ));
                 }
                 http('</tr>');
 
 
---                http(sprintf('<tr><td>%s</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%s&sid=%s&realm=%s">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%s&sid=%s&realm=%s">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
+--                http(sprintf('<tr><td>%V</td><td><a href="xddl.vspx?entry=1&page=procedures_dialog_edit&mode=edit&procedure_name=%U&sid=%U&realm=%U">Edit</a>&nbsp;&nbsp;&nbsp;<a href="xddl.vspx?view_name=%U&sid=%U&realm=%U">Drop</a>&nbsp;&nbsp;&nbsp;</td></tr>',
 --                name, name,  self.sid ,self.realm, name,self.sid ,self.realm));
 --              }
             i:= i + 1;
@@ -1041,7 +1041,7 @@
 	    self.mode := 'xddl_load';
 	    self.vc_data_bind(e);
 --		            http_request_status ('HTTP/1.1 302 Found');
---				  http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--				  http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 				return;
               }
             if ( get_keyword('common_save_command', params) is not null ) {
@@ -1049,7 +1049,7 @@
 	    self.vc_data_bind(e);
 
 --		           http_request_status ('HTTP/1.1 302 Found');
---			  http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+--			  http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%U&realm=%U\r\n', self.sid ,self.realm));
 				return;
               }
 		      if (get_keyword('common_init_command',params) is not null) {
@@ -1058,7 +1058,7 @@
 	    self.vc_data_bind(e);
 
 --						http_request_status ('HTTP/1.1 302 Found');
---						http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--						http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 						return;
 		      }
 		      if (get_keyword('common_exec_command',params) is not null) {
@@ -1082,7 +1082,7 @@
 						self.table_name :=  table_name;
 						self.vc_data_bind(e);
 --					    	http_request_status ('HTTP/1.1 302 Found');
---					    	http_header (sprintf('Location: xddl.vspx?mode=exec_xddl_denied&table_name=%s&sid=%s&realm=%s\r\n',table_name, self.sid ,self.realm));
+--					    	http_header (sprintf('Location: xddl.vspx?mode=exec_xddl_denied&table_name=%U&sid=%U&realm=%U\r\n',table_name, self.sid ,self.realm));
 					    	return;
 					   }
 				         difference := xddl_diff(xddl_get_base(),obj);
@@ -1102,7 +1102,7 @@
 				self.vc_data_bind(e);
 				return;
 --			    http_request_status ('HTTP/1.1 302 Found');
---			    http_header (sprintf('Location: xddl.vspx?mode=exec_xddl&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--			    http_header (sprintf('Location: xddl.vspx?mode=exec_xddl&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('common_delete_command',params) is not null) {
@@ -1118,7 +1118,7 @@
 			self.vc_data_bind(e);
 			return;
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 
@@ -1127,7 +1127,7 @@
 			    self.vc_data_bind(e);
 			    return;
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?mode=revert_edit_buffer&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?mode=revert_edit_buffer&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('common_clear_command',params) is not null) {
@@ -1143,7 +1143,7 @@
 			return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		    	    ]]></script>
@@ -1280,7 +1280,7 @@ Here is the tabs
 				<b>
 				 <?vsp
           if (  self.wrong_entry is not null ) {
-                 http(sprintf('<span class="attention_marker">Error:  %s </span>', self.wrong_entry));
+                 http(sprintf('<span class="attention_marker">Error:  %V </span>', self.wrong_entry));
 								 self.wrong_entry := null;
 					}
           ?>
@@ -1296,7 +1296,7 @@ Here is the tabs
 					 <v:template name="template101a" type="simple"  enabled="--case when (self.kind = 'edit') then 1 else 0 end">
 
 						<b>
-						 <v:label name="l_table_name" value="--self.table_name" format="%s"/>
+						 <v:label name="l_table_name" value="--self.table_name" format="%V"/>
 						</b>
 					 </v:template>
 					 <v:template name="template101b" type="simple"  enabled="--case when (self.kind = 'create') then 1 else 0 end">
@@ -1390,43 +1390,43 @@ Here is the tabs
 						<tr>
 						 <td align="center">
 							<b>
-							 <v:label name="label1H" value="'Key'" format="%s" width="80"/>
+							 <v:label name="label1H" value="'Key'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label2H" value="'Name'" format="%s" width="80"/>
+							 <v:label name="label2H" value="'Name'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label3H" value="'Type'" format="%s" width="80"/>
+							 <v:label name="label3H" value="'Type'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label4H" value="'Prec'" format="%s" width="80"/>
+							 <v:label name="label4H" value="'Prec'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label5H" value="'Scale'" format="%s" width="80"/>
+							 <v:label name="label5H" value="'Scale'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label6H" value="'Nullable'" format="%s" width="80"/>
+							 <v:label name="label6H" value="'Nullable'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center">
 							<b>
-							 <v:label name="label7H" value="'Identity'" format="%s" width="80"/>
+							 <v:label name="label7H" value="'Identity'" format="%V" width="80"/>
 							</b>
 						 </td>
 					 <v:template name="showAdvancedLabelTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
 						 <td align="center">
 							<b>
-							 <v:label name="label8H" value="'Advanced'" format="%s" width="80"/>
+							 <v:label name="label8H" value="'Advanced'" format="%V" width="80"/>
 							</b>
 						 </td>
 					 </v:template>
@@ -1466,7 +1466,7 @@ Here is the tabs
 		      if (get_keyword('upd_button',params) is not null) {
 				   tmp :=  self.type_name ;
 				   self.column_edit_buff := xml_cut(prev_instance);
---					 xpath_eval('/column',xml_tree_doc(sprintf('<column name="" type="" prec="" identified_by="" collation="" identity=""><default_value>%s</default_value></column>', def_value )) );
+--					 xpath_eval('/column',xml_tree_doc(sprintf('<column name="" type="" prec="" identified_by="" collation="" identity=""><default_value>%V</default_value></column>', def_value )) );
 			      if (  column_oname <> column_name and  prev_instance  is not null ) {
 				      self.mode := 'column_exist';
 				      self.column_name := column_name;
@@ -1483,7 +1483,7 @@ Here is the tabs
 				      if  (def_value is not null) {
 					      XMLAddAttribute(self.column_edit_buff, 2, 'collation', col_value );
 				        XMLAddAttribute(self.column_edit_buff, 2, 'identified_by',  ident_value);
-								self.column_edit_buff := XMLUpdate(self.column_edit_buff,'/column/default_value', xml_tree_doc(sprintf('<default_value>%s</default_value>',def_value)));
+								self.column_edit_buff := XMLUpdate(self.column_edit_buff,'/column/default_value', xml_tree_doc(sprintf('<default_value>%V</default_value>',def_value)));
 		          }
  			        path := sprintf('/table/column[@name=\'%s\']', column_oname);
 			        self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, self.column_edit_buff);
@@ -1793,9 +1793,9 @@ Here is the tabs
 					<v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
 					 <table rules="groups" width="100%">
 						<tr>
-						 <td> <v:label name="brws_key" value="--case when(  xpath_eval(sprintf('/table/pk/field[@col = \'%s\']/@col', xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) ),xml_tree_doc(self.current_table) ) = xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)  ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+						 <td> <v:label name="brws_key" value="--case when(  xpath_eval(sprintf('/table/pk/field[@col = \'%s\']/@col', xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) ),xml_tree_doc(self.current_table) ) = xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)  ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 <!--
-							<v:label name="brws_key"  format="%s" width="80">
+							<v:label name="brws_key"  format="%V" width="80">
 							 <v:after-data-bind>
 								<script><![CDATA[
 							     declare col_name varchar;
@@ -1816,7 +1816,7 @@ Here is the tabs
 -->
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_name" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80">
+							<v:label name="brws_name" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" format="%V" width="80">
 							 <v:after-data-bind>
 								<script><![CDATA[
 							     declare col_name varchar;
@@ -1828,19 +1828,19 @@ Here is the tabs
 							</v:label>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_type" value="--xpath_eval('@type-text',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80"/>
+							<v:label name="brws_type" value="--xpath_eval('@type-text',(control.vc_parent as vspx_row_template).te_rowset)" format="%V" width="80"/>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_prec" value="--case when (xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) = '2147483647') then '&nbsp' else  xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							<v:label name="brws_prec" value="--case when (xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) = '2147483647') then '&nbsp' else  xpath_eval('@prec',(control.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						 </td>
 						 <td align="left" nowrap="1">
-							<v:label name="brws_scale" value="--case when (xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) is null) then '&nbsp' else  xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							<v:label name="brws_scale" value="--case when (xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) is null) then '&nbsp' else  xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						 </td>
 						 <td align="center" nowrap="1">
-							<v:label name="brws_nullable" value="--case when ( xpath_eval('@nullable',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+							<v:label name="brws_nullable" value="--case when ( xpath_eval('@nullable',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 						 </td>
 						 <td align="center" nowrap="1">
-							<v:label name="brws_identity" value="--case when ( xpath_eval('@identity',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%s" width="80"/>
+							<v:label name="brws_identity" value="--case when ( xpath_eval('@identity',(control.vc_parent as vspx_row_template).te_rowset) = '1' ) then '*' else '&nbsp'  end" format="%V" width="80"/>
 						 </td>
 						 <v:template name="showAdvancedBrowseTemplate" type="simple" enabled="--case when (self.full_advanced_mode = 0) then 1 else 0 end">
 						 <td><!--Advanced option --></td>
@@ -1881,17 +1881,17 @@ Here is the tabs
 							  <table>
 								  <tr><td>Collation</td>
 						      <td align="left" nowrap="1">
-							      <v:label name="brws_collation" value="--case when (xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset)='xsi:nil') then '' else xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							      <v:label name="brws_collation" value="--case when (xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset)='xsi:nil') then '' else xpath_eval('@collation',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						       </td>
 									</tr>
 								  <tr><td>Identified By</td>
 						       <td align="left" nowrap="1">
-							     <v:label name="brws_identified" value="--case when (xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) = 'xsi:nil') then '' else xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%s" width="80"/>
+							     <v:label name="brws_identified" value="--case when (xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) = 'xsi:nil') then '' else xpath_eval('@identified_by',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) end" format="%V" width="80"/>
 						       </td>
 									</tr>
 								  <tr><td>Default</td>
 						        <td align="left" nowrap="1">
-							      <v:label name="brws_default" value="--case  when cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) is null then '' else cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) end" format="%s" width="80"/>
+							      <v:label name="brws_default" value="--case  when cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) is null then '' else cast (xpath_eval('./default_value/text()',(control.vc_parent.vc_parent as vspx_row_template).te_rowset) as varchar) end" format="%V" width="80"/>
 						        </td>
 									</tr>
 								</table>
@@ -1943,7 +1943,7 @@ Here is the tabs
 				     XMLAddAttribute(self.column_create_buff, 2, 'identified_by',  get_keyword('add_nullable_control', params) );
 				     XMLAddAttribute(self.column_create_buff, 2, 'collation', get_keyword('add_identity_control', params)  );
 
-			        objs := xpath_eval('/default_value',  xml_tree_doc(sprintf('<default_value>%s</default_value>', default_value)));
+			        objs := xpath_eval('/default_value',  xml_tree_doc(sprintf('<default_value>%V</default_value>', default_value)));
 			        prev_instance := xpath_eval('/column',xml_tree_doc(self.column_create_buff));
 			        XMLAppendChildren(prev_instance , objs);
 						  self.column_create_buff :=  prev_instance;
@@ -2414,7 +2414,7 @@ Here is the tabs
 			       <td colspan="4"><b>
 				      <?vsp
                 if (  self.wrong_entry is not null ) {
-                    http(sprintf('<span class="attention_marker">Error:  %s </span>', self.wrong_entry));
+                    http(sprintf('<span class="attention_marker">Error:  %V </span>', self.wrong_entry));
 								    self.wrong_entry := null;
 					      }
               ?>
@@ -2425,12 +2425,12 @@ Here is the tabs
 
 						 <td align="center" width="10%">
 							<b>
-							 <v:label name="constr_label1" value="'Name'" format="%s" width="80"/>
+							 <v:label name="constr_label1" value="'Name'" format="%V" width="80"/>
 							</b>
 						 </td>
 						 <td align="center" width="100%">
 							<b>
-							 <v:label name="constr_label2" value="'Condition'" format="%s" width="512"/>
+							 <v:label name="constr_label2" value="'Condition'" format="%V" width="512"/>
 							</b>
 						 </td>
 						 <td align="center">&nbsp;</td>
@@ -2467,7 +2467,7 @@ Here is the tabs
 								goto try_again;
 							}
 
-				      constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%s</code></constraint>', constr_name, constr_value )) );
+				      constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%V</code></constraint>', constr_name, constr_value )) );
 
 
 					    path := sprintf('/table/constraint[@name=\'%s\']',constr_prev_name);
@@ -2538,10 +2538,10 @@ Here is the tabs
 					 <table rules="groups" width="100%">
 						<tr>
 						 <td>
-							<v:label name="brws_constraint_name" value="--cast (xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%s" width="80"/>
+							<v:label name="brws_constraint_name" value="--cast (xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%V" width="80"/>
 						 </td>
 						 <td>
-							<v:label name="brws_constraint" value="--cast (xpath_eval('./code/text()',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%s" width="80"/>
+							<v:label name="brws_constraint" value="--cast (xpath_eval('./code/text()',(control.vc_parent as vspx_row_template).te_rowset) as varchar)" format="%V" width="80"/>
 						 </td>
 						 <td nowrap="1">
 							<v:button name="ds_constr_edit" action="simple" value="Edit"/>
@@ -2575,7 +2575,7 @@ Here is the tabs
 						 <script><![CDATA[
 	   			  declare constr, objs any;
 
-				   constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%s</code></constraint>',
+				   constr := xpath_eval('/constraint',xml_tree_doc(sprintf('<constraint name="%s"><code>%V</code></constraint>',
 					  get_keyword('add_constr_name_control', params),
 						get_keyword('add_constr_control', params) )) );
 
@@ -3563,7 +3563,7 @@ Here is the tabs
 				<b>
 				 <?vsp
     if (  self.wrong_entry is not null )
-           http(sprintf('<span class="attention_marker">Wrong Foreign Key Defintion:  %s </span>', self.wrong_entry));
+           http(sprintf('<span class="attention_marker">Wrong Foreign Key Definition:  %V </span>', self.wrong_entry));
     ?>
 				</b>
 			 </td>
@@ -4085,7 +4085,7 @@ Here is the tabs
 			 return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?mode=table_edit&kind=%s&sid=%s&realm=%s&table_name=%s\r\n', self.kind, self.sid ,self.realm, get_keyword('table_name', params)));
+		    http_header (sprintf('Location: xddl.vspx?mode=table_edit&kind=%U&sid=%U&realm=%U&table_name=%U\r\n', self.kind, self.sid ,self.realm, get_keyword('table_name', params)));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -4093,7 +4093,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('You cannot create column <b>%s</b> for <b>%s</b>  table. It already exists.',self.column_name , self.table_name ) );
+				<?vsp http(sprintf('You cannot create column <b>%V</b> for table <b>%V</b>. It already exists.',self.column_name , self.table_name ) );
         ?>
 			 </td>
 			</vm:raw>
@@ -4125,7 +4125,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_view_apply_command',params) is not null) {
@@ -4138,7 +4138,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4197,7 +4197,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_view_create_apply_command',params) is not null) {
@@ -4216,7 +4216,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4283,7 +4283,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_procedure_create_apply_command',params) is not null) {
@@ -4306,7 +4306,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4374,7 +4374,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_procedure_apply_command',params) is not null) {
@@ -4386,7 +4386,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4497,7 +4497,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,self.sid ,self.realm));
 		    return;
 		   }
 		  if (get_keyword('xddl_save_command',params) is not null) {
@@ -4512,7 +4512,7 @@ Here is the tabs
 			    self.wrong_entry := 'Path to save result does exist. Enter another path.';
 
 --                          http_request_status ('HTTP/1.1 302 Found');
---	                    http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+--	                    http_header (sprintf('Location: xddl.vspx?mode=xddl_save&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 --                          return;
                               goto try_again;
 			}   else {
@@ -4554,7 +4554,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    try_again: ;
 		   }
@@ -4569,7 +4569,7 @@ Here is the tabs
           if (self.wrong_entry is null)
             http('Specify a path on file to store in. ' );
                                    else {
-                                         http(sprintf('<br><b>%s</b></br>', self.wrong_entry));
+                                         http(sprintf('<br><b>%V</b></br>', self.wrong_entry));
            self.wrong_entry := null;
                  }
                                 ?>
@@ -4717,7 +4717,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		   }
 
@@ -4739,7 +4739,7 @@ Here is the tabs
 					self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
 
 					http_request_status ('HTTP/1.1 302 Found');
-					http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+					http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 					return;
 				};
 
@@ -4768,7 +4768,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    try_again: ;
 		   }
@@ -4783,7 +4783,7 @@ Here is the tabs
              if (self.wrong_entry is null)
                http('Specify a path of xddl file to load from. ' );
                                      else {
-                                           http(sprintf('<br><b>%s</b></br>', self.wrong_entry));
+                                           http(sprintf('<br><b>%V</b></br>', self.wrong_entry));
              self.wrong_entry := null;
                     }
                                        ?>
@@ -4830,7 +4830,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('init_apply_command',params) is not null) {
@@ -4846,7 +4846,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4884,7 +4884,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_table_apply_command',params) is not null) {
@@ -4901,7 +4901,7 @@ Here is the tabs
 
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=1&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4912,9 +4912,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> table from the edit buffer.  Are you sure?', self.table_name ));
+           http(sprintf ('You are about to drop <b>%V</b> table from the edit buffer.  Are you sure?', self.table_name ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> table from the edit buffer.  Are you sure?', self.table_name ));
+            http(sprintf ('You are about to undrop <b>%V</b> table from the edit buffer.  Are you sure?', self.table_name ));
 
         ?>
 			 </td>
@@ -4946,7 +4946,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_view_apply_command',params) is not null) {
@@ -4962,7 +4962,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=2&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -4973,9 +4973,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
+           http(sprintf ('You are about to drop <b>%V</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
+            http(sprintf ('You are about to undrop <b>%V</b> view from the edit buffer.  Are you sure?', get_keyword('view_name', control.vc_page.vc_event.ve_params) ));
 
         ?>
 			 </td>
@@ -5006,7 +5006,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('drop_procedure_apply_command',params) is not null) {
@@ -5023,7 +5023,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -5034,9 +5034,9 @@ Here is the tabs
 			 <td colspan="6">
 				<?vsp
           if (self.kind = 'drop' )
-           http(sprintf ('You are about to drop <b>%s</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
+           http(sprintf ('You are about to drop <b>%V</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
           else if (self.kind = 'undrop' )
-            http(sprintf ('You are about to undrop <b>%s</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
+            http(sprintf ('You are about to undrop <b>%V</b> procedure from the edit buffer.  Are you sure?', get_keyword('procedure_name', control.vc_page.vc_event.ve_params) ));
 
         ?>
 			 </td>
@@ -5066,7 +5066,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back, self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back, self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_execute_apply_command',params) is not null) {
@@ -5114,7 +5114,7 @@ Here is the tabs
 		      return;
 
 			  http_request_status ('HTTP/1.1 302 Found');
-			  http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+			  http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 			  return;
 			} else {
 		      self.mode := 'xddl_execute_error';
@@ -5122,7 +5122,7 @@ Here is the tabs
 		      return;
 
 			  http_request_status ('HTTP/1.1 302 Found');
-			  http_header (sprintf('Location: xddl.vspx?mode=xddl_execute_error&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+			  http_header (sprintf('Location: xddl.vspx?mode=xddl_execute_error&sid=%U&realm=%U\r\n', self.sid ,self.realm));
         		  return;
 			}
 		      }
@@ -5174,7 +5174,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back, self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back, self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -5297,7 +5297,7 @@ Here is the tabs
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>
@@ -5305,7 +5305,7 @@ Here is the tabs
 		 <vm:row>
 			<vm:raw>
 			 <td colspan="6">
-				<?vsp http(sprintf('Table <b>%s</b> may not be modified, because it has already been modified by other parties since you loaded the current xddl file.', self.table_name ) );
+				<?vsp http(sprintf('Table <b>%V</b> may not be modified, because it has already been modified by other parties since you loaded the current xddl file.', self.table_name ) );
         http('<br/>You may:<br/>- Remove this table from tables edit buffer, or <br/>- Update description of the given table, or <br/>- Do nothing.<br/>In any case you will be forwarded back to the list of db objects and execution will be  canceled.');
         ?>
 			 </td>
@@ -5335,7 +5335,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n',self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n',self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		      if (get_keyword('xddl_revert_apply_command',params) is not null) {
@@ -5352,7 +5352,7 @@ Here is the tabs
 							self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
 
 							http_request_status ('HTTP/1.1 302 Found');
-							http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+							http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 							return;
 						};
 					}
@@ -5364,7 +5364,7 @@ Here is the tabs
 		      return;
 
 			    http_request_status ('HTTP/1.1 302 Found');
-			    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back , self.sid ,self.realm));
+			    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back , self.sid ,self.realm));
 			    return;
 		      }
 		    ]]></script>
@@ -5377,7 +5377,7 @@ Here is the tabs
               if (self.xddl_source_type =  1)
               http(sprintf('You are about to revert edit buffer, loaded from current database.  Are you sure?' ));
         else if (self.xddl_source_type = 2)
-              http(sprintf('You are about to revert edit buffer, loaded from file <b>%s</b>.  Are you sure?', self.xddl_source_name ));
+              http(sprintf('You are about to revert edit buffer, loaded from file <b>%V</b>.  Are you sure?', self.xddl_source_name ));
         ?>
 			 </td>
 			</vm:raw>
@@ -5664,7 +5664,7 @@ Show Procedures
 		      return;
 
 							http_request_status ('HTTP/1.1 302 Found');
-							http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser_exists&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+							http_header (sprintf('Location: xddl.vspx?mode=xddl_chooser_exists&sid=%U&realm=%U\r\n',self.sid ,self.realm));
 							return;
 					} else {
 		      self.mode := null;
@@ -5673,7 +5673,7 @@ Show Procedures
 		      return;
 
 						http_request_status ('HTTP/1.1 302 Found');
-						http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+						http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 						return;
 					}
 				}	else if (get_keyword('chooser_all',params) is not null or get_keyword('chooser_clear',params) is not  null) {
@@ -5801,7 +5801,7 @@ Show Procedures
     			 </v:template>
 				 </td>
          <td class="listing_col">
-					<v:label name="chooser_labelName" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+					<v:label name="chooser_labelName" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V" width="80"/>
 				 </td>
          <?vsp http ('</tr>'); ?>
 			 </table>
@@ -5841,7 +5841,7 @@ Show Procedures
 		      return;
 
 		    http_request_status ('HTTP/1.1 302 Found');
-		    http_header (sprintf('Location: xddl.vspx?page=%s&sid=%s&realm=%s\r\n', self.page_to_go_back,  self.sid ,self.realm));
+		    http_header (sprintf('Location: xddl.vspx?page=%U&sid=%U&realm=%U\r\n', self.page_to_go_back,  self.sid ,self.realm));
 		    return;
 		    ]]></script>
 			</v:on-post>

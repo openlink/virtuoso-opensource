@@ -42,9 +42,9 @@
         self._item_type := atoi(get_keyword('item_type', self.vc_page.vc_event.ve_params, '0'));
         http ('<div>for ');
         if (self._item_type = 1)
-          http(sprintf('WebDAV collection <b>%s</b>', self._item));
+          http(sprintf('WebDAV collection <b>%V</b>', self._item));
         else
-          http(sprintf('Table <b>%s</b>', self._item));
+          http(sprintf('Table <b>%V</b>', self._item));
         http('</div><br/>');
       ?>
     </vm:rawheader>
@@ -165,7 +165,7 @@
             <v:on-post>
               <v:script>
                 <![CDATA[
-                  self.vc_redirect(sprintf('db_repl_bi_add.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                  self.vc_redirect(sprintf('db_repl_bi_add.vspx?item=%U&item_type=%U', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                 ]]>
               </v:script>
             </v:on-post>
@@ -174,7 +174,7 @@
       </v:form>
       <?vsp
         if (self.error_str198 <> '' and self.error_str198 is not null)
-          http(sprintf('<table class="warning">%s</table>', self.error_str198));
+          http(sprintf('<table class="warning">%V</table>', self.error_str198));
         self.error_str198 := '';
        ?>
        <!--

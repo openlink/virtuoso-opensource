@@ -190,8 +190,8 @@
 		        declare arr any;
 			arr := tcpip_local_interfaces ();
 			foreach (any elm in arr) do
-			  http (sprintf ('sr_cl.addOption("%s");', elm));
-                        http (sprintf ('sr_cl.input.value = "%s";', get_keyword ('lhost_if', self.vc_event.ve_params, ''))); 
+			  http (sprintf ('sr_cl.addOption("%V");', elm));
+                        http (sprintf ('sr_cl.input.value = "%V";', get_keyword ('lhost_if', self.vc_event.ve_params, '')));
 		      ?>
 		     }
 		  </script>

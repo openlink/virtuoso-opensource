@@ -58,7 +58,7 @@
               URL rewrite rules
             </div>
             <div class="page_tab">
-              <v:url name="url1" value="Content negotiation" format="%s" url="--sprintf ('http_tcn.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
+              <v:url name="url1" value="Content negotiation" format="%V" url="--sprintf ('http_tcn.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
             </div>
             <div class="tab_page_new">
               <!-- tab -->
@@ -161,7 +161,7 @@
                             value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
                             format="%110.110s"
                             url="--sprintf (
-                            'http_url_rewrite.vspx?edit=%s&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U&amp;crl=%U',
+                            'http_url_rewrite.vspx?edit=%U&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U&amp;crl=%U',
                             (control.vc_parent as vspx_row_template).te_rowset[0],
                             self.rulelist, self.lhost, self.vhost, self.lpath,
                             (control.vc_parent as vspx_row_template).te_rowset[11])"
@@ -177,14 +177,14 @@
                           ?>
                         </td>
                         <td>
-                          <v:label name="la3" format="%s" value="--(control.vc_parent as vspx_row_template).te_rowset[12]" />
+                          <v:label name="la3" format="%V" value="--(control.vc_parent as vspx_row_template).te_rowset[12]" />
                         </td>
                         <td class="action">
                           &nbsp;
                           <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-                            format="%s"
+                            format="%V"
                             url="--sprintf (
-                            'http_url_rewrite.vspx?del=%s&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U&amp;crl=%U',
+                            'http_url_rewrite.vspx?del=%U&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U&amp;crl=%U',
                             (control.vc_parent as vspx_row_template).te_rowset[0],
                             self.rulelist, self.lhost, self.vhost, self.lpath,
                             (control.vc_parent as vspx_row_template).te_rowset[11])"
@@ -269,7 +269,7 @@
                     if (self.sp_fmt.ufl_value <> '$accept')
                       fmt := sprintf ('&format=%U', self.sp_fmt.ufl_value);
                     else
-                      fmt := sprintf ('&format=%s', self.sp_fmt.ufl_value);
+                      fmt := sprintf ('&format=%U', self.sp_fmt.ufl_value);
                     self.dest1.ufl_value := self.dest1.ufl_value || fmt;
                   }
                 ]]>

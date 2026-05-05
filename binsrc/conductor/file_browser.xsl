@@ -224,7 +224,7 @@
             <tr class="vdir_headertr">
               <td class="vdir_headertd">
                 <label for="t_path2">Contents of</label>
-                <v:text name="t_path2" xhtml_id="t_path2" value="''" format="%s">
+                <v:text name="t_path2" xhtml_id="t_path2" value="''" format="%V">
                   <v:before-render>
                     <![CDATA[
                       control.ufl_value := self.curpath2;
@@ -299,7 +299,7 @@
               <tr class="vdir_headertr">
                 <td class="vdir_headertd" colspan="3">
                   <label for="t_newfolder2">New folder</label>
-                  <v:text name="t_newfolder2" xhtml_id="t_newfolder2" value="''" format="%s"/>
+                  <v:text name="t_newfolder2" xhtml_id="t_newfolder2" value="''" format="%V"/>
                   <v:button name="b_new_folder" value="Create" action="simple">
                     <v:on-post>
                       <![CDATA[
@@ -448,7 +448,7 @@
                           if (self.dir2_select = 0 or self.dir2_select = 2 OR rowset[0] <> 0)
                           {
                         ?>
-                        <v:button name="b_item22" style = "url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s">
+                        <v:button name="b_item22" style = "url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V">
                           <v:on-post>
                             <![CDATA[
                               declare before_path varchar;

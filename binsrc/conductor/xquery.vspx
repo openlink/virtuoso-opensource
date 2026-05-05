@@ -260,13 +260,13 @@
                                     return;
                                   }
 
-                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=1&url=%s&sbad=%s&ishtml=%s',
+                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=1&url=%U&sbad=%U&ishtml=%U',
                                   dav_path, skip_bad, is_html));
                                   return;
                                 }
                                 else if (ctx = 3)
                                 {
-                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=3&url=%s&sbad=%s&ishtml=%s',
+                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=3&url=%U&sbad=%U&ishtml=%U',
                                   dav_path, skip_bad ,is_html));
                                   return;
                                 }
@@ -279,12 +279,12 @@
                                     return;
                                   }
                                   colp := 'http://local.virt' || dav_path;
-                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%s&sbad=%s&ishtml=%s', colp, skip_bad, is_html));
+                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%U&sbad=%U&ishtml=%U', colp, skip_bad, is_html));
                                   return;
                                 }
                                 else if (ctx = 5)
                                 {
-                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%s&sbad=%s&ishtml=%s',
+                                  self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%U&sbad=%U&ishtml=%U',
                                   dav_path, skip_bad ,is_html));
                                   return;
                                 }
@@ -298,7 +298,7 @@
                                   return;
                                 }
                                 self.table_def := 'yes';
-                                self.vc_redirect (sprintf('xquery2.vspx?mode=query&entry=1&context=2&l_table_name=%s',
+                                self.vc_redirect (sprintf('xquery2.vspx?mode=query&entry=1&context=2&l_table_name=%U',
                                 self.l_table_name.ufl_value));
                                 return;
                               }

@@ -93,7 +93,7 @@
             {
               http_rewrite ();
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: sec_auth_serv_sp.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+              http_header (sprintf('Location: sec_auth_serv_sp.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
             }
             _access := get_keyword('access', self.vc_page.vc_event.ve_params, '');
             if (_access = '_a')
@@ -450,14 +450,14 @@
                 }
               ?>
               <td class="listing_col_action">
-                <a href="sec_acl_edit_sp.vspx?DEL=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">remove</a>
-                <a href="sec_acl_edit_sp.vspx?EDIT=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">edit</a>
+                <a href="sec_acl_edit_sp.vspx?DEL=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">remove</a>
+                <a href="sec_acl_edit_sp.vspx?EDIT=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">edit</a>
               </td>
               <td class="listing_col_action">
-                <a href="sec_acl_edit_sp.vspx?move=top&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">top</a>
-                <a href="sec_acl_edit_sp.vspx?move=up&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">up</a>
-                <a href="sec_acl_edit_sp.vspx?move=down&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">down</a>
-                <a href="sec_acl_edit_sp.vspx?move=bottom&vec=<?V _vec2 ?>&edit=<?U alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">bottom</a>
+                <a href="sec_acl_edit_sp.vspx?move=top&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">top</a>
+                <a href="sec_acl_edit_sp.vspx?move=up&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">up</a>
+                <a href="sec_acl_edit_sp.vspx?move=down&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">down</a>
+                <a href="sec_acl_edit_sp.vspx?move=bottom&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">bottom</a>
               </td>
 <?vsp
               http ('</tr>');
@@ -686,9 +686,9 @@
                                 for (select NG_NAME, NG_GROUP from NEWS_GROUPS) do
                                 {
                                   if (obj = NG_GROUP)
-                                    http (sprintf ('<option value="%i" selected="selected">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i" selected="selected">%V</option>', NG_GROUP, NG_NAME));
                                   else
-                                    http (sprintf ('<option value="%i">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i">%V</option>', NG_GROUP, NG_NAME));
                                 }
                               ?>
                             </select>
@@ -738,7 +738,7 @@
                         if (get_keyword ('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
                         {
                           http('<input type="submit" name="_upd" value="Update">');
-                          http(sprintf ('<input type="hidden" name="vec_o" value="%s">', _vec_o));
+                          http(sprintf ('<input type="hidden" name="vec_o" value="%V">', _vec_o));
                         }
                         else
                           http('<input type="submit" name="_add" value="Add">');

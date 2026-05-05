@@ -154,7 +154,7 @@
             <v:button action="simple" name="db_grants_cancel" value="Cancel" >
               <v:on-post><v:script><![CDATA[
                 http_request_status ('HTTP/1.1 302 Found');
-                http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                http_header (sprintf('Location: databases.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
               ]]></v:script></v:on-post>
             </v:button>
             <v:button action="simple" name="save" value="Save Changes">
@@ -211,7 +211,7 @@
           }
         }
         http_request_status ('HTTP/1.1 302 Found');
-        http_header( sprintf('Location: databases.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+        http_header( sprintf('Location: databases.vspx?page=3&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                 ]]>
               </v:on-post>
             </v:button>
