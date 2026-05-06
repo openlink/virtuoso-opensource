@@ -237,6 +237,8 @@ The minimum working configuration consists of the server executable and config f
 
 # Starting Virtuoso
 
+Note: if a firewall is running, it needs to permit the server to receive incoming connections. On macOS, open Settings, click through Network, Firewall and Options and click the `[+]` button to add the virtuoso-t executable.
+
 Change into the installation's `database/` subdirectory and start the server:
 
 ```sh
