@@ -2763,9 +2763,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 no_fn:
   if (0 = dav_call)
   {
-    if ((type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (path))
+    if (type in ('text/turtle', 'application/ld+json', 'application/activity+json') and not DB.DBA.DAV_MAC_METAFILE (path))
     {
-      rc := WS.WS.TTL_QUERY_POST (path, content, DB.DBA.LDP_ENABLED (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_DET_PATH_PARENT (path, 1), 'C')));
+      if (type = 'text/turtle')
+        rc := WS.WS.TTL_QUERY_POST (path, content, 1);
+      else
+        rc := WS.WS.JSONLD_POST (path, content, 1);
       if (isnull (DAV_HIDE_ERROR (rc)))
         return rc;
     }
