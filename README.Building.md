@@ -195,13 +195,14 @@ and then:
 $ make -j4
 ```
 
-To run the test suite (optional):
+Running the test suite is optional. First, ensure the `bzip2`, `curl`, `gunzip`, `gzip`, `tar`, `unzip` `wget` and `zip`
+package, for your OS/distribution are installed, then run:
 
 ```sh
 $ make check
 ```
 
-and finally:
+Finally:
 
 ```sh
 $ sudo make install
