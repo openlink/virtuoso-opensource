@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -75,7 +75,7 @@
           }
           else
           {
-            self.vc_error_message := 'There are no object selected to perform operation delete.';
+            self.vc_error_message := 'There are no objects selected to perform delete operation.';
             self.vc_is_valid := 0;
           }
         ]]>
@@ -104,7 +104,7 @@
           }
           else
           {
-            self.vc_error_message := 'There are no object selected to perform privileges operations.';
+            self.vc_error_message := 'There are no objects selected to perform privileges operations.';
             self.vc_is_valid := 0;
           }
         ]]>
@@ -402,7 +402,7 @@ ORDER BY sch_name"
                               </td>
                               <td>
                                 <img src="images/icons/table_16.png" alt="Table" title="Table"/>
-                                <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                               </td>
                               <td>
                                 <v:button name="b_table_def"
@@ -411,7 +411,7 @@ ORDER BY sch_name"
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=definition&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                     ]]>
                                   </v:on-post>
                                 </v:button>
@@ -421,7 +421,7 @@ ORDER BY sch_name"
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=indexes&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=indexes&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                     ]]>
                                   </v:on-post>
                                   </v:button>
@@ -432,7 +432,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=triggers&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_table_edit.vspx?sid=%U&realm=%U&mode=triggers&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -447,7 +447,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_table_constraints.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_table_constraints.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -458,7 +458,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -574,7 +574,7 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/view_16.png" alt="View" title="View"/>
-                                  <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td  class="listing_col_action">
                                   <v:button action="simple"
@@ -587,7 +587,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_view_edit.vspx?sid=%s&realm=%s&mode=edit&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_view_edit.vspx?sid=%U&realm=%U&mode=edit&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -598,7 +598,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -793,10 +793,10 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
-                                  <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td>
-                                  <v:label name="l_proc_type" value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%s"/>
+                                  <v:label name="l_proc_type" value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%V"/>
                                 </td>
                                 <td class="listing_col_action">
                                   <v:button action="simple"
@@ -809,7 +809,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: databases_proc_edit.vspx?sid=%s&realm=%s&mode=edit&type=%s&name=%s\r\n',
+                                        http_header (sprintf ('Location: databases_proc_edit.vspx?sid=%U&realm=%U&mode=edit&type=%U&name=%U\r\n',
                                           self.sid,
                                           self.realm,
                                           case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'Module' else 'Procedure' end,
@@ -825,7 +825,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -943,10 +943,10 @@ ORDER BY sch_name"
                                 </td>
                                 <td>
                                   <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
-                                  <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                  <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                                 </td>
                                 <td>
-                                  <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%s"/>
+                                  <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%V"/>
                                 </td>
                                 <td align="left" valign="center">
                                   <v:button name="b_udt_grants"
@@ -956,7 +956,7 @@ ORDER BY sch_name"
                                     <v:on-post>
                                       <![CDATA[
                                         http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%U&realm=%U&name=%U\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
                                       ]]>
                                     </v:on-post>
                                   </v:button>

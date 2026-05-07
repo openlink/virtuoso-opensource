@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -241,12 +241,15 @@ AT              ("@"|"\\u0040")
 		}
 <INITIAL>"-"?[0-9]+"."[0-9]* |
 <INITIAL>"-"?"."[0-9]+ {
-  numeric_t num = t_numeric_allocate ();
-  int rc = numeric_from_string (num, yytext);
-  if (NUMERIC_STS_SUCCESS == rc)
+  if (!(jsonp_arg->jflags & JFLG_CANON_NUM))
     {
-      yylval->box = (caddr_t) num;
-      return NUMBER;
+      numeric_t num = t_numeric_allocate ();
+      int rc = numeric_from_string (num, yytext);
+      if (NUMERIC_STS_SUCCESS == rc)
+        {
+          yylval->box = (caddr_t) num;
+          return NUMBER;
+        }
     }
   yylval->box = t_box_double (atof (yytext));
   return NUMBER;

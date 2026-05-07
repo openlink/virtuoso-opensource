@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -271,7 +271,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       sparp_gp_trav_list_expn_retval_names, NULL, NULL,
       NULL );
   }
-  if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && sparp->sparp_sg->sg_signal_void_variables)
+  if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && (NULL == binds_revlist) && sparp->sparp_sg->sg_signal_void_variables)
     spar_error (sparp, "The list of return values contains '*' but the pattern does not contain variables");
   while (NULL != lnar.aggs_with_stars)
     {
@@ -1971,7 +1971,15 @@ sparp_gp_trav_make_common_eqs_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav
   dk_set_t *parent_vars;
   dk_set_t vars_to_propagate = NULL;
   sparp_gp_trav_suspend (sparp);
-  sparp_make_common_eqs (sparp, curr->_.gp.subquery);
+  if (SPAR_BINDINGS_INV == SPART_TYPE (curr->_.gp.subquery))
+    {
+      int bvctr;
+      DO_BOX_FAST (SPART *, bvar, bvctr, curr->_.gp.subquery->_.binv.vars)
+        dk_set_push ((dk_set_t *)common_env, bvar->_.var.vname);
+      END_DO_BOX_FAST;
+    }
+  else
+    sparp_make_common_eqs (sparp, curr->_.gp.subquery);
   sparp_gp_trav_resume (sparp);
   if (sts_this == sparp->sparp_stss+1)
     parent_vars = ((dk_set_t *)common_env);
@@ -2410,6 +2418,8 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
         case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
           {
             sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
+            if (!eq_sub)
+              break;
             sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
             break;
           }
@@ -4202,6 +4212,20 @@ spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *mem
   eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent_gp, (SPART *)(member_binv->_.binv.vars[0]->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
   if (NULL == eq)
     return 0;
+  {
+    int memb_idx;
+    caddr_t varname = member_binv->_.binv.vars[0]->_.var.vname;
+    DO_BOX_FAST (SPART *, sibling, memb_idx, parent_gp->_.gp.members)
+      {
+        if (sibling == member_gp)
+          continue;
+        if ((SPAR_GP != sibling->type) || (SERVICE_L != sibling->_.gp.subtype))
+          continue;
+        if (-1 != sparp_find_sinv_rset_or_param_pos_of_varname (sparp, sibling, varname, 1 /* param */))
+          return 0;
+      }
+    END_DO_BOX_FAST;
+  }
   if (!((eq->e_rvr.rvrRestrictions & (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)) || (0 < eq->e_gspo_uses) || ((eq->e_nested_optionals + 1) < eq->e_nested_bindings)))
     return 0;
   /* The most boring thing is check for duplicate values. It should be as fast as possible and not memory-consuming, so we're cheating. */
@@ -5618,7 +5642,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
         }
       else
         eq->e_rvr.rvrRestrictions |= SPART_VARR_ALWAYS_NULL;
-      DO_BOX_FAST (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
+      DO_BOX_FAST_REV (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
         {
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
           if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
@@ -5628,7 +5652,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
             }
           sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, eq);
         }
-      END_DO_BOX_FAST;
+      END_DO_BOX_FAST_REV;
       eq->e_replaces_filter = 0;
     }
   END_SPARP_REVFOREACH_GP_EQUIV;

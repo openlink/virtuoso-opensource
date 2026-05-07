@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,10 +28,6 @@
 #ifndef _WIDISK_H
 #define _WIDISK_H
 
-#ifndef PMN_THREADS
-typedef int int32;
-typedef unsigned int uint32;
-#endif
 
 #if defined (WIN32) && !defined (__CYGWIN__)
 int ftruncate (int fh, long sz);

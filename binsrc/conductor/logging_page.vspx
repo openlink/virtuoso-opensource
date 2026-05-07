@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -49,34 +49,34 @@
       <v:form name="monitor" type="simple" method="POST" action="logging_page.vspx">
         <div class="main_tab_page">
           <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" />
+            <v:url name="b_url21" value="Version &amp; License Information" format="%V" url="logging_page.vspx?page=1" />
           </div>
           <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" />
+            <v:url name="b_url12" value="DB Server" format="%V" url="logging_page.vspx?page=2" />
           </div>
           <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" />
+            <v:url name="b_url13" value="Disk" format="%V" url="logging_page.vspx?page=3" />
           </div>
           <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" />
+            <v:url name="b_url14" value="Index" format="%V" url="logging_page.vspx?page=4" />
           </div>
           <div class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" />
+            <v:url name="b_url15" value="Locks" format="%V" url="logging_page.vspx?page=5" />
           </div>
           <div class="<?V case when self.page = '6' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" />
+            <v:url name="b_url16" value="Space" format="%V" url="logging_page.vspx?page=6" />
           </div>
           <div class="<?V case when self.page = '7' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" />
+            <v:url name="b_url17" value="HTTP Server" format="%V" url="logging_page.vspx?page=7" />
           </div>
           <div class="<?V case when self.page = '8' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" />
+            <v:url name="b_url18" value="Profiling" format="%V" url="logging_page.vspx?page=8" />
           </div>
           <div class="<?V case when self.page = '9' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" />
+            <v:url name="b_url19" value="Log Viewer" format="%V" url="logging_page.vspx?page=9" />
           </div>
           <div class="<?V case when self.page = '10' then 'page_tab_selected' else 'page_tab' end ?>">
-            <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" />
+            <v:url name="b_url20" value="Client Sessions" format="%V" url="logging_page.vspx?page=10" />
           </div>
           <table class="tab_page">
             <tr>
@@ -124,7 +124,7 @@
                       xmlhttp = new XMLHttpRequest();
 
                     page = '_tab';
-                    url = 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>';
+                    url = 'logging' + page + '.vspx?page=<?U get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?U self.sid ?>&amp;realm=<?U self.realm ?>';
                     if (params)
                     {
                       for(var i = 0;i &lt; params.length;i = i+2)

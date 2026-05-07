@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -90,7 +90,7 @@
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/usage.vsp', sprintf ('g=%U', page_resource_uri));
 
-  _S := page_resource_uri;
+  _S := __bft(page_resource_uri, 2);
 
   proxy_iri := page_resource_uri;
 
@@ -124,6 +124,8 @@
 
   if (not length (label))
     label := page_resource_uri;
+
+  __box_flags_set(label, 2);
 
   tp := atoi (get_keyword ('tp', params, '1'));
 
@@ -159,8 +161,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
-    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
+    <title>Metadata about: <?V label ?></title>
+    <link rel="alternate" type="application/rdf+xml" href="<?V rdf_link ?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="/fct/css/default.css" />
     <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" />
 
@@ -173,7 +175,7 @@
     </div>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
-        <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+        <li><a href="<?V b3s_render_fct_link() ?>">Facets</a></li>
       <?vsp } ?>
       <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_params ?>">Description</a></li>
       <li id="mnu_usage" class="sel">
@@ -189,13 +191,13 @@
       <?vsp
       if (safetolink > 0)
         {
-          http(sprintf('<a href="%s">',
-	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+          http(sprintf('<a href="%H">',
+	    __bft (case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end, 2)));
 
 	  if (length (label))
 	    http_value (label);
 	  else
-	    http (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
+	      http_value (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
 	  http ('</a>\n');
         }
       else
@@ -216,11 +218,11 @@
         ));
     ?>
     </h2>
-	<p> an Entity references as follows: </p>
+       <p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
       <?vsp if (_subject <> '') { ?>
-        <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+        <p class="subj_desc"><?V _subject ?></p>
       <?vsp } ?>
     <?vsp
     ?>
@@ -264,9 +266,9 @@
 	      {
           declare grvar any;
           declare tot, phy integer;
-          grvar := graph_usages[row_ctr][0];
-          tot := graph_usages[row_ctr][1];
-          phy := graph_usages[row_ctr][2];
+          grvar := __bft(graph_usages[row_ctr][0], 2);
+          tot := __bft(graph_usages[row_ctr][1], 2);
+          phy := __bft(graph_usages[row_ctr][2], 2);
 	  has_data := 1;
           http ('<tr>');
           if (position (grvar, grs))
@@ -296,7 +298,7 @@
         order by desc 2 limit 20) do
         {
           http ('<tr>');
-          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', "syn", ses_params, b3s_uri_curie ("syn")));
+          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', __bft("syn", 2), ses_params, __bft(b3s_uri_curie ("syn"), 2)));
           http (sprintf ('<td align="right">%.6g</td>', "rnk"));
           http ('</tr>\n');
         }
@@ -378,24 +380,24 @@
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
         &nbsp; &nbsp; Raw Data in:
         <?vsp if (VAD_CHECK_VERSION ('sparql_cxml') is not null) { ?>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'text/cxml') ?>">CXML</a> |
         <?vsp } ?>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
-	<a href="<?=rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'text/csv') ?>">CSV</a> | RDF (
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'application/rdf+json') ?>">JSON</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'application/atom+xml') ?>">Atom</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'application/odata+json') ?>">JSON</a> ) | Microdata (
+	<a href="<?V rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |
+        <a href="<?V rdf_link || sprintf ('&output=%U', 'application/ld+json') ?>">JSON-LD</a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/fct/images/LoDLogo.gif" style="border-width:0"/></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
-        <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
+        <a href="<?V rdf_link ?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" style="border-width:0"/></a>
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0"
 	    src="/fct/images/creativecommons.png"/></a>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,15 +44,7 @@ device_allocate (int devclass)
       return tcpdev_allocate ();
 #endif
 
-#ifdef COM_UDPIP
-    case SESCLASS_UDPIP:
-      return udpdev_allocate ();
-#endif
 
-#ifdef COM_NMPIPE
-    case SESCLASS_NMPIPE:
-      return nmpdev_allocate ();
-#endif /* COM_NMPIPE */
 
 #ifdef COM_UNIXSOCK
     case SESCLASS_UNIX:

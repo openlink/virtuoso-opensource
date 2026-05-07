@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -165,7 +165,7 @@ create procedure fct_search () __soap_http 'text/html'
   else  
     {
       http_status_set (303);
-      http_header (sprintf ('Location: /sparql?query=%U&format=%U&timeout=%s\r\n', fct_query (xtree_doc (cnt)), accept, registry_get ('fct_timeout_max')));
+      http_header (sprintf ('Location: /sparql?query=%U&format=%U&timeout=%U\r\n', fct_query (xtree_doc (cnt)), accept, registry_get ('fct_timeout_max')));
     }
 ret:
   return '';

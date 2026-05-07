@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -177,9 +177,6 @@ sqlg_dc_cast_func (sql_comp_t * sc, state_slot_t * target, state_slot_t * source
     return vc_anynn_generic;
 
   return vc_generic;
-  sqlc_new_error (sc->sc_cc, "22032", "VEC..", "No cast from %s to %s", dv_type_title (source->ssl_sqt.sqt_dtp),
-      dv_type_title (target->ssl_sqt.sqt_dtp));
-  return NULL;
 }
 
 
@@ -3042,6 +3039,9 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
   int inx, src_resets_done;
   sc->sc_ssl_prereset_only = NULL;
 
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &non_cl_local, 1000))
+     sqlc_error (sc->sc_cc, "42000", "Stack Overflow");
+
   if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
     SQL_GPF_T1 (sc->sc_cc, "Query too large, variables in state over the limit");
 
@@ -4048,7 +4048,7 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	else if (CI_ROW == col_id)
 	  {
 	    if (ks->ks_key->key_is_col)
-	      sqlc_new_error (sc->sc_cc, "37000", "COL..", "Can't select _row from a column-wise key");
+		sqlc_new_error (sc->sc_cc, "37000", "COL05", "Can't select _ROW from a column-wise key");
 	    ks->ks_v_out_map[inx].om_ref = dc_itc_append_row;
 	    ssl->ssl_dtp = DV_ARRAY_OF_POINTER;
 	  }

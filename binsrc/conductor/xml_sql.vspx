@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -111,7 +111,7 @@ will be removed permanently.
             </div>
             <div class="dialog_buttons">
               <v:form name="query_remove_form" type="simple" method="POST" action="">
-                <input type="hidden" name="res" value="<?= get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
+                <input type="hidden" name="res" value="<?V get_keyword('res', control.vc_page.vc_event.ve_params) ?>"/>
                 <v:on-post>
                     <![CDATA[
                       if (get_keyword ('xml_view_delete', params) is not null)
@@ -121,7 +121,7 @@ will be removed permanently.
                           DAV_DELETE_INT (res, 0, null, null, 0);
                         }
                       http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: xml_sql.vspx?page=2&mode=list&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      http_header (sprintf('Location: xml_sql.vspx?page=2&mode=list&sid=%U&realm=%U\r\n',self.sid ,self.realm));
                     ]]>
                 </v:on-post>
                      <v:button action="submit" name="xml_view_delete" value="Delete" xhtml_style="size:64;"/>
@@ -160,7 +160,7 @@ will be removed permanently.
                        </td>
                        <td class="page_tab" align="center">
                          &nbsp;&nbsp;
-                         <v:url name="b_url12" value="--'Stored&nbsp;Queries'" format="%s"
+                         <v:url name="b_url12" value="--'Stored Queries'" format="%V"
                                 url="--'xml_sql.vspx?page=2&mode=list'" xhtml_class="uddi"/>
                          &nbsp;&nbsp;
                        </td>
@@ -182,7 +182,7 @@ will be removed permanently.
                            &nbsp;&nbsp;
                            <v:url name="b_url21"
                                   value="Query"
-                                  format="%s"
+                                  format="%V"
                                   url="xml_sql.vspx?page=1"
                                   xhtml_class="uddi"/>
                            &nbsp;&nbsp;
@@ -367,7 +367,7 @@ will be removed permanently.
 		 if (get_keyword ('cancel', params) is not null)
 		   {
 		     http_request_status ('HTTP/1.1 302 Found');
-		     http_header (sprintf ('Location: xml_sql.vspx?page=2&mode=list&sid=%s&realm=%s\r\n',
+		     http_header (sprintf ('Location: xml_sql.vspx?page=2&mode=list&sid=%U&realm=%U\r\n',
 					   self.sid ,self.realm));
 		     return;
 		   }
@@ -926,7 +926,7 @@ will be removed permanently.
 				     <tr><td>
 					 <v:label name="q_lab"
 					   value="--case when self.apply_mapping_schema.ufl_value = 'map'
-					   then 'XPath' else 'SQLX or SQL-XML' end" format="%s Query"
+					   then 'XPath' else 'SQLX or SQL-XML' end" format="%V Query"
 					   render-only="1"/>
 				     </td></tr>
 				     <tr><td>
@@ -1862,7 +1862,7 @@ will be removed permanently.
                                                  <img src="images/icons/apps_16.png" alt="Persisted XML Query" title="Persisted XML Query"/>
                                                </td>
                                                <td class="listing_col">
-                                                 <a href="<?= WS.WS.STR_TO_URI (RES_FULL_PATH)?>" target="_blank">
+                                                 <a href="<?V WS.WS.STR_TO_URI (RES_FULL_PATH) ?>" target="_blank">
                                                    <?vsp http (RES_FULL_PATH); ?>
                                                  </a>
                                                </td>
@@ -1874,12 +1874,12 @@ will be removed permanently.
                                                </td>
                                                <td  class="listing_col_action">
                                                <?vsp
-					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%s&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>',
+					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%U&sid=%U&realm=%U"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>',
 						 RES_FULL_PATH, self.sid ,self.realm ));
 					       ?>
 
 				               <?vsp
-                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%s&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>',
+                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%U&sid=%U&realm=%U"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>',
                                                                 RES_FULL_PATH, self.sid ,self.realm ));
                                                ?>
                                              </td>

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -93,7 +93,7 @@
             {
               http_rewrite ();
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: sec_auth_serv_sp.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+              http_header (sprintf('Location: sec_auth_serv_sp.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
             }
             _access := get_keyword('access', self.vc_page.vc_event.ve_params, '');
             if (_access = '_a')
@@ -450,14 +450,14 @@
                 }
               ?>
               <td class="listing_col_action">
-                <a href="sec_acl_edit_sp.vspx?DEL=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">remove</a>
-                <a href="sec_acl_edit_sp.vspx?EDIT=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">edit</a>
+                <a href="sec_acl_edit_sp.vspx?DEL=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">remove</a>
+                <a href="sec_acl_edit_sp.vspx?EDIT=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">edit</a>
               </td>
               <td class="listing_col_action">
-                <a href="sec_acl_edit_sp.vspx?move=top&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">top</a>
-                <a href="sec_acl_edit_sp.vspx?move=up&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">up</a>
-                <a href="sec_acl_edit_sp.vspx?move=down&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">down</a>
-                <a href="sec_acl_edit_sp.vspx?move=bottom&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">bottom</a>
+                <a href="sec_acl_edit_sp.vspx?move=top&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">top</a>
+                <a href="sec_acl_edit_sp.vspx?move=up&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">up</a>
+                <a href="sec_acl_edit_sp.vspx?move=down&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">down</a>
+                <a href="sec_acl_edit_sp.vspx?move=bottom&vec=<?U _vec2 ?>&edit=<?U alist ?>&sid=<?U self.sid ?>&realm=<?U self.realm ?>">bottom</a>
               </td>
 <?vsp
               http ('</tr>');
@@ -653,7 +653,7 @@
                         <tr>
                           <td>Destination (IP mask)</td>
                           <td>
-                            <INPUT type="text" name="dest" value="<?=dest?>" size="15"/>
+                            <INPUT type="text" name="dest" value="<?V dest ?>" size="15"/>
                           </td>
                         </tr>
                         <?vsp
@@ -664,13 +664,13 @@
                         <tr>
                           <td class="genlisthead">Object</td>
                           <td>
-                            <input type="text" name="obj" value="<?=obj?>" size="15"/>
+                            <input type="text" name="obj" value="<?V obj ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>
                           <td class="genlisthead">Mode</td>
                           <td>
-                            <input type="text" name="mod" value="<?=mod?>" size="15"/>
+                            <input type="text" name="mod" value="<?V mod ?>" size="15"/>
                           </td>
                         </tr>
                         <?vsp
@@ -686,9 +686,9 @@
                                 for (select NG_NAME, NG_GROUP from NEWS_GROUPS) do
                                 {
                                   if (obj = NG_GROUP)
-                                    http (sprintf ('<option value="%i" selected="selected">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i" selected="selected">%V</option>', NG_GROUP, NG_NAME));
                                   else
-                                    http (sprintf ('<option value="%i">%s</option>', NG_GROUP, NG_NAME));
+                                    http (sprintf ('<option value="%i">%V</option>', NG_GROUP, NG_NAME));
                                 }
                               ?>
                             </select>
@@ -697,13 +697,13 @@
                         <tr>
 			    <td class="genlisthead">Rate</td>
                           <td>
-                            <input type="text" name="rate" value="<?=_rate?>" size="15"/>
+                            <input type="text" name="rate" value="<?V _rate ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>
 			    <td class="genlisthead">Limit</td>
                           <td>
-                            <input type="text" name="limit" value="<?=_limit?>" size="15"/>
+                            <input type="text" name="limit" value="<?V _limit ?>" size="15"/>
                           </td>
                         </tr>
                         <tr>
@@ -738,7 +738,7 @@
                         if (get_keyword ('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
                         {
                           http('<input type="submit" name="_upd" value="Update">');
-                          http(sprintf ('<input type="hidden" name="vec_o" value="%s">', _vec_o));
+                          http(sprintf ('<input type="hidden" name="vec_o" value="%V">', _vec_o));
                         }
                         else
                           http('<input type="submit" name="_add" value="Add">');

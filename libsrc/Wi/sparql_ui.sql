@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -683,7 +683,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
 { ?>
     <nav class="navbar navbar-expand-md sticky-top bg-light">
     <div class="container-lg">
-        <a class="navbar-brand" href="/sparql"><?V title ?></a>
+        <a class="navbar-brand" href="#"><?V title ?></a>
         <button class="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
@@ -697,7 +697,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
 <?vsp if (display_submenu) { ?>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
-            <li class="nav-item"><a class="nav-link" href="/sparql/?help=intro">About</a></li>
+            <li class="nav-item"><a class="nav-link" href="?help=intro">About</a></li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle"
                     href="#"
@@ -706,10 +706,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
                     data-bs-toggle="dropdown"
                     aria-expanded="false">Tables</a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                      <li><a class="dropdown-item"        href="/sparql/?help=nsdecl">Namespace&#160;Prefixes</a></li>
-                      <li><a class="dropdown-item"        href="/sparql/?help=rdfinf">Inference&#160;Rules</a></li>
-                      <li><a class="dropdown-item"        href="/sparql/?help=macrolibs">Macros</a></li>
-                      <li><a class="dropdown-item"        href="/sparql/?help=views">RDF Views</a></li>
+                      <li><a class="dropdown-item"        href="?help=nsdecl">Namespace&#160;Prefixes</a></li>
+                      <li><a class="dropdown-item"        href="?help=rdfinf">Inference&#160;Rules</a></li>
+                      <li><a class="dropdown-item"        href="?help=macrolibs">Macros</a></li>
+                      <li><a class="dropdown-item"        href="?help=views">RDF Views</a></li>
                   </ul>
             </li>
             </ul>
@@ -742,7 +742,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_OPTION (in lbl varchar, in help varc
     if (enabled)
         color := 'bg-light text-primary';
 
-    http (sprintf ('<a href="/sparql/?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&#160;\n', help, color, lbl));
+    http (sprintf ('<a href="?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&#160;\n', help, color, lbl));
 }
 ;
 
@@ -1154,10 +1154,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_INTRO()
     <h3>Endpoint Information</h3>
     <p>Consult the following links for available information defined on this endpoint:
     <ul>
-    <li><a href="/sparql/?help=nsdecl">Namespace Prefixes</a>
-    <li><a href="/sparql/?help=rdfinf">Build-in Inference Rules</a>
-    <li><a href="/sparql/?help=views">RDF Views</a>
-    <li><a href="/sparql/?help=macrolibs">SPIN and SPARQL-BI Macro Libraries</a>
+    <li><a href="?help=nsdecl">Namespace Prefixes</a>
+    <li><a href="?help=rdfinf">Build-in Inference Rules</a>
+    <li><a href="?help=views">RDF Views</a>
+    <li><a href="?help=macrolibs">SPIN and SPARQL-BI Macro Libraries</a>
     </ul>
     </p>
 
@@ -1333,7 +1333,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_VIEWS()
             http ('  <p>The storage has no default quad map.</p>\n');
 
         for (sparql define output:valmode "LONG" define input:storage "" select ?sml from virtrdf: where { `iri(?:storage)` virtrdf:qsMacroLibrary ?sml } order by asc(str(?sml))) do {
-            http ('  <p>The storage is enriched with SPIN/SPARQL-BI macro library &lt;<a href="/sparql/?help=macrolibs#' || md5(id_to_iri("sml")) || '">');
+            http ('  <p>The storage is enriched with SPIN/SPARQL-BI macro library &lt;<a href="?help=macrolibs#' || md5(id_to_iri("sml")) || '">');
             http_value (id_to_iri ("default_qm")); http ('</a>&gt;<br/>\n');
             --              WS.WS.SPARQL_ENDPOINT_SML_OVERVIEW (default_qm); !!!TBD: write such a function
             http ('  </p>');
@@ -1415,7 +1415,7 @@ macro_compilation_done:
         }
         for (sparql define output:valmode "LONG" define input:storage "" select ?storage from virtrdf: where { ?storage virtrdf:qsMacroLibrary `iri(?:sml)` } order by asc(str(?storage))) do
         {
-            http ('  <p>The macro library is attached to RDF storage &lt;<a href="/sparql/?help=views#' || md5(id_to_iri("storage")) || '">');
+            http ('  <p>The macro library is attached to RDF storage &lt;<a href="?help=views#' || md5(id_to_iri("storage")) || '">');
             http_value (id_to_iri ("storage")); http ('</a>&gt;<br/>\n');
             http ('  </p>');
         }

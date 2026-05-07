@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,15 +40,7 @@
 #ifdef OS2
 #include <process.h>
 #endif
-/*
-#ifdef PCTCP
-#ifdef WIN32
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
-#endif
-*/
+
 #ifdef SRV_DEBUG
 #define PRINT_DEBUG
 #define LEVEL_VAR srv_debug_level
@@ -112,19 +104,18 @@ call_exit_outline (int status)
 }
 
 
-#ifdef PMN_THREADS
 int time_slice = 100;
 #define process_is_quiescent(X) \
 	(_thread_sched_preempt || _thread_num_runnable < 1)
-#else
-extern int time_slice;
-#endif
 
 
 #ifndef GSTATE
 
 int last_session;
 dk_session_t *served_sessions[MAX_SESSIONS];
+#ifdef HAVE_POLL
+static struct pollfd served_sessions_fds[MAX_SESSIONS];
+#endif
 service_t *services;
 
 resource_t *free_threads;
@@ -187,11 +178,9 @@ typedef int (*select_func_t) (int ses_count, session_t ** reads, session_t ** wr
 static caddr_t PrpcFutureNextResult1T (future_t * future);
 
 
-#ifdef PMN_THREADS
 static dk_thread_t *dk_thread_alloc (void);
 #ifndef NO_THREAD
 static int future_wrapper (void *dkt);
-#endif
 #endif
 
 
@@ -204,17 +193,10 @@ static int check_inputs_action_count = 0;
 /* true when some thread is running a scheduling cycle */
 static int scheduling_in_progress = 0;	/* XXX remove this */
 
-
-static int suck_avidly = 0;
-
 /* Protects the free threads table */
 dk_mutex_t *thread_mtx;
 
 
-#ifdef SUNRPC
-static int fd_set_or (fd_set * s1, fd_set * s2);
-static int fd_sets_intersect (fd_set * s1, fd_set * s2);
-#endif
 
 SERVICE_0 (s_sql_cancel, "CANCEL", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER);
 
@@ -282,9 +264,11 @@ add_to_served_sessions (dk_session_t * ses)
   select_set_changed = 1;
   if (SESSION_SCH_DATA (ses)->sio_is_served != -1)
     return (0);
+#ifndef HAVE_POLL
 #ifndef WIN32
   if (tcpses_get_fd (ses->dks_session) >= FD_SETSIZE)
     return -1;
+#endif
 #endif
   for (n = 0; n < MAX_SESSIONS; n++)
     {
@@ -458,7 +442,7 @@ int
 is_protocol (session_t * ses, int proto)
 {
   return (ses->ses_class == proto
-#if defined (COM_UDPIP) || defined (COM_UNIXSOCK)
+#if defined (COM_UNIXSOCK)
       || ((proto == SESCLASS_TCPIP ||
 	   proto == SESCLASS_UDPIP ||
 	   proto == SESCLASS_UNIX) &&
@@ -477,7 +461,6 @@ bytes_in_read_buffer (dk_session_t * ses)
 }
 
 
-#ifndef NO_COMBINED_SELECT
 
 struct connectionstruct
 {
@@ -538,19 +521,23 @@ again:
 static int
 check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_t select_fun, int protocol)
 {
-  struct timeval to_2;
   int buffered_left;
   int s, n, rc;
-  int s_max;
   int unread_data;
+#ifdef HAVE_POLL
+  int timeout_ms = (timeout_org->to_sec * 1000UL) + (timeout_org->to_usec / 1000UL);
+#else
   fd_set reads;
   fd_set writes;
+  struct timeval to_2;
+  int s_max = 0;
 
   memset (&to_2, 0, sizeof (to_2));
   to_2.tv_sec = timeout_org->to_sec;
   to_2.tv_usec = timeout_org->to_usec;
   FD_ZERO (&reads);
   FD_ZERO (&writes);
+#endif
 
   if (!is_recursive)
     scheduling_in_progress = 1;
@@ -561,11 +548,36 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
     }
 
   unread_data = 0;
-  s_max = 0;
 
   for (n = 0; n < last_session; n++)
     {
       dk_session_t *ses = served_sessions[n];
+#ifdef HAVE_POLL
+      served_sessions_fds[n].fd = -1;
+      if (ses && is_protocol (ses->dks_session, protocol))
+	{
+	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
+	      SESSION_SCH_DATA (ses)->sio_default_read_ready_action)
+	    {
+	      if (bytes_in_read_buffer (ses))
+		{
+		  timeout_ms = 0;
+		  unread_data = 1;
+		}
+	      s = DKS_SOCK (ses);
+              served_sessions_fds[n].fd = s;
+	      served_sessions_fds[n].events |= POLLIN;
+	      served_sessions_fds[n].revents = 0;
+	    }
+	  if (SESSION_SCH_DATA (ses)->sio_random_write_ready_action)
+	    {
+	      s = DKS_SOCK (ses);
+              served_sessions_fds[n].fd = s;
+	      served_sessions_fds[n].events |= POLLOUT;
+	      served_sessions_fds[n].revents = 0;
+	    }
+	}
+#else
       if (ses && is_protocol (ses->dks_session, protocol))
 	{
 	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
@@ -588,20 +600,14 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 	      s_max = MAX (s, s_max);
 	    }
 	}
+#endif
     }
 
-#ifdef SUNRPC
-  s = fd_set_or (&reads, &svc_fdset);
-  s_max = MAX (s, s_max);
-#endif
-
-#ifdef SOLARIS
-  thr_yield ();
-#endif
-
-  without_scheduling_tic ();
+#ifdef HAVE_POLL
+  rc = poll (served_sessions_fds, n, timeout_ms);
+#else
   rc = select (s_max + 1, &reads, &writes, NULL, &to_2);
-  restore_scheduling_tic ();
+#endif
 
   if (rc < 0)
     {
@@ -613,15 +619,17 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 
   if (rc != 0 || unread_data)
     {
-#ifdef SUNRPC
-      if (fd_sets_intersect (&reads, &svc_fdset))
-	sun_rpc_ready ();
-#endif
 
       for (n = 0; n < last_session; n++)
 	{
 	  dk_session_t *ses = served_sessions[n];
-	  if (ses && FD_ISSET (DKS_SOCK (ses), &writes))
+	  if (ses &&
+#ifdef HAVE_POLL
+	      (served_sessions_fds[n].revents & POLLOUT)
+#else
+	      FD_ISSET (DKS_SOCK (ses), &writes)
+#endif
+	      )
 	    {
 	      SESSTAT_CLR (ses->dks_session, SST_BLOCK_ON_WRITE);
 	      SESSION_SCH_DATA (ses)->sio_random_write_ready_action (ses);
@@ -640,7 +648,13 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 	  dk_session_t *ses = served_sessions[n];
 	  if (!ses)
 	    continue;
-	  if (FD_ISSET (DKS_SOCK (ses), &reads) || bytes_in_read_buffer (ses))
+	  if (
+#ifdef HAVE_POLL
+		(served_sessions_fds[n].revents & POLLIN)
+#else
+		FD_ISSET (DKS_SOCK (ses), &reads)
+#endif
+		|| bytes_in_read_buffer (ses))
 	    {
 #ifndef NO_THREAD
 	      if (!prpc_disable_burst_mode)
@@ -708,8 +722,7 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 		    }
 		}
 	    }
-	  if (!suck_avidly)
-	    break;
+	  break;
 	}
     }
 
@@ -720,114 +733,6 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 }
 
 
-#else /* NO_COMBINED_SELECT */
-
-
-static int
-check_inputs_low (TAKE_G timeout_t * timeout, int is_recursive, select_func_t select_fun, int protocol)
-{
-  session_t *reads[MAX_SESSIONS];
-  session_t *writes[MAX_SESSIONS];
-  int n, last_write = 0, last_read = 0;
-  int rc;
-
-  if (!is_recursive)
-    scheduling_in_progress = 1;
-
-  if (is_recursive)
-    {
-      ss_dprintf_3 (("Recursive check_inputs"));
-    }
-
-  memset (reads, 0, sizeof (reads));
-  memset (writes, 0, sizeof (reads));
-
-  for (n = 0; n < MAX_SESSIONS; n++)
-    {
-      dk_session_t *ses = served_sessions[n];
-      if (ses && is_protocol (served_sessions[n]->dks_session, protocol))
-	{
-	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
-	      SESSION_SCH_DATA (ses)->sio_default_read_ready_action)
-	    {
-	      if (bytes_in_read_buffer (ses))
-		timeout = &zero_timeout;
-	      reads[last_read] = ses->dks_session;
-	      last_read++;
-	    }
-	  if (SESSION_SCH_DATA (ses)->sio_random_write_ready_action)
-	    {
-	      writes[last_write] = ses;
-	      last_write++;
-	    }
-	}
-    }
-
-again:
-  /* Temporary. Wait until final version of select.
-     This case corresponds to the operation interrupted condition. */
-
-  without_scheduling_tic ();
-  rc = select_fun ((last_read > last_write ? last_read : last_write), reads, writes, timeout);
-  restore_scheduling_tic ();
-
-  if (rc < 0)
-    {
-      PROCESS_ALLOW_SCHEDULE ();
-      return 0;
-    }
-
-  /*
-   *  See which writes are ready.
-   *  Enable the threads waiting on write before reading the ready inputs
-   *  because the inputs may take several time slices to process and the
-   *  writes must advance as fast as possible to complete service requests.
-   *  This happens only if there is a non-zero return code.
-   */
-  if (rc != 0)
-    {
-      for (n = 0; n < last_write; n++)
-	{
-	  session_t *ses = writes[n];
-	  if (!SESSTAT_ISSET (ses, SST_BLOCK_ON_WRITE))
-	    {
-	      SESSION_SCH_DATA (SESSION_DK_SESSION (ses))->sio_random_write_ready_action (SESSION_DK_SESSION (ses));
-	    }
-	}
-    }
-
-  /*
-   *  Check read ready conditions even on a zero rc because there may be unread
-   *  bytes in some read buffer. if there are bytes in a read buffer, increment
-   *  the rc to indicate that the select was not timed out. Some sessions may
-   *  get counted twice in this manner but this does no harm.
-   */
-  for (n = 0; n < last_read; n++)
-    {
-      session_t *ses = writes[n];
-      if (!SESSTAT_ISSET (ses, SST_BLOCK_ON_READ) ||
-	  SESSTAT_ISSET (ses, SST_CONNECT_PENDING) ||
-	  bytes_in_read_buffer (SESSION_DK_SESSION (ses)))
-	{
-	  io_action_func act = SESSION_SCH_DATA (SESSION_DK_SESSION (ses))->sio_random_read_ready_action ;
-	  if (act)
-	    (*act) (SESSION_DK_SESSION (ses));
-	  else
-	    {
-	      if (!is_recursive)
-		{
-		  (SESSION_SCH_DATA (SESSION_DK_SESSION (ses))->sio_default_read_ready_action) (SESSION_DK_SESSION (reads[n]));
-		}
-	    }
-	}
-    }
-
-  if (!is_recursive)
-    scheduling_in_progress = 0;
-
-  return (rc);
-}
-#endif
 
 
 #ifndef COM_TCPIP
@@ -839,12 +744,6 @@ int
 check_inputs (TAKE_G timeout_t * timeout, int is_recursive)
 {
   return (check_inputs_low (PASS_G timeout, is_recursive, (select_func_t) tcpses_select, SESCLASS_TCPIP)
-#ifdef COM_UDPIP
-      || check_inputs_low (PASS_G timeout, is_recursive, udpses_select, SESCLASS_UDP)
-#endif
-#ifdef COM_NMPIPE
-      || check_inputs_low (PASS_G timeout, is_recursive, nmpses_select, SESCLASS_NMP)
-#endif
       );
 }
 
@@ -1211,11 +1110,7 @@ future_wrapper (void *ignore)
 	    ret_block[RRC_VALUE] = (caddr_t) ret_box;
 	    ret_block[RRC_ERROR] = box_num (error);
 	    CB_PREPARE;
-#ifdef PMN_NMARSH
 	    srv_write_in_session (ret_block, future->rq_client, 1);
-#else
-	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
-#endif
 	    CB_DONE;
 	    dk_free_tree ((caddr_t)ret_block);
 	  }
@@ -1894,11 +1789,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
       ret_block[RRC_ERROR] = box_num (error);
       CB_PREPARE;
       {
-#ifdef PMN_NMARSH
 	srv_write_in_session (ret_block, future->rq_client, 1);
-#else
-	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
-#endif
       }
       CB_DONE;
       if (ret_type == DV_C_STRING)
@@ -2360,7 +2251,6 @@ read_service_request (dk_session_t * ses)
   dbg_printf_2 (("new request"));
   if (SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) || SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION))
     {
-      without_scheduling_tic ();
       if (!ses->dks_is_server)
 	{
 	  mutex_enter (thread_mtx);
@@ -2373,7 +2263,6 @@ read_service_request (dk_session_t * ses)
 
       dks_remove_pending (ses);
       remove_from_served_sessions (ses);
-      restore_scheduling_tic ();
 
       if (ses->dks_fixed_thread && 0 == ses->dks_n_threads)
 	{
@@ -2635,7 +2524,6 @@ accept_client (dk_session_t * ses)
   ptrlong p = 0;
   time_msec_t now = approx_msec_real_time (), last;
   dk_session_t *newses = dk_session_allocate (ses->dks_session->ses_class);
-  without_scheduling_tic ();
   session_accept (ses->dks_session, newses->dks_session);
   tcpses_print_client_ip (newses->dks_session, ip_buffer, sizeof (ip_buffer));
 
@@ -2661,8 +2549,6 @@ accept_client (dk_session_t * ses)
       id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p);
     }
   mutex_leave (&bad_rpc_mtx);
-
-  restore_scheduling_tic ();
 
   SESSION_SCH_DATA (newses)->sio_default_read_ready_action = read_service_request;
   SESSION_SCH_DATA (newses)->sio_random_read_ready_action = NULL;
@@ -2696,10 +2582,6 @@ sesclass_select_func (int sesclass)
 #ifdef COM_TCPIP
   if (SESCLASS_TCPIP == sesclass || SESCLASS_UDPIP == sesclass)
     f = (tcpses_select);
-#endif
-#ifdef COM_NMPIPE
-  if (SESCLASS_NMP == sesclass)
-    f = (nmpses_select);
 #endif
   return f;
 }
@@ -2868,13 +2750,6 @@ dk_thread_free (void *data)
 }
 
 
-void
-PrpcSuckAvidly (int mode)
-{
-  suck_avidly = mode;
-}
-
-
 #ifndef NO_THREAD
 /*##**********************************************************************
  *
@@ -2940,11 +2815,7 @@ PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush)
     ret_block[RRC_VALUE] = (caddr_t) ret_box;
     ret_block[RRC_ERROR] = NULL;
     CB_PREPARE
-#ifdef PMN_NMARSH
 	srv_write_in_session (ret_block, future->rq_client, flush);
-#else
-	write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, flush);
-#endif
     CB_DONE;
     if (ret_type == DV_C_STRING)
       dk_free_box ((caddr_t) ret_box[0]);	 /* mty HUHTI */
@@ -3218,14 +3089,15 @@ void
 PrpcRegisterService (char *name, server_func func, void *client_data, int ret_type, post_func postprocess)
 {
   USE_GLOBAL
-  service_t * new_sr = find_service (name);
+  caddr_t boxed_name = box_dv_short_string(name);
+  service_t * new_sr = find_service (boxed_name);
   if (!new_sr)
     {
       new_sr = (service_t *) dk_alloc (sizeof (service_t));
       new_sr->sr_next = services;
       services = new_sr;
     }
-  new_sr->sr_name = name;
+  new_sr->sr_name = boxed_name;
   new_sr->sr_func = func;
   new_sr->sr_postprocess = postprocess;
   new_sr->sr_return_type = ret_type;
@@ -3259,23 +3131,10 @@ PrpcProtocolInitialize (int sesclass)
     protocols = hash_table_allocate (4);
   if (!gethash ((void *) (ptrlong) sesclass, protocols))
     {
-#ifdef PMN_THREADS
       du_thread_t *server_process;
       server_process = thread_create (server_loop, server_thread_sz, (void *) (ptrlong) sesclass);
 
       sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
-#else
-      du_thread_t *server_process;
-      server_process = process_allocate (server_thread_sz);
-
-      server_process->thr_attributes = hash_table_allocate (11);
-
-      process_set_init_function (server_process, (init_func) server_loop, (void *) sesclass);
-
-      sethash ((void *) (ptrlong) sesclass, protocols, (void *) server_process);
-
-      semaphore_leave (server_process->thr_sem);
-#endif /* PMN_THREADS */
     }
 #endif /* NO_THREAD */
 }
@@ -3299,11 +3158,6 @@ PrpcListen (char *addr, int sesclass)
   if (!disable_listen_on_tcp_sock)
     {
       listening_session = dk_session_allocate (sesclass);
-#ifdef COM_UDPIP
-      if (sesclass == SESCLASS_UDPIP)
-	SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action = read_service_request;
-      else
-#endif
 	SESSION_SCH_DATA (listening_session)->sio_default_read_ready_action = accept_client;
 
       if (SER_SUCC != session_set_address (listening_session->dks_session, addr))
@@ -3312,13 +3166,11 @@ PrpcListen (char *addr, int sesclass)
 	}
       SESSION_SCH_DATA (listening_session)->sio_reading_thread = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
 
-      without_scheduling_tic ();
       session_listen (listening_session->dks_session);
-      restore_scheduling_tic ();
 
       if (!SESSTAT_ISSET (listening_session->dks_session, SST_LISTENING))
 	{
-#ifdef PCTCP
+#ifdef WIN32
 	  int eno = WSAGetLastError ();
 	  char message[255];
 	  tcpses_error_message (eno, message, sizeof (message));
@@ -3348,9 +3200,7 @@ PrpcListen (char *addr, int sesclass)
 
 	  SESSION_SCH_DATA (unix_listening_session)->sio_reading_thread = (du_thread_t *) gethash ((void *) (ptrlong) sesclass, protocols);
 
-	  without_scheduling_tic ();
 	  session_listen (unix_listening_session->dks_session);
-	  restore_scheduling_tic ();
 
 	  if (!SESSTAT_ISSET (unix_listening_session->dks_session, SST_LISTENING))
 	    {
@@ -3754,7 +3604,7 @@ void
 PrpcInitialize1 (int mem_mode)
 {
   USE_GLOBAL
-#if (!defined (PREEMPT) && !defined (NO_THREAD)) || (defined (PMN_THREADS) && !defined (NO_THREAD))
+#if !defined (PREEMPT) && !defined (NO_THREAD) ||  !defined (NO_THREAD)
   int zero = 0;
 #endif
 
@@ -3771,9 +3621,6 @@ PrpcInitialize1 (int mem_mode)
 
   prpcinitialized = 1;
 
-#ifndef PMN_NMARSH
-  write_in_session = srv_write_in_session;
-#endif
 
   du_thread_init (main_thread_sz);
 
@@ -3797,36 +3644,24 @@ PrpcInitialize1 (int mem_mode)
   thread_mtx = mutex_allocate ();
   mutex_option (thread_mtx, "THREAD_MTX", NULL, NULL);
 
-#ifdef PCTCP
+#ifdef WIN32
   init_pctcp ();
 #endif
 
-#ifdef PMN_THREADS
 # ifndef NO_THREAD
   if (!_thread_sched_preempt)
     session_set_default_control (SC_BLOCKING, (char *) (&zero), sizeof (int));
 # endif
 
-#else
-# if !defined (PREEMPT) && !defined (NO_THREAD)
-  session_set_default_control (SC_BLOCKING, (char *) (&zero), sizeof (int));
-# endif
-#endif
 
   session_set_default_control (SC_MSGLEN, (char *) (&socket_buf_sz), sizeof (int));
 
-#ifdef PMN_THREADS
   {
     dk_thread_t *dkt = dk_thread_alloc ();
     du_thread_t *thr = thread_current ();
     thr->thr_client_data = dkt;
     dkt->dkt_process = thr;
   }
-#else
-  process_futures_initialize (initial_process);
-
-  start_scheduler ();
-#endif
 
   init_readtable ();
 
@@ -3976,11 +3811,7 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
   else
 #endif
     {
-#ifdef PMN_NMARSH
       srv_write_in_session (request_v, server, 1);
-#else
-      write_in_session ((caddr_t) request_v, server, NULL, NULL, 1);
-#endif
     }
   CB_DONE;
 
@@ -4410,9 +4241,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 
       if (session)
 	{
-	  without_scheduling_tic ();
 	  rc = session_connect (session->dks_session);
-	  restore_scheduling_tic ();
 
 	  if (rc != SER_SUCC)
 	    {
@@ -4430,9 +4259,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
       if (rc != SER_SUCC)
 	return session;
 
-      without_scheduling_tic ();
       rc = session_connect (session->dks_session);
-      restore_scheduling_tic ();
 
       if (rc != SER_SUCC)
 	return (session);
@@ -4578,9 +4405,7 @@ init_inprocess_entry_points (char *address)
       return -1;
     }
 
-  without_scheduling_tic ();
   rc = session_connect (session->dks_session);
-  restore_scheduling_tic ();
 
   if (rc != SER_SUCC)
     {
@@ -4693,78 +4518,6 @@ PrpcLeave (void)
 }
 
 
-#ifdef SUNRPC
-extern int sun_rpc_pending;
-extern fd_set svc_fdset;
-extern void svc_run_3 (timeout_t * to);
-
-static dk_thread_t *sun_rpc_thread;
-
-
-static int
-fd_set_or (fd_set * s1, fd_set * s2)
-{
-  long *p1 = (long *) s1;
-  long *p2 = (long *) s2;
-  int n, res = 0;
-  for (n = 0; n < sizeof (fd_set) / sizeof (long); n++)
-    {
-      if (p1[n] |= p2[n])
-	res = (n + 1) * 32;
-    }
-  return res;
-}
-
-
-static int
-fd_sets_intersect (fd_set * s1, fd_set * s2)
-{
-  long *p1 = (long *) s1;
-  long *p2 = (long *) s2;
-  int n;
-  for (n = 0; n < sizeof (fd_set) / sizeof (long); n++)
-    {
-      if (p1[n] & p2[n])
-	return 1;
-    }
-  return 0;
-}
-
-
-void
-sun_rpc_loop (void)
-{
-  du_thread_t *this_thread = THREAD_CURRENT_THREAD;
-  timeout_t to;
-  to.to_sec = 0;
-  to.to_usec = 0;
-  while (1)
-    {
-      semaphore_enter (this_thread->thr_sem);
-      svc_run_3 (&to);
-    }
-}
-
-
-void
-sun_rpc_ready (void)
-{
-  if (sun_rpc_thread)
-    semaphore_leave (sun_rpc_thread->dkt_process->thr_sem);
-}
-
-
-void
-PrpcSunRPCInitialize (long sz)
-{
-  if (sun_rpc_thread)
-    return;
-
-  sun_rpc_thread = PrpcThreadAllocate (sz);
-  process_set_init_function (sun_rpc_thread->dkt_process, (init_func) sun_rpc_loop, 0);
-  semaphore_leave (sun_rpc_thread->dkt_process->thr_sem);
-}
-#endif /* SUNRPC */
 
 #ifdef _SSL
 

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -67,8 +67,8 @@
     <v:variable name="row_count" persist="temp" type="integer" default="1" />
 
     <vm:menu>
-    <vm:menuitem name="backup_url" value="Backup Database" format="%s"/>
-    <!--vm:menuitem name="restore_url" value="Restore Database" format="%s" type="hot" url="db_restore.vspx"  /-->
+    <vm:menuitem name="backup_url" value="Backup Database" format="%V"/>
+    <!--vm:menuitem name="restore_url" value="Restore Database" format="%V" type="hot" url="db_restore.vspx"  /-->
     </vm:menu>
     <vm:header caption="Database Backup">
       <!--img src="images/icons/backup_database_32.png" alt="Database backup"/-->
@@ -143,7 +143,7 @@
               declare _header, _line varchar;
 
               _header := http_header_get();
-              _line := sprintf('Refresh: %d; URL=db_backup.vspx?sid=%s&realm=%s\r\n', self.refresh, self.sid ,self.realm);
+              _line := sprintf('Refresh: %d; URL=db_backup.vspx?sid=%U&realm=%U\r\n', self.refresh, self.sid ,self.realm);
               if (self.refresh < 16)
                 self.refresh := self.refresh * 2;
 
@@ -255,7 +255,7 @@
                     <v:template name="t_sched_info_bk" type="simple" enabled="--case when not(isnull(backup_context_info_get('prefix'))) then 1 else 0 end">
                       <tr>
                         <td>Prefix</td>
-                        <td><v:label name="t_cur_backup_prefix2" value="--backup_context_info_get('prefix')" format="%s"/></td>
+                        <td><v:label name="t_cur_backup_prefix2" value="--backup_context_info_get('prefix')" format="%V"/></td>
                       </tr>
                       <tr>
                         <td class="ctl_lbl_ctr">Sequence Number</td>
@@ -266,7 +266,7 @@
                       <tr>
                         <td>Last Run Date</td>
                         <td>
-                          <v:label name="t_cur_backup_date2" value="--backup_context_info_get('date')" format="%s" />
+                          <v:label name="t_cur_backup_date2" value="--backup_context_info_get('date')" format="%V" />
                         </td>
                       </tr>
                       <tr>
@@ -298,7 +298,7 @@
                       <tr>
                         <td class="ctl_lbl_ctr">Prefix</td>
                         <td class="ctl_ctr">
-                          <v:label name="l_sched_prefix" value="--self.sched_prefix" format="%s" />
+                          <v:label name="l_sched_prefix" value="--self.sched_prefix" format="%V" />
                         </td>
                       </tr>
                       <tr>
@@ -310,19 +310,19 @@
                       <tr>
                         <td class="ctl_lbl_ctr">Start Time</td>
                         <td class="ctl_ctr">
-                          <v:label name="l_sched_start" value="--self.sched_start" format="%s" fmt-function="yac_hum_datefmt" />
+                          <v:label name="l_sched_start" value="--self.sched_start" format="%V" fmt-function="yac_hum_datefmt" />
                         </td>
                       </tr>
                       <tr>
                         <td class="ctl_lbl_ctr">Last Run</td>
                         <td class="ctl_ctr">
-                          <v:label name="l_sched_last" value="--self.sched_last" format="%s" fmt-function="yac_hum_datefmt" />
+                          <v:label name="l_sched_last" value="--self.sched_last" format="%V" fmt-function="yac_hum_datefmt" />
                         </td>
                       </tr>
                       <tr>
                         <td class="ctl_lbl_ctr">Interval</td>
                         <td class="ctl_ctr">
-                          <v:label name="l_sched_interval" value="--yac_hum_min_to_dur(cast(self.sched_interval as integer))" format="%s"/>
+                          <v:label name="l_sched_interval" value="--yac_hum_min_to_dur(cast(self.sched_interval as integer))" format="%V"/>
                         </td>
                       </tr>
                     </table>
@@ -354,7 +354,7 @@
                         <td class="listing_col">
                           <img src="dav/image/dav/foldr_16.png" alt="folder"/>
                           &amp;nbsp;
-                          <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                          <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/>
                         </td>
                         <td>
                           <v:button name="db_dir_remove" value="Remove" action="simple">
@@ -415,7 +415,7 @@
                             <v:text name="t_dir" error-glyph="*">
                               <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
                             </v:text>
-                            <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
+                            <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?U self.sid ?>&realm=<?U self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
                             <v:button name="dir_add" action="simple" value="Add" />
                             <br /><br />
                           </td>
@@ -430,12 +430,12 @@
             <v:form type="simple" method="POST" name="bkp_f">
               <table class="ctl_grp" style="min-width: 540px;">
                 <tr class="ctl_grp_title">
-                  <th colspan="2">Run <v:label name="incr" value="Incremental" format="%s" enabled="--case when isnull(backup_context_info_get('prefix')) then 0 else 1 end" /> Backup</th>
+                  <th colspan="2">Run <v:label name="incr" value="Incremental" format="%V" enabled="--case when isnull(backup_context_info_get('prefix')) then 0 else 1 end" /> Backup</th>
                 </tr>
                 <tr>
                   <td>Backup File Prefix<span class="attention_marker">*</span></td>
                   <td>
-                    <v:text name="t_backup_prefix" value="--self.prefix" format="%s" xhtml_disabled="--case when isnull(self.prefix) then '@@hidden@@' else 'disabled' end" error-glyph="*">
+                    <v:text name="t_backup_prefix" value="--self.prefix" format="%V" xhtml_disabled="--case when isnull(self.prefix) then '@@hidden@@' else 'disabled' end" error-glyph="*">
                       <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please enter a non-empty prefix"/>
                     </v:text>
                   </td>
@@ -452,7 +452,7 @@
                 <tr>
                   <td>First Backup Date:</td>
                   <td>
-                    <v:text name="t_sched_start" default_value="--substring(cast (now() as varchar), 1, 19)" format="%s"  />
+                    <v:text name="t_sched_start" default_value="--substring(cast (now() as varchar), 1, 19)" format="%V"  />
                   </td>
                 </tr>
                 <tr>
@@ -512,7 +512,7 @@
                           commit work;
                           exec ('checkpoint');
                           http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf ('Location: db_backup.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          http_header (sprintf ('Location: db_backup.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                           http_flush();
                           self.p_mode := '1';
 

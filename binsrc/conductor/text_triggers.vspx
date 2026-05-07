@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -360,7 +360,7 @@
             {
               mimeType := self.mimeTypes[N];
               S := case when (position (mimeType, V)) then 'checked="checked"' else '' end;
-              http (sprintf ('<label><input type="checkbox" name="mimeType_%d" value="%s" %s /> %s</label><br />', N, mimeType, S, mimeType));
+              http (sprintf ('<label><input type="checkbox" name="mimeType_%d" value="%V" %s /> %s</label><br />', N, mimeType, S, mimeType));
             }
           ?>
         </td>

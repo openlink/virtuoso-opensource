@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -5612,7 +5612,7 @@ create procedure y_col_dts (in t varchar)
 	 TYPE_NAME := 'integer';
        if (TYPE_NAME = 'decimal')
 	 TYPE_NAME := 'double precision';
-       http (sprintf ('<option %s>%s</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
+       http (sprintf ('<option %s>%V</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
     }
   http (sprintf ('<option %s>ANY</option>', case when 'ANY' = t then 'selected' else '' end));
 }
@@ -6074,7 +6074,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('pki_certs_list1', 1, vector ('pki_cert_rule1
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
     '/issuer/([^/]*)/([^/]*)/([^/]*)\x24',
     vector('m', 'uid', 'id'), 1,
-    '/issuer/%s?key_name=%s&username=%U', vector('m', 'id', 'uid'),
+    '/issuer/%s?key_name=%U&username=%U', vector('m', 'id', 'uid'),
     null,
     null,
     2);

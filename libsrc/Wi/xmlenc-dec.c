@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1994,7 +1994,7 @@ dsig_signature_t * dsig_template_ (query_instance_t * qi, caddr_t signature_xml_
       xenc_make_error (errbuf, 1024, ctx->wc_tb.xtb_err_code, ctx->wc_tb.xtb_err_buffer);
       wsse_ctx_free (ctx);
 
-      xenc_report_error (t, 500 + strlen (errbuf), DSIG_TEMPL_ERR, errbuf);
+      sqlr_new_error ("42000", "XENC3T", "%s", errbuf);
     }
   XENC_TRY_END(&ctx->wc_tb);
 

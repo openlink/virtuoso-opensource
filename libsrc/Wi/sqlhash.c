@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,11 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, int op)
   col->col_sqt.sqt_non_null = 0;
   if (DV_ARRAY_OF_POINTER == col->col_sqt.sqt_dtp)
     col->col_sqt.sqt_dtp = DV_ANY;
+  if (DV_GEO == col->col_sqt.sqt_dtp && SSL_CONSTANT == ssl->ssl_type)
+    {
+      col->col_sqt.sqt_dtp = DV_ANY;
+      col->col_sqt.sqt_col_dtp = DV_ANY;
+    }
   if (DV_LONG_INT == ssl->ssl_dtp /*&& !ssl->ssl_column*/)
     {
       col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */

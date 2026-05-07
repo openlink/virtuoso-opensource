@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,9 +33,9 @@
     <v:variable persist="1" name="folder_mask" type="varchar" default="''" />
 
     <vm:menu>
-      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%s" url="vdb_dsns.vspx" />
+      <vm:menuitem name="dsns_url" type="hot" value="Known Datasources" format="%V" url="vdb_dsns.vspx" />
       <vm:menuitem value="Known Remote Resources" />
-      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx?mode=1" />
+      <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%V" url="vdb_link.vspx?mode=1" />
     </vm:menu>
 
     <vm:rawheader>
@@ -49,7 +49,7 @@
             {
             error:
               http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+              http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
               return;
             }
 
@@ -72,12 +72,12 @@
                 if ('00000' <> state)
                 {
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                  http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_STATE, '')));
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_MESSAGE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_STATE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_MESSAGE, '')));
                   http ('</TABLE>');
                   return;
                 }
@@ -95,12 +95,12 @@
                 if ('00000' <> state)
                 {
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                  http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                   http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
                   http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', tbl));
                   http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_STATE, '')));
-                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_MESSAGE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_STATE, '')));
+                  --http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%V</TD></TR>', coalesce (__SQL_MESSAGE, '')));
                   http ('</TABLE>');
                   return;
                 }
@@ -108,11 +108,11 @@
               }
             }
             http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+            http_header (sprintf('Location: vdb_resources.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
           ]]>
         </v:on-post>
-        <a href="vdb_resources.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&what=openall">Open All</a>
-        <a href="vdb_resources.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&what=closeall">Close All</a>
+        <a href="vdb_resources.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&what=openall">Open All</a>
+        <a href="vdb_resources.vspx?sid=<?U self.sid ?>&realm=<?U self.realm ?>&what=closeall">Close All</a>
         <table class="MainSubData" border="0" cellspacing="0" cellpadding="3">
           <?vsp
             declare size_of_tables, size_of_procs, cnt, dsn_no, flag, _all, total_count integer;
@@ -170,16 +170,16 @@
               http('<td  width="32">');
 
               if (flag = ascii('1'))
-                http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=close#%d"><img src="images/Open-folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=close#%d"><img src="images/Open-folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
               else
               {
                 if (size_of_tables > 0 or size_of_procs > 0 )
-                  http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=open#%d"><img src="images/Folder-full.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                  http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=open#%d"><img src="images/Folder-full.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
                 else
-                  http(sprintf('<a href="vdb_resources.vspx?sid=%s&realm=%s&dsn_no=%d&what=open#%d"><img src="images/Folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
+                  http(sprintf('<a href="vdb_resources.vspx?sid=%U&realm=%U&dsn_no=%d&what=open#%d"><img src="images/Folder.gif" border="0"/></a></td>', self.sid ,self.realm ,cnt, cnt));
               }
 
-              http(sprintf('<td align="left"><b>%s</b></td><td>&nbsp;</td>', DS_DSN ));
+              http(sprintf('<td align="left"><b>%V</b></td><td>&nbsp;</td>', DS_DSN ));
               http('</tr>');
 
               if (flag = ascii('1'))
@@ -191,26 +191,26 @@
                   http('<tr><td>&nbsp;</td><td valign="top">');
                   if ( size_of_tables = 0 )
                   {
-                    http(sprintf('<select disabled="true" name="%s_remote_tbls" multiple="true">',DS_DSN));
+                    http(sprintf('<select disabled="true" name="%V_remote_tbls" multiple="true">',DS_DSN));
                     http ('<option>-No Remote Tables Linked-</option>');
                   }
                   else
                   {
-                    http(sprintf('<select name="%s_remote_tbls" multiple="true">',DS_DSN));
+                    http(sprintf('<select name="%V_remote_tbls" multiple="true">',DS_DSN));
                     for select RT_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_DSN = DS_DSN do {
-                        http (sprintf ('<option>%s</option>', RT_NAME));
+                        http (sprintf ('<option>%V</option>', RT_NAME));
                   }
                   http('</select></td><td valign="top">');
                 }
 
                 if (size_of_procs = 0 )
                 {
-                  http(sprintf('<select disabled="true" name="%s_remote_procs" multiple="true">',DS_DSN));
+                  http(sprintf('<select disabled="true" name="%V_remote_procs" multiple="true">',DS_DSN));
                   http ('<option>-No Remote Procedures Linked-</option>');
                 }
                 else
                 {
-                  http(sprintf('<select name="%s_remote_procs" multiple="true">', DS_DSN));
+                  http(sprintf('<select name="%V_remote_procs" multiple="true">', DS_DSN));
                   for select P_NAME from DB.DBA.SYS_PROCEDURES where
                       P_NAME not like '%.vsp' and (
                       ( --proc_is_remote(P_NAME) and
@@ -220,7 +220,7 @@
                         regexp_match(sprintf('\-\-"DSN:%s ',DS_DSN), coalesce(P_TEXT, blob_to_string(P_MORE))) is not null)
                       ) do
                   {
-                    http (sprintf ('<option>%s</option>', P_NAME));
+                    http (sprintf ('<option>%V</option>', P_NAME));
                   }
                 }
                 http('</select></td></tr>');

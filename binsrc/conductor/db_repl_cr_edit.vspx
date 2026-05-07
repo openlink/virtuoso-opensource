@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -157,7 +157,7 @@
                 <v:on-post>
                   <v:script>
                     <![CDATA[
-                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%U&item_type=%U', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>
@@ -196,7 +196,7 @@
                         self.error_str198 := _msg;
                         return;
                       }
-                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%U&item_type=%U', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     ]]>
                   </v:script>
                 </v:on-post>
@@ -217,7 +217,7 @@
       </span>
       <?vsp
         if (self.error_str198 <> '' and self.error_str198 is not null)
-          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+          http(sprintf('<table class="warning"><tr><td>%V</td></tr></table>', self.error_str198));
         self.error_str198 := '';
       ?>
     </vm:pagebody>

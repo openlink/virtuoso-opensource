@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2214,6 +2214,7 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
   caddr_t volatile err_save = NULL;
   int is_scalar_subq = 0;
   sql_comp_t sc;
+  caddr_t cc_error = NULL;
   NEW_VARZ (query_t, qr);
   if (SCALAR_SUBQ == (ptrlong)params)
     {
@@ -2292,7 +2293,6 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
   }
   THROW_CODE
   {
-    caddr_t cc_error = NULL;
     if (qr && qr->qr_proc_name)
       query_free (qr);
     else

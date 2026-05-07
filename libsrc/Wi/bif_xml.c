@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4065,8 +4065,9 @@ bif_xte_nodebld_acc_impl (caddr_t * qst, state_slot_t ** args, int preserve_args
 	    break;
 	  default:
 	    {
-	      caddr_t strg = box_cast_to_UTF8 (qst, dst[0]);
-	      dst[0] = strg;
+	      caddr_t strg = dst[0];
+              dst[0] = NULL; /* remove reference to the original, next can signal */
+              dst[0] = box_cast_to_UTF8 (qst, strg);
 	      dst++;
 	      break;
 	    }

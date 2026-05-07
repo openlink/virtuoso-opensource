@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -359,7 +359,9 @@ the order of columns in dks_charclasses, file dks_esc.c */
 #define DKS_ESC_JAVA_SQ		0x12	/*! 18 */
 #define DKS_ESC_JAVA_DQ		0x13	/*! 19 */
 #define DKS_ESC_QNAME_11	0x14	/*! 20 */
-#define COUNTOF__DKS_ESC	0x15	/*! 21 */
+#define DKS_ESC_TSV_DQ		0x15	/*! 21 */
+#define DKS_ESC_JSWRITE_CANON	0x16	/*! 22 */
+#define COUNTOF__DKS_ESC	0x17	/*! 23 */
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200

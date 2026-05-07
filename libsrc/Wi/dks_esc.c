@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,30 +86,30 @@ unsigned char dks_esc_char_props[0x100] = {
 
 
 dks_charclass_props_t dks_charclasses['R'+1-'>'] = {
-/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|14	|15	|16	|17	|18	|19	,20	*/
-/*		|0x00	|0x01	|0x02	|0x03	|0x04	|0x05	|0x06	|0x07	|0x08	|0x09	|0x0A	|0x0B	|0x0C	|0x0D	|0x0E	|0x0F	|0x10	|0x11	|0x12	|0x13	,0x14	*/
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	|hTTL_SQ|hTTL_DQ|hTTLIRI|JAVA_SQ|JAVA_DQ,QNAME11*/
-/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
-/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
-/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
-/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BAD	},
-/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
-/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
-/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLAU8	,0	,BSLASHC,QUOT	,BSLASHC,BSLAU8	,0	,BSLASHC,BAD	},
-/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,AMP	,AMP	,AMP	,0	,0	,0	},
-/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,PCT	,BSLASHC,0	,BSLAU8	,BSLASHC,0	,BSLASHC,LATTICE,BSLAU8	,BSLASHC,0	,0	},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,0	,0	,BSLAU8	,0	,0	,0	},
-/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,LT	,LT	,BSLAU8	,0	,0	,BAD	},
-/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,GT	,GT	,BSLAU8	,0	,0	,BAD	},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
-/* R |, 0x7f */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	} };
+/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|14	|15	|16	|17	|18	|19	|20	|21     */
+/*		|0x00	|0x01	|0x02	|0x03	|0x04	|0x05	|0x06	|0x07	|0x08	|0x09	|0x0A	|0x0B	|0x0C	|0x0D	|0x0E	|0x0F	|0x10	|0x11	|0x12	|0x13	|0x14   |0x15	*/
+/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	|hTTL_SQ|hTTL_DQ|hTTLIRI|JAVA_SQ|JAVA_DQ,QNAME11,TSV_DQ, JS_CANON*/
+/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	,0        , 0     },
+/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	,BAD     ,BSLAU4 },
+/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0       ,0      },
+/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	,0       , 0 },
+/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BAD	,BAD     ,BSLAU4 },
+/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      },
+/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	,BSLASHC  ,BSLASHC },
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	,BSLASHC  ,BSLASHC },
+/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	,BSLASHC  ,BSLASHC },
+/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLAU8	,0	,BSLASHC,QUOT	,BSLASHC,BSLAU8	,0	,BSLASHC,BAD	,BSLASHC  ,BSLASHC },
+/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,AMP	,AMP	,AMP	,0	,0	,0	,0        ,0      },
+/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,PCT	,BSLASHC,0	,BSLAU8	,BSLASHC,0	,BSLASHC,LATTICE,BSLAU8	,BSLASHC,0	,0	,0        ,0      },
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,0	,0	,BSLAU8	,0	,0	,0	,0        ,0      },
+/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,LT	,LT	,BSLAU8	,0	,0	,BAD	,0        ,0     },
+/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,GT	,GT	,BSLAU8	,0	,0	,BAD	,0        ,0      },
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      },
+/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      },
+/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      },
+/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      },
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	,0        ,BSLASHC},
+/* R |, 0x7f */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0        ,0      } };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -156,6 +156,9 @@ dks_esc_write (dk_session_t * ses, const char * src_str, size_t src_len,
   int dks_esc_mode_base = dks_esc_mode & 0xFF;
   wchar_t out_buf[0x80];
   int out_buf_idx = 2;
+  static char HEXU[] = "0123456789ABCDEF";
+  static char HEXL[] = "0123456789abcdef";
+  char * HEXP = DKS_ESC_JSWRITE_CANON == dks_esc_mode ? &HEXL[0] : &HEXU[0];
 
   if (0 == src_len)
     return;
@@ -229,10 +232,10 @@ again:
           {
             out_buf[out_buf_idx++] = '\\';
             out_buf[out_buf_idx++] = 'u';
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0000000F];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = HEXP[wc&0x0000000F];
             goto char_done;
           }
         else if (wc > 0x10ffff)
@@ -247,16 +250,16 @@ again:
             wchar_t lo_surro = 0xDC00 + (shifted_cp & 0x3FF);
             out_buf[out_buf_idx++] = '\\';
             out_buf[out_buf_idx++] = 'u';
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x0000F000)>>12];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x00000F00)>>8];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x000000F0)>>4];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[hi_surro&0x0000000F];
+            out_buf[out_buf_idx++] = HEXP[(hi_surro&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = HEXP[(hi_surro&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = HEXP[(hi_surro&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = HEXP[hi_surro&0x0000000F];
             out_buf[out_buf_idx++] = '\\';
             out_buf[out_buf_idx++] = 'u';
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x0000F000)>>12];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x00000F00)>>8];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x000000F0)>>4];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[lo_surro&0x0000000F];
+            out_buf[out_buf_idx++] = HEXP[(lo_surro&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = HEXP[(lo_surro&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = HEXP[(lo_surro&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = HEXP[lo_surro&0x0000000F];
             goto char_done;
           }
       }
@@ -266,19 +269,19 @@ again:
         if (wc & ~0xffff)
           {
             out_buf[out_buf_idx++] = 'U';
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0000000)>>28];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0F000000)>>24];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00F00000)>>20];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000F0000)>>16];
+            out_buf[out_buf_idx++] = HEXP[(wc&0xF0000000)>>28];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x0F000000)>>24];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x00F00000)>>20];
+            out_buf[out_buf_idx++] = HEXP[(wc&0x000F0000)>>16];
           }
         else
           {
             out_buf[out_buf_idx++] = 'u';
           }
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0000000F];
+        out_buf[out_buf_idx++] = HEXP[(wc&0x0000F000)>>12];
+        out_buf[out_buf_idx++] = HEXP[(wc&0x00000F00)>>8];
+        out_buf[out_buf_idx++] = HEXP[(wc&0x000000F0)>>4];
+        out_buf[out_buf_idx++] = HEXP[wc&0x0000000F];
         goto char_done;
       }
 /*                            0          1         2   */
@@ -310,16 +313,16 @@ out_percent:
         while (utf8_head < utf8_tail)
           {
             out_buf[out_buf_idx++] = '%';
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[((utf8_head[0])&0xF0)>>4];
-            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(utf8_head[0])&0x0F];
+            out_buf[out_buf_idx++] = HEXP[((utf8_head[0])&0xF0)>>4];
+            out_buf[out_buf_idx++] = HEXP[(utf8_head[0])&0x0F];
             utf8_head++;
           }
       }
     else
       {
         out_buf[out_buf_idx++] = '%';
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0)>>4];
-        out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0F];
+        out_buf[out_buf_idx++] = HEXP[(wc&0xF0)>>4];
+        out_buf[out_buf_idx++] = HEXP[wc&0x0F];
       }
     goto char_done;
   }
@@ -439,8 +442,8 @@ flush_bad_char:
                       for (ctr = 0; ctr < temp_len; ctr++)
                         {
                           (pct_tail++)[0] = '%';
-                          (pct_tail++)[0] = "0123456789ABCDEF"[((temp[ctr])&0xF0)>>4];
-                          (pct_tail++)[0] = "0123456789ABCDEF"[(temp[ctr])&0x0F];
+                          (pct_tail++)[0] = HEXP[((temp[ctr])&0xF0)>>4];
+                          (pct_tail++)[0] = HEXP[(temp[ctr])&0x0F];
                         }
                       session_buffered_write (ses, pct, (pct_tail-pct));
                     }
@@ -466,10 +469,10 @@ flush_bad_char:
                     {
                       (tail++)[0] = '\\';
                       (tail++)[0] = 'u';
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
-                      (tail++)[0] = "0123456789ABCDEF"[wc&0x0000000F];
+                      (tail++)[0] = HEXP[(wc&0x0000F000)>>12];
+                      (tail++)[0] = HEXP[(wc&0x00000F00)>>8];
+                      (tail++)[0] = HEXP[(wc&0x000000F0)>>4];
+                      (tail++)[0] = HEXP[wc&0x0000000F];
                     }
                   else if (wc > 0x10ffff)
                     {
@@ -483,16 +486,16 @@ flush_bad_char:
                       wchar_t lo_surro = 0xDC00 + (shifted_cp & 0x3FF);
                       (tail++)[0] = '\\';
                       (tail++)[0] = 'u';
-                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x0000F000)>>12];
-                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x00000F00)>>8];
-                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x000000F0)>>4];
-                      (tail++)[0] = "0123456789ABCDEF"[hi_surro&0x0000000F];
+                      (tail++)[0] = HEXP[(hi_surro&0x0000F000)>>12];
+                      (tail++)[0] = HEXP[(hi_surro&0x00000F00)>>8];
+                      (tail++)[0] = HEXP[(hi_surro&0x000000F0)>>4];
+                      (tail++)[0] = HEXP[hi_surro&0x0000000F];
                       (tail++)[0] = '\\';
                       (tail++)[0] = 'u';
-                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x0000F000)>>12];
-                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x00000F00)>>8];
-                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x000000F0)>>4];
-                      (tail++)[0] = "0123456789ABCDEF"[lo_surro&0x0000000F];
+                      (tail++)[0] = HEXP[(lo_surro&0x0000F000)>>12];
+                      (tail++)[0] = HEXP[(lo_surro&0x00000F00)>>8];
+                      (tail++)[0] = HEXP[(lo_surro&0x000000F0)>>4];
+                      (tail++)[0] = HEXP[lo_surro&0x0000000F];
                     }
                   session_buffered_write (ses, tmp, (tail-tmp));
                   continue;
@@ -505,19 +508,19 @@ flush_bad_char:
                   if (wc & ~0xffff)
                     {
                       (tail++)[0] = 'U';
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0xF0000000)>>28];
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x0F000000)>>24];
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x00F00000)>>20];
-                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x000F0000)>>16];
+                      (tail++)[0] = HEXP[(wc&0xF0000000)>>28];
+                      (tail++)[0] = HEXP[(wc&0x0F000000)>>24];
+                      (tail++)[0] = HEXP[(wc&0x00F00000)>>20];
+                      (tail++)[0] = HEXP[(wc&0x000F0000)>>16];
                     }
                   else
                     {
                       (tail++)[0] = 'u';
                     }
-                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
-                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
-                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
-                  (tail++)[0] = "0123456789ABCDEF"[wc&0x0000000F];
+                  (tail++)[0] = HEXP[(wc&0x0000F000)>>12];
+                  (tail++)[0] = HEXP[(wc&0x00000F00)>>8];
+                  (tail++)[0] = HEXP[(wc&0x000000F0)>>4];
+                  (tail++)[0] = HEXP[wc&0x0000000F];
                   session_buffered_write (ses, tmp, (tail-tmp));
                   continue;
                 }

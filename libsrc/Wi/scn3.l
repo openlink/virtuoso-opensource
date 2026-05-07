@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -501,7 +501,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     {
       global_scs->scs_scn3c.last_keyword_yytext = yytext;
       global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
-      yylval->strval = k->kwd;
+      yylval->strval = t_sym_string (k->kwd);
       if (SPARQL_L == k->token)
         {
 #ifndef SCN3SPILT

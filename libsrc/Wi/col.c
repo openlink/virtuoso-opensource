@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -5051,7 +5051,7 @@ bif_ddl_table_col_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   sec_check_dba (qi, "ddl_table_col_update");
 
   if (!key->key_is_col)
-    sqlr_new_error ("42000", "COL..", "The index is not a column-wise");
+    sqlr_new_error ("42000", "COL01", "The index is not a column-wise");
 
   itc = itc_create (NULL, qi->qi_trx);
   itc_from (itc, key, qi->qi_client->cli_slice);

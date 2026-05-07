@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -108,11 +108,7 @@ wisvc_err_printf (const char *str, ...)
   va_start (list, str);
   vsnprintf (temp, sizeof (temp), str, list);
   OutputDebugStringA (temp);	/* Some kind of Windows debugging function. */
-#ifdef PMN_LOG
   log_error (temp);
-#else
-  log_error_list (str, list);	/* In log.c, appends stuff to wi.err */
-#endif
   return 0;
 }
 

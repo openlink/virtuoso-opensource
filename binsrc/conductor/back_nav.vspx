@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -37,7 +37,7 @@
     <tr>
       <td align="right">
         <v:form name="form_back" type="simple" method="POST" action="">
-          <v:url name="back_submit" format="%s" value="--'Back'" url="--sprintf('popup_browser.vspx?sid=%s&realm=%s&dir=%s&title=%s\r\n', self.sid , self.realm, self.path, self.title)" xhtml_target="_parent"/>
+          <v:url name="back_submit" format="%V" value="--'Back'" url="--sprintf('popup_browser.vspx?sid=%U&realm=%U&dir=%U&title=%U\r\n', self.sid , self.realm, self.path, self.title)" xhtml_target="_parent"/>
         </v:form>
       </td>
     </tr>

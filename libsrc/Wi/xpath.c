@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -346,6 +346,7 @@ xml_view_name (client_connection_t *cli, char *q, char *o, char *n,
   dbe_schema_t *newest_schema;
   char temp[MAX_QUAL_NAME_LEN];
   char q_loc [MAX_NAME_LEN], o_loc [MAX_NAME_LEN];
+  char split[MAX_QUAL_NAME_LEN];
   char *q2;
   char *o2;
   if (q && (strlen (q) > MAX_NAME_LEN))
@@ -360,7 +361,6 @@ xml_view_name (client_connection_t *cli, char *q, char *o, char *n,
     { err_ret[0] = "Invalid local part of the name (it contains dot char)"; return NULL; }
   if (NULL == o && NULL == n)
     {
-      char split[MAX_QUAL_NAME_LEN];
       char *xx = split;
       strcpy_ck (split, q);
       q = part_tok (&xx);

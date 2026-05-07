@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -81,6 +81,8 @@
 
 #define JFLG_DEBUG            0x10000
 #define JFLG_NO_BNODE         0x1
+#define JFLG_BOOL_BOX         0x2
+#define JFLG_CANON_NUM        0x4
 
 #define JSON_LD_UNNAMED       "Entity"
 

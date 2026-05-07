@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -55,10 +55,10 @@
               <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+              <v:url name="b_url43" value="Text Indexing" format="%V" url="cont_page.vspx?page=3" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+              <v:url name="b_url42" value="Resource Types" format="%V" url="cont_page.vspx?page=4" />
             </div>
             <table class="tab_page">
               <tr>
@@ -74,7 +74,7 @@
                     </v:on-post>
                     <table class="ctl_grp" border="0" cellpadding="0">
                       <tr>
-                        <td>Selected Site</td><td><b><?V self.site_name  ?></b></td>
+                        <td>Selected Site</td><td><b><?V self.site_name ?></b></td>
                       </tr>
                       <tr>
                         <td colspan="2" align="left">
@@ -116,7 +116,7 @@
                             <v:on-post>
                               <![CDATA[
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                http_header(sprintf('Location: robot_sites.vspx?sid=%U&realm=%U\r\n', self.sid , self.realm));
                                 return;
                               ]]>
                             </v:on-post>

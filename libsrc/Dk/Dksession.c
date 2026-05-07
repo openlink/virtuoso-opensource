@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -417,11 +417,6 @@ session_select (int ses_count, session_t ** reads, session_t ** writes, timeout_
 #if defined (COM_TCPIP)
   return (tcpses_select (ses_count, reads, writes, timeout));
 
-#elif defined (COM_UDPIP)
-  return (udpses_select (ses_count, reads, writes, timeout));
-
-#elif defined (COM_NMPIPE)
-  return (nmpses_select (ses_count, reads, writes, timeout));
 #else
 
 #error FIX ME

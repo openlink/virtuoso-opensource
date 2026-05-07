@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,8 +27,8 @@
   <v:variable persist="0" name="ename" type="varchar" default="''"/>
   <v:variable persist="1" name="error_str1" type="varchar" default="''"/>
   <v:form name="event_form" type="simple" method="POST" action="sys_queues_edit.vspx">
-    <input type="hidden" name="name" value="<?= get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
     <v:on-post>
       <v:script>
         <![CDATA[
@@ -38,7 +38,7 @@
           {
             success:
             http_request_status ('HTTP/1.1 302 Found');
-            http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
             return;
           }
           name := '';
@@ -211,7 +211,7 @@
    <?vsp
      if (self.error_str1 <> '')
      {
-       http(sprintf('<tr><td colspan="3"></td>%s</tr>', self.error_str1));
+       http(sprintf('<tr><td colspan="3"></td>%V</tr>', self.error_str1));
        self.error_str1 := '';
      }
    ?>

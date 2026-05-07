@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -26,8 +26,8 @@
 <table width="98%" border="0" cellspacing="0" cellpadding="5" class="MainSubData" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <v:variable persist="0" name="ename" type="varchar" default="''"/>
   <v:form name="event_form" type="simple" method="POST" action="sys_queues_edit.vspx">
-    <input type="hidden" name="name" value="<?= get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-    <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
     <v:on-post>
       <v:script><![CDATA[
         declare i, cnt, exist, u_ident, g_name integer;

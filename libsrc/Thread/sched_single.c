@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -117,10 +117,8 @@ thread_set_priority (thread_t *self, int prio)
 {
   int old_prio = self->thr_priority;
 
-  if (prio < 0 && prio >= MAX_PRIORITY)
-    return old_prio;
-
-  self->thr_priority = prio;
+  if (prio >= 0 && prio < MAX_PRIORITY)
+    self->thr_priority = prio;
 
   return old_prio;
 }
@@ -133,70 +131,6 @@ thread_get_priority (thread_t *self)
 }
 
 
-#ifdef EXPIRIMENTAL
-int
-thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
-{
-  thread_sleep (timeout);
-  return -1;
-}
-
-
-int
-thread_signal_cond (void *event)
-{
-  return 0;
-}
-
-
-int
-thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout)
-{
-  thread_t *thr = current_thread;
-  struct timeval *ptv, tv;
-  int rc;
-
-  if (timeout == TV_INFINITE)
-    ptv = NULL;
-  else
-    {
-      tv.tv_sec = timeout / 1000;
-      tv.tv_usec = (timeout % 1000) * 1000;
-      ptv = &tv;
-    }
-
-  thr->thr_status = WAITEVENT;
-
-  for (;;)
-    {
-      if ((rc = select (n, rfds, wfds, NULL, ptv)) == -1)
-	{
-	  switch (errno)
-	    {
-	    case EINTR:
-	      continue;
-	    default:
-	      break;
-	    }
-	  thr_errno = errno;
-	}
-      else
-	thr_errno = 0;
-      break;
-    }
-
-  thr->thr_status = RUNNING;
-
-  return rc;
-}
-
-
-void
-thread_sleep (TVAL timeout)
-{
-  thread_select (0, NULL, NULL, NULL, timeout);
-}
-#endif
 
 
 /******************************************************************************

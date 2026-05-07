@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,7 @@
             <v:button name="conf_cancel" action="simple" value="Cancel">
               <v:on-post>
                 <![CDATA[
-                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                  self.vc_redirect (sprintf ('%s?openat=%U', self.caller, self.lhost));
                 ]]>
               </v:on-post>
             </v:button>
@@ -75,7 +75,7 @@
               <v:on-post>
                 <![CDATA[
                   VHOST_REMOVE (self.vhost, self.lhost, self.lpath);
-                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                  self.vc_redirect (sprintf ('%s?openat=%U', self.caller, self.lhost));
                 ]]>
               </v:on-post>
             </v:button>

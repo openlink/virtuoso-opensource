@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@
                       <?vsp
                         for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' do
                         {
-                          http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
+                          http(sprintf ('<option value=\"%V=%V\">%V (%V)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
                         }
                       ?>
                     </select>
@@ -249,7 +249,7 @@
                 <tr>
                   <td>
                     <b>There are no entries in Existing Hosted Domain list of ODS Site Settings and no existing non-default HTTP listeners.</b><br/>
-                    To create new domain first <v:url name="site_creatre_create_ref" format="%s" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
+                    To create new domain first <v:url name="site_creatre_create_ref" format="%V" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
                   </td>
                 </tr>
                 <tr>

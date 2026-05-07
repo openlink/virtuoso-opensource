@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -523,7 +523,7 @@ itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_used, int may_delete
       if (ISO_SERIALIZABLE == itc->itc_isolation)
 	{
 	  /* serializable locks the row before the range unless this is a non-first page or there is a matchh on unique key */
-	  if (lower && !(itc->itc_ks->ks_ts->ts_is_unique && lower != last))
+	  if (lower && !(IS_TS(itc->itc_ks->ks_ts) && itc->itc_ks->ks_ts->ts_is_unique && lower != last))
 	    {
 	      lower--;
 	      n_done--;
@@ -1503,6 +1503,8 @@ void
 pl_remove_empty_rls (page_lock_t * pl)
 {
   int inx;
+  index_tree_t * it = pl->pl_it;
+  mutex_enter (it->it_lock_release_mtx);
   for (inx = 0; inx < N_RLOCK_SETS; inx++)
     {
       row_lock_t **prev = &pl->pl_rows[inx];
@@ -1521,6 +1523,7 @@ pl_remove_empty_rls (page_lock_t * pl)
 	  rl = next;
 	}
     }
+  mutex_leave (it->it_lock_release_mtx);
 }
 
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -64,10 +64,6 @@ static pthread_attr_t _thread_attr;
 static thread_queue_t _deadq;
 thread_queue_t _waitq;
 static dk_mutex_t *_q_lock;
-#ifdef EXPIRIMENTAL
-static int _ev_pipes[2];
-static char _ev_never;
-#endif
 
 dk_mutex_t * all_mtxs_mtx;
 #ifdef MTX_METER
@@ -101,13 +97,6 @@ _sched_init (void)
   _thread_num_runnable = -1;	/* not counted */
   _thread_num_total = 1;
 
-#ifdef EXPIRIMENTAL
-  io_init ();
-
-  pipe (_ev_pipes);
-  thread_nb_fd (_ev_pipes[0]);
-  thread_nb_fd (_ev_pipes[1]);
-#endif
 #ifdef MTX_METER
   all_mtxs_mtx = mutex_allocate ();
   all_mtxs = hash_table_allocate (10000);
@@ -125,17 +114,8 @@ _sched_init (void)
 thread_t *
 thread_current (void)
 {
-#ifndef OLD_PTHREADS
   return (thread_t *) pthread_getspecific (_key_current);
 
-#else
-  void *value;
-
-  if (pthread_getspecific (_key_current, &value) == -1)
-    return NULL;
-
-  return value;
-#endif
 }
 
 
@@ -149,11 +129,7 @@ _alloc_cv (void)
   int rc;
 
   memset ((void *) cv, 0, sizeof (pthread_cond_t));
-#ifndef OLD_PTHREADS
   rc = pthread_cond_init (cv, NULL);
-#else
-  rc = pthread_cond_init (cv, pthread_condattr_default);
-#endif
   CKRET (rc);
 
   return (void *) cv;
@@ -163,15 +139,57 @@ failed:
   return NULL;
 }
 
+#define OS_STACK_RESERVE	(4 * 8192)
+#define SAN_STACK_MIN  		(6 * 1024 * 1024)
+
+static void
+adjust_stack_size (size_t *p_stack_sz)
+{
+  size_t page_size;
+  size_t stack_size = *p_stack_sz;
+
+#if defined (__SANITIZE_ADDRESS__)
+  if (stack_size < SAN_STACK_MIN)
+    stack_size = SAN_STACK_MIN;
+#endif
+
+#if (SIZEOF_VOID_P == 8)
+  stack_size *= 2;
+#endif
+
+#if defined (PTHREAD_STACK_MIN)
+  if (stack_size < PTHREAD_STACK_MIN)
+    stack_size = PTHREAD_STACK_MIN;
+#endif
+
+#if defined(_SC_PAGESIZE)
+   page_size = sysconf (_SC_PAGESIZE);
+#else
+   page_size = 8192;
+#endif
+
+  /* Make stack size multiple of page-size */
+  stack_size = (((stack_size - 1) / page_size) + 1) * page_size;
+
+#ifdef DEBUG
+  fprintf (stderr, "Changed stack size from %ld to %ld\n", *p_stack_sz, stack_size);
+#endif
+
+  *p_stack_sz = stack_size;
+
+  return;
+}
+
 
 /*
  *  The main thread must call this function to convert itself into a thread.
  */
 thread_t *
-thread_initial (unsigned long stack_size)
+thread_initial (unsigned long _stack_size)
 {
   int rc;
   thread_t *thr = NULL;
+  size_t stack_size = (size_t) _stack_size;
 
   if (_main_thread)
     return _main_thread;
@@ -179,11 +197,7 @@ thread_initial (unsigned long stack_size)
   /*
    *  Initialize pthread key
    */
-#ifndef OLD_PTHREADS
   rc = pthread_key_create (&_key_current, NULL);
-#else
-  rc = pthread_keycreate (&_key_current, NULL);
-#endif
   CKRET (rc);
 
   /*
@@ -195,7 +209,6 @@ thread_initial (unsigned long stack_size)
   /*
    *  Initialize default thread/mutex attributes
    */
-#ifndef OLD_PTHREADS
   /* attribute for thread creation */
   rc = pthread_attr_init (&_thread_attr);
   CKRET (rc);
@@ -203,13 +216,6 @@ thread_initial (unsigned long stack_size)
   /* attribute for mutex creation */
   rc = pthread_mutexattr_init (&_mutex_attr);
   CKRET (rc);
-#else
-  rc = pthread_attr_create (&_thread_attr);
-  CKRET (rc);
-
-  rc = pthread_mutexattr_create (&_mutex_attr);
-  CKRET (rc);
-#endif
 
 #if defined (PTHREAD_PROCESS_PRIVATE) && !defined(oldlinux) && !defined(__FreeBSD__)
   rc = pthread_mutexattr_setpshared (&_mutex_attr, PTHREAD_PROCESS_PRIVATE);
@@ -240,19 +246,10 @@ thread_initial (unsigned long stack_size)
   if (stack_size == 0)
     stack_size = MAIN_STACK_SIZE;
 
-#if (SIZEOF_VOID_P == 8)
-  stack_size *= 2;
-#endif
-#if defined (__x86_64 ) && defined (SOLARIS)
-  /*GK: the LDAP on that platform requires that */
-  stack_size *= 2;
-#endif
-
-
-  stack_size = ((stack_size / 8192) + 1) * 8192;
+  adjust_stack_size (&stack_size);
 
   thr->thr_stack_size = stack_size;
-  thr->thr_stack_base = (void *) &stack_size;
+  thr->thr_stack_base = (void *) &_stack_size;
   thr->thr_status = RUNNING;
   thr->thr_cv = _alloc_cv ();
   thr->thr_sem = semaphore_allocate (0);
@@ -323,13 +320,16 @@ thread_alloc (void)
 }
 
 
+
+
 thread_t *
 thread_create (
     thread_init_func initial_function,
-    unsigned long stack_size,
+    unsigned long _stack_size,
     void *initial_argument)
 {
   thread_t *thr;
+  size_t stack_size = (size_t) _stack_size;
   int rc;
 
   assert (_main_thread != NULL);
@@ -337,25 +337,8 @@ thread_create (
   if (stack_size == 0)
     stack_size = THREAD_STACK_SIZE;
 
-#if (SIZEOF_VOID_P == 8)
-  stack_size *= 2;
-#endif
-#if defined (__x86_64 ) && defined (SOLARIS)
-  /*GK: the LDAP on that platform requires that */
-  stack_size *= 2;
-#endif
-#ifdef HPUX_ITANIUM64
-  stack_size += 8 * 8192;
-#endif
+   adjust_stack_size (&stack_size);
 
-  stack_size = ((stack_size / 8192) + 1) * 8192;
-
-#if defined (PTHREAD_STACK_MIN)
-  if (stack_size < PTHREAD_STACK_MIN)
-    {
-      stack_size = PTHREAD_STACK_MIN;
-    }
-#endif
   /* Any free threads with the right stack size? */
   Q_LOCK ();
   for (thr = (thread_t *) _deadq.thq_head.thr_next;
@@ -370,10 +353,8 @@ thread_create (
   /* No free threads, create a new one */
   if (thr == (thread_t *) &_deadq.thq_head)
     {
-#ifndef OLD_PTHREADS
 #if defined(HAVE_PTHREAD_ATTR_GETSTACKSIZE)
       size_t os_stack_size = stack_size;
-#endif
 #endif
       thr = thread_alloc ();
       thr->thr_initial_function = initial_function;
@@ -382,43 +363,19 @@ thread_create (
       if (thr->thr_cv == NULL)
 	goto failed;
 
-#ifdef HPUX_ITANIUM64
-      if (stack_size > PTHREAD_STACK_MIN)
-        {
-	  size_t s, rses;
-          pthread_attr_getstacksize (&_thread_attr, &s);
-	  pthread_attr_getrsestacksize_np (&_thread_attr, &rses);
-	  log_error ("default rses=%d stack=%d : %m", rses,s);
-	}
-#endif
-
-
-#ifndef OLD_PTHREADS
 # if  defined(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
       rc = pthread_attr_setstacksize (&_thread_attr, stack_size);
       if (rc)
 	{
-          log_error ("Failed setting the OS thread stack size to %d : %m", stack_size);
+          log_error ("Failed setting the OS thread stack size to %ld : %m", stack_size);
 	}
 # endif
 
 #if defined(HAVE_PTHREAD_ATTR_GETSTACKSIZE)
       if (0 == pthread_attr_getstacksize (&_thread_attr, &os_stack_size))
 	{
-	  if (os_stack_size > 4 * 8192)
-	    stack_size = thr->thr_stack_size = ((unsigned long) os_stack_size) - 4 * 8192;
-	}
-#endif
-#ifdef HPUX_ITANIUM64
-      if (stack_size > PTHREAD_STACK_MIN)
-        {
-	  size_t rsestack_size = stack_size / 2;
-          rc = pthread_attr_setrsestacksize_np (&_thread_attr, rsestack_size);
-	  if (rc)
-	    {
-	      log_error ("Failed setting the OS thread 'rse' stack size to %d (plain stack size set to %d) : %m", rsestack_size, stack_size);
-	    }
-	  thr->thr_stack_size /= 2;
+	  if (os_stack_size > OS_STACK_RESERVE)
+	    stack_size = thr->thr_stack_size = ((unsigned long) os_stack_size) - OS_STACK_RESERVE;
 	}
 #endif
 
@@ -429,17 +386,6 @@ thread_create (
       /* rc = pthread_detach (*(pthread_t *) thr->thr_handle); */
       /* CKRET (rc); */
 
-#else /* OLD_PTHREAD */
-      rc = pthread_attr_setstacksize (&_thread_attr, stack_size);
-      CKRET (rc);
-
-      rc = pthread_create ((pthread_t *) thr->thr_handle, _thread_attr,
-	  _thread_boot, thr);
-      CKRET (rc);
-
-      /* rc = pthread_detach ((pthread_t *) thr->thr_handle); */
-      /* CKRET (rc); */
-#endif
 
       _thread_num_total++;
 #if 0
@@ -569,11 +515,7 @@ failed:
 terminate:
   if (thr->thr_status == TERMINATE)
     {
-#ifndef OLD_PTHREADS
       pthread_detach (* (pthread_t *)thr->thr_handle);
-#else
-      pthread_detach ( (pthread_t *)thr->thr_handle);
-#endif
       _thread_free_attributes (thr);
       dk_free ((void *) thr->thr_cv, sizeof (pthread_cond_t));
       semaphore_free (thr->thr_sem);
@@ -645,36 +587,8 @@ thread_set_priority (thread_t *self, int prio)
 {
   int old_prio = self->thr_priority;
 
-  if (prio < 0 && prio >= MAX_PRIORITY)
-    return old_prio;
-
-#if defined (PRI_RR_MIN) && !defined(__osf__)
-  switch (prio)
-    {
-    case LOW_PRIORITY:
-      prio = PRI_RR_MIN;
-      break;
-    case NORMAL_PRIORITY:
-      prio = (PRI_RR_MIN + PRI_RR_MAX) / 2;
-      break;
-    case HIGH_PRIORITY:
-      prio = PRI_RR_MAX;
-      break;
-    default:
-      return old_prio;
-    }
-
-  /*
-   *  Cannot set priority on main thread, because it does not have a handle
-   */
-  if (self != _main_thread &&
-      pthread_setprio (*(pthread_t *) self->thr_handle, prio))
-    {
-	prio = old_prio;
-    }
-#endif
-
-  self->thr_priority = prio;
+  if (prio >= 0 && prio < MAX_PRIORITY)
+    self->thr_priority = prio;
 
   return old_prio;
 }
@@ -687,186 +601,6 @@ thread_get_priority (thread_t *self)
 }
 
 
-#ifdef EXPIRIMENTAL
-/*
- *  Wait for an event to happen.
- *
- *  If holds != NULL, the caller holds the mutex, which will be released
- *  before going to sleep. The thread calling thread_signal_cond *must* hold
- *  the same mutex.
- *
- *  The holds mutex is reacquired after wakeup.
- */
-int
-thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
-{
-  thread_t *thr = current_thread;
-  dk_mutex_t *mtx;
-  int ok;
-
-  thr->thr_status = WAITEVENT;
-  thr->thr_event = event ? event : &_ev_never;
-  thr->thr_event_pipe = -1;
-
-  mtx = holds ? holds : _q_lock;
-
-  Q_LOCK ();
-  do
-    {
-      thread_queue_to (&_waitq, thr);
-      _thread_num_wait++;
-
-      if (holds)
-	Q_UNLOCK ();
-
-      if (timeout == TV_INFINITE)
-	ok = pthread_cond_wait (thr->thr_cv, &mtx->mtx_mtx);
-      else
-	{
-	  struct timespec to;
-	  struct timeval now;
-	  gettimeofday (&now, NULL);
-	  to.tv_sec = now.tv_sec + timeout / 1000;
-	  to.tv_nsec = now.tv_usec + 1000 * (timeout % 1000);
-	  if (to.tv_nsec > 1000000)
-	    {
-	      to.tv_nsec -= 1000000;
-	      to.tv_sec++;
-	    }
-	  ok = pthread_cond_timedwait (thr->thr_cv, &mtx->mtx_mtx, &to);
-	}
-      if (holds)
-	Q_LOCK ();
-      thread_queue_remove (&_waitq, thr);
-      _thread_num_wait--;
-    } while (ok == 0 && thr->thr_event);
-  Q_UNLOCK ();
-  CKRET (ok);
-
-failed:
-  thr->thr_status = RUNNING;
-  return thr->thr_event == NULL ? 0 : -1;
-}
-
-
-/*
- *  Wake up all threads waiting for an event.
- */
-int
-thread_signal_cond (void *event)
-{
-  thread_t *thr;
-  thread_t *next;
-  int count;
-  char dummy;
-
-  count = 0;
-  Q_LOCK ();
-  for (thr = (thread_t *) _waitq.thq_head.thr_next;
-      thr != (thread_t *) &_waitq.thq_head;
-      thr = next)
-    {
-      next = (thread_t *) thr->thr_hdr.thr_next;
-      if (thr->thr_event == event)
-	{
-	  thr->thr_event = NULL;
-	  if (thr->thr_event_pipe == -1)
-	    pthread_cond_signal (thr->thr_cv);
-	  else
-	    /*
-	     *  Wake up the select
-	     *  XXX Should fix this - only one thread can safely wait
-	     *  for an event in thread_select at a time.
-	     */
-	    write (thr->thr_event_pipe, &dummy, 1);
-	  count++;
-	}
-    }
-  Q_UNLOCK ();
-
-  return count;
-}
-
-
-int
-thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout)
-{
-  thread_t *thr = current_thread;
-  struct timeval *ptv, tv;
-  char dummy;
-  int rc;
-
-  if (timeout == TV_INFINITE)
-    ptv = NULL;
-  else
-    {
-      tv.tv_sec = timeout / 1000;
-      tv.tv_usec = (timeout % 1000) * 1000;
-      ptv = &tv;
-    }
-
-  if (event)
-    {
-      thr->thr_event = event;
-      thr->thr_event_pipe = _ev_pipes[1];
-      if (rfds == NULL)
-	rfds = &thr->thr_rfds;
-      FD_SET (_ev_pipes[0], rfds);
-      if (_ev_pipes[0] >= n)
-	n = _ev_pipes[0] + 1;
-      Q_LOCK ();
-      thread_queue_to (&_waitq, thr);
-      Q_UNLOCK ();
-    }
-
-  _thread_num_wait++;
-  thr->thr_status = WAITEVENT;
-
-  for (;;)
-    {
-      if ((rc = select (n, rfds, wfds, NULL, ptv)) == -1)
-	{
-	  switch (errno)
-	    {
-	    case EINTR:
-	      continue;
-	    default:
-	      break;
-	    }
-	  thr_errno = errno;
-	}
-      else
-	thr_errno = 0;
-      break;
-    }
-
-  thr->thr_status = RUNNING;
-  _thread_num_wait--;
-
-  if (event)
-    {
-      thr->thr_event = NULL;
-      thr->thr_event_pipe = -1;
-      if (rc > 0 && FD_ISSET (_ev_pipes[0], rfds))
-	{
-	  read (_ev_pipes[0], &dummy, 1);
-	  rc = 0;
-	}
-      Q_LOCK ();
-      thread_queue_remove (&_waitq, thr);
-      Q_UNLOCK ();
-    }
-
-  return rc;
-}
-
-
-void
-thread_sleep (TVAL timeout)
-{
-  thread_select (0, NULL, NULL, NULL, timeout);
-}
-#endif
 
 
 /******************************************************************************
@@ -883,11 +617,7 @@ semaphore_allocate (int entry_count)
   int rc;
 
   memset ((void *) ptm, 0, sizeof (pthread_mutex_t));
-#ifndef OLD_PTHREADS
   rc = pthread_mutex_init (ptm, &_mutex_attr);
-#else
-  rc = pthread_mutex_init (ptm, _mutex_attr);
-#endif
   CKRET (rc);
 
   sem->sem_entry_count = entry_count;
@@ -1077,7 +807,6 @@ mutex_allocate_typed (int type)
 #endif
     {
       memset ((void *) &mtx->mtx_mtx, 0, sizeof (pthread_mutex_t));
-#ifndef OLD_PTHREADS
       if (!is_initialized)
 	{
 	  pthread_mutexattr_init (&_mutex_attr);
@@ -1093,9 +822,6 @@ mutex_allocate_typed (int type)
 	  is_initialized = 1;
 	}
       rc = pthread_mutex_init (&mtx->mtx_mtx, &_mutex_attr);
-#else
-      rc = pthread_mutex_init (&mtx->mtx_mtx, _mutex_attr);
-#endif
       CKRET (rc);
     }
 #ifdef MTX_DEBUG
@@ -1135,7 +861,6 @@ dk_mutex_init (dk_mutex_t * mtx, int type)
 #endif
     {
             memset ((void *) &mtx->mtx_mtx, 0, sizeof (pthread_mutex_t));
-#ifndef OLD_PTHREADS
       if (!is_initialized) 
 	{
 	  pthread_mutexattr_init (&_attr);
@@ -1151,9 +876,6 @@ dk_mutex_init (dk_mutex_t * mtx, int type)
 	  is_initialized = 1;
 	}
       rc = pthread_mutex_init (&mtx->mtx_mtx, &_attr);
-#else
-      rc = pthread_mutex_init (&mtx->mtx_mtx, _mutex_attr);
-#endif
       CKRET (rc);
     }
 #ifdef MTX_DEBUG
@@ -1241,11 +963,7 @@ mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd)
 }
 #endif
 
-#if defined(OLD_PTHREADS)
-#define TRYLOCK_SUCCESS 1
-#else
 #define TRYLOCK_SUCCESS 0
-#endif
 
 #define MTX_MAX_SPINS 200 
 #undef mutex_enter

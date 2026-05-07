@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -615,6 +615,7 @@ int
 ce_search_cmp (db_buf_t ce, int row_no, int64 n, dtp_t dtp, it_cursor_t * itc)
 {
   /* presupposes that the ce type and dtp are compatible. n and dtp must come from itc_ce_search_param */
+  dtp_t ctmp[MAX_FIXED_DV_BYTES];
   int64 ti[2];
   int64 first;
   db_buf_t ce_first;
@@ -695,7 +696,6 @@ gen:
     {
       if (DV_ANY == itc->itc_col_spec->sp_cl.cl_sqt.sqt_dtp)
 	{
-	  dtp_t ctmp[MAX_FIXED_DV_BYTES];
 	  cpo.cpo_cmp_min = (caddr_t) (ptrlong) dv_if_needed (n, dtp, ctmp);
 	}
       else
@@ -3086,7 +3086,7 @@ itc_opt_extend_sets (it_cursor_t * itc, data_source_t * qn, caddr_t * inst, int 
 int
 itc_single_row_opt (it_cursor_t * itc, buffer_desc_t * buf, int set, int *done)
 {
-  int is_unq = itc->itc_ks->ks_ts->ts_is_unique;
+  int is_unq = IS_TS(itc->itc_ks->ks_ts) ? itc->itc_ks->ks_ts->ts_is_unique : 0;
   int match_fill = 0;
   data_source_t *qn = (data_source_t *) itc->itc_ks->ks_ts;
   caddr_t *inst = itc->itc_out_state;

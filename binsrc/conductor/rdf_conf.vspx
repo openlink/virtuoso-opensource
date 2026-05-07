@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,19 +48,19 @@
         <tr valign='top'>
           <td>
             <div class="page_tab">
-              <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" />
+              <v:url name="url1" value="Extractor Cartridges" format="%V" url="rdf_filters.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" />
+              <v:url name="url2" value="Meta Cartridges" format="%V" url="rdf_filters_pp.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" />
+              <v:url name="url1" value="Stylesheets" format="%V" url="sparql_filters.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" />
+              <v:url name="url1" value="Entity URIs" format="%V" url="entity_uri_patterns.vspx" />
             </div>
             <div class="page_tab">
-              <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" />
+              <v:url name="url3" value="Console" format="%V" url="rdf_console.vspx" />
             </div>
             <div class="page_tab_selected">
               Configuration
@@ -260,7 +260,7 @@
                     <?vsp
                       for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL' do
                       {
-                        http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
+                        http(sprintf ('<option value=\"%V=%V\">%V (%V)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
                       }
                     ?>
                   </select>

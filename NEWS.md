@@ -1,5 +1,102 @@
 # NEWS
 
+## May 07 2026, v7.2.17
+  * Virtuoso Engine
+    - Added support for JSON canonicalization
+    - Added support for IDN lookups on Windows, Linux and macOS
+    - Added support for `getaddrinfo()` and `getnameinfo()` and `poll()`
+    - Added setting for shutdown, keepalive and listen options on session
+    - Added BIFs using TCP socket to unsafe list
+    - Removed deprecated network code
+    - Fixed issues reported by `gcc -fsanitize=address`
+    - Fixed calculating stack size when building with `-fsanitize=address`
+    - Fixed issue with bidirectional transitivity node
+    - Fixed `position()` and `casemode_strcmp()` for NULL arguments
+    - Fixed pointer type mismatch in conditional expression
+    - Fixed issue with ref to table outside of scope
+    - Fixed issue with variable used outside of scope
+    - Fixed issue with local array pointer used outside of scope
+    - Fixed missing array index check
+    - Fixed issue comparing signed and unsigned
+    - Fixed issue with subq filter and language of literals
+    - Fixed issue with bad constant expression in hash fill
+    - Fixed issue with aggregate not returning error in UA
+    - Fixed check for unsupported insert into view via select
+    - Fixed missing check for right outer-join table
+    - Fixed missing check for column
+    - Fixed `GEO` constant to use `ANY` type for result
+    - Fixed missing check for owner list
+    - Fixed issue when running aggregate on constant
+    - Fixed missing `IS_TS` check
+    - Fixed issue recompiling module proc
+    - Fixed issue with buffer read after boundary
+    - Fixed buffer underflow when col value is empty string
+    - Fixed issue with interpolation function reading after boundary
+    - Fixed set unparsable numeric to `NaN`
+    - Fixed check for bad shortcut in execution plan
+    - Fixed missing check for star in function call
+    - Fixed wrong struct size
+    - Fixed issue with variable scope
+    - Fixed incorrect use of 'box_length' on non-box variables
+    - Fixed incorrect object size for hash
+    - Fixed issue where thread temporary pool is not released in time
+    - Fixed mutex issue with `status('l')` and async queue on independent branches
+    - Fixed missing critical section
+    - Fixed return new error message
+    - Fixed missing check if column exists
+    - Fixed missing check for new prefix
+    - Fixed missing check for `DFE_FALSE`
+    - Fixed issue creating expression subquery inside aggregate
+    - Fixed issue when cursor is not positioned on update
+    - Fixed issue with numeric data type if col is bound
+    - Fixed SQL error not returned when sub predicate does not exist
+    - Fixed issue with col cast check on vec params
+    - Fixed missing test for star
+    - Fixed missing test for table exists in drop column
+    - Fixed use params instead of possibly truncating password
+    - Fixed overflow check before assignment
+    - Fixed various compiler warnings
+
+  * SPARQL
+    - Added initial `wikibase:mwapi` SERVICE handler
+    - Fixed issue with CONCAT over RDF string literals containing UTF-8 encoded characters
+    - Fixed RDF view single primary key on date is not supported
+    - Fixed input check for prefix in RDF views and maps
+    - Fixed `/sparql` UI to make `?help=topic` links relative
+    - Fixed missing check for MP already in use in SPARQL BIF before `MP_START`
+    - Fixed redundant tightning against non-existing
+    - Fixed issue with bad equality on index check
+
+  * Web Server and DAV
+    - Fixed `TCN` order by server-side `QS`
+    - Fixed check for `ws_session` that may be a WebSocket callback
+    - Fixed OPTIONS on `.well-known` incorrectly producing a response body
+    - Fixed issue calculating size of network buffer
+
+  * Faceted Browser
+    - Fixed potential XSS vulnerabilities
+    - Fixed encoding issues with URIs and labels
+    - Fixed VSP escapes
+    - Fixed some grammar and spelling mistakes
+
+  * Conductor
+    - Fixed potential XSS vulnerabilities
+    - Fixed encoding issues of URI and labels
+    - Fixed VSP escapes
+    - Fixed issue with DAV browser in a root folder
+    - Fixed some grammar and spelling mistakes
+
+  * JDBC, Jena and RDF4j
+    - Removed deprecated Sesame providers
+
+  * Documentation
+    - Rewrote `README.md` as a central information hub
+    - Added `README.Building.md` with instructions for Linux and macOS
+    - Added `README.Docker.md` quick-start guide
+    - Fixed Markdown formatting, style, grammar and spelling
+    - Removed outdated `README.MACOSX.md` and `README.OpenSSL.md` files
+
+
 ## Oct 14, 2025, v7.2.16
   * Virtuoso Engine
     - Added disk space monitor
@@ -206,7 +303,7 @@
 	- Fixed length calculation in `REPEAT` (fixes #1282)
 	- Fixed offset overflow (fixes #1281)
 	- Fixed issue trying to normalize an invalid numeric (fixes #1279)
-	- Fixed unfolded bifs have to have serial to distinguish separate calls (fixes #1276)
+	- Fixed unfolded BIFs needing serial to distinguish separate calls (fixes #1276)
 	- Fixed 64-bit arith overflow (fixes #1270)
 	- Fixed missing check for star (fixes #1269)
 	- Fixed set dc type on grouping sets (Fixed #1268)
@@ -304,7 +401,7 @@
     - Fixed issue with scalar subq (fixes #1183)
     - Fixed issue with `select (select ... union ...)` or similar expressions
     - Fixed issue with setting type before col assign function (fixes #1178)
-    - Fixed issue with sql fragment that has div operation
+    - Fixed issue with sql fragment having div operation
     - Fixed issue with status for non `dba` user
     - Fixed issue with user aggregates
     - Fixed issue with with dfe true/false shortcuts (fixes #1196)

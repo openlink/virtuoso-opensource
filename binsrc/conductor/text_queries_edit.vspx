@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -39,23 +39,23 @@
     </vm:menu>
     <vm:header caption="WebDAV Indexing">
       <td class="SubInfo">
-        <vm:url name="ind_mode_ref" format="%s" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
+        <vm:url name="ind_mode_ref" format="%V" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
       </td>
       <td class="SubInfo">
-        <vm:url name="search_tr_ref" format="%s" value="--'Search'" url="--'text_search.vspx'"/>
+        <vm:url name="search_tr_ref" format="%V" value="--'Search'" url="--'text_search.vspx'"/>
       </td>
       <td class="SubInfo">
-        <vm:url name="trig_que_ref" format="%s" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
+        <vm:url name="trig_que_ref" format="%V" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
       </td>
       <td class="SubInfo">
-        <vm:url name="trigger_result_ref" format="%s" value="--'Trigger Results'" url="--'text_results.vspx'"/>
+        <vm:url name="trigger_result_ref" format="%V" value="--'Trigger Results'" url="--'text_results.vspx'"/>
       </td>
     </vm:header>
     <vm:pagebody>
       <table width="98%" border="0" cellspacing="0" cellpadding="5" class="MainSubData" xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <v:form name="event_form" type="simple" method="POST" action="text_queies_edit_edit.vspx">
-          <input type="hidden" name="name" value="<?= get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-          <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+          <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
           <v:on-post>
             <v:script>
               <![CDATA[
@@ -65,7 +65,7 @@
                 {
                   success:
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  http_header(sprintf('Location: sys_queues.vspx?sid=%U&realm=%U\r\n', self.sid, self.realm));
                   return;
                 }
 
@@ -204,7 +204,7 @@
          <?vsp
            if (self.error_str1 <> '')
            {
-             http(sprintf('<tr><td colspan="3"></td>%s</tr>', self.error_str1));
+             http(sprintf('<tr><td colspan="3"></td>%V</tr>', self.error_str1));
              self.error_str1 := '';
            }
          ?>

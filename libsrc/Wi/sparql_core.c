@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2290,6 +2290,8 @@ spar_list_triple_varnames_and_macropunames_in_tree (sparp_t *sparp, SPART *tree,
       if (NULL != tree->_.gp.subquery)
         {
           SPART **retvals = tree->_.gp.subquery->_.req_top.retvals;
+          if (SPAR_BINDINGS_INV == SPART_TYPE (tree->_.gp.subquery))
+            retvals = tree->_.gp.subquery->_.binv.vars;
           if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (retvals))
             {
               DO_BOX_FAST_REV (SPART *, memb, ctr, retvals)
@@ -4728,14 +4730,48 @@ static const char *spar_unsafe_bif_names[] = {
   "EXEC",
   "FILE_TO_STRING",
   "FILE_TO_STRING_OUTPUT",
+  "HTTP_CLIENT",
+  "HTTP_CLIENT_EXT",
+  "HTTP_CLIENT_INTERNAL",
+  "HTTP_GET",
+  "HTTP_PIPELINE",
+  "HTTP_PROXY",
+  "IMAP4_COMMAND",
+  "IMAP4_LOGIN",
+  "IMAP4_LOGOUT",
+  "IMAP_GET",
+  "LDAP_ADD",
+  "LDAP_DELETE",
+  "LDAP_MODIFY",
+  "LDAP_SEARCH",
+  "NNTP_AUTH_GET",
+  "NNTP_AUTH_POST",
+  "NNTP_GET",
+  "NNTP_GET_NEW",
+  "NNTP_ID_GET",
+  "NNTP_POST",
+  "POP3_GET",
+  "RDF_SET_DBA_ACCESS",
+  "RDF_SET_SPONGE",
+  "RDF_SET_WRITABLE",
+  "REGISTRY_GET",
   "REGISTRY_SET",
   "REGISTRY_SET_ALL",
-  "STRING_TO_FILE",
-  "SEQUENCE_REMOVE",
   "SEQUENCE_GET_ALL",
-  "SEQUENCE_NEXT_BOUNDED",
   "SEQUENCE_NEXT",
+  "SEQUENCE_NEXT_BOUNDED",
+  "SEQUENCE_REMOVE",
   "SEQUENCE_SET",
+  "SES_ACCEPT",
+  "SES_CONNECT",
+  "SES_DISCONNECT",
+  "SES_LISTEN",
+  "SES_WRITE",
+  "SMTP_SEND",
+  "SOAP_CALL",
+  "SOAP_CALL_NEW",
+  "SOAP_RECEIVE",
+  "STRING_TO_FILE",
   "SYSTEM"
 };
 
@@ -6043,6 +6079,8 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int rewrite_all = (0 != ((2 > BOX_ELEMENTS (args)) ? 1 : bif_long_arg (qst, args, 1, "sparql_explain")));
   dk_session_t *res;
   SPARP_SAVED_MP_SIZE_CAP;
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,&sparqre);
   memset (&sparqre, 0, sizeof (spar_query_env_t));
@@ -6124,6 +6162,8 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   str = bif_string_arg (qst, args, 0, "sparql_detalize");
   sd_flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
   sd_no = ((3 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 2, "sparql_detalize") : 0);
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
@@ -6373,6 +6413,8 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
     case 1: sqlvals[SPART_TRIPLE_GRAPH_IDX]	= bif_arg (qst, args, 0, fname);
     case 0: ; /* no break */
     }
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   memset (&spare, 0, sizeof (sparp_env_t));

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2025 OpenLink Software
+#  Copyright (C) 1998-2026 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -30,11 +30,8 @@ JENADIR="$TOP/binsrc/jena"
 JENA2DIR="$TOP/binsrc/jena2"
 JENA3DIR="$TOP/binsrc/jena3"
 JENA4DIR="$TOP/binsrc/jena4"
-SESAME2DIR="$TOP/binsrc/sesame2"
-SESAME3DIR="$TOP/binsrc/sesame3"
-SESAME4DIR="$TOP/binsrc/sesame4"
 
-BANNER "STARTED JENA & SESAME2 PROVIDERS TESTS (tproviders.sh)"
+BANNER "STARTED JENA PROVIDERS TESTS (tproviders.sh)"
 
 SHUTDOWN_SERVER
 
@@ -43,7 +40,7 @@ SHUTDOWN_SERVER
 #then
 #  BANNER "No jars form JENA_CLASSPATH.  Exiting ..."
 #  CHECK_LOG
-#  BANNER "COMPLETED JENA & SESAME2 PROVIDERS TESTS (tproviders.sh)"
+#  BANNER "COMPLETED JENA PROVIDERS TESTS (tproviders.sh)"
 #  exit 0
 #fi
 # FIXME
@@ -129,56 +126,8 @@ fi
 
 cd $CURRDIR
 
-
-#
-#   Run Sesame2 tests
-#
-cd $SESAME2DIR
-
-RUN $MAKE
-if test $STATUS -ne 0
-then
-    LOG "***FAILED: Sesame 2 compile"
-else
-    LOG "PASSED: Sesame 2 compile"
-fi
-
-RUN $MAKE run-tests
-if test $STATUS -ne 0
-then
-    LOG "***FAILED: Sesame 2 suite"
-else
-    LOG "PASSED: Sesame 2 suite"
-fi
-
-cd $CURRDIR
-
-
-#
-#   Run Sesame4 tests
-#
-cd $SESAME4DIR
-
-RUN $MAKE
-if test $STATUS -ne 0
-then
-    LOG "***FAILED: Sesame 4 compile"
-else
-    LOG "PASSED: Sesame 4 compile"
-fi
-
-RUN $MAKE run-tests
-if test $STATUS -ne 0
-then
-    LOG "***FAILED: Sesame 4 suite"
-else
-    LOG "PASSED: Sesameo 4 suite"
-fi
-
-cd $CURRDIR
-
 SHUTDOWN_SERVER
 
 CHECK_LOG
 
-BANNER "COMPLETED JENA & SESAME PROVIDERS TESTS (tproviders.sh)"
+BANNER "COMPLETED JENA PROVIDERS TESTS (tproviders.sh)"

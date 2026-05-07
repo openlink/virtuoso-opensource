@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -104,8 +104,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="business_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="business_key" value="<?= get_keyword('business_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="business_key" value="<?V get_keyword('business_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -137,7 +137,7 @@
 
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%s&realm=%s\r\n',  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%U&realm=%U\r\n',  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -170,8 +170,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="service_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="service_key" value="<?= get_keyword('service_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="service_key" value="<?V get_keyword('service_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -187,7 +187,7 @@
                     delete from UDDI..BUSINESS_SERVICE  where BS_SERVICE_KEY = get_keyword('service_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -243,8 +243,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="model_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="model_key" value="<?= get_keyword('model_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="model_key" value="<?V get_keyword('model_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -252,7 +252,7 @@
                       delete  from UDDI..TMODEL  where TM_TMODEL_KEY= get_keyword('model_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                   return;
                 }
                 ]]></script>
@@ -304,8 +304,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="contact_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -320,7 +320,7 @@
 
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -350,8 +350,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="email_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -359,7 +359,7 @@
                       delete  from UDDI..EMAIL where EM_EMAIL_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -388,8 +388,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="phone_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -397,7 +397,7 @@
                       delete  from UDDI..PHONE where PH_PHONE_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -425,8 +425,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="address_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="contact_key" value="<?V get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -434,7 +434,7 @@
                       delete  from UDDI..ADDRESS_LINE where AL_ADDRESS_KEY = get_keyword('contact_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n', get_keyword('page_back', params), self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -462,8 +462,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="description_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -472,7 +472,7 @@
                       where UD_DESCRIPTION_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -501,8 +501,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="discovery_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -511,7 +511,7 @@
                       where DU_DISCOVERY_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -539,8 +539,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="identity_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -549,7 +549,7 @@
                       where IB_IDENTIFIER_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -578,8 +578,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="category_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="uuid_key" value="<?V get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -588,7 +588,7 @@
                       where CB_CATEGORY_KEY = get_keyword('uuid_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -618,8 +618,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="binding_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="binding_key" value="<?= get_keyword('binding_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="binding_key" value="<?V get_keyword('binding_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -632,7 +632,7 @@
                       where BT_BINDING_KEY = get_keyword('binding_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>
@@ -664,8 +664,8 @@
               </td></tr><tr><td  class="MainData">
       <table width="100%" border="0" cellspacing="0" cellpadding="5">
       <v:form name="instance_remove_form" type="simple" method="POST" action="">
-            <input type="hidden" name="instance_key" value="<?= get_keyword('instance_key', control.vc_page.vc_event.ve_params) ?>"/>
-            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="instance_key" value="<?V get_keyword('instance_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?V get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
               <v:on-post>
                 <script><![CDATA[
                 {
@@ -674,7 +674,7 @@
                       where ID_KEY = get_keyword('instance_key', params);
                   }
                           http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%U&sid=%U&realm=%U\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
                 }
                 ]]></script>
             </v:on-post>

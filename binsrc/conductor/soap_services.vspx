@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -143,7 +143,7 @@
 
 		        --control.vu_url := sprintf (
 		        control.bt_url := sprintf (
-		          'soap_services_edit.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
+		          'soap_services_edit.vspx?mode=add1&_host=%U&_port=%U&_httphost=%U',
 			  _host, _port, _httphost);
 		    ]]></v:after-data-bind>
 		   <!--</v:url>-->
@@ -158,12 +158,11 @@
 	         if (control.tn_open) {
 	       ?>
 	       <tr class="listing_row_odd">
-		 <th style="width:16px;"> </th>
-		 <th>Logical Path</th>
-		 <th>Type</th>
-		 <th>Executes as</th>
-		 <th>
-		 </th>
+		 <td style="width:16px;">&nbsp;</td>
+                 <td><b>Logical Path</b></td>
+                 <td><b>Type</b></td>
+                 <td><b>Executes as</b></td>
+		 <td>&nbsp;</td>
 	       </tr>
 	       <?vsp } ?>
                <v:node/>
@@ -179,7 +178,7 @@
 		if (xpath_eval ('@lpath', xt) is not null) {
 		?>
 	      <tr class="<?V case when mod(control.tn_position,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-		<td> </td>
+		<td>&nbsp;</td>
 		<td>
 		<img src="images/icons/apps_16.png" alt="Virtual directory" title="Virtual directory"/>
 		<v:url name="label21" value="" url="" xhtml_target="_blank">
@@ -204,7 +203,7 @@
 		        proto := 'https';
 
 		      control.ufl_value := xp;
-		      control.vu_url := sprintf ('/vsmx/vsmx.vspx?wsdl=%s://%U%U/services.wsdl', proto, thost, xp);
+		      control.vu_url := sprintf ('/vsmx/vsmx.vspx?wsdl=%U://%U%U/services.wsdl', proto, thost, xp);
 		      control.vu_l_pars := '';
 		      ]]></v:after-data-bind>
 		  </v:url>
@@ -255,7 +254,7 @@
 		      www_split_host (_httphost1, _httphost, tmp);
 
 		        control.bt_url := sprintf (
-		          'soap_services_edit.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+		          'soap_services_edit.vspx?mode=edit&_host=%U&_port=%U&_httphost=%U&path=%U',
 			  _host, _port, _httphost, _path);
 		   ]]></v:after-data-bind>
 		  </v:button>
@@ -280,7 +279,7 @@
 		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
 
 		        control.bt_url := sprintf (
-		          'soap_del_path.vspx?lhost=%s&vhost=%s&lpath=%s&caller=soap_services.vspx',
+		          'soap_del_path.vspx?lhost=%U&vhost=%U&lpath=%U&caller=soap_services.vspx',
 			  _host1, _httphost1, _path);
 		  ]]></v:after-data-bind>
 		  </v:button>

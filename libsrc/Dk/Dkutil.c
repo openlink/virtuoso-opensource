@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,7 +59,7 @@ gpf_notice (const char *file, int line, const char *text)
   FILE *core_reason;
 #endif
   print_trace ();
-#if defined (PMN_LOG) && defined (NOT_DEFINED)
+#if defined (NOT_DEFINED)
   /* XXX - first resolve libutil conflicts */
   if (text)
     log_out (LOG_EMERG, file, line, "internal error: %s", text);

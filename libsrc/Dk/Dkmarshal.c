@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,12 +32,8 @@
 #endif
 
 #ifndef _IEEE_FLOATS
-#if defined (OPL_SOURCE)
-# include <librpc.h>
-#else
 # include <rpc/types.h>
 # include <rpc/xdr.h>
-#endif
 #endif
 
 macro_char_func readtable[256];

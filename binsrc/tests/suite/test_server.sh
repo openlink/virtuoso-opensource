@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2025 OpenLink Software
+#  Copyright (C) 1998-2026 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -93,7 +93,7 @@ export NETSTAT
 #
 #  Make sure the following binaries are installed
 #
-for i in curl wget gzip tar unzip
+for i in curl wget gzip gunzip tar zip unzip bzip2
 do
     B=`which $i 2>/dev/null`
     if test -z "$B"

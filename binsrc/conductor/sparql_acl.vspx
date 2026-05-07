@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -281,17 +281,17 @@
                             </v:after-data-bind>
                             <tr class="<?V case when self.edit_acl = control.te_rowset[1] and self.edit_realm = control.te_rowset[3] then 'listing_row_selected' end ?>">
                               <td>
-                                <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" render-only="1"/>
+                                <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V" render-only="1"/>
                               </td>
                               <td>
                                 <v:label name="ur1"
-                                  format="%s"
+                                  format="%V"
                                   value="--(control.vc_parent as vspx_row_template).te_rowset[3]"
                                 />
                               </td>
                               <td>
                                 <v:url name="ur2"
-                                       format="%s"
+                                       format="%V"
                                        value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
                                        url="--sprintf ('account_create.vspx?mode=edit&user_name=%U', (control.vc_parent as vspx_row_template).te_rowset[2])"
                                        render-only="1"
@@ -300,14 +300,14 @@
                               <td class="action">
                                 <v:url name="ur3"
                                        value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
-                                       format="%s"
+                                       format="%V"
                                        url="--sprintf ('sparql_acl.vspx?edit=%U&edit_realm=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                                        xhtml_title="Edit"
                                        xhtml_alt="Edit"
                                 />
                                 <v:url name="ur2"
                                        value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
-                                       format="%s"
+                                       format="%V"
                                        url="--sprintf ('sparql_acl.vspx?del=%U&edit_realm=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                                        xhtml_title="Delete"
                                        xhtml_alt="Delete"

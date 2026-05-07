@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -237,10 +237,10 @@
         <v:template type="browse" name="lds_browse">
           <tr>
 		<td>
-                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V" />
 		</td>
 		<td>
-                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" />
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V" />
 		</td>
 		<td>
                                     <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%d" />

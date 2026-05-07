@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -121,7 +121,7 @@
                     {
                       http (sprintf ('<td><input type="hidden" name="n_%V" value="%V">%V</td>', item, item, item));
                       http (sprintf ('<td><input type="text" size="40" name="_ini_%V" value="%V" /></td>', item, item_value));
-                      http (sprintf('<td class="listing_col_action"><a href="inifile.vspx?to_go=%s&delete=1&dd_sect=%i&update_ini=1&sid=%s&realm=%s"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&nbsp;Remove</a></td>', item, self.pos, self.sid, self.realm));
+                      http (sprintf('<td class="listing_col_action"><a href="inifile.vspx?to_go=%U&delete=1&dd_sect=%i&update_ini=1&sid=%U&realm=%U"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&nbsp;Remove</a></td>', item, self.pos, self.sid, self.realm));
                     }
                     http ('</tr>');
                   }
@@ -166,7 +166,7 @@
                             cfg_write (virtuoso_ini_path(), self.sect, item, item_value);
                           }
                           http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf('Location: inifile.vspx?sid=%s&realm=%s&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
+                          http_header (sprintf('Location: inifile.vspx?sid=%U&realm=%U&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
                         ]]>
                       </v:on-post>
                     </v:button>
@@ -209,7 +209,7 @@
                   self.to_rem := '';
                   self.to_del := 0;
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: inifile.vspx?sid=%s&realm=%s&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
+                  http_header (sprintf ('Location: inifile.vspx?sid=%U&realm=%U&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
                 ]]>
               </v:on-post>
             </v:button>
@@ -220,7 +220,7 @@
                   self.to_rem := '';
                   self.to_del := 0;
                   http_request_status ('HTTP/1.1 302 Found');
-                  http_header (sprintf ('Location: inifile.vspx?sid=%s&realm=%s&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
+                  http_header (sprintf ('Location: inifile.vspx?sid=%U&realm=%U&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
                 ]]>
               </v:on-post>
             </v:button>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,6 +104,10 @@ void free ();
 
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>
+#endif
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
 #endif
 
 #if defined (WINDOWS) || defined (WIN32) || defined (OS2)
@@ -217,6 +221,37 @@ char *strtok_r ();
 
 #ifdef WIN32
 #define strcasecmp _stricmp
+#define strcasecmp     _stricmp
+#define poll(a,b,c)    WSAPoll(a,b,c)
+#endif
+
+/*
+ *  For CLANG/GCC portability
+ */
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+#    define __SANITIZE_ADDRESS__ 1             /* Clang is not setting same variable as GCC */
+#  endif
+#endif
+
+#if defined(__has_builtin)	/* modern compilers */
+  #if __has_builtin(__builtin_expect)
+    #define PREDICT_TRUE(x)	__builtin_expect(!!(x), 1)
+    #define PREDICT_FALSE(x)	__builtin_expect(!!(x), 0)
+  #endif
+#elif defined(__GNUC__)		/* older GCC and clang compilers */
+    #define PREDICT_TRUE(x)	__builtin_expect(!!(x), 1)
+    #define PREDICT_FALSE(x)	__builtin_expect(!!(x), 0)
+#endif
+
+#if !defined(PREDICT_TRUE)	/* Windows and other compilers */
+#  define PREDICT_TRUE(x)	(x)
+#  define PREDICT_FALSE(x)	(x)
+#endif
+
+
+#if 0                          /* set to 1 to disable poll and use select */
+#undef HAVE_POLL
 #endif
 
 #endif

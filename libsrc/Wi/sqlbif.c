@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -476,6 +476,22 @@ bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, co
     "not an arg of type %s (%d)",
     func, nth + 1, dv_type_title (dtp), dtp);
   }
+  return arg;
+}
+
+caddr_t
+bif_string_or_uname_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_DB_NULL == dtp)
+  {
+    return (NULL);
+  }
+  if ((dtp != DV_UNAME) && (dtp != DV_STRING))
+    sqlr_new_error ("22023", "SR014",
+  "Function %s needs a string or a UNAME or NULL as argument %d, not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
   return arg;
 }
 
@@ -2598,7 +2614,7 @@ bif_aset_1_2_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (tgt_inx >= BOX_ELEMENTS (tgt) || src_inx_1 >= BOX_ELEMENTS (src)
       || DV_ARRAY_OF_POINTER != DV_TYPE_OF (src[src_inx_1])
       || src_inx_2 >= BOX_ELEMENTS (src[src_inx_1]))
-    sqlr_new_error ("42000", "VEC..",  "Bad arguments to aset_1_2_zap ");
+    sqlr_new_error ("42000", "VEC07",  "Bad arguments to aset_1_2_zap ");
   if (tgt[tgt_inx])
     dk_free_tree (tgt[tgt_inx]);
   tgt[tgt_inx] = src[src_inx_1][src_inx_2];
@@ -3403,7 +3419,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *cast_args = NULL;
   int alen;
   caddr_t a;
-  int len = 0, wlen = 0, fill = 0;
+  int len = 0, wlen = 0, fill = 0, is_rdf_box;
   caddr_t res;
   int haveWides = 0, haveWeirds = 0;
   dtp_t dtp1;
@@ -3413,6 +3429,16 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
+      is_rdf_box = 0;
+      if (DV_RDF == dtp1)
+        {
+          rdf_box_t *rb = (rdf_box_t *)a;
+          if (!rb->rb_is_complete)
+            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+          a = rb->rb_box;
+          dtp1 = DV_TYPE_OF (a);
+          is_rdf_box = 1;
+        }
       switch (dtp1)
 	{
 	case DV_DB_NULL:
@@ -3420,7 +3446,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	case DV_STRING:
 	case DV_UNAME:
 	  len += box_length (a) - 1;
-	  if (DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8 so we try */
+	  if (is_rdf_box || DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8 so we try */
 	    {
 	      size_t wide_len = wide_char_length_of_utf8_string (a, box_length (a) - 1);
 	      if (wide_len >= 0)
@@ -3534,6 +3560,15 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
+      is_rdf_box = 0;
+      if (DV_RDF == dtp1)
+        {
+          rdf_box_t *rb = (rdf_box_t *)a;
+          /* completed in 1st loop */
+          a = rb->rb_box;
+          dtp1 = DV_TYPE_OF (a);
+          is_rdf_box = 1;
+        }
       switch (dtp1)
 	{
 	case DV_DB_NULL:
@@ -3543,7 +3578,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (haveWides)
 	    {
 	      alen = box_length (a) - 1;
-	      if (DV_STRING_MAYBE_UTF8 (a) && (!cast_args || !cast_args[inx]))
+	       if ((is_rdf_box || DV_STRING_MAYBE_UTF8 (a)) && (!cast_args || !cast_args[inx]))
 		alen = (size_t) box_utf8_as_wide_char (a, res + fill * sizeof_char, alen, len - fill);
 	      else
 		box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst), err_ret, 1);
@@ -5478,8 +5513,10 @@ bif_nc_strstr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_casemode_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str1 = bif_string_or_uname_arg (qst, args, 0, "casemode_strcmp");
-  caddr_t str2 = bif_string_or_uname_arg (qst, args, 1, "casemode_strcmp");
+  caddr_t str1 = bif_string_or_uname_or_null_arg (qst, args, 0, "casemode_strcmp");
+  caddr_t str2 = bif_string_or_uname_or_null_arg (qst, args, 1, "casemode_strcmp");
+  if (NULL == str1 || NULL == str2)
+    return NEW_DB_NULL;
   return box_num (CASEMODESTRCMP (str1, str2));
 }
 
@@ -6777,7 +6814,7 @@ bif_isnotnull_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
     return;
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (BOX_ELEMENTS (args) < 1)
-    sqlr_new_error ("42001", "VEC..", "Not enough arguments for is_no_null");
+    sqlr_new_error ("42001", "VEC08", "Not enough arguments for is_no_null");
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);
   if (!arg->dc_any_null || ssl->ssl_sqt.sqt_non_null)
@@ -9366,12 +9403,15 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n_args = BOX_ELEMENTS (args);
   const char *me = "position";
   caddr_t item = bif_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   int start = (int) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
   int every_nth = (int) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 1);
   dtp_t vectype = DV_TYPE_OF (arr);
-  int boxlen = (is_string_type (vectype) ? box_length (arr) - 1 : box_length (arr));
+  int boxlen = arr ? (is_string_type (vectype) ? box_length (arr) - 1 : box_length (arr)) : 0;
   int len = (boxlen / get_itemsize_of_vector (vectype));
+
+  if (NULL == arr)
+    return box_num(0);
 
   if (start < 0)
   start = 0;
@@ -16935,6 +16975,53 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+#ifdef USE_JEMALLOC
+#include <jemalloc/jemalloc.h>
+
+void
+je_write_cb (void *fd, const char *data)
+{
+  if (fd)
+    fputs (data, (FILE *) fd);
+}
+
+caddr_t
+bif_je_malloc_stats_print (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  char *dp = bif_string_arg (qst, args, 0, "je_malloc_stats_print");
+  char *opts = bif_string_or_null_arg (qst, args, 1, "je_malloc_stats_print");
+  FILE *fd = dp ? fopen (dp, "at") : NULL;
+  malloc_stats_print (je_write_cb, fd, opts);
+  if (fd)
+    fclose (fd);
+  return NULL;
+}
+
+caddr_t
+bif_je_heap_profile (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  const char *dp = bif_string_arg (qst, args, 0, "je_heap_profile");
+  mallctl ("prof.dump", NULL, NULL, &dp, sizeof (const char *));
+  return NULL;
+}
+
+caddr_t
+bif_je_heap_profile_reset (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  mallctl ("prof.reset", NULL, NULL, NULL, NULL);
+  return NULL;
+}
+
+caddr_t
+bif_je_heap_profile_active (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  long f = bif_long_arg (qst, args, 0, "je_heap_profile_active");
+  bool active = f ? true : false;
+  mallctl ("opt.prof_active", NULL, NULL, &active, sizeof (bool));
+  return NULL;
+}
+#endif
+
 void
 bif_sparql_init (void)
 {
@@ -17462,6 +17549,12 @@ sql_bif_init (void)
   bif_define ("all_allocs_at_line", bif_all_allocs_at_line);
   bif_define ("new_allocs_after", bif_new_allocs_after);
   bif_define ("mem_count", bif_mem_count);
+#endif
+#ifdef USE_JEMALLOC
+bif_define ("je_malloc_stats_print", bif_je_malloc_stats_print);
+bif_define ("je_heap_profile", bif_je_heap_profile);
+bif_define ("je_heap_profile_reset", bif_je_heap_profile_reset);
+bif_define ("je_heap_profile_active", bif_je_heap_profile_active);
 #endif
   bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("mem_summary", bif_mem_summary);

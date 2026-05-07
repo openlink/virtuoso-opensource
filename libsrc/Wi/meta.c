@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -826,7 +826,7 @@ dtp_no_comp_if_dep (dtp_t dtp)
 int
 dtp_is_pref_comp (dtp_t dtp)
 {
-  return memchr (pref_compressible_dtps, dtp, sizeof (offset_comp_dtps)) ? 1 : 0;
+  return memchr (pref_compressible_dtps, dtp, sizeof (pref_compressible_dtps)) ? 1 : 0;
 }
 
 

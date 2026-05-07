@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -479,7 +479,7 @@
                                       }
                                     }
                                     self.sel_pk := null;
-                                    self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%s', self.current_dsn, self.ret_bmk));
+                                    self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%U', self.current_dsn, self.ret_bmk));
                                   ]]>
                                 </v:on-post>
                                 <div class="scroll_area" style="margin: 0;">
@@ -564,7 +564,7 @@
                                           table_value := encode_base64 (serialize (vector (user_table_list[n][0], user_table_list[n][1], user_table_list[n][2])));
 
                                           http ('<tr>');
-                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbu_%d" value="%s"/></td>', n, table_value));
+                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbu_%d" value="%V"/></td>', n, table_value));
                                           http ('<td><img class="icon" src="images/icons/table_16.png" title="Table" alt="Table"/></td>');
                                           if (exists (select RT_NAME from SYS_REMOTE_TABLE where RT_DSN = self.current_dsn and RT_REMOTE_NAME = table_name))
                                           {
@@ -603,7 +603,7 @@
                                           table_value := encode_base64 (serialize (vector (view_list[n][0], view_list[n][1], view_list[n][2])));
 
                                           http ('<tr>');
-                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbv_%d" value="%s"/></td>', n, table_value));
+                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbv_%d" value="%V"/></td>', n, table_value));
                                           http ('<td><img class="icon" src="images/icons/view_16.png" title="View" alt="View"/></td>');
                                           if (exists (select RT_NAME from SYS_REMOTE_TABLE where RT_DSN = self.current_dsn and RT_REMOTE_NAME = table_name))
                                           {
@@ -642,9 +642,9 @@
                                           table_value := encode_base64 (serialize (vector (proc_list[n][0], proc_list[n][1], proc_list[n][2])));
 
                                           http ('<tr">');
-                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbp_%d" value="%s"/></td>', n, table_value));
+                                          http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbp_%d" value="%V"/></td>', n, table_value));
                                           http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
-                                          http (sprintf ('<td>%s</td>', table_name));
+                                          http (sprintf ('<td>%V</td>', table_name));
                                           http ('</tr>');
                                         }
 

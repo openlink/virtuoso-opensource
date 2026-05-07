@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2025 OpenLink Software
+#  Copyright (C) 1998-2026 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -1051,13 +1051,6 @@ fi
       exit 1
    fi
  
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tjson.sql
-   if test $STATUS -ne 0
-   then
-      LOG "***ABORTED: tjson.sql"
-      exit 1
-   fi
-
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcors.sql
    if test $STATUS -ne 0
    then

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -133,7 +133,7 @@
                            <img src="images/icons/apps_16.png" alt="Persisted XQuery" title="Persisted XQuery"/>
                          </td>
                          <td class="listing_col">
-                           <a href="<?= WS.WS.STR_TO_URI (RES_FULL_PATH)?>" target="_blank">
+                           <a href="<?V WS.WS.STR_TO_URI (RES_FULL_PATH) ?>" target="_blank">
                              <?vsp http (RES_FULL_PATH); ?>
                            </a>
                          </td>
@@ -142,12 +142,12 @@
                          </td>
                          <td class="action">
                            <?vsp
-                             http (sprintf ('<a href="%s?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>', self.pg, RES_FULL_PATH, self.sid ,self.realm));
+                             http (sprintf ('<a href="%H?mode=query&edit=%U&sid=%U&realm=%U"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>', self.pg, RES_FULL_PATH, self.sid ,self.realm));
                            ?>
                           <?vsp
                             if (self.pg = 'xquery3.vspx')
                             {
-                              http (sprintf ('<ahref="xquery_templates.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
+                              http (sprintf ('<ahref="xquery_templates.vspx?delete=%U&sid=%U&realm=%U"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
                             }
                           ?>
                         </td>

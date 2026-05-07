@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,11 @@ static int tcpses_connect (session_t * ses);
 static int tcpses_disconnect (session_t * ses);
 int tcpses_write (session_t * ses, char *buffer, int n_bytes);
 static int tcpses_set_control (session_t * ses, int fld, char *p_value, int sz);
+#ifdef HAVE_POLL
+static int fill_pollfd (int count, session_t ** sestable, short flags, struct pollfd *fds);
+#else
 static int fill_fdset (int count, session_t ** sestable, fd_set * p_fdset);
+#endif
 static int test_eintr (session_t * ses, int retcode, int eno);
 static int test_readblock (session_t * ses, int retcode, int eno);
 static int test_writeblock (session_t * ses, int retcode, int eno);
@@ -51,8 +55,6 @@ static void set_array_status (int count, session_t ** sesarr, int status);
 
 static int fileses_write (session_t * ses, char *buffer, int n_bytes);
 int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
-
-
 
 #define TCP_CHECKVALUE     313			 /* Donald Duck registration number */
 
@@ -75,6 +77,39 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
 #define PRINT_DEBUG
 #define LEVEL_VAR tcp_debug_level
 #endif
+
+
+/*
+ *  Keepalive settings for various OS types
+ */
+#if defined (WIN32)
+#define KEEPALIVE_UNITS(x)	((x) * 1000)		/* Windows uses milliseconds */
+#define SHUT_WR			SD_SEND
+#else
+#define KEEPALIVE_UNITS(x)	(x)
+#endif
+
+/*
+ *  Default settings will add 6 keepalive packet per hour idle time.
+ *
+ *  Under normal network circumstances this is enough to not flood the network with unnecessary packets, as
+ *  the remote kernel normally closes open sockets correctly when the remote process is killed or exits
+ *  so we should get the disconnect straight away.
+ *
+ *  However if the remote machine hangs or disappears from the network, these settings should let the local
+ *  Virtuoso process know in about 15 min which should be acceptable for most situations.
+ */
+int dk_tcp_keepalive_idle   = 600; 	/* number of seconds the socket can be idle before keepalive packets are sent (default 10 minutes) */
+int dk_tcp_keepalive_intvl  = 30;	/* interval between keepalive probes in seconds (default 30 seconds)  */
+int dk_tcp_keepalive_probes = 10;	/* number of keepalive probes sent before aborting the connection (default 10 probes) */
+
+int32 dk_tcp_so_linger_enable = 0;	/* disabled by default */
+int32 dk_tcp_so_linger_timeout = 0;	/* timeout in seconds when linger_enable = 1 */
+int32 dk_tcp_shutdown_enable = 0;	/* disabled by default */
+
+int32 dk_tcp_ai_idn_enable = 0;		/* disabled by default */
+int32 dk_tcp_ai_ipv4_enable = 1;	/* enabled by default */
+int32 dk_tcp_ai_ipv6_enable = 0;	/* disabled by default */
 
 
 /*##**********************************************************************
@@ -225,8 +260,6 @@ dk_parse_address (char *str)
 }
 
 
-static char addrinfo[256];
-
 #define SEPARATOR " :"
 
 int
@@ -265,6 +298,7 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
   int HostAndPort = 0;
   struct hostent *host = NULL;
   in_addr_t addr = INADDR_NONE;
+  char addrinfo[256];
 #if defined (_REENTRANT)
   char buff[4096];
   int herrnop = 0;
@@ -273,7 +307,6 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
   struct hostent_data hted;
 # endif
 #endif
-  init_tcpip ();
   strncpy (addrinfo, addrinfo1, sizeof (addrinfo));
   addrinfo[sizeof (addrinfo) - 1] = 0;
 
@@ -428,7 +461,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
   if (buf_out_len && buf_out)
     {
       strncpy (buf_out, buf, buf_out_len);
-      buf[buf_out_len - 1] = 0;
+      buf_out[buf_out_len - 1] = 0;
     }
   return 0;
 }
@@ -463,11 +496,7 @@ tcpses_getsockname (session_t * ses, char *buf_out, int buf_out_len)
  * Globals used :
  */
 
-#if defined(WINNT) || defined(WINDOWS) || defined(PMN_MODS)
 int reuse_address = 1;
-#else
-int reuse_address = 0;
-#endif
 
 
 void
@@ -484,7 +513,6 @@ tcpses_listen (session_t * ses)
   int rc;
   saddrin_t *p_addr;
   dbg_printf_1 (("tcpses_listen."));
-  init_tcpip ();
   TCP_CHK (ses);
 
   SESSTAT_CLR (ses, SST_OK);
@@ -534,7 +562,7 @@ tcpses_listen (session_t * ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("listen()");
 
-#ifdef PCTCP
+#ifdef WIN32
       if (errno != WSAEINPROGRESS)
 #endif
 	return (SER_SYSCALL);
@@ -681,27 +709,19 @@ tcpses_print_client_ip (session_t * ses, char *buf, int buf_len)
  *  Estabish a connection to an ip:port with timeout
  */
 static int
-connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
+connect_nonblock (int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
 {
   int flags = 0, error = 0, ret = 0;
-  fd_set rset, wset;
   socklen_t len = sizeof (error);
-  struct timeval ts;
 
   dbg_printf_1 (("conn_nonblock sa=%s:%u timeout=%d", inet_ntoa (sa->sin_addr), ntohs (sa->sin_port), timeout));
-
-  /*
-   * Initialize
-   */
-  FD_ZERO (&rset);
-  FD_SET (sock, &rset);
-  wset = rset;
 
   /*
    *  Save original flags and set nonblock mode
    */
   if ((flags = fcntl (sock, F_GETFL, 0)) < 0)
     return -1;
+
   if (fcntl (sock, F_SETFL, flags | O_NONBLOCK) < 0)
     return -1;
 
@@ -717,8 +737,51 @@ connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
   /*
    *  Wait for connection to complete
    */
+#ifdef HAVE_POLL
+
   do
     {
+      struct pollfd fds;
+      int timeout_ms = -1;
+
+      fds.fd = sock;
+      fds.events = POLLIN | POLLOUT;
+      fds.revents = 0;
+
+      if (timeout)
+	timeout_ms = timeout * 1000;	/* timeout in msec */
+
+      ret = poll (&fds, 1, timeout_ms);
+
+      switch (ret)
+	{
+	case 0:
+	  errno = ETIMEDOUT;
+	  return -1;
+
+	case -1:
+	  if (errno == EINTR)
+	    continue;
+	  return -1;
+
+	default:
+	  if (fds.revents & (POLLIN | POLLOUT))
+	    break;
+	}
+    }
+  while (ret == -1);
+
+#else /* SELECT */
+
+  do
+    {
+      fd_set rset, wset;
+      struct timeval ts;
+
+      FD_ZERO (&rset);
+      FD_SET (sock, &rset);
+      wset = rset;
+
       ts.tv_sec = timeout;
       ts.tv_usec = 0;
 
@@ -741,6 +804,7 @@ connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
 	}
     }
   while (ret == -1);
+#endif
 
   /*
    *  If the socket was signalled, check if the operation returned an error
@@ -803,7 +867,6 @@ tcpses_connect (session_t * ses)
   int rc;
 
   dbg_printf_1 (("tcpses_connect."));
-  init_tcpip ();
   TCP_CHK (ses);
 
   /* First, init status fields so that if something fails we
@@ -886,6 +949,7 @@ static int
 tcpses_disconnect (session_t * ses)
 {
   int rc;
+  int s = tcpses_get_fd(ses);
 
   dbg_printf_1 (("tcpses_disconnect."));
 
@@ -893,19 +957,38 @@ tcpses_disconnect (session_t * ses)
 
   SESSTAT_CLR (ses, SST_OK);
 
-  /* Close the connected socket */
-#ifdef PCTCP
+
+  /* Set linger options (default off) */
+#if defined (SO_LINGER)
   {
-/*
-    struct linger l = {1, 0};
-    rc = setsockopt (ses->ses_device->dev_connection->con_s,
-        SOL_SOCKET, SO_LINGER, (void *)&l, sizeof (struct linger));
-*/
-    rc = shutdown (ses->ses_device->dev_connection->con_s, 2);
+    struct linger l_opt;
+
+    l_opt.l_onoff = dk_tcp_so_linger_enable;
+    l_opt.l_linger = dk_tcp_so_linger_timeout;
+
+    if (dk_tcp_so_linger_enable)
+      {
+	rc = setsockopt (s, SOL_SOCKET, SO_LINGER, (void *) &l_opt, sizeof (l_opt));
+	if (rc)
+	  {
+	    dbg_perror ("setsockopt(SO_LINGER)");
+	  }
+      }
   }
 #endif
 
-  rc = closesocket (ses->ses_device->dev_connection->con_s);
+  /* Shutdown operation on socket (default off) */
+  if (dk_tcp_shutdown_enable)
+    {
+      rc = shutdown (s, SHUT_WR);
+      if (rc)
+        {
+	  dbg_perror ("shutdown(SHUT_WR)");
+	}
+    }
+
+  /* Close the connected socket */
+  rc = closesocket (s);
   ses->ses_device->dev_connection->con_s = -1;
 
   /* Whether close succeeded or not, the connection will be
@@ -979,9 +1062,6 @@ tcpses_write (session_t * ses, char *buffer, int n_bytes)
   SESSTAT_W_CLR (ses, SST_BLOCK_ON_WRITE);
 
   n_out = send (ses->ses_device->dev_connection->con_s, buffer, n_bytes, flags);
-#if defined (PCTCP) & !defined (WIN32)
-  Yield ();
-#endif
   dbg_printf_2 (("send() : n_out=%d.", n_out));
   ses->ses_w_errno = 0;
   if (n_out <= 0)
@@ -1094,40 +1174,27 @@ tcpses_read (session_t * ses, char *buffer, int n_bytes)
   return (n_in);
 }
 
-long read_block_usec;
-long write_block_usec;
+int64 read_block_usec;
+int64 write_block_usec;
+
 
 int
 tcpses_is_read_ready (session_t * ses, timeout_t * to)
 {
-#ifndef FOR_GTK_TESTS
   int rc;
-  struct timeval to_2;
-  fd_set fds;
   int fd = ses->ses_device->dev_connection->con_s;
-  if (to)
-    {
-      memset (&to_2, 0, sizeof (to_2));
-      to_2.tv_sec = to->to_sec;
-      to_2.tv_usec = to->to_usec;
-    }
+  time_usec_t start_time_usec;
 
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
-  if (fd < 0)					 /* the sequential read will throw exception */
+  if (fd < 0)			/* the sequential read will throw exception */
     return SER_SUCC;
 
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
-#endif
   SESSTAT_CLR (ses, SST_TIMED_OUT);
 
-#ifndef FOR_GTK_TESTS
-
-  if (to &&
-      to->to_sec == dks_fibers_blocking_read_default_to.to_sec &&
-      to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
+  if (to && to->to_sec == dks_fibers_blocking_read_default_to.to_sec
+	 && to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
     return SER_SUCC;
 
   if (ses->ses_reads)
@@ -1135,15 +1202,52 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
   else
     ses->ses_reads = 1;
 
-  rc = select (fd + 1, &fds, NULL, NULL, to ? &to_2 : NULL);
+  if (to)
+    start_time_usec = get_usec_real_time ();
+
+#ifdef HAVE_POLL
+  {
+    struct pollfd fds;
+    int timeout_ms = -1;
+
+    fds.fd = fd;
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    if (to)
+      timeout_ms = (to->to_sec * 1000UL) + (to->to_usec / 1000UL);
+
+    rc = poll (&fds, 1, timeout_ms);
+  }
+#else
+  {
+    fd_set fds;
+    struct timeval to_2;
+
+    FD_ZERO (&fds);
+    FD_SET (fd, &fds);
+
+    if (to)
+      {
+	to_2.tv_sec = to->to_sec;
+	to_2.tv_usec = to->to_usec;
+      }
+
+    rc = select (fd + 1, &fds, NULL, NULL, to ? &to_2 : NULL);
+  }
+#endif
+
+  if (to)
+    read_block_usec += get_usec_real_time () - start_time_usec;
+
   ses->ses_reads = 0;
+
   if (!rc)
     {
       SESSTAT_SET (ses, SST_TIMED_OUT);
     }
-  if (to)
-    read_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
-#endif
+
+
   return SER_SUCC;
 }
 
@@ -1151,17 +1255,9 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 int
 tcpses_is_write_ready (session_t * ses, timeout_t * to)
 {
-#ifndef FOR_GTK_TESTS
   int rc;
-  struct timeval to_2;
-  fd_set fds;
   int fd = ses->ses_device->dev_connection->con_s;
-  if (to)
-    {
-      memset (&to_2, 0, sizeof (to_2));
-      to_2.tv_sec = to->to_sec;
-      to_2.tv_usec = to->to_usec;
-    }
+  time_usec_t start_time_usec;
 
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
@@ -1169,20 +1265,53 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
   if (fd < 0)					 /* the sequential read will throw exception */
     return SER_SUCC;
 
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
-#endif
   SESSTAT_W_CLR (ses, SST_TIMED_OUT);
 
-#ifndef FOR_GTK_TESTS
-  rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
+  if (to)
+    start_time_usec = get_usec_real_time ();
+
+#ifdef HAVE_POLL
+  {
+    struct pollfd fds;
+    int timeout_ms = -1;
+
+    fds.fd = fd;
+    fds.events = POLLOUT;
+    fds.revents = 0;
+
+    if (to)
+      {
+        timeout_ms = (to->to_sec * 1000UL) + (to->to_usec / 1000UL);
+      }
+
+    rc = poll (&fds, 1, timeout_ms);
+  }
+#else
+  {
+    fd_set fds;
+    struct timeval to_2;
+
+    FD_ZERO (&fds);
+    FD_SET (fd, &fds);
+
+    if (to)
+      {
+	to_2.tv_sec = to->to_sec;
+	to_2.tv_usec = to->to_usec;
+      }
+
+    rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
+  }
+#endif
+
+  if (to)
+    write_block_usec += get_usec_real_time () - start_time_usec;
+
   if (!rc)
     {
       SESSTAT_W_SET (ses, SST_TIMED_OUT);
     }
-  if (to)
-    write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
-#endif
+
   return SER_SUCC;
 }
 
@@ -1239,128 +1368,6 @@ fileses_write (session_t * ses, char *buffer, int n_bytes)
 }
 
 
-#ifdef SUNRPC
-
-#ifdef __cplusplus
-extern "C" int _rpc_dtablesize ();
-extern "C" fd_set svc_fdset;
-#else
-extern int _rpc_dtablesize ();
-extern fd_set svc_fdset;
-#endif
-
-int sun_rpcs_pending = 0;
-
-typedef void (*srpc_cb_t) ();
-
-srpc_cb_t srpc_callback;
-
-
-void
-tcpses_set_sun_rpc_callback (srpc_cb_t f)
-{
-  srpc_callback = f;
-}
-
-
-void
-svc_run_3 (timeout_t * to)
-{
-#ifdef FD_SETSIZE
-  fd_set readfds;
-#else
-  int readfds;
-#endif /* def FD_SETSIZE */
-  struct timeval tv;
-
-#ifndef AIX
-  extern int errno;
-#endif
-
-#ifdef FD_SETSIZE
-  readfds = svc_fdset;
-#else
-  readfds = svc_fds;
-#endif /* def FD_SETSIZE */
-
-  if (to != NULL)
-    {
-      tv.tv_sec = to->to_sec;
-      tv.tv_usec = to->to_usec;
-    }
-
-  switch (select (_rpc_dtablesize (), &readfds, 0, 0, to == NULL ? NULL : &tv))
-    {
-    case -1:
-      if (errno == SYS_EINTR)
-	{
-	  return;
-	}
-      perror ("svc_run: - select failed");
-      return;
-
-    case 0:
-      return;
-
-    default:
-      svc_getreqset (&readfds);
-    }
-}
-
-
-int
-tcpses_add_sun_rpc_sockets (fd_set * reads)
-{
-  int n;
-  int max_set = 0;
-  int max = _rpc_dtablesize ();
-  if (sun_rpcs_pending)
-    return 0;
-  for (n = 2; n < max; n++)
-    {
-      if (FD_ISSET (n, &svc_fdset))
-	{
-	  FD_SET (n, reads);
-	  max_set = n;
-	};
-    };
-  return max_set;
-}
-
-
-fd_set srpc_fd_set;
-
-
-void
-tcpses_process_sun_rpc_sockets (fd_set * all_fds)
-{
-  int n, any_sun;
-  int max = _rpc_dtablesize ();
-  FD_ZERO (&srpc_fd_set);
-  any_sun = 0;
-  for (n = 2; n < max; n++)
-    {
-      if (FD_ISSET (n, all_fds) && FD_ISSET (n, &svc_fdset))
-	{
-	  FD_SET (n, &srpc_fd_set);
-	  any_sun = 1;
-	};
-      if (any_sun)
-	{
-	  srpc_callback ();
-	}
-    };
-}
-
-
-#else
-
-#define tcpses_process_sun_rpc_sockets (q)
-#define tcpses_add_sun_rpc_sockets (q)
-
-#endif
-
-
 /*##**********************************************************************
  *
  *              tcpses_select
@@ -1388,27 +1395,55 @@ tcpses_process_sun_rpc_sockets (fd_set * all_fds)
 int
 tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout)
 {
+  int rc;
+  int i, n;
+#ifdef HAVE_POLL
+  int timeout_ms = timeout ? (timeout->to_sec * 1000UL) + (timeout->to_usec / 1000UL) : -1;
+  struct pollfd fds_one = { 0 };
+
+  struct pollfd *fds = NULL;
+  int s = 0;
+
+  if (ses_count <= 1)
+    {
+      fds = &fds_one;
+    }
+  else
+    {
+      fds = (struct pollfd *) calloc (ses_count, sizeof (struct pollfd));
+      if (!fds)
+	return SER_NOREC;
+    }
+#else
   fd_set read_set;
   fd_set write_set;
   fd_set excep_set;
   struct timeval to;
-  int i, n;
   int s = 0, s_max = 0;
-  int rc;
-
-  dbg_printf_1 (("tcpses_select, ses_count = %d.", ses_count));
 
   if (timeout != NULL)
     {
       to.tv_sec = timeout->to_sec;
       to.tv_usec = timeout->to_usec;
     }
+#endif
+
+  dbg_printf_1 (("tcpses_select, ses_count = %d.", ses_count));
 
   /* Copy socket descriptors of all sessions to corresponding
      fd_set structures.
      Keep max descriptor in s_max.
    */
 
+#ifdef HAVE_POLL
+  rc = fill_pollfd (ses_count, reads, POLLIN,  fds);
+  if (rc < 0)
+    goto done;
+
+  rc = fill_pollfd (ses_count, writes, POLLOUT,  fds);
+  if (rc < 0)
+    goto done;
+#else
   s_max = fill_fdset (ses_count, reads, &read_set);
   if (s_max < 0)
     {
@@ -1430,6 +1465,7 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
     }
 
   s_max = MAX (s, s_max);
+#endif
 
   /* setting here all status fields to SST_BLOCK_ON_READ or
      SST_BLOCK_ON_WRITE */
@@ -1442,15 +1478,16 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 	SESSTAT_CLR (reads[n], SST_CONNECT_PENDING);
     };
 
+#ifdef HAVE_POLL
+  dbg_printf_2 (("Calling poll..."));
+  rc = poll (fds, ses_count, timeout_ms);
+  dbg_printf_2 (("poll() : rc=%d.", rc));
+#else
   dbg_printf_2 (("Calling select..."));
-
-#ifdef SUNRPC
-  s = tcpses_add_sun_rpc_sockets (&read_set);
-  s_max = MAX (s_max, s);
-#endif
   rc = select (s_max + 1, &read_set, &write_set, &excep_set, timeout == NULL ? NULL : &to);
-
   dbg_printf_2 (("select() : rc=%d.", rc));
+#endif
+
   switch (rc)
     {
     case -1:
@@ -1461,35 +1498,37 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 	  dbg_printf_2 (("Select ended by EINTR."));
 	  set_array_status (ses_count, reads, SST_INTERRUPTED);
 	  set_array_status (ses_count, writes, SST_INTERRUPTED);
-	  return (SER_INTR);
+	  rc = SER_INTR;
+	  goto done;
 	}
       else
 	{
 	  dbg_printf_2 (("Select ended with error."));
-	  return (rc);
+	  goto done;
 	}
 
     case 0:
       /* timeout */
-      return (rc);
+      goto done;
 
     default:
       /* rc equals number of criteria met,
          here we update all the session status values.
        */
-#ifdef SUNRPC
-      tcpses_process_sun_rpc_sockets (&read_set);
-#endif
       dbg_printf_2 (("Updating sessions."));
       for (i = 0; i < ses_count; i++)
 	{
 	  if (reads[i] != NULL)
 	    {
 	      dbg_printf_2 (("i=%d", i));
+
+#ifdef HAVE_POLL
+	      if (fds[i].revents & POLLIN)
+#else
 	      s = reads[i]->ses_device->dev_connection->con_s;
 	      dbg_printf_2 (("reads[i] : FD_ISSET=%d", FD_ISSET (s, &read_set)));
-
 	      if (FD_ISSET (s, &read_set) || FD_ISSET (s, &excep_set))
+#endif
 		{
 		  if (SESSTAT_ISSET (reads[i], SST_LISTENING))
 		    {
@@ -1504,9 +1543,13 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 
 	  if (writes[i] != NULL)
 	    {
+#ifdef HAVE_POLL
+	      if (fds[i].revents & POLLOUT)
+#else
 	      s = writes[i]->ses_device->dev_connection->con_s;
 	      dbg_printf_2 (("writes[i]: FD_ISSET=%d", FD_ISSET (s, &write_set)));
 	      if (FD_ISSET (s, &write_set))
+#endif
 		{
 		  SESSTAT_CLR (writes[i], SST_BLOCK_ON_WRITE);
 		}
@@ -1516,9 +1559,15 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 		}
 	    }
 	}
-
-      return (rc);
     }
+
+done:
+#ifdef HAVE_POLL
+  if (ses_count > 1)
+    free (fds);
+#endif
+
+  return rc;
 }
 
 
@@ -1700,6 +1749,68 @@ tcpses_set_control (session_t * ses, int fieldtoset, char *p_value, int size)
       rc = SER_SUCC;
       break;
 
+    case SC_KEEPALIVE:
+
+      if (ses->ses_class != SESCLASS_TCPIP)
+	return SER_NOSUP;
+      if (size != sizeof (sescontrol->ctrl_keepalive))
+	{
+	  return SER_ILLPRM;
+	}
+      else
+	{
+	  int keepalive;
+	  memcpy ((char *) &ctrl, p_value, size);
+	  keepalive = (ctrl > 0 ? 1 : 0);
+	  rc = setsockopt (s, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof (keepalive));
+	  if (rc < 0)
+	    return SER_SYSCALL;
+	  if (keepalive)
+	    {
+#if defined (WIN32)
+	      struct tcp_keepalive vals;
+	      DWORD dummy;
+	      vals.onoff = 1;
+	      vals.keepalivetime = KEEPALIVE_UNITS (dk_tcp_keepalive_idle);	/* value in milliseconds */
+	      vals.keepaliveinterval = KEEPALIVE_UNITS (dk_tcp_keepalive_intvl);	/* value in milliseconds */
+	      rc = WSAIoctl (s, SIO_KEEPALIVE_VALS, &vals, sizeof (vals), NULL, 0, &dummy, NULL, NULL);
+	      if (rc)
+		log_error ("Cannot set keepalive values (%d)", WSAGetLastError ());
+#else
+
+	      if (dk_tcp_keepalive_idle > 0)
+		{
+#if defined (TCP_KEEPALIVE)	/* Apple, BSD */
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPALIVE, &dk_tcp_keepalive_idle, sizeof (ctrl)) < 0)
+		    log_error ("Cannot set keepalive idle timeout to %d (%m)", dk_tcp_keepalive_idle);
+#elif defined (TCP_KEEPIDLE)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPIDLE, &dk_tcp_keepalive_idle, sizeof (ctrl)) < 0)
+		    log_error ("Cannot set keepalive idle timeout to %d (%m)", dk_tcp_keepalive_idle);
+#endif
+		}
+
+	      if (dk_tcp_keepalive_intvl > 0)
+		{
+#if defined (TCP_KEEPINTVL)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPINTVL, &dk_tcp_keepalive_intvl, sizeof (dk_tcp_keepalive_intvl)) < 0)
+		    log_error ("Cannot set keepalive interval timeout to %d (%m)", dk_tcp_keepalive_intvl);
+#endif
+		}
+
+	      if (dk_tcp_keepalive_probes > 0)
+		{
+#if defined (TCP_KEEPCNT)
+		  if (setsockopt (s, IPPROTO_TCP, TCP_KEEPCNT, &dk_tcp_keepalive_probes, sizeof (dk_tcp_keepalive_probes)) < 0)
+		    log_error ("Cannot set keepalive interval timeout to %d (%m)", dk_tcp_keepalive_probes);
+#endif
+		}
+#endif
+	    }
+	  sescontrol->ctrl_keepalive = ctrl;
+	  rc = SER_SUCC;
+	}
+      break;
+
     default:
       rc = SER_ILLPRM;
     }
@@ -1709,6 +1820,60 @@ tcpses_set_control (session_t * ses, int fieldtoset, char *p_value, int size)
 }
 
 
+#if defined(HAVE_POLL)
+/*##**********************************************************************
+ *
+ *              fill_pollfd
+ *
+ * Adds socket descriptors of present elements in sestable to pollfd
+ * structure referenced by fds.
+ *
+ * Input params :
+ *
+ *      sestable     - array containing session structures
+ *      sescount     - max number of elements in sestable array
+ *      fds          - pointer to pollfd structure
+ *
+ * Output params: -
+ *
+ * Return value :  = 0 : the number of sockets added
+ *                 < 0 : SER_ILLSESP, if an illegal session pointer found
+ *
+ * Limitations  : -
+ *
+ * Globals used : -
+ */
+static int
+fill_pollfd (int count, session_t ** sestable, short flags, struct pollfd *fds)
+{
+  int i;
+  int n_added = 0;
+  int s;
+
+  dbg_printf_3 (("fill_pollfd"));
+
+  for (i = 0; (i < count); i++)
+    {
+      if (sestable[i] == NULL)
+	continue;
+
+      TCP_CHK (sestable[i]);
+
+      s = sestable[i]->ses_device->dev_connection->con_s;
+
+      if ((flags & POLLOUT) && fds[i].fd != s)
+	      fprintf(stderr, "fd=%d s=%d\n", fds[i].fd, s);
+
+      fds[i].fd = s;
+      fds[i].events |= flags;
+      fds[i].revents = 0;
+
+      n_added++;
+    }
+
+  return n_added;
+}
+#else
 /*##**********************************************************************
  *
  *              fill_fdset
@@ -1761,6 +1926,7 @@ fill_fdset (int sescount, session_t ** sestable, fd_set * p_fdset)
   dbg_printf_4 (("n_added=%d, s_max=%d", n_added, s_max));
   return (s_max);
 }
+#endif
 
 
 /*##**********************************************************************
@@ -1839,7 +2005,7 @@ test_readblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_readblock. rc=%d, eno=%d", retcode, eno));
 
-#if defined (PCTCP)
+#if defined (WIN32)
   if (retcode == -1 && (eno == WSAEWOULDBLOCK))
 #elif defined (EWOULDBLOCK)
   if (retcode == -1 && (eno == EAGAIN || eno == EWOULDBLOCK))
@@ -1890,7 +2056,7 @@ test_writeblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_writeblock. rc=%d, eno=%d", retcode, eno));
 
-#if defined (PCTCP)
+#if defined (WIN32)
   if (retcode == -1 && (eno == WSAEWOULDBLOCK))
 #elif defined (EWOULDBLOCK)
   if (retcode == -1 && (eno == EAGAIN || eno == EWOULDBLOCK))
@@ -2050,7 +2216,7 @@ ses_control_all (session_t * ses)
 }
 
 
-#ifdef PCTCP
+#ifdef WIN32
 int
 init_pctcp (void)
 {
@@ -2058,7 +2224,7 @@ init_pctcp (void)
   WSADATA wsaData;
   int err;
 
-  wVersionRequested = (1 << 8) + 1;
+  wVersionRequested = MAKEWORD (2,2);
   err = WSAStartup (wVersionRequested, &wsaData);
   if (err != 0)
     {
@@ -2066,26 +2232,20 @@ init_pctcp (void)
       return err;
     }
 
-  /* Confirm that the Windows Sockets DLL supports 1.1.
+  /*
+   * Confirm that the Windows Sockets DLL supports 2.2.
    * Note that if the DLL supports versions greater
-   * than 1.1 in addition to 1.1, it will still return
-   * 1.1 in wVersion since that is the version we requested.
+   * than 2.2 in addition to 2.2, it will still return
+   * 2.2 in wVersion since that is the version we requested.
    */
-  if (LOBYTE (wsaData.wVersion) != 1 || HIBYTE (wsaData.wVersion) != 1)
+  if (LOBYTE (wsaData.wVersion) != 2 || HIBYTE (wsaData.wVersion) != 2)
     {
       /* Tell the user that we couldn't find a usable winsock.dll. */
+      log_debug ("Could not find a usable version of Winsock.dll");
       WSACleanup ();
       return WSAVERNOTSUPPORTED;
     }
 
-  /* The Windows Sockets DLL is acceptable.  Proceed.  */
-  if (LOBYTE (wVersionRequested) < 1 ||
-      (LOBYTE (wVersionRequested) == 1 && HIBYTE (wVersionRequested) < 1))
-    {
-      return WSAVERNOTSUPPORTED;
-    }
-
-  /*WSASetBlockingHook ((FARPROC) Yield); */
   return 0;
 }
 #endif
@@ -2173,13 +2333,13 @@ tcpses_addr_info (session_t * ses, char *buf, size_t max_buf, int deflt, int fro
 void
 tcpses_error_message (int saved_errno, char *msgbuf, int size)
 {
-#ifndef PCTCP
+#ifndef WIN32
   int msg_len;
 #endif
 
   if (!msgbuf || size < 1)
     return;
-#ifdef PCTCP
+#ifdef WIN32
   switch (saved_errno)
     {
     case WSAEACCES:
@@ -2596,7 +2756,7 @@ unixses_listen (session_t * ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("listen()");
 
-#ifdef PCTCP
+#ifdef WIN32
       if (errno != WSAEINPROGRESS)
 #endif
 	return (SER_SYSCALL);

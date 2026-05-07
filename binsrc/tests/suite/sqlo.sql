@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2108,6 +2108,251 @@ select * from TBUDTSTR where id0 = UDT2STR(1).id;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": member observer any type STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table v0;
+CREATE TABLE v0 ( v1 INT PRIMARY KEY , v2 long TEXT ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 0 , 'x' ) ;
+ INSERT INTO v0 ( v1 , v2 ) VALUES ( 56 , ( SELECT 16 FROM v0 e LEFT JOIN v0 USING ( v2 , v2 , v1 , v1 , v1 , v2 , v2 , v2 , v2 , v1 , v1 , v2 , v1 , v1 , v1 , v2 , v1 , v1 , v2 , v2 , v1 ) ) ) ;
+ SELECT * FROM v0 WHERE v2 = ( SELECT BIT_XOR ( v2 ) FROM v0 AS v5 , v0 AS v3 NATURAL JOIN v0 AS v4 NATURAL JOIN v0 USING ( v2 ) NATURAL JOIN v0 ts2 ) ;
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1372 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 REAL UNIQUE PRIMARY KEY , v2 NUMERIC NOT NULL CHECK ( v1 = -128 ) ) ;
+INSERT INTO v0 VALUES ( -128 , 49 ) ;
+drop table v5;
+CREATE TABLE v5 ( v6 INT , v7 INT NOT NULL CHECK ( v7 IN ( SELECT v2 FROM v0 WHERE v2 = 0 ) ) ) ;
+INSERT INTO v5 VALUES ( 0 , 8 ) ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1373 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 NUMERIC UNIQUE PRIMARY KEY CHECK ( v1 / 70249102.000000 < 98 AND v1 <= 8 ) ) ;
+ INSERT INTO v0 VALUES ( 43938596.000000 ) , ( 87654080.000000 ) , ( 83504924.000000 ) , ( 39788480.000000 ) , ( 85377868.000000 ) , ( NULL ) ;
+ SELECT v0 . v1 , ( v0 . v1 ) AS v2 GROUP BY 16 , -32768 ;
+drop table v3;
+ CREATE TABLE v3 ( v4 FLOAT ) ;
+ INSERT INTO v0 VALUES ( 99634861.000000 ) , ( 70609933.000000 ) , ( 79634166.000000 ) , ( 37598120.000000 ) ;
+ INSERT INTO v0 VALUES ( 30 ) ;
+ INSERT INTO v0 VALUES ( -1 ) ;
+ SELECT v1 , v1 , LEAD ( ) OVER ( PARTITION BY v1 ORDER BY v1 ) AS v5 FROM v0 USING ( v1 ) FROM x WHERE v1 >= 77134685.000000 ;
+drop table v6;
+ CREATE TABLE v6 ( v7 INTEGER ) ;
+ INSERT INTO v3 VALUES ( 55 ) , ( 127 ) , ( -128 ) ;
+ SELECT v3 . v4 , AVG ( v0 . v1 ) AS v8 FROM v0 JOIN v3 ON v4 = v0 . v1 ;
+ SELECT v4 , SUM ( * ) FROM v3 GROUP BY STDDEV_POP ( v4 ) ;
+ SELECT VARIANCE ( VAR_SAMP ( v4 ) ) , STDDEV ( STD ( v4 ) ) FROM v3 ON v7 x = v6 . v7 ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1374 STATE=" $state " MESSAGE=" $message "\n" ;
+SELECT v3 . v4 , AVG ( v0 . v1 ) AS v8 FROM v3 join v0 table option (index primary key)  ON v4 = v0 . v1 option (order,hash);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1374 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 INT , v2 VARCHAR ( 13 ) ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 38 , 'x' ) ;
+ INSERT INTO v0 ( v2 , v1 ) VALUES ( 20 , 'x' ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 61 , 'x' ) ;
+UPDATE v0 SET v1 = COUNT ( v2 ) WHERE v1 IS NOT NULL ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": case 1375 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 INT , v2 VARCHAR ) ;
+ INSERT INTO v0 VALUES ( 127 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 69 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 0 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 63 , 'x' ) ;
+ INSERT INTO v0 VALUES ( -1 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 72 , 'x' ) ;
+ INSERT INTO v0 VALUES ( -2147483648 , 'x' ) ;
+ SELECT v2 , CASE WHEN MAX ( 57 * -1 + ( SELECT v2 FROM v0 AS v13 WHERE v2 = 'x' OR v1 = ( CASE WHEN v2 > 82 THEN 'x' ELSE 'x' END ) OR v2 = 'x' GROUP BY v2 ) + 30 ) = 'x' THEN 'x' ELSE 'x' END AS v12 FROM v0 ;
+
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1376 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+
+CREATE TABLE v0 ( v1 INT NOT NULL UNIQUE CHECK ( v1 = 1 ) , v2 VARCHAR UNIQUE , v3 INT UNIQUE NOT NULL NOT NULL NOT NULL ) ;
+SELECT ( ( SELECT LAG ( v3 ) FROM v0 t1 LEFT JOIN v0 s USING ( v1 , v3 , v3 , v1 , v3 , v1 , v2 , v1 , v3 , v1 , v2 , v2 ) NATURAL JOIN v0 WHERE v3 IS NOT NULL ) , 'x' ) AS v14 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case1378 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+drop table v0;
+CREATE TABLE v0 ( v1 TIMESTAMP PRIMARY KEY CHECK ( v1 ) ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( NULL ) ;
+ SELECT ( v1 ) FROM v0 ;
+ SELECT ( PERCENT_RANK ( v1 , 'x' ) ) FROM v0 ;
+ SELECT ( STD ( v1 , 'x' ) ) FROM v0 ;
+ UPDATE v0 SET v1 = ( SELECT 26 FROM v0 ORDER BY DENSE_RANK ( v1 ) ) ;
+ SELECT DISTINCT RANK ( v1 ) AS v2 FROM v0 WHERE v1 IS NOT NULL ;
+ SELECT DISTINCT NTH_VALUE ( v1 ) AS v3 , NTH_VALUE ( AVG ( v1 ) ) AS v4 FROM v0 ;
+ SELECT STDDEV_SAMP ( * ) AS v6 , COUNT ( v1 ) AS v5 FROM v0 GROUP BY VAR_SAMP ( v1 ) ;
+ SELECT CASE WHEN VAR_POP ( v1 ) = 34 THEN 'x' ELSE 'x' END AS v8 FROM ( SELECT v1 FROM v0 AS v10 NATURAL JOIN v0 AS v9 NATURAL JOIN v0 AS v11 NATURAL JOIN v0 WHERE v1 = -32768 AND v1 <= v1 ) AS v7 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1379 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table DB.DBA.TB1_CASE1381;
+
+CREATE TABLE DB.DBA.TB1_CASE1381 (id INT, name VARCHAR(100), age INT, city VARCHAR(100));
+CREATE INDEX STR1_CASE1381_IDX ON DB.DBA.TB1_case1381 (name);
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (1, 'Alice', 30, 'New York');
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (2, 'Bob', 25, 'Los Angeles');
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (3, 'Charlie', 35, 'Chicago');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Bob', 25);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Charlie', 35);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'NotExist');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', NULL);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York', 'Unknown');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York', 'Unknown');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 1234);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 123, 'Bob');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'Multi', (SELECT MAX(age) FROM DB.DBA.TB1_case1381));
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', (SELECT name FROM DB.DBA.TB1_case1381 WHERE id = 1));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": key_estimate, various arg combinations STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table DigitalSignatures;
+
+CREATE TABLE DigitalSignatures (id INT PRIMARY KEY, body VARCHAR, key_name VARCHAR);
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (1, '<SampleXML></SampleXML>', 'key1');
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (2, '<SampleXML></SampleXML>', 'key2');
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (3, '<SampleXML></SampleXML>', NULL);
+SELECT dsig_template_ext(xtree_doc(body), '<?xml version="1.0" encoding="UTF-8"?><Signature xmlns="http://www.w3.org/2000/09/xmldsig#" ><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="%s" /></SignedInfo><SignatureValue></SignatureValue><KeyInfo><KeyName>%s</KeyName></KeyInfo></Signature>', vector('wsse', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd', 'wsu', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'), 'http://schemas.xmlsoap.org/soap/envelope/', 'Body', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'Action', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'From', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'To', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'MessageID', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'ReplyTo', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'FaultTo', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'RelatesTo') FROM DigitalSignatures WHERE id = 1;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": dsig_template_ext with bad algo `%s` STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+-- drop table v0;
+
+-- CREATE TABLE v0 ( v1 TIMESTAMP PRIMARY KEY UNIQUE , v2 NVARCHAR ) ;
+-- INSERT INTO v0 ( v1 , v1 ) VALUES ( + 0 , 0 ) ;
+-- UPDATE v0 SET v2 = 91121358.000000 WHERE v2 IN ( SELECT 255 x00000000 , NTILE ( STD ( ) ) AS v4 FROM v0 AS v5 NATURAL JOIN v0 GROUP BY v1 HAVING ( SELECT NTILE ( v2 ) FROM v0 t1 LEFT JOIN v0 r ON v0 . v1 = v0 . v2 NATURAL JOIN v0 WHERE v2 > -128 ) NOT BETWEEN 16 AND -1 ) ;
+-- 
+-- ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+-- SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+-- ECHO BOTH ": case 1390 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+DROP TABLE V0;
+DROP VIEW V4;
+CREATE TABLE V0 ( V1 INT , V2 DATETIME ) ;
+CREATE VIEW V4 AS SELECT V1 , STDDEV ( BIT_XOR ( V2 ) ) AS V3 FROM V0 GROUP BY 'X' , 'X' , NULL HAVING ( SELECT LAST_VALUE ( V2 ) FROM V0 T1 LEFT JOIN V0 R ON V0 . V1 = V0 . V1 NATURAL JOIN V0 WHERE V2 > 67 ) NOT BETWEEN 22 AND 71 ;
+SELECT CASE WHEN MAX ( 'x' ) = -128 THEN 'x' ELSE 'x' END AS V5 FROM V4 ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1391 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+DROP TABLE V0;
+DROP TABLE V3;
+DROP VIEW V3;
+DROP TABLE V5;
+DROP VIEW V5;
+CREATE TABLE V0 ( V1 INT UNIQUE NOT NULL PRIMARY KEY , V2 LONG NVARCHAR ) ;
+CREATE VIEW V3 AS SELECT * FROM V0 X WHERE NOT ( EXISTS ( SELECT 91 FROM V0 WHERE V1 = 'x' ) ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1392 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+CREATE VIEW V5 AS SELECT CASE WHEN ( V1 , V1 / ( SELECT ( V2 ) FROM V0 WHERE V1 IS NOT NULL ORDER BY V1 ) ) THEN 'x' ELSE 'x' END AS V4 FROM V3 ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1392 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+drop table v0;
+drop view v3;
+CREATE TABLE v0 ( v1 INT , v2 TIMESTAMP NOT NULL CHECK ( v2 = 127 ) ) ;
+CREATE VIEW v3 AS SELECT * FROM v0 WHERE v2 IN ( SELECT ( v1 ) FROM v0 GROUP BY v1 HAVING v0 . v2 . SYS_DAV_RES__ NOT BETWEEN 72 AND 78 ) AND v1 < 2 ;
+DROP TABLE v0 ;
+UPDATE v3 SET v1 = 'x' WHERE v1 + 127 = v1 OR PERCENT_RANK ( * ) >= ( SELECT LAST_VALUE ( * ) FROM v3 WHERE v1 IS NOT NULL ) ;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1393 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table v0;
+CREATE TABLE v0 ( v1 DECIMAL UNIQUE PRIMARY KEY CHECK ( ( v1 , ( CASE WHEN v2 IS NULL THEN 97 ELSE v1 END ) ) + 255 ) , v2 NVARCHAR ) ;
+CREATE TRIGGER v4 BEFORE INSERT ON v0 R FOR EACH ROW INSERT INTO v0 VALUES ( 76 , AS DECIMAL( 39 , 64 ) ) , ( 'x' , 'x' , 49 , 0 , 'x' , 0 x1234567890abcdef ) ;
+INSERT INTO v0 VALUES ( 17323404.000000 * 2147483647 + 0 , 80 ) ;
+UPDATE v0 SET v1 = 'x' ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1394 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DISTINCT ST_GeomFromText('MULTILINESTRING((1 1, 2 2, 3 3), (4 4, 5 5, 6 6))') FROM DB.DBA.RDF_QUAD;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1398 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT GROUPING ( x ) , COUNT ( CASE WHEN x IS NULL THEN 1 WHEN x >= 1024 THEN CONCAT ( ROUND ( x / 1024 , 2 ) , ' KB' ) END ) , ( 'swarm' , 1 , 0 ) AS x FROM ( SELECT 1 AS x ) AS x GROUP BY CUBE ( x , x , 92 + 1 );
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1399 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT CASE WHEN id_to_iri ( iri_to_id ( ' 龔龖龗龞龡 ' ) , '\$[0].a' ) >= st_geomfromtext ( 'POLYGON((30 30,40 40,50 50,30 50,30 40,30 30))' ) THEN CONCAT ( ROUND ( x / 0 , 2 ) , ' TB' ) WHEN x >= 1073741824 THEN CONCAT ( ROUND ( x / 1073741824 , 2 ) , ' GB' ) ELSE CONCAT ( repeat ( '[' , 10000 ) , ' bytes' ) END AS x FROM ( SELECT POWER ( -123456789 , 1 ) AS x ) AS x GROUP BY x , x HAVING COUNT ( * ) = 9;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1400 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DISTINCT XMLAGG ( REPEAT ( 'a' , 64 * 128302 ) , 'value' , 1 ) , CASE WHEN x IS NULL THEN 1 WHEN x >= 1024 THEN STRTOJSON ( ROUND ( x / 1024 , 2 ) , ' KB' ) END / ( 0 , 91 ) FROM ( SELECT 1 AS x ) AS x GROUP BY CUBE ( x , x , 92 + 1 );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1401 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- SELECT DISTINCT
+--     xmlagg ( x ) ,
+--     x + 15 + ( 0 , (
+--         SELECT CASE
+--             WHEN NULLIF ( SUM ( CAST( 0.059872 AS VARCHAR ( 39 ) ) ) , 'rank' ) THEN 8.000000
+--             WHEN 'x' THEN 'x'
+--             ELSE ( -123456789 , count ( DISTINCT CASE WHEN x < ( x ) THEN 1 END ) )
+--         END AS x
+--         FROM ( SELECT 1 AS x
+--                FROM ( SELECT 'e' AS x
+--                       FROM ( SELECT 1 + 1 AS x , 2 AS x , 'abc' AS x ) AS x
+--                     ) AS x
+--                GROUP BY x HAVING COUNT ( * ) = 9
+--              ) AS x
+--     ) ) + ( 0 , 91 ) AS x
+-- FROM ( SELECT 1 AS x ) AS x
+-- WHERE x IS NULL OR ( 1 = x )
+-- GROUP BY CUBE ( x , x , 92 + 1 )
+-- ORDER BY SUM ( DISTINCT 0 ) , x , x;
+-- ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+-- SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+-- -- ECHO BOTH ": case 1402 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DISTINCT ST_GeomFromText ( 'MULTILINESTRING((1 1, 2 2, 3 3), (4 4, 5 5, 6 6))' ) FROM DB.DBA.SYS_USERS;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1403 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

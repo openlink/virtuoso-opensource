@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,8 +37,8 @@ typedef struct monitor_s {
   int mon_thr_run;
   int mon_thr;
   int mon_lw_thr;
-  long mon_read_block_usec;
-  long mon_write_block_usec;
+  int64 mon_read_block_usec;
+  int64 mon_write_block_usec;
   long mon_read_cum_time;
   double mon_read_pct;
   long mon_tc_no_thread_kill_idle;

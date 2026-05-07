@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -64,19 +64,19 @@
         <tr valign='top'>
           <td>
             <div class="page_tab">
-              <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" />
+              <v:url name="b_url31" value="Users" format="%V" url="--'accounts_page.vspx?page=1'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" />
+              <v:url name="b_url32" value="Roles" format="%V" url="--'accounts_page.vspx?page=2'" />
             </div>
             <div class="page_tab_selected">
-              <v:url name="b_url14" value="Grants" format="%s" url="--'accounts_page.vspx?page=3'" />
+              <v:url name="b_url14" value="Grants" format="%V" url="--'accounts_page.vspx?page=3'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" />
+              <v:url name="b_url15" value="LDAP Import" format="%V" url="--'accounts_page.vspx?page=4'" />
             </div>
             <div class="page_tab">
-              <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" />
+              <v:url name="b_url15" value="LDAP Servers" format="%V" url="--'accounts_page.vspx?page=5'" />
             </div>
 
             <div class="tab_page_new">
@@ -141,7 +141,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: caps_browser.vspx?sid=%s&realm=%s&user_name=%s\r\n',self.sid, self.realm, self.user_name));
+                            http_header( sprintf('Location: caps_browser.vspx?sid=%U&realm=%U&user_name=%U\r\n',self.sid, self.realm, self.user_name));
                           ]]>
                         </v:on-post>
                       </v:button>
@@ -200,7 +200,7 @@
                               exec( str_gr, null, null, vector(), 0, mtd, dta);
                             }
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: caps_browser.vspx?sid=%s&realm=%s&user_name=%s\r\n',self.sid, self.realm, self.user_name));
+                            http_header( sprintf('Location: caps_browser.vspx?sid=%U&realm=%U&user_name=%U\r\n',self.sid, self.realm, self.user_name));
                           ]]>
                         </v:on-post>
                       </v:button>

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -55,8 +55,8 @@ int64 curr_vm_size = 0;
 
 extern timeout_t time_now;
 extern long disk_reads;
-extern long read_block_usec;
-extern long write_block_usec;
+extern int64 read_block_usec;
+extern int64 write_block_usec;
 extern int64 read_cum_time;
 extern long tc_no_thread_kill_idle;
 extern long tc_no_thread_kill_vdb;

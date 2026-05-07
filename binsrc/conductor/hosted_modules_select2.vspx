@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -71,9 +71,9 @@
                     fl := 1;
                     mtd_name := params[idx + 1];
                     http ('<tr>');
-                    http (sprintf ('<td>%s</td><td>%s</td>',
+                    http (sprintf ('<td>%V</td><td>%V</td>',
                     mtd_name, file_name));
-                    http (sprintf ('<td>%s</td>',  import_file (mtd_name, file_name)));
+                    http (sprintf ('<td>%V</td>',  import_file (mtd_name, file_name)));
                     http ('</tr>');
                   }
                   idx := idx + 2;
@@ -138,7 +138,7 @@
               <v:template name="dg_rows" type="row">
                 <tr>
                   <td nowrap="nowrap">
-                    <v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                    <v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                   </td>
                   <td nowrap="nowrap">
                     <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />

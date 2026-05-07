@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2705,6 +2705,8 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t col, int if_exists)
   sql_error_if_remote_table (tb = qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+  if (!tb)
+    sqlr_new_error ("42S02", "SQ208", "Bad table in drop column.");
   col_ref = tb_name_to_column (tb, col);
   if (!col_ref && if_exists)
     return;
@@ -3977,7 +3979,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 			sqlr_new_error ("42S12", "SQ158",
 			    "The supertable %s in UNDER has no primary key",
 			    ((char **) super)[0]);
-		      sqlr_new_error ("37000", "VEC..", "The UNDER is not supported in vectored execution");
+		      sqlr_new_error ("37000", "VEC03", "The UNDER is not supported in vectored execution");
 		      full_name = box_string (super_tb->tb_name);
 		      ddl_same_owner_check (full_name, tree->_.table_def.name);
 		      dk_free_box (((char **) super)[0]);
@@ -5283,8 +5285,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
       if (QR_IS_MODULE_PROC (qr))
         {
-          if (new_qr != qr)
-            qr_free (new_qr);
+          /* do not free here it is new module qr, new_qr will be seen in next loop */
 	  new_qr = NULL;
         }
     }
@@ -5310,8 +5311,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 		    }
 		  if (old_mod_qr == qr)
                     {
-                      if (new_qr != qr)
-                        qr_free (new_qr);
+                      /* this is one we are re-compiling, take the qr corresponding to it */
 		      new_qr = new_mod_qr;
                     }
 		}

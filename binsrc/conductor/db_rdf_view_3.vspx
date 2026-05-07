@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -352,9 +352,9 @@
 			       if (stat = '00000' and length (data2) and length (data2[0]))
 				 {
                                    if (fct_installed)
-				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				     http (sprintf ('<a href="%H" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
 				   else
-				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
+				   http (sprintf ('<a href="%H" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
 				 }
 			     }
 			 }
@@ -376,7 +376,7 @@
 				   if (fct_installed)
 				     http (sprintf ('<a href="/describe/?url=%U" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
 				   else
-				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
+				     http (sprintf ('<a href="%H" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
 				 }
 			     }
 			   http ('</div>');
@@ -392,9 +392,9 @@
 		   {
 		       http ('<div>Metadata Data Document (VoiD) URI/URL: ');
 		   if (fct_installed)
-		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+		     http (sprintf ('<a href="%H" target="_blank">%s</a>', data[0][0], data[0][0]));
                    else  
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
+	           http (sprintf ('<a href="%H" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
 	        }

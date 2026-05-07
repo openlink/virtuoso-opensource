@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -201,7 +201,7 @@ int /* Returns number of chars parsed. */
 dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret)
 {
   const char *tail = buf;
-  int fld_len, acc, ymd_found = 0, hms_found = 0, msec_factor;
+  int fld_len, acc, ymd_found = 0, hms_found = 0, msec_factor, tzl = 0;
   TIMESTAMP_STRUCT ts;
   memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));
   dt_ret[0] = NULL;
@@ -301,7 +301,7 @@ dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **er
             } while (isdigit (tail[0]));
           ts.fraction = acc * (msec_factor ? msec_factor : 1);
         }
-      if ('Z' != tail[0] && strncmp (tail, " GMT", 4))
+      if ('\0' != tail[0] && 'Z' != tail[0] && strncmp (tail, " GMT", 4))
 	{
 	  err_msg_ret[0] = "Colon or time zone is expected after minute";
 	  return 0;
@@ -319,6 +319,8 @@ scan_tz:
     tail++;
   else if (!strncmp (tail, " GMT", 4))
     tail += 4;
+  else if ('\0' == tail[0])
+    tzl = 1;
   else
     {
       err_msg_ret[0] = "Generic syntax error in date/time";
@@ -345,6 +347,7 @@ scan_tz:
     DT_SET_SECOND (dt_ret[0], ts.second);
     DT_SET_FRACTION (dt_ret[0], ts.fraction);
     DT_SET_TZ (dt_ret[0], 0); /* was DT_SET_TZ (dt_ret[0], dt_local_tz);  before TZL patch */
+    DT_SET_TZL (dt_ret[0], tzl);
   }
   if (!ymd_found)
     DT_SET_DAY (dt_ret[0], DAY_ZERO);

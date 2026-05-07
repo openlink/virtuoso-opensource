@@ -10,7 +10,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1603,3 +1603,19 @@ echo both ": " $rowcnt " rows in urn:localhost:DB\n";
 select * from RDF_QUAD where G = __i2id ('urn:localhost:DB') and __tag (O) in (182, 225, 226);
 echo both $if $equ $rowcnt 0 "PASSED" "*** FAILED";
 echo both ": " $rowcnt " rows with strings in O in urn:localhost:DB\n";
+
+select deserialize('\x8d123334645645756876896');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": deserialize(DV_DATA) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create type mytype as (id int);
+create table mytb (id int, ut mytype, lv long varchar);
+insert into mytb (id) values (1, new mytype(),repeat('xx',10000));
+-- test prohibited vectored param cast
+exec('delete from mytb where ut = ?', null,null,vector('any'));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": param cast to UDT  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+exec('delete from mytb where lv = ?', null,null,vector('xxx'));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": param cast to BLOB  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

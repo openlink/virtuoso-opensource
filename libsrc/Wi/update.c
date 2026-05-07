@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -475,7 +475,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
   dk_set_t keys;
   key_id_t new_key;
   int res;
-  placeholder_t *pl = (placeholder_t *) qst_place_get (state, upd->upd_place);
+  placeholder_t *pl = upd->upd_place ? (placeholder_t *) qst_place_get (state, upd->upd_place) : NULL;
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (state);
   union {
   void * dummy;
@@ -486,7 +486,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
   rd.rd_temp_max = sizeof (temp_un.temp);
   if (!pl)
     sqlr_new_error ("24000", "SR250", "Cursor not positioned on update. %s",
-		    upd->upd_place->ssl_name);
+                    upd->upd_place ? upd->upd_place->ssl_name : "<unknown>");
   {
     buffer_desc_t * volatile cr_buf = NULL;
     buffer_desc_t *main_buf, *del_buf;

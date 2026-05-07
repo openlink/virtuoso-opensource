@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -179,6 +179,8 @@ sqlc_col_to_view_scope (sql_comp_t * sc, ST ** tree_place, ST * view_exp,
   char *name = ST_COLUMN (tree, COL_DOTTED) ? tree->_.col_ref.name : (caddr_t) tree;
   ST **sel = (ST **) view_exp->_.select_stmt.selection;
   ST *repl = NULL;
+  if (ST_COLUMN (tree, COL_DOTTED) && STAR == tree->_.col_ref.name)
+    sqlc_new_error (sc->sc_cc, "37000", ".....", " A * is not allowed in view update");
   DO_BOX (ST *, as_exp, inx, sel)
   {
     if (0 == CASEMODESTRCMP (name, as_exp->_.as_exp.name))
@@ -360,6 +362,9 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   /*dk_free_tree ((caddr_t) tree->_.insert.table);*/
   tree->_.insert.table = (ST *) t_box_copy_tree (
       (caddr_t) view->_.select_stmt.table_exp->_.table_exp.from[0]->_.table_ref.table);
+
+  if (ST_P (tree->_.insert.vals, SELECT_STMT))
+    sqlc_new_error (sc->sc_cc, "42000", "SQ490", "Insert into view via select statement is not supported");
 
   if (BOX_ELEMENTS_0(cols) != BOX_ELEMENTS_0(tree->_.insert.vals->_.ins_vals.vals))
     sqlc_new_error (sc->sc_cc, "21S01", "SQ099",

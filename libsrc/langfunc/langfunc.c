@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -266,7 +266,7 @@ int reset_work_uniblocks(void)
   fprintf (out,"\n");
 #endif
 /* Pass 2, Gaps should be filled by data from any blocks no matter if they contain subblocks or not */
-  raw_maxctr = LENGTHOF__raw_uniblocks;
+  raw_maxctr = LENGTHOF__raw_uniblocks - 1;
   for (work_ctr = work_uniblocks_fill; work_ctr--; /* no step */)
     {
       curr_work = work_uniblocks+work_ctr;

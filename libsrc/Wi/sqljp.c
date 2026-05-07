@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -460,7 +460,7 @@ dfe_pred_is_redundant (df_elt_t * first_tb, df_elt_t * pred)
 }
 
 void
-jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
+jp_add (sqlo_t *so, join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 {
   int n_preds = jp->jp_n_preds;
   caddr_t data;
@@ -525,6 +525,8 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
   if (DFE_COLUMN == right->dfe_type && PRED_IS_EQ_OR_IN (pred))
     {
       df_elt_t *right_tb = ((op_table_t *) right->dfe_tables->data)->ot_dfe;
+      if (!right_tb)
+        SQL_GPF_T1 (so->so_sc->sc_cc, "right oj table not found");
       if (!right_tb->dfe_is_placed)
 	{
 	  int jinx;
@@ -574,11 +576,11 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
     if (pred->dfe_tables && !pred->dfe_tables->next
 	&& tb_dfe->_.table.ot == (op_table_t *) pred->dfe_tables->data && dfe_in_hash_set (tb_dfe, hash_set))
       {
-	jp_add (jp, tb_dfe, pred, 0);
+	   jp_add (so, jp, tb_dfe, pred, 0);
       }
     else if (dk_set_member (pred->dfe_tables, (void *) tb_dfe->_.table.ot) && dfe_in_hash_set (tb_dfe, hash_set))
       {
-	jp_add (jp, tb_dfe, pred, 1 | mode);
+	jp_add (so, jp, tb_dfe, pred, 1 | mode);
 	  if (jp->jp_n_preds && jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
 	  {
 	    if (!jp->jp_prev)
@@ -1031,7 +1033,7 @@ dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds
 void
 dfe_cc_key (df_elt_t * dfe, char *str, int *fill, int space)
 {
-  if (!dfe)
+  if (!dfe || DFE_FALSE == dfe)
     return;
   switch (dfe->dfe_type)
     {

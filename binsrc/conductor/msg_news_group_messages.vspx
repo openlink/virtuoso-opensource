@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -42,7 +42,7 @@ if(_first_time = 'YES') {
   self.ng_id := cast(_ng_id as integer);
   self.mode := 'download_messages';
   _header := http_header_get();
-  _line := sprintf('Refresh: 1; URL=msg_news_group_messages.vspx?MODE=%s&RETRIEVE=YES&NG_ID=%s&NS_ID=%s&sid=%s&realm=%s\r\n', _mode, _ng_id, _ns_id, _sid, _realm);
+  _line := sprintf('Refresh: 1; URL=msg_news_group_messages.vspx?MODE=%U&RETRIEVE=YES&NG_ID=%U&NS_ID=%U&sid=%U&realm=%U\r\n', _mode, _ng_id, _ns_id, _sid, _realm);
   if(_header is null) {
     _header := _line;
   }
@@ -133,7 +133,7 @@ _done:
           <tr>
             <td width="100%">
               <span class="Warning">
-                <v:label name="error_label" value="--(self.error_message)" format="%s"/>
+                <v:label name="error_label" value="--(self.error_message)" format="%V"/>
               </span>
             </td>
           </tr>
@@ -142,7 +142,7 @@ _done:
           <tr>
             <td width="100%">
               <span class="Warning">
-                <v:label name="processing_headers" value="Downloading message headers. Please wait..." format="%s"/>
+                <v:label name="processing_headers" value="Downloading message headers. Please wait..." format="%V"/>
               </span>
             </td>
           </tr>
@@ -160,7 +160,7 @@ _done:
           </tr>
           <tr>
             <td align="right" colspan="5">
-              <v:url value="Get more messages" format="%s" width="80" active="--(1)" name="url_group_messages_more" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=1'))" >
+              <v:url value="Get more messages" format="%V" width="80" active="--(1)" name="url_group_messages_more" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=1'))" >
                 <v:before-render>
                   <v:script>
                     <![CDATA[
@@ -178,7 +178,7 @@ _done:
           </tr>
           <tr>
             <td align="right" colspan="5">
-              <v:url value="Get new messages" format="%s" width="80" active="--(1)" name="url_group_messages_new" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=0'))" >
+              <v:url value="Get new messages" format="%V" width="80" active="--(1)" name="url_group_messages_new" url="--(concat('msg_news_group_messages.vspx?NS_ID=',cast(self.ns_id as varchar),'&NG_ID=',cast(self.ng_id as varchar),'&FIRST=YES&MODE=0'))" >
                 <v:before-render>
                   <v:script>
                     <![CDATA[
@@ -197,7 +197,7 @@ _done:
         </v:template>
         <tr>
           <td align="left" colspan="5">
-            <v:url name="back_to_groups_list" value="Back to groups list" active="--(1)" format="%s" url="--(concat('msg_news_groups.vspx?NS_ID=',cast(self.ns_id as varchar)))" width="80"/>
+            <v:url name="back_to_groups_list" value="Back to groups list" active="--(1)" format="%V" url="--(concat('msg_news_groups.vspx?NS_ID=',cast(self.ns_id as varchar)))" width="80"/>
           </td>
         </tr>
       </table>

@@ -116,12 +116,10 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\libsrc\Thread\io_unix.c" />
     <ClCompile Include="..\libsrc\Thread\sched_winthread.c" />
     <ClCompile Include="..\libsrc\Thread\thread_attr.c" />
     <ClCompile Include="..\libsrc\Thread\thread_queue.c" />
     <ClCompile Include="..\libsrc\Thread\thread_rwlock.c" />
-    <ClCompile Include="..\libsrc\Thread\timer_queue.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

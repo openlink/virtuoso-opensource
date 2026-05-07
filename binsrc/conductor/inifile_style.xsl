@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -68,7 +68,7 @@
                         tmp_value:= concat(tmp_value,', ');
                     tmp_value:= concat(tmp_value,aref(params,n+1));
                   } else {
-	                  res_xml := sprintf('%s<parameter name="%s" value="%s"/>', res_xml,tmp,tmp_value);
+	                  res_xml := sprintf('%s<parameter name="%s" value="%V"/>', res_xml,tmp,tmp_value);
        	           tmp:= aref(params,n);
              		     tmp_value:=aref(params,n+1);
                   }

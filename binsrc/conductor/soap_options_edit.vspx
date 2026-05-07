@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -73,7 +73,7 @@
 
                 self.lpath := get_keyword('path', self.vc_page.vc_event.ve_params, self.lpath);
 
-                -- load settings from choosen path
+                -- load settings from chosen path
                 declare _soapuser, _soap_opt varchar;
 
                 select HP_RUN_SOAP_AS, deserialize (HP_SOAP_OPTIONS) into _soapuser, _soap_opt
@@ -330,7 +330,7 @@
                         if( self.referer <> '' )
                           http_header (sprintf('Location: %s', self.referer));
                         else
-                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          http_header (sprintf('Location: soap_services.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                       ]]>
                     </v:script>
                   </v:on-post>
@@ -408,7 +408,7 @@
                         if( self.referer <> '' )
                           http_header (sprintf('Location: %s', self.referer));
                         else
-                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          http_header (sprintf('Location: soap_services.vspx?sid=%U&realm=%U\r\n',self.sid ,self.realm));
                       }
                       ]]>
                     </v:script>

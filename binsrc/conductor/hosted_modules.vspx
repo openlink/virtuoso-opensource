@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -109,8 +109,8 @@
 	      <td nowrap="nowrap" width="16px">
                 <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[1])" initial-checked="0" />
               </td>
-              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
-              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/></td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%V"/></td>
             </tr>
         </v:template>
 	<v:template name="dg_empty" type="if-not-exists">
@@ -174,7 +174,7 @@
             grants := adm_import_get_selection_checkbox ('dg%:cg%', mtd_name, self.vc_page.vc_event.ve_params, idx);
             proxy := adm_import_get_selection_checkbox ('dg%:cp%', mtd_name, self.vc_page.vc_event.ve_params, idx);
             http ('<tr>');
-            http (sprintf ('<td>%s</td><td>%s</td>', mtd_name, subseq (file_name, length (server_root()))));
+            http (sprintf ('<td>%V</td><td>%V</td>', mtd_name, subseq (file_name, length (server_root()))));
             http ('<td> ');
             set_qualifier ('DB');
             http (DB.DBA.import_file (mtd_name, file_name, grants=>grants, restriction=>restricted));
@@ -276,7 +276,7 @@
               <v:check-box name="cb1" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="1" width="184" height="24" />
             </td>
             <td nowrap="nowrap">
-              <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+              <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
             </td>
             <td nowrap="nowrap" ALIGN="right">
               <v:check-box name="cr" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />

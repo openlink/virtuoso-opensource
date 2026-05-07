@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,7 +106,7 @@
               <tr><td class="SubInfo">
              <xsl:choose>
                 <xsl:when test="@type='hot'">
-                  <v:url name="{@name}" value="--'{@value}'" format="%s" url="--'{@url}'"/>
+                  <v:url name="{@name}" value="--'{@value}'" format="%V" url="--'{@url}'"/>
                 </xsl:when>
                 <xsl:otherwise>
                   <xsl:value-of select="@value"/>
@@ -191,7 +191,7 @@
 <xsl:element name="v:url">
 <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
 <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-<xsl:attribute name="format">%s</xsl:attribute>
+<xsl:attribute name="format">%V</xsl:attribute>
 <xsl:attribute name="url">--sprintf('<xsl:value-of select="@url"/><xsl:if test="count(param) > 0">?<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>'</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
 <xsl:choose>
   <xsl:when test="@kind='static'"><xsl:if test="@type='string'">'</xsl:if><xsl:value-of select="@value"/><xsl:if test="@type='string'">'</xsl:if></xsl:when>
@@ -217,7 +217,7 @@
 
 <xsl:template match="reference" mode="cond">
 http('&lt;a href="');
-http(sprintf('<xsl:value-of select="@url"/>?sid=%s&amp;realm=%s<xsl:if test="count(param) > 0">&amp;<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>',self.sid,self.realm</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
+http(sprintf('<xsl:value-of select="@url"/>?sid=%U&amp;realm=%s<xsl:if test="count(param) > 0">&amp;<xsl:for-each select="param"><xsl:value-of select="@name"/>=%<xsl:choose><xsl:when test="@type='string'">s</xsl:when><xsl:when test="@type='number'">d</xsl:when></xsl:choose><xsl:if test="position() != last()"><xsl:text>&#x26;</xsl:text></xsl:if></xsl:for-each>',self.sid,self.realm</xsl:if><xsl:if test="count(param) > 0">,<xsl:for-each select="param">
 <xsl:choose>
   <xsl:when test="@kind='static'"><xsl:if test="@type='string'">'</xsl:if><xsl:value-of select="@value"/><xsl:if test="@type='string'">'</xsl:if></xsl:when>
   <xsl:when test="@kind='dynamic'">get_keyword('<xsl:value-of select="@value"/>',params)</xsl:when>
@@ -231,7 +231,7 @@ http('"&gt;<xsl:value-of select="@value"/>&lt;/a&gt;');
 <xsl:if test="count(text) > 0">
 http(sprintf('<xsl:for-each select="text">
 <xsl:choose>
-  <xsl:when test="@type='string'">%s</xsl:when>
+  <xsl:when test="@type='string'">%V</xsl:when>
   <xsl:when test="@type='integer'">%d</xsl:when>
 </xsl:choose>
 <xsl:if test="position() != last()"><xsl:text>&#x20;</xsl:text></xsl:if>

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -32,10 +32,10 @@
     <vm:header caption="Content Import Queues">
       <vm:raw>
         <td class="SubInfo">
-          <vm:url name="robot_control_ref" format="%s" value="--'Import Targets'" url="--'robot_control.vspx'"/>
+          <vm:url name="robot_control_ref" format="%V" value="--'Import Targets'" url="--'robot_control.vspx'"/>
         </td>
         <td class="SubInfo">
-          <vm:url name="robot_sites_ref" format="%s" value="--'Retrieved Sites'" url="--'robot_sites.vspx'"/>
+          <vm:url name="robot_sites_ref" format="%V" value="--'Retrieved Sites'" url="--'robot_sites.vspx'"/>
         </td>
       </vm:raw>
     </vm:header>
@@ -72,7 +72,7 @@
           if (1)
           {
             http_rewrite ();
-            http_header(sprintf('Location: robot_status.vspx?host=%U&root=%U&url=%U&start=%d&sid=%s&stime=%s\r\n', _host, _root, _url, _start_t, sid, cast(sttime as varchar)));
+            http_header(sprintf('Location: robot_status.vspx?host=%U&root=%U&url=%U&start=%d&sid=%U&stime=%U\r\n', _host, _root, _url, _start_t, sid, cast(sttime as varchar)));
             http_request_status('HTTP/1.1 302 Found');
             http_flush();
           }

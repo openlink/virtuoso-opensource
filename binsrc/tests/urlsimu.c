@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1067,22 +1067,21 @@ main (int argc, char *argv[])
   int forever = FALSE;
 #ifdef WIN32
   WSADATA wsaData;
-  WORD wVersionRequired = (1 << 8) + 1;
+  WORD wVersionRequired = MAKEWORD (2,2);
+
+  if (WSAStartup (wVersionRequired, &wsaData))
+    {
+      printf ("*** FAILED: Windows sockets unable to initialize\n");
+      exit (1);
+    }
+#else
+  signal (SIGPIPE, SIG_IGN);
 #endif
 
   silent_mode = FALSE;
   big_silent_mode = FALSE;
   store_to_file = FALSE;
   send_header_line = FALSE;
-#ifndef WIN32
-  signal (SIGPIPE, SIG_IGN);
-#else
-  if (WSAStartup (wVersionRequired, &wsaData))
-    {
-      printf ("*** FAILED: Windows sockets unable to initialize\n");
-      exit (1);
-    }
-#endif
   while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:r:x:T:")) != EOF)
     {
       switch (c)

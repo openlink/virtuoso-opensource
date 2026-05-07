@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,11 @@
             var endpoint = '/sparql/';
             var callback = function(data)
             {
-              div.innerHTML = data;
+              const doc = new DOMParser().parseFromString(data, 'text/html');
+              const table = doc.querySelector('body');
+              doc.querySelectorAll('nav').forEach(el => el.remove());
+              div.innerHTML = '';
+              div.appendChild(table);
             }
             var body = 'query='+encodeURIComponent (qry)+
                     '&format='+ encodeURIComponent('text/html') +
@@ -160,11 +164,11 @@
                           </td>
                         </tr>
                         <tr>
-                          <td id="rdf_result" colspan="2">
-                          </td>
                         </tr>
                       </table>
                     </v:form>
+		  <div id="rdf_result" style="overflow: auto;">
+		  </div>
                   </v:template>
 
                   <v:template name="t_save" type="simple" enabled="--equ (self.step, 1)">

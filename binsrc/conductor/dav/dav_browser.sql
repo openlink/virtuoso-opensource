@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1946,7 +1946,9 @@ create procedure WEBDAV.DBA.dav_lpath (
   if (path not like path_mounted || '%')
     return path;
 
-  path_domain := http_map_get ('domain') || '/';
+  path_domain := http_map_get ('domain');
+  if (path_domain <> '/')
+    path_domain := concat(path_domain, '/');
 
   return path_domain || subseq (path, length (path_mounted));
 }
@@ -4409,7 +4411,7 @@ create procedure WEBDAV.DBA.ui_date (
   in dt any)
 {
   dt := left (cast (dt as varchar), 19);
-  return sprintf ('%s <font size="1">%s</font>', left(dt, 10), right(dt, 8));
+  return sprintf ('%V <font size="1">%V</font>', left(dt, 10), right(dt, 8));
 }
 ;
 
@@ -4421,7 +4423,7 @@ create procedure WEBDAV.DBA.ui_creator (
   if (DB.DBA.is_empty_or_null (creator_iri))
     return '';
 
-  return sprintf ('<a href="%s" target="_blank" title="Creator - %s">%s</a>', creator_iri, creator_iri, WEBDAV.DBA.user_iri2name (creator_iri));
+  return sprintf ('<a href="%H" target="_blank" title="Creator - %V">%V</a>', creator_iri, creator_iri, WEBDAV.DBA.user_iri2name (creator_iri));
 }
 ;
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -133,13 +133,8 @@ END_CPLUSPLUS
 #define OPL_THREADING
 
 # define OPL_MUTEX_DECLARE(M)		pthread_mutex_t M
-# ifndef OLD_PTHREADS
 #  define OPL_THREAD_IDENT		((long) (pthread_self ()))
 #  define OPL_MUTEX_INIT(M)		pthread_mutex_init (&M, NULL)
-# else
-#  undef OPL_THREAD_IDENT
-#  define OPL_MUTEX_INIT(M)		pthread_mutex_init (&M, pthread_mutexattr_default)
-# endif
 # define OPL_MUTEX_DONE(M)		pthread_mutex_destroy (&M)
 # define OPL_MUTEX_LOCK(M)		pthread_mutex_lock (&M)
 # define OPL_MUTEX_UNLOCK(M)		pthread_mutex_unlock (&M)

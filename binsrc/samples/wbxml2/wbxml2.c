@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -101,7 +101,8 @@ bif_xml2wbxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   ret_wbxml = dk_alloc_box (wbxml_len + 1, DV_SHORT_STRING);
-  memcpy (ret_wbxml, wbxml, wbxml_len + 1);
+  memcpy (ret_wbxml, wbxml, wbxml_len);
+  ret_wbxml[wbxml_len] = 0;
 
 end:
   wbxml_free(wbxml);

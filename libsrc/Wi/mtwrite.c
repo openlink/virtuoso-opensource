@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -622,7 +622,7 @@ iq_aio (io_queue_t * iq)
       it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
       if (AIO_NATIVE == c_use_aio)
 	{
-	  rc = aio_suspend (&list[inx], 1, NULL);
+	  rc = aio_suspend ((const struct aiocb * const *) &list[inx], 1, NULL);
 	  if (rc) GPF_T1 ("aio_suspend returns error");
 	  rc = aio_return (list[inx]);
 	  if (rc != PAGE_SZ) GPF_T1 ("aio_return error");

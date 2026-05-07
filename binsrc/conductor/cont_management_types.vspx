@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -143,13 +143,13 @@
         <v:template type="browse" name="ds3_browse">
           <tr>
             <td>
-              <v:label format="%s" name="ds3_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+              <v:label format="%V" name="ds3_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
             </td>
             <td>
-              <v:label format="%s" name="ds3_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+              <v:label format="%V" name="ds3_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
             </td>
             <td>
-              <v:label format="%s" name="ds3_browse_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
+              <v:label format="%V" name="ds3_browse_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
             </td>
             <td class="action">
               <v:button action="simple" style="image" name="url1_edit"

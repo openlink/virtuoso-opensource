@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -247,7 +247,7 @@ self.vc_data_bind(e);
                       <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                     </td>
                     <td class="listing_col">
-                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%V"/>
                     </td>
                   </tr>
                 </table>
@@ -424,11 +424,11 @@ self.vc_data_bind(e);
                 http('<tr>');
                 http ('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
                 http(sprintf ('<td>%V</td>', _tblname));
-                http(sprintf ('<td><input type="checkbox" name="LTB_cr_%s" value="on" checked="checked"/>', _tblname));
-                http(sprintf ('<input type="text" size="3" name="LTBQ_%s" value="%s"/>.', _tblname, _attached_name1));
-                http(sprintf ('<input type="text" size="15" name="LTBO_%s" value="%s">.', _tblname, _attached_name2));
-                http(sprintf ('<input type="text" size="30" name="LTBN_%s" value="%s">', _tblname, name_part(_tblname, 2)));
-                http(sprintf ('<input type="hidden" name="tbls" value="%s"></td>', _tblname));
+                http(sprintf ('<td><input type="checkbox" name="LTB_cr_%V" value="on" checked="checked"/>', _tblname));
+                http(sprintf ('<input type="text" size="3" name="LTBQ_%V" value="%V"/>.', _tblname, _attached_name1));
+                http(sprintf ('<input type="text" size="15" name="LTBO_%V" value="%V">.', _tblname, _attached_name2));
+                http(sprintf ('<input type="text" size="30" name="LTBN_%V" value="%V">', _tblname, name_part(_tblname, 2)));
+                http(sprintf ('<input type="hidden" name="tbls" value="%V"></td>', _tblname));
                 http('</tr>');
               }
             ?>
@@ -551,7 +551,7 @@ self.vc_data_bind(e);
               {
                 declare _header, _line varchar;
                 _header := http_header_get();
-                _line := sprintf('Refresh: %d;URL=db_repl_snap_pull_create.vspx?sid=%s&realm=%s&\r\n', self.repl_snap_pull_autorefresh , self.sid ,self.realm);
+                _line := sprintf('Refresh: %d;URL=db_repl_snap_pull_create.vspx?sid=%U&realm=%U&\r\n', self.repl_snap_pull_autorefresh , self.sid ,self.realm);
                 if(_header is null)
                   {
                     _header := _line;
@@ -659,7 +659,7 @@ self.vc_data_bind(e);
       </v:template>
       <div>
         <hr />
-            <vm:url name="db_repl_snap_pull_ref" format="%s" value="--'Back to Snapshot Replications list'" url="--'db_repl_snap_pull.vspx'"/>
+            <vm:url name="db_repl_snap_pull_ref" format="%V" value="--'Back to Snapshot Replications list'" url="--'db_repl_snap_pull.vspx'"/>
       </div>
     </vm:pagebody>
   </vm:pagewrapper>

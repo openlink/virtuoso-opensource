@@ -1,7 +1,7 @@
 Credits
 =======
 
-*Copyright (C) 1998-2025 OpenLink Software <vos.admin@openlinksw.com>*
+*Copyright (C) 1998-2026 OpenLink Software <vos.admin@openlinksw.com>*
 
 
 Included Functionality
@@ -213,7 +213,7 @@ iODBC
     Virtuoso may be linked against the iODBC driver manager library.
 
     iODBC is distributed under the terms of either the LGPL or BSD license:
-    <http://www.iodbc.org/index.php?page=docs/license>
+    <https://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/License>
 
 
 WBXML2

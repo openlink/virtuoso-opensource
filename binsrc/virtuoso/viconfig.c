@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -22,8 +22,6 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
-/*#define WIN95COMPAT*/ /*!!! To avoid using SetAffinityMask() */
 
 #include "libutil.h"
 #include "sqlnode.h"
@@ -1195,8 +1193,6 @@ cfg_setup (void)
       }
     while (bd != old_backup_dirs);
   }
-
-#ifndef WIN95COMPAT
 #ifdef WIN32
   if (cfg_getlong (pconfig, section, "SingleCPU", &c_single_processor) == -1)
     c_single_processor = 0;
@@ -1221,7 +1217,6 @@ cfg_setup (void)
       else
 	log_info ("Running in single CPU mode");
     }
-#endif
 #endif
 
   if (cfg_getlong (pconfig, section, "RecursiveFreeTextUsage", &c_recursive_ft_usage) == -1)

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -82,7 +82,7 @@
                   sel := '';
                   if (_dsn = DS_DSN)
                     sel := 'selected';
-                  http(sprintf('<option value="%s" %s>%s</option>', DS_DSN, sel, DS_DSN));
+                  http(sprintf('<option value="%V" %s>%V</option>', DS_DSN, sel, DS_DSN));
                   i := i + 2;
                 }
               ?>
@@ -147,7 +147,7 @@
                       return;
                     }
                     http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: db_repl_bi_edit.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    http_header(sprintf('Location: db_repl_bi_edit.vspx?sid=%U&realm=%U&item=%U&item_type=%U\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     return;
                   ]]>
               </v:on-post>

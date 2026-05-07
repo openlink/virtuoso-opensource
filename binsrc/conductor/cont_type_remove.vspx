@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -44,7 +44,7 @@
           <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
           <div class="confirm_text">
             <br />
-            The MIME type <?vsp http(sprintf('<b> %s </b>', cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar))); ?> will be removed permanently and there is no way to restore it. <br/>
+            The MIME type <b><?V cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar) ?></b> will be removed permanently and there is no way to restore it. <br/>
             Are you sure you want to remove this MIME type?
           </div>
 

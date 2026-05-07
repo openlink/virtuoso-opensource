@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2025 OpenLink Software
+#  Copyright (C) 1998-2026 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -588,23 +588,6 @@ match($0,"^JSO_GROUP_END([[:blank:]]*)$",line)	{
 
 match($0,"^JSO_GROUP_END.*$",line)	{
   report_error("JSO_GROUP_END can not contain any arguments or comments")
-  next
-  }
-
-#          1                          2---------------------- 3             4------------- 7
-match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
-  nsprefixes[line[2]] = line[6]
-  next
-  }
-
-#          1                          2---------------------- 3             4------------- 7
-match($0,"^(JSO_NAMESPACE[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([^[:blank:]]+)(([[:blank:]])(+--!<[[:blank:]]*[^\r\n]*)?)$",line)	{
-  nsprefixes[line[2]] = line[6]
-  next
-  }
-
-match($0,"^JSO_NAMESPACE.*$",line)	{
-  report_error("Invalid arguments of JSO_NAMESPACE")
   next
   }
 

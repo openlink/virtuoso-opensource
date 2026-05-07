@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -146,16 +146,16 @@
                 <?V ((control as vspx_row_template).te_rowset[2]) ?>
               </td>
               <td align="right">
-                <?V ((control as vspx_row_template).te_rowset[3])?>
+                <?V ((control as vspx_row_template).te_rowset[3]) ?>
               </td>
               <td align="right">
-                <?V ((control as vspx_row_template).te_rowset[4])?>
+                <?V ((control as vspx_row_template).te_rowset[4]) ?>
               </td>
               <td align="right">
-                <?V ((control as vspx_row_template).te_rowset[5])?>
+                <?V ((control as vspx_row_template).te_rowset[5]) ?>
               </td>
               <td align="right">
-                <v:label format="%s" name="data_set14_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset[6])" fmt-function="space_fmt"/>
+                <v:label format="%V" name="data_set14_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset[6])" fmt-function="space_fmt"/>
               </td>
             </tr>
           </v:template>

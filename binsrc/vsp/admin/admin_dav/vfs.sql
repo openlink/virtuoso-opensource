@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1626,7 +1626,7 @@ create procedure WS.WS.LFS_EXP (
   declare _path, _name, _content, _dest, _tmp, _dst, _err varchar;
   declare _os_path any;
   declare _o_len, _n, _rc, _win integer;
-  declare c cursor for select RES_FULL_PATH, RES_NAME, blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH like concat (_root, '%');
+  declare c cursor for select RES_FULL_PATH, RES_NAME, RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH like concat (_root, '%');
 
   if (dav_root () = '/')
     _root := concat ('/', _root, '/');

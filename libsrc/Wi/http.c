@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -238,51 +238,86 @@ caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, const char * d
     (!(ws)->ws_header || \
      (NULL == nc_strstr ((unsigned char *) (ws)->ws_header, (unsigned char *)h)))
 
-caddr_t
-ws_gethostbyaddr (const char * ip)
+
+
+extern int32 dk_tcp_ai_idn_enable;
+
+static void
+decode_idn_hostname (char *host, size_t hostlen)
 {
-  struct hostent *host = NULL;
-  unsigned long int addr;
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS) || defined (HPUX_10))
-  char buff [4096];
-  int herrnop;
-  struct hostent ht;
-# if defined (HPUX_10)
-  struct hostent_data hted;
-# endif
+#if defined(_WIN32)
+  wchar_t wide_ace[NI_MAXHOST];
+  wchar_t wide_uni[NI_MAXHOST];
+
+  if (MultiByteToWideChar (CP_UTF8, 0, host, -1, wide_ace, NI_MAXHOST) == 0)
+    return;
+
+  if (IdnToUnicode (0, wide_ace, -1, wide_uni, NI_MAXHOST) == 0)
+    return;
+
+  WideCharToMultiByte (CP_UTF8, 0, wide_uni, -1, host, (int) hostlen, NULL, NULL);
 #endif
 
-  if ((int)(addr = inet_addr (ip)) == -1)
-    return box_dv_short_string (ip);
+  return;
+}
 
+caddr_t
+ws_gethostbyaddr (const char *ip)
+{
+  struct sockaddr_storage ss = { 0 };
+  struct sockaddr_in *sa4 = (struct sockaddr_in *) &ss;
+  struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) &ss;
+  char host[NI_MAXHOST];
+  int rc;
+  int flags;
+  socklen_t addrlen;
 
-#if defined (_REENTRANT) && defined (linux)
-  gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &host, &herrnop);
-#elif defined (_REENTRANT) && defined (SOLARIS)
-  host = gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &herrnop);
-#elif defined (_REENTRANT) && defined (HPUX_10)
-  /* in HP-UX 10 these functions are MT-safe */
-  hted.current = NULL;
-  if (-1 != gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, &hted))
-    host = &ht;
-#else
-  /* gethostbyname and gethostbyaddr is a threadsafe on AIX4.3 HP-UX WindowsNT */
-  host = gethostbyaddr ((char *)&addr, sizeof (addr), AF_INET);
-#endif
-
-  if (!host)
+  if (inet_pton (AF_INET, ip, &sa4->sin_addr) == 1)
     {
-#if 0
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-      int status = herrnop;
-#else
-      int status = h_errno;
-#endif
-#endif
+      sa4->sin_family = AF_INET;
+      addrlen = sizeof (struct sockaddr_in);
+    }
+  else if (inet_pton (AF_INET6, ip, &sa6->sin6_addr) == 1)
+    {
+      sa6->sin6_family = AF_INET6;
+      addrlen = sizeof (struct sockaddr_in6);
+    }
+  else
+    {
+      /* Not a valid IP address at all — return it as-is. */
       return box_dv_short_string (ip);
     }
-  return box_dv_short_string (host->h_name);
+
+  /* set lookup flags */
+  flags = NI_NAMEREQD;		/* require a real hostname */
+
+#if defined (NI_IDN)
+  /* enable lookup of hostnames with non-ASCII characters on linux */
+  if (dk_tcp_ai_idn_enable)
+    flags |= NI_IDN;
+#endif
+
+  rc = getnameinfo (
+           (struct sockaddr *) &ss, addrlen,
+	   host, sizeof (host),
+	   NULL,
+	   0,
+           flags
+      );
+
+  if (rc != 0)
+    return box_dv_short_string (ip);	/* lookup failed */
+
+  /*
+   *  decode punicode to UTF-8 hostname
+   */
+  if (dk_tcp_ai_idn_enable)
+    decode_idn_hostname (host, sizeof (host));
+
+  return box_dv_short_string (host);
 }
+
+
 
 /* HTTP listeners startup query */
 /*                       0             1        2             3           4  */
@@ -11884,6 +11919,7 @@ caddr_t *
 box_tpcip_get_interfaces (void)
 {
   dk_set_t set = NULL;
+  char * to_free = NULL;
 #ifdef SIOCGIFCONF
 #define MAX_IFS 32
   struct ifreq *ifrp;
@@ -11901,37 +11937,53 @@ box_tpcip_get_interfaces (void)
       eno = errno;
       tcpses_error_message (eno, message, sizeof (message));
       log_error ("Failed create socket to obtain network interfaces : %s", message);
+      goto err;
     }
 
 #ifdef SIOCGIFCONF
   memset (buf, 0, sizeof(buf));
   ifc.ifc_len = sizeof( buf );
   ifc.ifc_buf = (caddr_t)buf;
-
   if (ioctl(sockfd, SIOCGIFCONF, (caddr_t)&ifc) < 0)
     {
       eno = errno;
       tcpses_error_message (eno, message, sizeof (message));
       log_error ("Failed to get network interfaces : %s", message);
+      goto err;
+    }
+  if (ifc.ifc_len > sizeof (buf))
+    {
+      to_free = dk_alloc_zero(ifc.ifc_len);
+      ifc.ifc_buf = to_free;
+
+      if (ioctl(sockfd, SIOCGIFCONF, (caddr_t)&ifc) < 0)
+        {
+          eno = errno;
+          tcpses_error_message (eno, message, sizeof (message));
+          log_error ("Failed to get network interfaces : %s", message);
+          goto err;
+        }
     }
 
   ifrp = ifc.ifc_req;
   for (len = ifc.ifc_len; len > 0; /* len -= sizeof (struct ifreq) calculated below */)
     {
-      if (ifrp->ifr_addr.sa_family == AF_INET)
-	{
-	  memcpy (&addr, &(ifrp->ifr_addr), sizeof (struct sockaddr_in));
-	  snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
-	  dk_set_push (&set, box_string (message));
-	}
-      /* The FreeBSD returns variable length */
+      int entry_size;
 #if defined (__FreeBSD__) || defined (__APPLE__)
-      ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
-      len -= ifrp->ifr_addr.sa_len;
+      entry_size = sizeof(ifrp->ifr_name) +
+          (ifrp->ifr_addr.sa_len > sizeof(struct sockaddr) ?
+           ifrp->ifr_addr.sa_len : sizeof(struct sockaddr));
 #else
-      ifrp++;
-      len -= sizeof (struct ifreq);
+      entry_size = sizeof(struct ifreq);
 #endif
+      if (ifrp->ifr_addr.sa_family == AF_INET)
+        {
+          memcpy (&addr, &(ifrp->ifr_addr), sizeof (struct sockaddr_in));
+          snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
+          dk_set_push (&set, box_string (message));
+        }
+      ifrp = (struct ifreq *)((char *)ifrp + entry_size);
+      len -= entry_size;
     }
 #elif defined (SIO_GET_INTERFACE_LIST)
     {
@@ -11954,6 +12006,8 @@ box_tpcip_get_interfaces (void)
 	}
     }
 #endif
+err:
+  dk_free(to_free, -1);
   closesocket(sockfd);
   return (caddr_t *) list_to_array (dk_set_nreverse (set));
 }

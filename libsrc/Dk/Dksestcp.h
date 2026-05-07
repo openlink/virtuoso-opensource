@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,9 +28,6 @@
 #ifndef _DKSESTCP_H
 #define _DKSESTCP_H
 
-#ifdef SUNRPC
-# include <rpc/rpc.h>
-#endif
 
 #ifdef UNIX
 # include <sys/socket.h>
@@ -38,17 +35,17 @@
 # include <netinet/in.h>
 # include <net/if.h>
 # include <arpa/inet.h>
+# ifdef HAVE_NETDB_H
+#  include <netdb.h>
+# endif
 # ifdef HAVE_SYS_SELECT_H
 #  include <sys/select.h>
 # endif
+# ifdef HAVE_POLL_H
+#  include <poll.h>
+# endif
 # ifdef HAVE_SYS_SOCKIO_H
 #  include <sys/sockio.h>
-# endif
-# ifdef OPL_SOURCE
-#  define RPCFUN
-#  include <rpc/netdb.h>
-# else
-#  include <netdb.h>
 # endif
 #endif
 
@@ -57,20 +54,15 @@
 #include <sys/un.h>
 #endif
 
-#if defined (PCTCP)
-/*# include <winsock2.h>*/
-/*# include <mstcpip.h>*/
+#if defined (WIN32)
+# include <winsock2.h>
+# include <ws2tcpip.h>
+# include <mstcpip.h>
 # include <windows.h>
 extern int last_errno;
-/*static int pctcp_started=0; */
-# define init_tcpip()
-/* if (!pctcp_started) {pctcp_started=1;init_pctcp();};
-  Init called from level 2.  */
 # ifndef EMSGSIZE
 # define EMSGSIZE WSAEMSGSIZE
 # endif
-#else /* PCTCP */
-# define init_tcpip()
 #endif
 
 
@@ -84,7 +76,7 @@ extern int last_errno;
 # define SYS_EWBLK   EWOULDBLOCK
 # define SYS_EINTR   EINTR
 
-#elif defined (PCTCP)
+#elif defined (WIN32)
 # define SYS_EWBLK   WSAEWOULDBLOCK
 # define SYS_EINTR   WSAEINTR
 

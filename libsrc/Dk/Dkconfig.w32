@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,17 +30,19 @@
 #pragma warning (disable:4996) // The POSIX name for this item is deprecated
 #endif
 
-#define MAXPATHLEN 1024
-#define DOSFS
-#define FD_SETSIZE 8192
 /* GK: hack that is placed here for compatibility with the WIN2003 Platform SDK */
 #define _WSPIAPI_H_
 #define _USE_MATH_DEFINES
 
-#include <stdio.h>
+#define MAXPATHLEN 1024
+#define DOSFS
+#define FD_SETSIZE 8192
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+
+#include <stdio.h>
 #include <setjmp.h>
 #include <process.h>
 #include <io.h>
@@ -287,3 +289,4 @@
 #define HAVE_MEMMOVE	1
 #define HAVE_WCSTOD	1
 #define HAVE_WCSTOL	1
+#define HAVE_POLL	1

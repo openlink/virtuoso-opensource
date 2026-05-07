@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 -- 
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -75,21 +75,21 @@
 
   http ('<?xml version="1.0" encoding="UTF-8"?>');
   http ('<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">');
-  http (sprintf ('<ShortName>%s</ShortName>', sname));
-  http (sprintf ('<Description>%s</Description>', descr));
-  http (sprintf ('<Url type="text/html" template="%s"/>', url));
+  http (sprintf ('<ShortName>%V</ShortName>', sname));
+  http (sprintf ('<Description>%V</Description>', descr));
+  http (sprintf ('<Url type="text/html" template="%V"/>', url));
 
   if (tags)
-    http (sprintf ('<Tags>%s</Tags>', tags));
+    http (sprintf ('<Tags>%V</Tags>', tags));
 
   if (contact)
-    http (sprintf ('<Contact>%s</Contact>', contact));
+    http (sprintf ('<Contact>%V</Contact>', contact));
 
   if (favicon_path)
-    http (sprintf ('<Image height="16" width="16" type="image/x-icon">%s</Image>', favicon_path));
+    http (sprintf ('<Image height="16" width="16" type="image/x-icon">%V</Image>', favicon_path));
 
   if (search_image_path)
-    http (sprintf ('<Image height="64" width="64" type="image/png">%s</Image>', search_image_path));
+    http (sprintf ('<Image height="64" width="64" type="image/png">%V</Image>', search_image_path));
 
   http ('</OpenSearchDescription>');
 ?>

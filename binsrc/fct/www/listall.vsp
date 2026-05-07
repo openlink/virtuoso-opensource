@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -29,12 +29,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <link rel="stylesheet" type="text/css" href="style.css">
-    <title><?=label?></title>
+    <title><?V label ?></title>
   </head>
   <body>
     <div id="header">
       <div id="hd_l">
-        <h1 id="title"><?vsp http (sprintf ('%s', label)); ?></h1>
+        <h1 id="title"><?V label ?></h1>
       </div> <!-- hd_l -->
     </div> <!-- header -->
     <div id="content">
@@ -48,7 +48,7 @@
 	  {
 	    declare num int;
 	    num := qrlist [i];
-            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%s">%s</a></td></tr>', num,label_get(num)));
+            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%U">%V</a></td></tr>', num,label_get(num)));
           };
         ?>
       </table>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1484,7 +1484,7 @@ sqlo_replace_as_exps (ST **tree, sql_scope_t *sco)
     {
       DO_SET (ST **, as_exp, &sco->sco_named_vars)
 	{
-	  if (!CASEMODESTRCMP (as_exp[0]->_.col_ref.name, (*tree)->_.col_ref.name))
+	  if (STAR != (*tree)->_.col_ref.name && !CASEMODESTRCMP (as_exp[0]->_.col_ref.name, (*tree)->_.col_ref.name))
 	    {
 	      *tree = (ST *) t_box_copy_tree ((caddr_t) as_exp[1]);
 	      return;

@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -125,11 +125,11 @@ In order to do this, please perform the following steps:</i>
 <?vsp
 if (not isstring (host_ur))
   {
-    htt ('http://host:port/conductor');
+    http('http://host:port/conductor');
   }
 else
   {
-    http(sprintf('http://%s/conductor',host_ur));
+    http(sprintf('http://%V/conductor',host_ur));
   };
 ?>
 <br />

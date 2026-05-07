@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,10 +29,6 @@
 #define _DKSTUBS_H
 #include <stdarg.h>
 
-#ifdef DK_NEED_VSNPRINTF
-int vsnprintf (char *str, size_t size, const char *format, va_list ap);
-int snprintf (char *str, size_t size, const char *format, ...);
-#endif /* DK_NEED_VSNPRINTF */
 
 int vsnprintf_ck (char *str, size_t size, const char *format, va_list ap);
 int snprintf_ck (char *str, size_t size, const char *format, ...);

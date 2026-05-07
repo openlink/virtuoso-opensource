@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,7 +78,7 @@
             Delete confirmation:<br/>
             <v:template name="warning_message" type="simple" enabled="-- case when (exists(select 1 from DB.DBA.NEWS_GROUPS where NG_SERVER = self.ns_id)) then 1 else 0 end">
               <span class="Warning">
-                <v:label name="l_warning_message" value="News Server Item contains several groups already subscribed. Dou you agree to delete it together with all groups?" format="%s"/>
+                <v:label name="l_warning_message" value="News Server Item contains several groups already subscribed. Dou you agree to delete it together with all groups?" format="%V"/>
               </span>
             </v:template>
 
@@ -98,20 +98,20 @@
                     <tr>
                       <td align="right" width="50%"><b>Server Address</b></td>
                       <td align="left" nowrap="1" width="50%">
-                        <v:label width="80" format="%s" name="data_set_delete_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+                        <v:label width="80" format="%V" name="data_set_delete_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
                       </td>
                     </tr>
                     <tr>
                       <td align="right" width="50%"><b>Server Port</b></td>
-                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%s" name="data_set_delete_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" /></td>
+                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%V" name="data_set_delete_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" /></td>
                     </tr>
                     <tr>
                       <td align="right" width="50%"><b>User</b></td>
-                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%s" name="data_set_delete_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" /></td>
+                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%V" name="data_set_delete_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" /></td>
                     </tr>
                     <tr>
                       <td align="right" width="50%"><b>Password</b></td>
-                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%s" name="data_set_delete_browse_label_4" value="--repeat ('*', length ((control.vc_parent as vspx_row_template).te_rowset[4]))" /></td>
+                      <td align="left" nowrap="1" width="50%"><v:label width="80" format="%V" name="data_set_delete_browse_label_4" value="--repeat ('*', length ((control.vc_parent as vspx_row_template).te_rowset[4]))" /></td>
                     </tr>
                     <tr>
                       <td align="right" nowrap="1">
@@ -197,16 +197,16 @@
                         xhtml_title="Edit Groups"
                         url="--(concat('msg_news_groups.vspx','?','NS_ID=',cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)))"
                       />
-                      <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%s" width="80" active="--(1)" name="ds_browse" url="--(concat('msg_news_groups.vspx','?','NS_ID=',cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)))" />
+                      <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" format="%V" width="80" active="--(1)" name="ds_browse" url="--(concat('msg_news_groups.vspx','?','NS_ID=',cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)))" />
                     </td>
                     <td nowrap="1">
-                      <v:label width="80" format="%s" name="ds_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+                      <v:label width="80" format="%V" name="ds_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
                     </td>
                     <td nowrap="1">
-                      <v:label width="80" format="%s" name="ds_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+                      <v:label width="80" format="%V" name="ds_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
                     </td>
                     <td nowrap="1">
-                      <v:label width="80" format="%s" name="ds_browse_label_3" value="--repeat ('*', length ((control.vc_parent as vspx_row_template).te_rowset[4]))" />
+                      <v:label width="80" format="%V" name="ds_browse_label_3" value="--repeat ('*', length ((control.vc_parent as vspx_row_template).te_rowset[4]))" />
                     </td>
                     <td class="action">
                       <v:button action="simple" style="image" name="ds_edit"

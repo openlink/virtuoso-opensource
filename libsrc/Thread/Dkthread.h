@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -101,20 +101,6 @@ typedef int32 TVAL;
 #endif
 #define MAX_PRIORITY	3
 
-
-#if defined (USING_TIKS)
-# define without_scheduling_tic() \
-  {  \
-    int oldsig = sigblock(sigmask(SIGALRM));
-# define restore_scheduling_tic() \
-    sigsetmask(oldsig); \
-  };
-#else
-# define without_scheduling_tic()
-# define restore_scheduling_tic()
-#endif
-
-
 #define current_thread	thread_current()
 #define thr_errno	(*thread_errno())
 
@@ -170,10 +156,6 @@ extern int thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout);
 extern int thread_signal_cond (void *event);
 EXE_EXPORT (int, thread_release_dead_threads, (int leave_count));
 
-/* fiber_unix.c, sched_pthread.c, sched_winthread.c */
-extern int thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout);
-extern void thread_sleep (TVAL msec);
-
 EXE_EXPORT (caddr_t, thr_get_error_code, (thread_t *thr));
 EXE_EXPORT (void, thr_set_error_code, (thread_t *thr, caddr_t err));
 #ifdef MALLOC_DEBUG
@@ -184,21 +166,6 @@ extern void dbg_thr_set_error_code (const char *file, int line, thread_t *thr, c
 #endif
 
 struct sockaddr;
-
-/* io_unix.c */
-int thread_nb_fd (int fd);
-int thread_open (char *fname, int mode, int perms);
-int thread_close (int fd);
-ssize_t thread_read (int fd, void *buffer, size_t length);
-ssize_t thread_write (int fd, void *buffer, size_t length);
-int thread_socket (int family, int type, int proto);
-int thread_closesocket (int sock);
-int thread_bind (int sock, struct sockaddr *addr, int len);
-int thread_listen (int sock, int n);
-int thread_accept (int sock, struct sockaddr *addr, int *plen, TVAL timeout);
-int thread_connect (int sock, struct sockaddr *addr, int len);
-ssize_t thread_send (int sock, void *buffer, size_t length, TVAL timeout);
-ssize_t thread_recv (int sock, void *buffer, size_t length, TVAL timeout);
 
 /* sched_fiber.c, sched_pthread.c, sched_winthread.c */
 EXE_EXPORT (semaphore_t *, semaphore_allocate, (int entry_count));

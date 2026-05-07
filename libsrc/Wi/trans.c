@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1411,6 +1411,7 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state, int n_sets
 	if (DV_DB_NULL == DV_TYPE_OF (in[inx]))
 	  {
 	    cl_select_save_env ((table_source_t *)tn, itcl, inst, (cl_op_t*)NULL, nth);
+            SET_THR_TMP_POOL (NULL);
 	    return;
 	  }
       }
@@ -1424,6 +1425,7 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state, int n_sets
 	    if (DV_DB_NULL == DV_TYPE_OF (target[inx]))
 	      {
 		cl_select_save_env ((table_source_t *)tn, itcl, inst, (cl_op_t*)NULL, nth);
+                SET_THR_TMP_POOL (NULL);
 		return;
 	      }
 	  }

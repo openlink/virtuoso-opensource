@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -6219,6 +6219,8 @@ bif_soap_receive (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+extern int32 dk_tcp_ai_idn_enable;
+
 caddr_t
 ws_soap_get_url (ws_connection_t *ws, int full_path)
 {
@@ -6230,29 +6232,41 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
 
   if (!(szHost = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0)))
     {
-      struct sockaddr_in sa;
-      socklen_t len = sizeof (sa);
-      if (!getsockname (tcpses_get_fd (ws->ws_session->dks_session), (struct sockaddr *)&sa, &len))
+
+      struct sockaddr_storage ss;
+      socklen_t ss_len = sizeof (ss);
+
+      if (!getsockname (tcpses_get_fd (ws->ws_session->dks_session), (struct sockaddr *) &ss, &ss_len))
 	{
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-	  char buff [4096];
-	  int herrnop;
-	  struct hostent ht;
+	  char host[NI_MAXHOST];
+	  int rc;
+	  int flags = NI_NAMEREQD;	/* require a real hostname where possible */
+	  uint16_t port = 0;
+
+#if defined(NI_IDN)
+	  if (dk_tcp_ai_idn_enable)
+	    flags |= NI_IDN;
 #endif
-	  struct hostent *host = NULL;
-#if defined (_REENTRANT) && defined (linux)
-	  gethostbyaddr_r ((char *)&sa.sin_addr, sizeof (sa.sin_addr), AF_INET, &ht, buff, sizeof (buff), &host, &herrnop);
-#elif defined (_REENTRANT) && defined (SOLARIS)
-	    host = gethostbyaddr_r ((char *)&sa.sin_addr, sizeof (sa.sin_addr), AF_INET, &ht, buff, sizeof (buff), &herrnop);
-#else
-	    host = gethostbyaddr ((char *)&sa.sin_addr, sizeof (sa.sin_addr), AF_INET);
-#endif
-	  if (host)
+
+	  rc = getnameinfo ((struct sockaddr *) &ss, ss_len, host, sizeof (host), NULL, 0, flags);
+	  if (rc)
 	    {
-	      snprintf (szHostBuffer, sizeof (szHostBuffer), "%s:%u", host->h_name, ntohs (sa.sin_port));
+	      flags = NI_NUMERICHOST;	/* settle for a numeric hostname as fallback */
+	      rc = getnameinfo ((struct sockaddr *) &ss, ss_len, host, sizeof (host), NULL, 0, flags);
+	    }
+
+	  if (rc == 0)
+	    {
+	      if (ss.ss_family == AF_INET)
+		port = ntohs (((struct sockaddr_in *) &ss)->sin_port);
+	      else if (ss.ss_family == AF_INET6)
+		port = ntohs (((struct sockaddr_in6 *) &ss)->sin6_port);
+
+	      snprintf (szHostBuffer, sizeof (szHostBuffer), "%s:%u", host, (unsigned) port);
 	      szHost = szHostBuffer;
 	    }
 	}
+
     }
   if (szHost)
     {
@@ -11837,7 +11851,7 @@ bif_soap_init (void)
   bif_define ("soap_receive", bif_soap_receive);
   bif_define ("soap_server", bif_soap_server);
   bif_define_ex ("soap_box_structure", bif_soap_box_structure, BMD_ALIAS, "json_box_object", /* UNKNOWN, NOT BMD_RET_TYPE, &bt_any, */ BMD_DONE);
-  bif_define ("soap_boolean", bif_soap_boolean);
+  bif_define_ex ("soap_boolean", bif_soap_boolean, BMD_ALIAS, "json_boolean", BMD_DONE);
   bif_define_ex ("soap_make_error", bif_soap_make_error, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("soap_sdl", bif_soap_sdl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("soap_wsdl", bif_soap_wsdl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

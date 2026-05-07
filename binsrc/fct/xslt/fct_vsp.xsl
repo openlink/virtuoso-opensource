@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -211,7 +211,7 @@
       var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
     var pivotedit_a = OAT.Dom.create('a', {}, 'pivotedit_a');
     var pivot_query_limit = OAT.Dom.create('span', {}, 'pivot_query_limit');
-    pivot_query_limit.innerHTML = '&nbsp;&nbsp;&nbsp;<a  href="#" title="Sets the maximum number of triples used to generated the pivot collection. A value of 0 means there is no limit." id="pivot_qry_limit_label">Query limit</a>&nbsp;<input type="text" onblur="fct_set_pivot_query_limit()" id="pivot_qry_limit" size="4" maxlength="4" value="500" />&nbsp;&nbsp;';
+    pivot_query_limit.innerHTML = '&nbsp;&nbsp;&nbsp;<a  href="#" title="Sets the maximum number of triples used to generate the pivot collection. A value of 0 means there is no limit." id="pivot_qry_limit_label">Query limit</a>&nbsp;<input type="text" onblur="fct_set_pivot_query_limit()" id="pivot_qry_limit" size="4" maxlength="4" value="500" />&nbsp;&nbsp;';
     pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;pagesize=0&amp;limit=500&amp;qrcodes=0&amp;CXML_redir_for_subjs=DESCRIBE&amp;CXML_redir_for_hrefs=DESCRIBE&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
 	  pivot_a.innerHTML = 'View as a Pivot collection';
       pivot_a.id = 'pivot_a_mpc';

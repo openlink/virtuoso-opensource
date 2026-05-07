@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3395,7 +3395,7 @@ box_find_mt_unsafe_subtree (caddr_t box)
     {
     case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
     case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC:
-    case DV_IRI_ID: case DV_ASYNC_QUEUE: case DV_WIDE:
+    case DV_IRI_ID: case DV_ASYNC_QUEUE: case DV_WIDE: case DV_COMPOSITE:
     case DV_CLRG:
       return NULL;
     case DV_DICT_ITERATOR:

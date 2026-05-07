@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -44,12 +44,12 @@
                 Import
               </div>
               <div class="page_tab">
-                <v:url name="b_url13" value="--'Export'" format="%s" url="--'wsdl_services.vspx?page=3'" />
+                <v:url name="b_url13" value="--'Export'" format="%V" url="--'wsdl_services.vspx?page=3'" />
               </div>
             </v:template>
             <v:template name="tabTemplate4" type="simple" enabled="--equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '3')">
               <div class="page_tab">
-                <v:url name="b_url31" value="--'Import'" format="%s" url="--'wsdl_services.vspx?page=1'" />
+                <v:url name="b_url31" value="--'Import'" format="%V" url="--'wsdl_services.vspx?page=1'" />
               </div>
               <div class="page_tab_selected">
                 Export

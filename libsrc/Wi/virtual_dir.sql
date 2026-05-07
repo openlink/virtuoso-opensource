@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2025 OpenLink Software
+--  Copyright (C) 1998-2026 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2038,9 +2038,9 @@ create procedure WS.WS.host_meta_init ()
   DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
 
   DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
-      opts=>vector ('url_rewrite', 'well_known_host_meta_rules'));
+      opts=>vector ('url_rewrite', 'well_known_host_meta_rules', 'http_options_no_exec', 1));
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
-      opts=>vector ('url_rewrite', 'well_known_host_meta_rules'));
+      opts=>vector ('url_rewrite', 'well_known_host_meta_rules', 'http_options_no_exec', 1));
   DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
       opts=>vector ('url_rewrite', 'well_known_host_meta_rules'), overwrite=>1);
 

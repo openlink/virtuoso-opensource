@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -174,8 +174,8 @@ long dbf_user_1, dbf_user_2;
 extern int dbs_stop_cp;
 
 
-extern long read_block_usec;
-extern long write_block_usec;
+extern int64 read_block_usec;
+extern int64 write_block_usec;
 extern long tc_initial_while_closing;
 extern long tc_initial_while_closing_died ;
 extern long tc_client_dropped_connection ;
@@ -507,51 +507,19 @@ static long db_sizeof_wide_char = sizeof (wchar_t);
 
 extern int debug_invalid_iri_id;
 
+extern int32 dk_tcp_keepalive_idle;
+extern int32 dk_tcp_keepalive_probes;
+extern int32 dk_tcp_keepalive_intvl;
+extern int32 dk_tcp_so_linger_enable;
+extern int32 dk_tcp_so_linger_timeout;
+extern int32 dk_tcp_shutdown_enable;
+extern int32 dk_tcp_ai_idn_enable;
+extern int32 dk_tcp_ai_ipv4_enable;
+extern int32 dk_tcp_ai_ipv6_enable;
+
 void
 process_status_report (void)
 {
-#if defined (UNIX) && !defined PMN_THREADS
-  USE_GLOBAL
-  int n;
-  int active = 0, running = 0, served = 0;
-
-  active = 0;
-  running = 0;
-  served = 0;
-
-  for (n = 0; n < MAX_THREADS; n++)
-    {
-      if (threads[n].thr_IsActive)
-	{
-	  active++;
-	  if (threads[n].thr_status == RUNNABLE)
-	    running++;
-	}
-    }
-  for (n = 0; n < MAX_SESSIONS; n++)
-    {
-      if (served_sessions[n])
-	served++;
-    }
-  rep_printf ("Server status: %d served sessions, %d threads, %d running.\n",
-      served, active, running);
-  st_proc_served = served;
-  st_proc_running = running;
-  st_proc_active = active;
-  {
-    s_node_t *token = in_basket.first_token;
-    n = 0;
-    while (token)
-      {
-	n++;
-	token = token->next;
-      }
-    st_proc_brk  = (unsigned ptrlong) sbrk (0) - initbrk;
-    rep_printf ("	    %d requests queued.  brk = %Ld\n", n,
-	(unsigned int64) st_proc_brk);
-    st_proc_queued_req = n;
-  }
-#endif
 }
 
 
@@ -1408,14 +1376,16 @@ srv_lock_report (query_instance_t * qi, const char * mode, int caller_is_dba)
         { /* prevent read release as lock release is outside of TXN mtx */
           for (inx = 0; inx < IT_N_MAPS; inx++)
             {
-              mutex_enter (&it->it_maps[inx].itm_mtx);
-              if (0 == setjmp_splice (&locks_done))
+              if (mutex_try_enter (&it->it_maps[inx].itm_mtx))
 		{
-		  locks_printed = 0;
-		  maphash3 (lock_status, &it->it_maps[inx].itm_locks,
-		      caller_is_dba ? (void *) (&it->it_maps[inx].itm_mtx) : ((void *) ((ptrlong) - 1)));
+                  if (0 == setjmp_splice (&locks_done))
+                    {
+                      locks_printed = 0;
+                      maphash3 (lock_status, &it->it_maps[inx].itm_locks,
+                          caller_is_dba ? (void *)(&it->it_maps[inx].itm_mtx) : ((void*)((ptrlong)-1)));
+                    }
+                  mutex_leave (&it->it_maps[inx].itm_mtx);
 		}
-              mutex_leave (&it->it_maps[inx].itm_mtx);
             }
           mutex_leave (it->it_lock_release_mtx);
         }
@@ -1916,8 +1886,8 @@ stat_desc_t stat_descs [] =
     SD_DEF_L   (tc_atomic_wait_2pc, "tc_atomic_wait_2pc"),
     SD_DEF_L   (tc_cl_alt_interface, "tc_cl_alt_interface"),
     SD_DEF_L   (tc_anytime_early_flush, "tc_anytime_early_flush"),
-    SD_DEF_L   (read_block_usec, "read_block_usec"),
-    SD_DEF_L   (write_block_usec, "write_block_usec"),
+    SD_DEF_I64 (read_block_usec, "read_block_usec"),
+    SD_DEF_I64 (write_block_usec, "write_block_usec"),
     SD_DEF_L   (tc_qp_thread, "tc_qp_thread"),
     SD_DEF_L   (strses_file_reads, "strses_file_reads"),
     SD_DEF_L   (strses_file_writes, "strses_file_writes"),
@@ -2374,6 +2344,17 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I32 (http_connect_timeout, "http_connect_timeout"),
     SD_DEF_I64 (users_cache_sz, "users_cache_sz"),
     SD_DEF_I32 (enable_cpt_rb_ck, "enable_cpt_rb_ck"),
+
+    SD_DEF_I32 (dk_tcp_keepalive_idle, "tcp_keepalive_idle"),
+    SD_DEF_I32 (dk_tcp_keepalive_probes, "tcp_keepalive_probes"),
+    SD_DEF_I32 (dk_tcp_keepalive_intvl, "tcp_keepalive_intvl"),
+    SD_DEF_I32 (dk_tcp_so_linger_enable, "tcp_so_linger_enable"),
+    SD_DEF_I32 (dk_tcp_so_linger_timeout, "tcp_so_linger_timeout"),
+    SD_DEF_I32 (dk_tcp_shutdown_enable, "tcp_shutdown_enable"),
+    SD_DEF_I32 (dk_tcp_ai_idn_enable, "tcp_ai_idn_enable"),
+    SD_DEF_I32 (dk_tcp_ai_ipv4_enable, "tcp_ai_ipv4_enable"),
+    SD_DEF_I32 (dk_tcp_ai_ipv6_enable, "tcp_ai_ipv6_enable"),
+
     SD_DEF_I64 (swap_guard_threshold, "swap_guard_threshold"),
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),
@@ -2587,33 +2568,59 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
-srv_ip (char *ip_addr, size_t max_ip_addr, char *host)
-{
-#if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-  struct hostent ht;
-  char buff [4096];
-  int herrnop;
-#endif
-  struct hostent *local;
 
-#if defined (_REENTRANT) && defined (linux)
-  gethostbyname_r (host, &ht, buff, sizeof (buff), &local, &herrnop);
-#elif defined (_REENTRANT) && defined (SOLARIS)
-  local = gethostbyname_r (host, &ht, buff, sizeof (buff), &herrnop);
-#else
-  local = gethostbyname (host);
+extern int32 dk_tcp_ai_ipv4_enable;
+extern int32 dk_tcp_ai_ipv6_enable;
+
+void
+srv_ip (char *ip_addr, size_t ip_addr_len, char *host)
+{
+  struct addrinfo hints = {0};
+  struct addrinfo *res = NULL;
+  struct addrinfo *p = NULL;
+  int rc;
+
+  ip_addr[0] = '\0';
+
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+#if defined(AI_ADDRCONFIG)
+  hints.ai_flags |= AI_ADDRCONFIG;
 #endif
-  /* XXX in a feature we should check for AF_INET6 */
-  if (local && local->h_addr_list[0] && local->h_addrtype == AF_INET)
+
+  if ((rc = getaddrinfo (host, NULL, &hints, &res)) != 0)
     {
-      unsigned char addr [4];
-      memcpy (addr, (unsigned char *)(local->h_addr_list[0]), sizeof (addr));
-      snprintf (ip_addr, max_ip_addr, "%u.%u.%u.%u", addr [0], addr [1], addr [2], addr [3]);
+      log_debug ("getaddrinfo failed for host \"%s\": %s\n", host, gai_strerror (rc));
+      return;
     }
-  else
-    strcpy_size_ck (ip_addr, "", max_ip_addr);
+
+  for (p = res; p != NULL; p = p->ai_next)
+    {
+      const void *src = NULL;
+
+      if (dk_tcp_ai_ipv4_enable && p->ai_family == AF_INET)
+	{
+	  src = &((struct sockaddr_in *) p->ai_addr)->sin_addr;
+	}
+      else if (dk_tcp_ai_ipv6_enable && p->ai_family == AF_INET6)
+	{
+	  src = &((struct sockaddr_in6 *) p->ai_addr)->sin6_addr;
+	}
+      else
+	continue;
+
+      if (inet_ntop (p->ai_family, src, ip_addr, (socklen_t) ip_addr_len))
+	break;
+
+      ip_addr[0] = '\0';
+    }
+
+  freeaddrinfo (res);
+
+  return;
 }
+
 
 caddr_t
 bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4519,7 +4526,7 @@ bif_col_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (coi->coi_cei[ce_type].cei_values);
   if (!strcmp (name, "ce_bytes"))
     return box_num (coi->coi_cei[ce_type].cei_bytes);
-  sqlr_new_error ("42000", "COL..", "Bad attribute %s for __col_info", name);
+  sqlr_new_error ("42000", "COL07", "Bad attribute %s for __col_info", name);
   return NULL;
 }
 
@@ -4751,6 +4758,8 @@ search_spec_t *sp, it_cursor_t * itc, int * v_fill)
   int res = 0;
   dbe_column_t * left_col;
   left_col = (dbe_column_t *) dk_set_nth (key->key_parts, nth);
+  if (!left_col)
+    return KS_CAST_UNDEF;
   sp->sp_cl = *key_find_cl (key, left_col->col_id);
   sp->sp_col = left_col;
   sp->sp_collation = sp->sp_col->col_sqt.sqt_collation;
@@ -4982,7 +4991,7 @@ bif_key_seg_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  return NULL;
 	}
     }
-  sqlr_new_error ("XXXXX", "COLCK", "too many keys being in key seg check");
+  sqlr_new_error ("42000", "COLCK", "too many keys being in key seg check");
   return NULL;
 }
 

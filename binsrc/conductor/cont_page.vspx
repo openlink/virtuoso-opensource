@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -43,16 +43,16 @@
     <vm:pagebody>
       <div class="main_tab_page">
         <div class="<?V case when self.page = '1' or self.page is null then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" />
+          <v:url name="b_url21" value="--'Repository'" format="%V" url="--'cont_page.vspx?page=1'" />
         </div>
         <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" />
+          <v:url name="b_url12" value="Content Imports" format="%V" url="--'cont_page.vspx?page=2'" />
         </div>
         <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" />
+          <v:url name="b_url13" value="--'Settings'" format="%V" url="--'cont_page.vspx?page=3'" />
         </div>
         <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
-          <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" />
+          <v:url name="b_url14" value="--'Resource Types'" format="%V" url="--'cont_page.vspx?page=4'" />
         </div>
         <div class="tab_page_new">
           <v:template name="_tabtemplate1" type="simple" enabled="-- case when (self.page = '1' or self.page is null) then 1 else 0 end ">

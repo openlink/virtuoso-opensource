@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2025 OpenLink Software
+#  Copyright (C) 1998-2026 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -34,13 +34,11 @@ endif
 endif
 
 noinst_LTLIBRARIES	= libthrs.la $(THRP) $(THRP_GC)
-noinst_HEADERS		= Dkthread.h thread_int.h timer_queue.h tvmac.h
+noinst_HEADERS		= Dkthread.h thread_int.h tvmac.h
 
 libthrs_la_SOURCES = \
 	thread_queue.c \
 	thread_attr.c \
-	timer_queue.c \
-	io_unix.c \
 	sched_single.c
 			     
 libthrs_la_CFLAGS  = @VIRT_AM_CFLAGS@
@@ -51,8 +49,6 @@ libthrs_la_LDFLAGS = -prefer-pic
 libthrp_la_SOURCES = \
 	thread_queue.c \
 	thread_attr.c \
-	timer_queue.c \
-	io_unix.c \
         thread_rwlock.c \
 	sched_pthread.c
 			     
@@ -65,8 +61,6 @@ libthrp_la_LDFLAGS = -prefer-pic
 libthrp_gc_la_SOURCES = \
 	thread_queue.c \
 	thread_attr.c \
-	timer_queue.c \
-	io_unix.c \
         thread_rwlock.c \
 	sched_pthread_gc.c
 			     
@@ -80,6 +74,5 @@ libthrp_gc_la_LDFLAGS = -prefer-pic
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	fiber1_generic.c fiber2_generic.c sched_fiber.c \
-	fiber_unix.c \
-	fiber_win32.c fiber1_win32.c sched_winthread.c sched_winthread_gc.c \
+	fiber1_win32.c sched_winthread.c sched_winthread_gc.c \
 	mtest1.c mtest2.c mtest.c

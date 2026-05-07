@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2025 OpenLink Software
+ -  Copyright (C) 1998-2026 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -273,7 +273,7 @@
 
           <v:method name="option_prepare" arglist="in value any, in name any, in selectedValue any">
             <![CDATA[
-              return sprintf ('<option value="%s" %s>%s</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
+              return sprintf ('<option value="%V" %s>%V</option>', cast (value as varchar), case when (value = selectedValue) then 'selected="selected"' else '' end, cast(name as varchar));
             ]]>
           </v:method>
 
@@ -396,18 +396,18 @@
               declare toolbarEnable integer;
 
               hasLabels := WEBDAV.DBA.settings_tbLabels (self.settings);
-              toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%s</span>', cmdLabel) end;
+              toolbarLabel := case when (hasLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%V</span>', cmdLabel) end;
               toolbarEnable := self.toolbarEnable (writePermission, cmd);
               if (toolbarEnable)
               {
                 http (sprintf ('<span id="tb_%s" class="toolbar" style="cursor: pointer; %s" %s>', cmd, case when (cmdImageGray <> '') and cmdImageAlternate then 'display: none;' else '' end, cmdEvent));
-                http (sprintf ('  <img src="%s" border="0" alt="%s" />%s', self.image_src ('dav/image/' || cmdImage), cmdLabel, toolbarLabel));
+                http (sprintf ('  <img src="%H" border="0" alt="%s" />%s', self.image_src ('dav/image/' || cmdImage), cmdLabel, toolbarLabel));
                 http (         '</span>');
               }
               if ((cmdImageGray <> '') and (not toolbarEnable or cmdImageAlternate))
               {
                 http (sprintf ('<span id="tb_%s_gray" class="toolbar" style="display: inline;">', cmd));
-                http (sprintf ('  <img src="%s" border="0" alt="%s"/>%s', self.image_src ('dav/image/' || cmdImageGray), cmdLabel, toolbarLabel));
+                http (sprintf ('  <img src="%H" border="0" alt="%s"/>%s', self.image_src ('dav/image/' || cmdImageGray), cmdLabel, toolbarLabel));
                 http (         '</span>');
               }
             ]]>
@@ -461,11 +461,11 @@
                 onclick := sprintf ('onclick="javascript: sortPost(this, \'sortColumn\', \'%s\');"', dir_column[0]);
                 if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'desc'))
                 {
-                  image := sprintf ('&nbsp;<img src="%s" border="0" alt="Down"/>', self.image_src ('dav/image/orderdown_16.png'));
+                  image := sprintf ('&nbsp;<img src="%H" border="0" alt="Down"/>', self.image_src ('dav/image/orderdown_16.png'));
                 }
                 else if ((self.dir_order = dir_column[0]) and (self.dir_direction = 'asc'))
                 {
-                  image := sprintf ('&nbsp;<img src="%s" border="0" alt="Up"/>', self.image_src ('dav/image/orderup_16.png'));
+                  image := sprintf ('&nbsp;<img src="%H" border="0" alt="Up"/>', self.image_src ('dav/image/orderup_16.png'));
                 }
               }
               http (sprintf ('<th %s %s>%s%s</th>', case when (self.dir_details) then '' else dir_column[6] end, onclick, dir_column[2], image));
@@ -1072,7 +1072,7 @@
                 '        </td> \n' ||
                 '        <td valign="top" nowrap="nowrap"> \n' ||
                 '          <span class="button pointer" onclick="TBL.createRow(''gf'', null, {fld_1: {mode: 51, formMode: ''u'', tdCssText: ''white-space: nowrap;'', className: ''_validate_''}, fld_2: {mode: 42, value: [1, 1, 0], suffix: ''_grant'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}, fld_3: {mode: 42,  suffix: ''_deny'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
-                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '            <img src="%H" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
                 '          </span><br /><br /> \n' ||
                 '        </td> \n' ||
                 '      </tr> \n' ||
@@ -1119,7 +1119,7 @@
                 '        </td> \n' ||
                 '        <td valign="top" nowrap="nowrap"> \n' ||
                 '          <span class="button pointer" onclick="TBL.createRow(''gs'', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: ''white-space: nowrap;'', className: ''_validate2_ _webid2_''}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
-                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '            <img src="%H" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
                 '          </span><br /><br /> \n' ||
                 '        </td> \n' ||
                 '      </tr> \n' ||
@@ -1284,7 +1284,7 @@
               http (sprintf (
                 '<tr id="tr_dav_%s_display_name" style="display: %s"> ' ||
                 '  <th>User name</th> ' ||
-                '  <td id="td_dav_%s_display_name">%s</td> ' ||
+                '  <td id="td_dav_%s_display_name">%V</td> ' ||
                 '</tr> ' ||
                 '<tr id="tr_dav_%s_email" style="display: %s"> ' ||
                 '  <th>User email</th> ' ||
@@ -1448,12 +1448,12 @@
                 if (not WEBDAV.DBA.DAV_ERROR (item))
                 {
                   http ('    <tr>');
-                  http (sprintf ('<td valign="top"><img src="%s" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
-                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
-                  http (sprintf ('<td class="normalWrap" style="color: red;">%s</td>', self.items[i+1]));
+                  http (sprintf ('<td valign="top"><img src="%H" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
+                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
+                  http (sprintf ('<td class="normalWrap" style="color: red;">%V</td>', self.items[i+1]));
                   http ('    </tr>');
                 }
               }
@@ -1688,12 +1688,12 @@
             ]]>
           </v:after-data-bind>
           <?vsp
-            http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
-            http (sprintf ('<input type="hidden" name="davPath" id="dirPath" value="%s" />', WEBDAV.DBA.real_path (self.dir_path)));
-            http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
-            http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%s" />', self.returnType));
+            http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%V" />', self.tabNo));
+            http (sprintf ('<input type="hidden" name="davPath" id="dirPath" value="%V" />', WEBDAV.DBA.real_path (self.dir_path)));
+            http (sprintf ('<input type="hidden" name="retname" id="retname" value="%V" />', self.returnName));
+            http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%V" />', self.returnType));
             if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap')))
-              http (sprintf ('<input type="hidden" name="a" id="a" value="%s" />', self.dav_action));
+              http (sprintf ('<input type="hidden" name="a" id="a" value="%V" />', self.dav_action));
           ?>
           <div class="toolbar">
             <?vsp
@@ -1706,7 +1706,7 @@
               self.toolbarShow (writePermission, 'refresh', 'Refresh', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'refresh\');"', 'ref_32.png', '', 0);
               self.toolbarShow (writePermission, 'up', 'Up', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'up\');"', 'up_32.png', 'grey_up_32.png', 0);
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               if (self.mode <> 'webdav')
               {
@@ -1716,13 +1716,13 @@
 
               if (self.returnName = '')
               {
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'copy', 'Copy', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'copy\');"', 'copy_32.png', 'grey_copy_32.png', 1);
               self.toolbarShow (writePermission, 'move', 'Move', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'move\');"', 'move_32.png', 'grey_move_32.png', 1);
               self.toolbarShow (writePermission, 'delete', 'Delete', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'delete\');"', 'del_32.png', 'grey_del_32.png', 1);
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'properties', 'Properties', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'properties\');"', 'prop_32.png', 'grey_prop_32.png', 1);
               self.toolbarShow (writePermission, 'share', 'Share', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'share\');"', 'share_32.png', 'grey_share_32.png', 1);
@@ -1732,21 +1732,21 @@
               self.toolbarShow (writePermission, 'tag', 'Tag', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tags\');"', 'tag_32.png', 'grey_tag_32.png', 1);
               }
 
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'create', 'Create', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'create\');"', 'filenew_32.png', 'gray_filenew_32.png', 0);
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'link', 'Create Link', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'link\');"', 'filenew_32.png', 'gray_filenew_32.png', 0);
               if ((self.mode = 'briefcase') and (self.account_role <> 'public'))
               {
-              http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+              http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
               self.toolbarShow (writePermission, 'bookmarklet', 'Bookmark', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
               }
               if (self.returnName = '')
               {
               if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
               {
-                http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+                http (sprintf ('<img src="%H" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
             ?>
             <div class="WEBDAV_menuBar">
               <span id="tb_feeds" class="toolbar menuButton" style="cursor: pointer;" onclick="javascript: WEBDAV.menuPopup(this, 'feedsMenu');">
@@ -1756,11 +1756,11 @@
               </span>
               <div class="WEBDAV_menu" id="feedsMenu" style="display: none;">
                 <?vsp
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rss"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RSS Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RSS Export', 'RSS'));
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=atom" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'Atom Export', self.image_src ('dav/image/rss-icon-16.gif'), 'Atom Export', 'Atom'));
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rdf"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RDF Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RDF Export', 'RDF'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=rss"  target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'RSS Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RSS Export', 'RSS'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=atom" target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'Atom Export', self.image_src ('dav/image/rss-icon-16.gif'), 'Atom Export', 'Atom'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=rdf"  target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'RDF Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RDF Export', 'RDF'));
                   http('<div class="WEBDAV_menuItemSep"></div>');
-                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=opml" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'OPML Export', self.image_src ('dav/image/blue-icon-16.gif'), 'OPML Export', 'OPML'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%H?a=opml" target="_blank" title="%s"><img src="%H" border="0" alt="%s"/> %s</a>', path, 'OPML Export', self.image_src ('dav/image/blue-icon-16.gif'), 'OPML Export', 'OPML'));
                 ?>
               </div>
             </div>
@@ -2537,7 +2537,7 @@
                           <vm:label for="dav_link" value="Source (*)" />
                         </th>
                         <td>
-                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%s" xhtml_disabled="disabled">
+                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%V" xhtml_disabled="disabled">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('link') then ' disabled' else '' end);
@@ -2559,7 +2559,7 @@
                         <td>
                           <v:text name="rdfGraph_prefix" xhtml_id="rdfGraph_prefix" type="hidden" value="--self.detGraphUI2 ()" />
                           <v:text name="rdfBase_prefix"  xhtml_id="rdfBase_prefix" type="hidden" value="--WEBDAV.DBA.host_url () || WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dir_path))" />
-                          <v:text name="dav_name"        xhtml_id="dav_name" xhtml_autofocus="" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
+                          <v:text name="dav_name"        xhtml_id="dav_name" xhtml_autofocus="" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%V" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('name') then ' disabled' else '' end);
@@ -2568,7 +2568,7 @@
                           </v:text>
                           <v:text name="dav_name_save" xhtml_id="dav_name_save" type="hidden" />
                           <v:text name="dav_name_save_mime" xhtml_id="dav_name_save_mime" type="hidden" />
-                          <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                          <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%V" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                           <span>&amp;nbsp;<v:label xhtml_for="label_dav_id" value="--sprintf('Id: %s', DB.DBA.SYS_SQL_VAL_PRINT(DB.DBA.DAV_SEARCH_ID(self.dav_path, self.dav_type)))" enabled="--atoi(registry_get('conductor_dav_debug','0'))" /></span>
                         </td>
                       </tr>
@@ -2580,7 +2580,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_onchange="javascript: WEBDAV.nameByMimeType();">
+                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%V" xhtml_disabled="disabled" xhtml_onchange="javascript: WEBDAV.nameByMimeType();">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('mime') then ' disabled' else '' end);
@@ -2802,7 +2802,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_owner" xhtml_id="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled">
+                            <v:text name="dav_owner" xhtml_id="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'ownerName'))" format="%V" xhtml_disabled="disabled">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end);
@@ -2816,7 +2816,7 @@
                               </v:after-data-bind>
                             </v:text>
                             <vm:if test="self.editField ('owner') and self.dav_enable and WEBDAV.DBA.check_admin (self.account_id)">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -2853,7 +2853,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_group" xhtml_id="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled">
+                            <v:text name="dav_group" xhtml_id="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'groupName'))" format="%V" xhtml_disabled="disabled">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('group') then ' disabled' else '' end);
@@ -2861,7 +2861,7 @@
                               </v:before-render>
                             </v:text>
                             <vm:if test="self.editField ('group') and self.dav_enable">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4536,7 +4536,7 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_mime" xhtml_id="prop_mime" xhtml_autofocus="" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <v:text name="prop_mime" xhtml_id="prop_mime" xhtml_autofocus="" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4558,8 +4558,8 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
+                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?U WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
@@ -4580,7 +4580,7 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%V" xhtml_class="field-short" />&amp;nbsp;
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -4809,7 +4809,7 @@
                   <v:button action="simple" style="url" name="Back_100" value="Back" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Back" title="Back" /> Back', self.image_src ('dav/image/back_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Back" title="Back" /> Back', self.image_src ('dav/image/back_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4828,7 +4828,7 @@
                   <v:button action="simple" style="url" value="Create Filter" name="filterCreate" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Create Filter" title="Create Filter" /> Create Filter', self.image_src ('dav/image/add_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Create Filter" title="Create Filter" /> Create Filter', self.image_src ('dav/image/add_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4846,7 +4846,7 @@
                   <v:button action="simple" style="url" value="Delete" name="filterDelete" xhtml_class="button">
                     <v:after-data-bind>
                       <![CDATA[
-                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Delete Filter(s)" title="Delete Filter(s)" /> Delete', self.image_src ('dav/image/trash_16.png'));
+                        control.ufl_value := sprintf ('<img src="%H" border="0" alt="Delete Filter(s)" title="Delete Filter(s)" /> Delete', self.image_src ('dav/image/trash_16.png'));
                       ]]>
                     </v:after-data-bind>
                     <v:on-post>
@@ -4916,13 +4916,13 @@
                             ?>
                           </td>
                           <td>
-                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MF_NAME')" format="%s"/>
+                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MF_NAME')" format="%V"/>
                           </td>
                           <td class="action">
                             <v:button action="simple" style="url" value="Create Filter" name="filterUpdate">
                               <v:after-data-bind>
                                 <![CDATA[
-                                  control.ufl_value := sprintf ('<img src="%s" border="0" alt="Update Filter" title="Update Filter" />', self.image_src ('dav/image/edit_16.png'));
+                                  control.ufl_value := sprintf ('<img src="%H" border="0" alt="Update Filter" title="Update Filter" />', self.image_src ('dav/image/edit_16.png'));
                                 ]]>
                               </v:after-data-bind>
                               <v:on-post>
@@ -5027,7 +5027,7 @@
                   </th>
                   <td>
                     <input type="hidden" id="imapOwner" name="imapOwner" value="<?V DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C')) ?>" />
-                    <v:text name="imap_filterName" format="%s" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
+                    <v:text name="imap_filterName" format="%V" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
                   </td>
                 </tr>
                 <tr>
@@ -5527,10 +5527,10 @@
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
                                             || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
-                                    http (sprintf ('<a %s href="%s" %s title="%s - %V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                    http (sprintf ('<a %s href="%H" %s title="%s - %V" class="WEBDAV_a"><img src="%H" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
-                                    <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
+                                    <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%V" /></i>
                                   </v:template>
                                 </td>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#2')">
@@ -5548,7 +5548,7 @@
                                         {
                                           N := N + length(tag);
                                           if (N < 20)
-                                            http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag, tag));
+                                            http (sprintf ('<a id="public_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s\'); return false;" alt="Search Public Tag" title="Search Public Tag">%V</a> ', tag, tag, tag));
                                           N := N + 1;
                                         }
                                       }
@@ -5560,7 +5560,7 @@
                                         {
                                           N := N + length(tag);
                                           if (N < 20)
-                                            http (sprintf ('<a id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag, tag));
+                                            http (sprintf ('<a id="private_t_%s" href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'#_%s\'); return false;" alt="Search Private Tag" title="Search Private Tag">%V</a> ', tag, tag, tag));
                                           N := N + 1;
                                         }
                                       }
@@ -5629,7 +5629,7 @@
                                     detType := DB.DBA.DAV_DET_NAME (id);
                                     if ((permission <> '') or (self.mode = 'webdav'))
                                     {
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%H" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                     }
                                     if (
                                          (rowset[1] = 'R')
@@ -5672,11 +5672,11 @@
                                     {
                                       if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')) or (detType in ('CalDAV', 'CardDAV')))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%H" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                       else if ((permission = 'W') or (self.mode = 'webdav'))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%s" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%H" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                     }
                                     if (
@@ -5687,7 +5687,7 @@
                                          and (WEBDAV.DBA.det_type (path, rowset[1]) = 'IMAP')
                                        )
                                     {
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="IMAP Filters" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'imap\', \'_path\', \'%V\');" />', self.image_src ('dav/image/filter_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="IMAP Filters" src="%H" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'imap\', \'_path\', \'%V\');" />', self.image_src ('dav/image/filter_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                     }
                                   ?>
                               </td>
@@ -5726,7 +5726,7 @@
                             for (N := 2; N < tLength; N := N + 1)
                             {
                               tStyle := self.tag_style(self.dir_tags[N][1], tMin, tMax, 12, 30);
-                              http (sprintf ('<a href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s%s\');" name="btn_%s"><span class="nolink_b" style="%s;">%s</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
+                              http (sprintf ('<a href="#" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tag_search\', \'tag_hidden\', \'%s%s\');" name="btn_%s"><span class="nolink_b" style="%s;">%V</span></a> ', self.dir_tags[N][2], self.dir_tags[N][0], self.dir_tags[N][0], tStyle, self.dir_tags[N][0]));
                             }
                           } else {
                             http ('no tags');
@@ -5806,7 +5806,7 @@
             <v:label for="dav_oMail_FolderName" value="WebMail folder name" />
           </th>
           <td>
-            <v:text name="dav_oMail_FolderName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_oMail_FolderName" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'NULL');
@@ -5822,7 +5822,7 @@
             <v:label for="dav_oMail_NameFormat" value="WebMail name format" />
           </th>
           <td>
-            <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text _validate_">
+            <v:text name="dav_oMail_NameFormat" format="%V" xhtml_disabled="disabled" xhtml_class="field-text _validate_">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_NameFormat', self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^');
@@ -5844,7 +5844,7 @@
             <v:label for="dav_PropFilter_SearchPath" value="Search path" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_SearchPath" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_SearchPath" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_PropFilter_SearchPath', self.dav_path, 'virt:PropFilter-SearchPath', WEBDAV.DBA.path_show (self.dir_path));
@@ -5858,7 +5858,7 @@
             <v:label for="dav_PropFilter_PropName" value="Property name" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_PropName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_PropName" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
@@ -5873,7 +5873,7 @@
             <v:label for="dav_PropFilter_PropValue" value="Property value" />
           </th>
           <td>
-            <v:text name="dav_PropFilter_PropValue" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_PropFilter_PropValue" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_PropFilter_PropValue', self.dav_path, 'virt:PropFilter-PropValue', '');
@@ -5909,7 +5909,7 @@
             <vm:label for="dav_S3_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_S3_checkInterval" xhtml_id="dav_S3_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_S3_checkInterval" xhtml_id="dav_S3_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_checkInterval', self.dav_path, 'virt:S3-checkInterval', '15');
@@ -5923,7 +5923,7 @@
             <v:label for="dav_S3_AccessKeyID" value="Access Key ID (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
@@ -5937,7 +5937,7 @@
             <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
@@ -6087,17 +6087,17 @@
           </th>
           <td>
             <?vsp
-              http (sprintf ('Lock: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
-              http (sprintf ('Version Control: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
-              http (sprintf ('Auto Versioning: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
-              http (sprintf ('Version State: <b>%s</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
+              http (sprintf ('Lock: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
+              http (sprintf ('Version Control: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
+              http (sprintf ('Auto Versioning: <b>%V</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
+              http (sprintf ('Version State: <b>%V</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
             ?>
           </td>
         </tr>
         <v:template name="t3" type="simple" enabled="-- case when (equ(self.command_mode, 10)) then 1 else 0 end">
           <tr>
             <th>
-              <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
+              <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%V" />
             </th>
             <td>
               <v:button name="template_vc" style="url" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
@@ -6272,7 +6272,7 @@
               Root version
             </th>
             <td>
-              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
+              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%V" xhtml_disabled="disabled" xhtml_tabindex="-1">
                 <v:on-post>
                   <![CDATA[
                     declare _path varchar;
@@ -6287,7 +6287,7 @@
                     }
 
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, _path));
+                    http_header (sprintf ('Location: view.vsp?sid=%U&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, _path));
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -6328,7 +6328,7 @@
                     <table>
                       <tr>
                         <td nowrap="nowrap">
-                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
+                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%V" xhtml_disabled="disabled" xhtml_tabindex="-1">
                             <v:on-post>
                               <![CDATA[
                                 declare _path varchar;
@@ -6421,7 +6421,7 @@
             <v:label for="ts_max" value="Max Results" />
           </th>
           <td>
-            <?vsp http (sprintf ('<input type="text" name="ts_max" value="%s" size="5" />', WEBDAV.DBA.dc_get (self.search_dc, 'options', 'max', '100'))); ?>
+            <?vsp http (sprintf ('<input type="text" name="ts_max" value="%V" size="5" />', WEBDAV.DBA.dc_get (self.search_dc, 'options', 'max', '100'))); ?>
           </td>
         </tr>
         <tr>
@@ -6496,7 +6496,7 @@
                 aValues := WEBDAV.DBA.syncml_versions ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%V</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6511,7 +6511,7 @@
                 aValues := WEBDAV.DBA.syncml_types ();
                 for (N := 2; N < length (aValues); N := N + 2)
                 {
-                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                  http(sprintf('<option value="%V" %s>%V</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
                 }
               ?>
             </select>
@@ -6549,7 +6549,7 @@
             <vm:label for="dav_IMAP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_IMAP_checkInterval" xhtml_id="dav_IMAP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_IMAP_checkInterval" xhtml_id="dav_IMAP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_checkInterval', self.dav_path, 'virt:IMAP-checkInterval', '15');
@@ -6571,7 +6571,7 @@
                 aValue := self.get_fieldProperty ('dav_IMAP_connection', self.dav_path, 'virt:IMAP-connection', '');
                 aValues := vector ('none', 'None', 'ssl', 'SSL/TLS');
                 for (N := 0; N < length (aValues); N := N + 2)
-                  http (sprintf ('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                  http (sprintf ('<option value="%V" %s>%V</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
               ?>
             </select>
           </td>
@@ -6581,7 +6581,7 @@
             <vm:label for="dav_IMAP_server" value="Server Address" />
           </th>
           <td>
-            <v:text name="dav_IMAP_server" xhtml_id="dav_IMAP_server" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();" >
+            <v:text name="dav_IMAP_server" xhtml_id="dav_IMAP_server" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();" >
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_server', self.dav_path, 'virt:IMAP-server', '');
@@ -6595,7 +6595,7 @@
             <vm:label for="dav_IMAP_port" value="Server Port" />
           </th>
           <td>
-            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_port', self.dav_path, 'virt:IMAP-port', '143');
@@ -6609,7 +6609,7 @@
             <vm:label for="dav_IMAP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_IMAP_user" xhtml_id="dav_IMAP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text name="dav_IMAP_user" xhtml_id="dav_IMAP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_user', self.dav_path, 'virt:IMAP-user', '');
@@ -6623,7 +6623,7 @@
             <vm:label for="dav_IMAP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
+            <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -6694,7 +6694,7 @@
             <vm:label for="dav_GDrive_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_GDrive_checkInterval" xhtml_id="dav_GDrive_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_GDrive_checkInterval" xhtml_id="dav_GDrive_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_GDrive_checkInterval', self.dav_path, 'virt:GDrive-checkInterval', '15');
@@ -6715,7 +6715,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=GDrive&service=google';
-              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Google Drive DAV authenticate\', \'GDrive\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Google Drive DAV authenticate\', \'GDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_GDrive_throbber" alt="Athenticate GDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6771,7 +6771,7 @@
             <vm:label for="dav_Dropbox_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_Dropbox_checkInterval" xhtml_id="dav_Dropbox_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_Dropbox_checkInterval" xhtml_id="dav_Dropbox_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_Dropbox_checkInterval', self.dav_path, 'virt:Dropbox-checkInterval', '15');
@@ -6792,7 +6792,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Dropbox&service=dropbox';
-              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Dropbox DAV authenticate\', \'Dropbox\', 1100);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Dropbox DAV authenticate\', \'Dropbox\', 1100);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_Dropbox_throbber" alt="Athenticate Dropbox" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6846,7 +6846,7 @@
             <vm:label for="dav_SkyDrive_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_SkyDrive_checkInterval" xhtml_id="dav_SkyDrive_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_SkyDrive_checkInterval" xhtml_id="dav_SkyDrive_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_SkyDrive_checkInterval', self.dav_path, 'virt:SkyDrive-checkInterval', '15');
@@ -6867,7 +6867,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=SkyDrive&service=windowslive';
-              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'OneDrive DAV authenticate\', \'SkyDrive\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'OneDrive DAV authenticate\', \'SkyDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_SkyDrive_throbber" alt="Athenticate SkyDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6921,7 +6921,7 @@
             <vm:label for="dav_Box_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_Box_checkInterval" xhtml_id="dav_Box_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_Box_checkInterval" xhtml_id="dav_Box_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_Box_checkInterval', self.dav_path, 'virt:Box-checkInterval', '15');
@@ -6942,7 +6942,7 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Box&service=boxnet';
-              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Box DAV authenticate\', \'Box\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'Box DAV authenticate\', \'Box\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_Box_throbber" alt="Athenticate Box Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -6996,7 +6996,7 @@
             <vm:label for="dav_WebDAV_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_checkInterval" xhtml_id="dav_WebDAV_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_WebDAV_checkInterval" xhtml_id="dav_WebDAV_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_checkInterval', self.dav_path, 'virt:WebDAV-checkInterval', '15');
@@ -7010,7 +7010,7 @@
             <v:label for="dav_WebDAV_path" value="WebDAV path" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_path" xhtml_id="dav_WebDAV_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_WebDAV_path" xhtml_id="dav_WebDAV_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_path', self.dav_path, 'virt:WebDAV-path', '');
@@ -7072,7 +7072,7 @@
             <v:label for="dav_WebDAV_onBehalfOf" value="On Behalf Of (WebID)" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_onBehalfOf" xhtml_id="dav_WebDAV_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_WebDAV_onBehalfOf" xhtml_id="dav_WebDAV_onBehalfOf" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_onBehalfOf', self.dav_path, 'virt:WebDAV-onBehalfOf', '');
@@ -7118,7 +7118,7 @@
 
               _name := 'Authenticate';
               _url := '/ods/access_service.vsp?m=webdav&p=WebDAV';
-              http (sprintf ('<input type="button" id="dav_WebDAV_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'WebDAV ODS authenticate\', \'WebDAV\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_WebDAV_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'WebDAV ODS authenticate\', \'WebDAV\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_WebDAV_throbber" alt="Athenticate WebDAV Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -7128,7 +7128,7 @@
             <vm:label for="dav_WebDAV_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_WebDAV_user" xhtml_id="dav_WebDAV_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_WebDAV_user" xhtml_id="dav_WebDAV_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_WebDAV_user', self.dav_path, 'virt:WebDAV-user', '');
@@ -7142,7 +7142,7 @@
             <vm:label for="dav_WebDAV_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_WebDAV_password" xhtml_id="dav_WebDAV_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_WebDAV_password" xhtml_id="dav_WebDAV_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7198,7 +7198,7 @@
             <vm:label for="dav_RACKSPACE_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_checkInterval" xhtml_id="dav_RACKSPACE_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_RACKSPACE_checkInterval" xhtml_id="dav_RACKSPACE_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_checkInterval', self.dav_path, 'virt:RACKSPACE-checkInterval', '15');
@@ -7228,7 +7228,7 @@
             <vm:label for="dav_RACKSPACE_User" value="Account name (*)" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_User" xhtml_id="dav_RACKSPACE_User" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_RACKSPACE_User" xhtml_id="dav_RACKSPACE_User" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_User', self.dav_path, 'virt:RACKSPACE-User', '');
@@ -7242,7 +7242,7 @@
             <vm:label for="dav_RACKSPACE_API_Key" value="API Key (*)" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'RACKSPACE\', \'Container\', [\'Type\', \'User\', \'Container\', \'API_Key\']);">
+            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'RACKSPACE\', \'Container\', [\'Type\', \'User\', \'Container\', \'API_Key\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_API_Key', self.dav_path, 'virt:RACKSPACE-API_Key', '');
@@ -7319,7 +7319,7 @@
             <vm:label for="dav_FTP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_FTP_checkInterval" xhtml_id="dav_FTP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_FTP_checkInterval" xhtml_id="dav_FTP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_checkInterval', self.dav_path, 'virt:FTP-checkInterval', '15');
@@ -7333,7 +7333,7 @@
             <vm:label for="dav_FTP_host" value="FTP - host" />
           </th>
           <td>
-            <v:text name="dav_FTP_host" xhtml_id="dav_FTP_host" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_FTP_host" xhtml_id="dav_FTP_host" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_host', self.dav_path, 'virt:FTP-host', '');
@@ -7347,7 +7347,7 @@
             <vm:label for="dav_FTP_path" value=" path" />
           </th>
           <td>
-            <v:text name="dav_FTP_path" xhtml_id="dav_FTP_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_FTP_path" xhtml_id="dav_FTP_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_path', self.dav_path, 'virt:FTP-path', '');
@@ -7361,7 +7361,7 @@
             <vm:label for="dav_FTP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_FTP_user" xhtml_id="dav_FTP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_FTP_user" xhtml_id="dav_FTP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_FTP_user', self.dav_path, 'virt:FTP-user', '');
@@ -7375,7 +7375,7 @@
             <vm:label for="dav_FTP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_FTP_password" xhtml_id="dav_FTP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_FTP_password" xhtml_id="dav_FTP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7419,7 +7419,7 @@
             <vm:label for="dav_LDP_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_LDP_checkInterval" xhtml_id="dav_LDP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_LDP_checkInterval" xhtml_id="dav_LDP_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_checkInterval', self.dav_path, 'virt:LDP-checkInterval', '15');
@@ -7433,7 +7433,7 @@
             <vm:label for="dav_LDP_path" value="LDP path" />
           </th>
           <td>
-            <v:text name="dav_LDP_path" xhtml_id="dav_LDP_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_LDP_path" xhtml_id="dav_LDP_path" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_path', self.dav_path, 'virt:LDP-path', '');
@@ -7495,7 +7495,7 @@
             <vm:label for="dav_LDP_onBehalfOf" value="On Behalf Of (WebID)" />
           </th>
           <td>
-            <v:text name="dav_LDP_onBehalfOf" xhtml_id="dav_LDP_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_LDP_onBehalfOf" xhtml_id="dav_LDP_onBehalfOf" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_onBehalfOf', self.dav_path, 'virt:LDP-onBehalfOf', '');
@@ -7541,7 +7541,7 @@
 
               _name := 'Authenticate';
               _url := '/ods/access_service.vsp?m=webdav&p=LDP';
-              http (sprintf ('<input type="button" id="dav_LDP_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'LDP ODS authenticate\', \'LDP\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_LDP_authenticate" value="%V" onclick="javascript: authenticateShow(\'%s\', \'LDP ODS authenticate\', \'LDP\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
             <img id="dav_LDP_throbber" alt="Athenticate LDP Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
@@ -7551,7 +7551,7 @@
             <vm:label for="dav_LDP_user" value="User Name" />
           </th>
           <td>
-            <v:text name="dav_LDP_user" xhtml_id="dav_LDP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_LDP_user" xhtml_id="dav_LDP_user" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_LDP_user', self.dav_path, 'virt:LDP-user', '');
@@ -7565,7 +7565,7 @@
             <vm:label for="dav_LDP_password" value="User Password" />
           </th>
           <td>
-            <v:text type="password" name="dav_LDP_password" xhtml_id="dav_LDP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_LDP_password" xhtml_id="dav_LDP_password" format="%V" xhtml_disabled="disabled" xhtml_class="field-short">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := '**********';
@@ -7621,7 +7621,7 @@
             <vm:label for="dav_AZURE_checkInterval" value="Check for updates every" />
           </th>
           <td>
-            <v:text name="dav_AZURE_checkInterval" xhtml_id="dav_AZURE_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+            <v:text name="dav_AZURE_checkInterval" xhtml_id="dav_AZURE_checkInterval" format="%V" xhtml_disabled="disabled" xhtml_size="3">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_checkInterval', self.dav_path, 'virt:AZURE-checkInterval', '15');
@@ -7635,7 +7635,7 @@
             <vm:label for="dav_AZURE_account" value="Account (*)" />
           </th>
           <td>
-            <v:text name="dav_AZURE_account" xhtml_id="dav_AZURE_account" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_AZURE_account" xhtml_id="dav_AZURE_account" format="%V" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_account', self.dav_path, 'virt:AZURE-account', '');
@@ -7649,7 +7649,7 @@
             <vm:label for="dav_AZURE_API_key" value="Key (*)" />
           </th>
           <td>
-            <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
+            <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%V" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_AZURE_key', self.dav_path, 'virt:AZURE-key', '');

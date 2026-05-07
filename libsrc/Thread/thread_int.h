@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2025 OpenLink Software
+ *  Copyright (C) 1998-2026 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,6 @@
 
 #include "Dk.h"
 #include "util/listmac.h"
-#include "Thread/timer_queue.h"
 #include "Thread/tvmac.h"
 #include <assert.h>
 #define _THREAD_INT_HS
@@ -93,15 +92,8 @@ struct thread_s
     /* thread specific errno */
     int			thr_err;
 
-    /* if WAITING, thr_timer can interrupt */
-    void *		thr_event;
-    timer_t *		thr_timer;
-
-    /* used in thread_select */
+    /* thread specific retcode */
     int			thr_retcode;
-    int			thr_nfds;
-    fd_set		thr_rfds;
-    fd_set		thr_wfds;
 
     /* restart context for a "dead" or new thread */
     jmp_buf		thr_init_context;
@@ -153,8 +145,6 @@ struct thread_s
       ? (((unsigned long) ((char *) thr->thr_stack_base - (char *) addr)) > thr->thr_stack_size - margin) \
       : (((unsigned long) ((char *) addr - (char *) thr->thr_stack_base)) > thr->thr_stack_size - margin)) \
    : 0)
-
-
 
 
 /*
@@ -272,13 +262,8 @@ int _fiber_sleep (void *event, TVAL timeout);
 void _fiber_event_loop (void);
 TVAL msecs_elapsed (void);
 
-
-/* io_unix.c */
-void io_init (void);
-
 extern thread_t *_current_fiber;	/* simulated threads only */
 extern thread_queue_t _waitq;		/* simulated threads only */
-extern timer_queue_t *_timerq;		/* simulated threads only */
 extern int _num_runnables;		/* simulated threads only */
 
 extern const char *build_thread_model;
