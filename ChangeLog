@@ -1,3 +1,21 @@
+2026-05-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed documentation
+
+	Updated NEWS.md and Changelog
+
+	Updated version to 7.2.17 engine 3243
+
+	Merge branch 'feature/20260506-readme-v3' into develop/7
+
+	Updated list of programs required by the test suite
+
+2026-05-07  Tim Haynes  <thaynes@openlinksw.com>
+
+	Added firewall note focussed on macOS
+
+	Added dependencies like tar, unzip, wget and curl for running the tsuite
+
 2026-05-06  Mitko Iliev  <imitko@openlinksw.com>
 
 	Added BIFs using tcp socket to unsafe
