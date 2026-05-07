@@ -195,8 +195,7 @@ and then:
 $ make -j4
 ```
 
-Running the test suite is optional. First, ensure the `bzip2`, `curl`, `gunzip`, `gzip`, `tar`, `unzip` `wget` and `zip`
-package, for your OS/distribution are installed, then run:
+Running the test suite is optional. First, ensure the `bzip2`, `curl`, `gunzip`, `gzip`, `tar`, `unzip` `wget` and `zip` packages, for your OS/distribution are installed, then run:
 
 ```sh
 $ make check
