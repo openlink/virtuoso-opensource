@@ -3,13 +3,13 @@
 ## May 07 2026, v7.2.17
   * Virtuoso Engine
     - Added support for JSON canonicalization
-    - Added support for IDN lookups on Windows, Linux and macOS
-    - Added support for `getaddrinfo()` and `getnameinfo()` and `poll()`
-    - Added setting for shutdown, keepalive and listen options on session
+    - Added support for IDN lookups on Windows, Linux, and macOS
+    - Added support for `getaddrinfo()`, `getnameinfo()`, and `poll()`
+    - Added setting for `shutdown`, `keepalive`, and `listen` options on session
     - Added BIFs using TCP socket to unsafe list
     - Removed deprecated network code
     - Fixed issues reported by `gcc -fsanitize=address`
-    - Fixed calculating stack size when building with `-fsanitize=address`
+    - Fixed stack size calculation when building with `-fsanitize=address`
     - Fixed issue with bidirectional transitivity node
     - Fixed `position()` and `casemode_strcmp()` for NULL arguments
     - Fixed pointer type mismatch in conditional expression
@@ -21,7 +21,7 @@
     - Fixed issue with subq filter and language of literals
     - Fixed issue with bad constant expression in hash fill
     - Fixed issue with aggregate not returning error in UA
-    - Fixed check for unsupported insert into view via select
+    - Fixed check for unsupported `INSERT INTO VIEW` via `SELECT`
     - Fixed missing check for right outer-join table
     - Fixed missing check for column
     - Fixed `GEO` constant to use `ANY` type for result
@@ -43,7 +43,7 @@
     - Fixed mutex issue with `status('l')` and async queue on independent branches
     - Fixed missing critical section
     - Fixed return new error message
-    - Fixed missing check if column exists
+    - Fixed missing check whether column exists
     - Fixed missing check for new prefix
     - Fixed missing check for `DFE_FALSE`
     - Fixed issue creating expression subquery inside aggregate
@@ -52,19 +52,19 @@
     - Fixed SQL error not returned when sub predicate does not exist
     - Fixed issue with col cast check on vec params
     - Fixed missing test for star
-    - Fixed missing test for table exists in drop column
+    - Fixed missing test whether table exists in drop column
     - Fixed use params instead of possibly truncating password
     - Fixed overflow check before assignment
     - Fixed various compiler warnings
 
   * SPARQL
-    - Added initial `wikibase:mwapi` SERVICE handler
-    - Fixed issue with CONCAT over RDF string literals containing UTF-8 encoded characters
+    - Added initial `wikibase:mwapi` `SERVICE` handler
+    - Fixed issue with `CONCAT` over RDF string literals containing UTF-8 encoded characters
     - Fixed RDF view single primary key on date is not supported
     - Fixed input check for prefix in RDF views and maps
     - Fixed `/sparql` UI to make `?help=topic` links relative
     - Fixed missing check for MP already in use in SPARQL BIF before `MP_START`
-    - Fixed redundant tightning against non-existing
+    - Fixed redundant tightening against non-existing
     - Fixed issue with bad equality on index check
 
   * Web Server and DAV
@@ -86,7 +86,7 @@
     - Fixed issue with DAV browser in a root folder
     - Fixed some grammar and spelling mistakes
 
-  * JDBC, Jena and RDF4j
+  * JDBC, Jena, and RDF4j
     - Removed deprecated Sesame providers
 
   * Documentation
@@ -106,24 +106,24 @@
     - Fixed issue with compiling on Windows
     - Fixed some defaults in `virtuoso.ini`
     - Fixed check for upper MP limit increment in optimizer
-    - Fixed error reporting on non-compatible database/setup
+    - Fixed error reporting of incompatible database/setup
     - Fixed issue comparing dates
     - Fixed issue hanging in temp table
     - Fixed issues with JSON serializer
     - Fixed issues with `PAGE_DEBUG`
     - Fixed issues with `sqlc_hook`
     - Fixed issue when usernames are repeated
-    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed issue where Virtuoso mistakenly reports that `ID:0` (`dba`) has no permissions
     - Fixed issue with JSON parsing unknown band with many types
     - Fixed issue with max memory pool size greater than 4GB
     - Fixed issue with `xsd:time` conversion
     - Fixed to not re-enter mutex when resetting iterator
 
   * SPARQL
-    - Added assert to check if the memory pool is busy
+    - Added assert to check whether the memory pool is busy
     - Fixed RDF Views total count statistics
     - Fixed issue trying to call CXML PL when the VAD package is not installed
-    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed issue where Virtuoso mistakenly reports that `ID:0` (`dba`) has no permissions
     - Fixed so numbers and dates preserve datatypes in JSON output
     - Fixed issue with table name qualifiers in case mode 2
     - Fixed issue when performing a `same-as` query without specifying a graph
@@ -158,7 +158,7 @@
 
   * Faceted Browser
     - Added option to prevent bots from crawling `/fct/rdfdesc/usage.vsp`
-    - Added config UI setting to change the maximum amount of facets (default 20)
+    - Added config UI setting to change the maximum number of facets (default 20)
     - Improved performance when using `same-as` for a label
     - Changed `output:valmode` from "AUTO" to "LONG"
     - Fixed issue with CXML link at the bottom of the page
