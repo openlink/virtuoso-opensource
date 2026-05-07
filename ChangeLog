@@ -1,4 +1,596 @@
+2026-05-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added BIFs using tcp socket to unsafe
+
+	Added support for jsonld formats
+
+2026-05-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with Linked Data | SPARQL page
+
+2026-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+	Fixed syntax error on page
+
+	Fixed grammar
+
+	Removed bold from first column on Monitor Version and HTTP tabs
+
+	Fixed missing bold tag on table headers
+
+	Fixed clear float on attention_box
+
+	Updated version to 7.2.17-rc1
+
+	Merge branch 'feature/conductor-fixes' into develop/7
+
+	Update Conductor VAD version
+
+	Fixed potential XSS vulnerabilities in conductor
+
+	Fixed format attribute to use %V escape
+
+	Fixed <x>%s</x> to use %V escape
+
+	Fixed value attributes to use %V escape
+
+	Fixed href and src attributes to use %H escape
+
+	Fixed all url parameters to use url encoding
+
+	Fixed readability
+
+	Fixed some grammar and spelling mistakes in conductor
+
+2026-05-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed final references to sesame providers
+
+	Merge branch 'feature/20260417-readme-edits' into develop/7
+
+	Fixed issue building .jar files
+
+	Removed deprecated sesame providers
+
+	Removed deprecated build instructions for JDBC 2.x
+
+2026-05-01  Tim Haynes  <thaynes@openlinksw.com>
+
+	Documentation overhaul
+
+	Rewrote README.md as a central information hub, directing developers to
+	resources such as building Virtuoso, reporting issues, obtaining support
+	and disclosing security vulnerabilities.
+
+	Added README.Building.md consolidating build instructions for Linux and
+	macOS into a single document.
+
+	Added README.Docker.md with quickstart instructions for running Virtuoso
+	in a Docker container.
+
+	Fixed Markdown formatting, style, grammar and spelling throughout.
+
+	Removed outdated README.MACOSX.md and README.OpenSSL.md files.
+
+2026-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with CONCAT over RDF string literals containing UTF-8
+
+	Boxed string literals containing UTF-8 should not be cast to default
+
+	Fixes #1414
+
+2026-04-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Changed some VSP escapes for readability
+
+	  '<?=expr?>' to '<?V expr ?>'
+	  '<?/expr?>' to '<?U expr ?>'
+
+2026-04-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated FCT vad version
+
+	Fixed encoding issues of URI and labels in usage.vsp
+
+	Fixed potential XSS vulnerabilities in fct
+
+	Fixed some grammar and spelling mistakes in fct
+
+2026-04-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed VSP escapes
+
+	Changed instances of '<?=expr?>' to '<?V expr ?>' for readability
+
+2026-04-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed old debug code
+
+2026-04-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues with thread_set_priority
+
+	* Fixed logic bug in prio validation
+	* Removed deprecated pthread_setprio code
+
+2026-04-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/asan-fixes' into develop/7
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with transitivity node 2ways
+
+	Fixed issue with spfi (date,'%D') not working
+
+	Fixed RDF view single pk on date not supported
+
+	Fixed input check for prefix in rdf view/maps
+
+	Fixed position() and casemode_strmp() for NULL argments
+
+2026-04-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed /sparql UI to make ?help=topic links relative
+
+	Fixed pointer type mismatch in conditional expression
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed to not reset call ssl ref to table outside of scope
+
+	Fixed missing array index check
+
+2026-04-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added macros PREDICT_TRUE(x) and PREDICT_FALSE(x)
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed TCN order by server-side QS
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for JSON canonicalization
+
+	* Added JSON canonicalization function for use with JWS and related
+	* Added flag to parse boolean
+	* Added flag to parse unicode escape in lower case
+	* Added flag for numbers to get shortest representation
+	* Added support to allow JSON tree
+	* Added support for json object in connection vars
+	* Fixed obj2json to pass max depth in recursive call, keep default input
+	  null as is the case now
+	* Moved JSON testsuite beside jsonld
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for ws_session, can be websocket callback
+
+	Fixed OPTIONS on .well-known should not produce body
+
+	Fixed issue comparing signed and unsigned
+
+	Fixed issue with subq filter and language of literals
+
+	Added more testsuite entries
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with bad constant expression in hash fill
+
+	Fixes #1402
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with aggregate not returning error in UA
+
+	Fixes #1401
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for unsupported insert into view via select
+
+	Fixes #1388
+
+2026-04-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check for right outer-join table
+
+	Fixes #1385
+
+2026-04-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed to check for column
+
+	Fixed if GEO const use ANY type for result
+
+	Fixed issue where var is used outside of scope
+
+	Added check for deep stack
+
+	Fixed trailing zero shoud be separate
+
+	Fixed missing check for owner list
+
+	Fixed to comment out tracepoint
+
+2026-04-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when running aggregate on constant
+
+	Fixes #1391
+
+2026-04-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing IS_TS check
+
+	Fixed issue re-compiling module proc
+
+	Fixed ptr of local array out of scope
+
+	Fixed use ptr of local array out of scope
+
+	Fixed issue with buffer read after boundry
+
+	Fixed buffer underflow when col value is empty string
+
+	Fixed issue calculating size of network buffer
+
+	Fixed issue with interpolation function reading after boundary
+
+2026-04-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed set unparsable numeric to NaN
+
+	Fixes #1394
+
+2026-04-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for bad shortcut in execution plan
+
+	Fixes #1393
+
+2026-04-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check for star in function call
+
+	Fixes #1391
+
+2026-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed wrong struct size
+
+2026-04-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with variable scope
+
+	Fixed tokens from scanner should be MP box
+
+	Fixed missing IS_TS check
+
+	Fixed do not use box_length on non-box vars
+
+	Fixed off by one error
+
+	Fixed use correct object size for hash
+
+	Fixed use boxed name to find service
+
+	Fixed issue calculating stack size when building with -fsanitize=address
+
+2026-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed deprecated code
+
+	* Removed support for OLD_PTHREADS
+	* Removed support for HPUX_ITANIUM64
+	* Removed support for SOLARIS
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed old JSO_NAMESPACE match patterns
+
+	Merge branch 'feature/poll-fixes' into develop/7
+
+	Fixed compiler warnings
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixes portability issue
+
+	* Removed deprecated DK_NEED_VSNPRINTF code
+	* Make sure str is always '\0' terminated
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed typo in variable name
+
+	Fixed possible threading issue when using static buffer
+
+	Added support for IDN lookups on windows, linux and macos
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added settings for getaddrinfo()
+
+	    [FLAGS]
+	    tcp_ai_idn_enable = 0	; default disabled
+	    tcp_ai_ipv4_enable = 1	; default enabled
+	    tcp_ai_ipv6_enable = 0	; default disabled
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added initial support for getaddrinfo() and getnameinfo()
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Cleanups for Windows winsock2 support
+
+	* Updated to use winsock2.h everywhere
+	* Updated _WIN32_WINNT to Vista (0x0600) to unlock some of the newer network APIs
+	* Updated WSAStartup to request winsock 2.2 API support
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed depreated WIN95COMPAT define from code
+
+	Removed depreated UUID_BY_PORT define from code
+
+	Removed deprecated OPL_SOURCE define
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added settings for SO_LINGER and shutdown() on closing socket
+
+	These settings are experimental for now
+
+	    [FLAGS]
+	    tcp_so_linger_enable = 0     ; 1 = enable
+	    tcp_so_linger_timeout = 0    ; 0 = no timeout (seconds)
+	    tcp_shutdown_enable = 0      ; 1 = enable
+
+	NOTE: these settings can have side-effects, so they should not be used
+	without proper understanding of network protocols and as part of a
+	support / professional services case.
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for setting keepalive on session
+
+	NOTE: This feature is currently not used in the VOS release
+
+	For most use cases the internal OS defaults are more than sufficient to
+	make sure the remote is still available.
+
+	However in some high availability cases a user might want to tweak the
+	TCP settings by using the following [FLAG] settings in the virtuoso.ini
+	file as part of a support / professional services case:
+
+	    [Flags]
+	    tcp_keepalive_idle   = 600  ; number of seconds the socket can be idle before keepalive packets are sent (default 10 minutes)
+	    tcp_keepalive_intvl  = 30   ; interval between keepalive probes in seconds (default 30 seconds)
+	    tcp_keepalive_probes = 10   ; number of keepalive probes sent before aborting the connection (default 10 probes)
+
+	Note that only on Linux all three the tcp* settings are supported;
+	Windows only supports setting the idle and intvl setting, and macOS only
+	supports the idle setting.
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed datatype of read_block_usec and write_block_usec
+
+	Added support for poll to tcpses_select
+
+	Added support for poll to check_inputs_low
+
+	Added support for poll to tcpses_is_read_ready and tcpses_is_write_ready
+
+	Added support for poll to connect_nonblock
+
+	Added initial support to replace select with poll
+
+	Removed old PMN defines as this code is always used
+
+	Renamed define PCTCP to WIN32
+
+2026-04-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed deprecated network code
+
+	The following ifdefs are removed from the code base as they have not
+	been used for a long time:
+
+	  * SUNRPC
+	  * FOR_GTK_TESTS
+	  * EXPIRIMENTAL
+	  * COM_UDPIP
+	  * COM_NMPIPE
+	  * USING_TIKS
+	  * NO_COMBINED_SELECT
+
+2026-03-27  Daniel Heward-Mills  <didehen@openlinksw.com>
+	    Mitko Iliev  <imitko@openlinksw.com>
+
+	Added initial wikibase:mwapi SERVICE handler
+
+2026-03-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fixes' into develop/7
+
+	Fixed missing check for MP in use in sparql bif before MP_START
+
+2026-03-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue where thr tmp pool is not released on time
+
+	Fixed as there is no point to tighten against non-existing
+
+	Fixed to prevent bad eq idx check
+
+	Fixed mutex issue with status('l') and aq on independent branches
+
+	Fixed do not default to IRI if constant of type string is a literal
+
+	Fixed issue missing critical section
+
+	Fixed missing cli enter, assert with mtx_debug
+
+2026-01-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fixes' into develop/7
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added more crash tests from vos issues
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed return new error message
+
+	Fixes #1382
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check if column exists
+
+	Fixes #1381
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check for new prefix
+
+	Fixes #1379
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check for DFE_FALSE
+
+	Fixed #1378
+
+2026-01-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed to export blobs without using blob to string
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with DAV brower in a root dir
+
+2026-01-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fixes' into develop/7
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added recent testcases to testsuite
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue creating exp subq inside aggregate
+
+	Fixes #1376
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when cursor is not positioned on update
+
+	Fixes #1375
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with numeric dtp if col is bound
+
+	Fixes #1374
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed to return SQL error when sub pred does not exist
+
+	Fixes #1373
+
+2026-01-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with col cast check on vec params
+
+	Closes #1372
+
+2026-01-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright
+
+2026-01-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing test for star
+
+	Fixes #1371
+
+2026-01-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing test for table exists in drop col
+
+	Fixes #1370
+
+2026-01-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use params instead of possibly truncating password
+
+	Fixes #1369
+
+2026-01-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for jemalloc to debug memory consumption
+
+2025-12-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed to check for overflow before assign
+
+	Fixes #1368
+
+2025-12-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed error codes for COL and VEC
+
+2025-12-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing cast for argument 1 of aio_suspend
+
+	Fixes #1367
+
+2025-10-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated configure.ac and documentation to include  OpenSSL 3.6.x
+
+	Fixes #1362
+	Closes #1364
+
+2025-10-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.17-dev to mark the start of a new development cycle
+
+2025-10-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.16.1' into develop/7
+
+	Tagged for release (hotfix)
+
+2025-10-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'hotfix/7.2.16.1' into stable/7
+
+	Fixed broken artifact after merge
+
 2025-10-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.16' into develop/7
+
+	Tagged for release
+
+2025-10-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.16' into stable/7
 
 	Updated NEWS and ChangeLog
 
