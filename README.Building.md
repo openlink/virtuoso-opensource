@@ -195,13 +195,14 @@ and then:
 $ make -j4
 ```
 
-To run the test suite (optional):
+Running the test suite is optional. First, ensure the `bzip2`, `curl`, `gunzip`, `gzip`, `tar`, `unzip` `wget` and `zip`
+package, for your OS/distribution are installed, then run:
 
 ```sh
 $ make check
 ```
 
-and finally:
+Finally:
 
 ```sh
 $ sudo make install
@@ -235,6 +236,8 @@ The minimum working configuration consists of the server executable and config f
 
 
 # Starting Virtuoso
+
+Note: if a firewall is running, it needs to permit the server to receive incoming connections. On macOS, open Settings, click through Network, Firewall and Options and click the `[+]` button to add the virtuoso-t executable.
 
 Change into the installation's `database/` subdirectory and start the server:
 

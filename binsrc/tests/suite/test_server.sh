@@ -93,7 +93,7 @@ export NETSTAT
 #
 #  Make sure the following binaries are installed
 #
-for i in curl wget gzip tar unzip
+for i in curl wget gzip gunzip tar zip unzip bzip2
 do
     B=`which $i 2>/dev/null`
     if test -z "$B"
