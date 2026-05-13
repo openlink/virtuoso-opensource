@@ -1,0 +1,2093 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+--
+--  openGQL: GQL for Virtuoso - Parser
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  Recursive-descent parser producing AST as nested vectors.
+--  Mirrors cypher_parser.sql patterns; reuses AST tags where
+--  semantics match exactly for translator code sharing.
+--
+--  AST node formats:
+--    Program:      vector('PROG', sessionActivity, transactionActivity)
+--    ProcBody:     vector('PROC', atSchema, bindingDefs, statementBlock)
+--    Query:        vector('QUERY', clauses, set_ops)
+--    Match:        vector('MATCH', is_optional, patterns, from_graphs, is_all)
+--    Where:        vector('WHERE', expr)
+--    Filter:       vector('FILTER', expr)
+--    Return:       vector('RETURN', is_distinct, items, order_by, skip, limit)
+--    Insert:       vector('INSERT', patterns)
+--    Set:          vector('SET', items)                     -- sub-items: SETPROP, SETALL, SETLABEL
+--    Remove:       vector('REMOVE', items)                  -- sub-items: RMPROP, RMLABEL
+--    Delete:       vector('DELETE', is_detach, items)
+--    Use:          vector('USE', graph_expr)
+--    UseAnyGraph:  vector('USE_ANY_GRAPH')
+--    FromClause:   vector('FROM_CLAUSE', kind, graph_expr)    -- kind: 'FROM' | 'FROM_NAMED'
+--    Service:      vector('SERVICE', endpoint_expr, query_ast, is_silent)
+--    Prefix:       vector('PREFIX', prefix_name, uri)
+--    Base:         vector('BASE', uri)
+--    Define:       vector('DEFINE', key, value_expr)
+--    Let:          vector('LET', var_name, expr)
+--    For:          vector('FOR', var_name, expr, clauses)
+--    CreateSchema: vector('CREATE_SCHEMA', schema_ref, if_not_exists, or_replace)
+--    DropSchema:   vector('DROP_SCHEMA', schema_ref, if_exists)
+--    CreateGraph:  vector('CREATE_GRAPH', graph_ref, graph_type_ref, copy_of, like)
+--    DropGraph:    vector('DROP_GRAPH', graph_ref, if_exists)
+--    CreateType:   vector('CREATE_GRAPH_TYPE', type_ref, body)
+--    DropType:     vector('DROP_GRAPH_TYPE', type_ref, if_exists)
+--    SessionSet:   vector('SESSION_SET', setting_vec)
+--    SessionReset: vector('SESSION_RESET', arguments_vec)
+--    Node:         vector('NODE', var_name, labels_vec, props_vec)
+--    Edge:         vector('EDGE', var_name, types_vec, direction, quantifier, props_vec, path_mode, cost_expr)
+--                  direction: 'RIGHT', 'LEFT', 'BOTH', 'UNDIRECTED'
+--                  quantifier: null or vector(min, max) with null = unbounded
+--    PathPattern:  vector('PATH', var_name, elements_vec)
+--    ReturnItem:   vector('RETITEM', expr, alias)
+--    SortItem:     vector('SORT', expr, direction)         -- 'ASC' or 'DESC'
+--    SetProp:      vector('SETPROP', expr, value_expr)
+--    SetLabel:     vector('SETLABEL', var_name, labels_vec)
+--    SetAllProps:  vector('SETALL', var_name, expr, is_plus)
+--    RemoveProp:   vector('RMPROP', expr)
+--    RemoveLabel:  vector('RMLABEL', var_name, labels_vec)
+--    PropAccess:   vector('PROP', var_or_expr, prop_name)
+--    Variable:     vector('VAR', name)
+--    Literal:      vector('LIT', value)
+--
+
+----------------------------------------------------------------------
+-- Clause-start detection
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_IS_CLAUSE_START (in _type integer)
+{
+  if (_type = 200) return 1;  -- MATCH
+  if (_type = 201) return 1;  -- INSERT
+  if (_type = 527) return 1;  -- CONSTRUCT
+  if (_type = 528) return 1;  -- DESCRIBE
+  if (_type = 202) return 1;  -- SET
+  if (_type = 203) return 1;  -- REMOVE
+  if (_type = 204) return 1;  -- DELETE
+  if (_type = 205) return 1;  -- RETURN
+  if (_type = 206) return 1;  -- WHERE
+  if (_type = 207) return 1;  -- OPTIONAL
+  if (_type = 208) return 1;  -- FOR
+  if (_type = 209) return 1;  -- FILTER
+  if (_type = 210) return 1;  -- LET
+  if (_type = 218) return 1;  -- UNION
+  if (_type = 219) return 1;  -- EXCEPT
+  if (_type = 220) return 1;  -- INTERSECT
+  if (_type = 223) return 1;  -- CREATE
+  if (_type = 224) return 1;  -- DROP
+  if (_type = 244) return 1;  -- SESSION
+  if (_type = 248) return 1;  -- USE
+  if (_type = 252) return 1;  -- CALL
+  if (_type = 264) return 1;  -- WITH
+  if (_type = 285) return 1;  -- PREFIX
+  if (_type = 286) return 1;  -- FROM
+  if (_type = 415) return 1;  -- BASE
+  if (_type = 425) return 1;  -- SERVICE
+  if (_type = 418) return 1;  -- LOAD
+  if (_type = 419) return 1;  -- CLEAR
+  if (_type = 529) return 1;  -- FORCE
+  return 0;
+}
+;
+
+----------------------------------------------------------------------
+-- Top-level parse entry point
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE (in _tokens any)
+{
+  declare pos integer;
+  declare ast any;
+  pos := 0;
+  ast := DB.DBA.GQL_PARSE_PROGRAM (_tokens, pos);
+  return ast;
+}
+;
+
+----------------------------------------------------------------------
+-- gqlProgram : programActivity sessionCloseCommand? EOF
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_PROGRAM (in _tokens any, inout _pos integer)
+{
+  declare session_act, trans_act any;
+  declare tt integer;
+
+  session_act := null;
+  trans_act := null;
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  -- SESSION commands
+  if (tt = 244)  -- SESSION
+    {
+      declare tt2 integer;
+      tt2 := DB.DBA.GQL_PEEK (_tokens, _pos + 1);
+      if (tt2 = 202)  -- SET
+        session_act := DB.DBA.GQL_PARSE_SESSION_SET (_tokens, _pos);
+      else if (tt2 = 300)  -- RESET
+        session_act := DB.DBA.GQL_PARSE_SESSION_RESET (_tokens, _pos);
+      else if (tt2 = 299)  -- CLOSE
+        {
+          _pos := _pos + 2;
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 999);
+          return vector ('PROG', null, null);
+        }
+      else
+        signal ('GQ003', sprintf ('Expected SET, RESET, or CLOSE after SESSION at token position %d', _pos));
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+  -- Transaction activity
+  else if (tt = 245)  -- START
+    {
+      trans_act := DB.DBA.GQL_PARSE_TRANSACTION_STUB (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+  else if (tt = 246 or tt = 247)  -- COMMIT or ROLLBACK
+    {
+      _pos := _pos + 1;
+      trans_act := vector ('TRANS_END', DB.DBA.GQL_PEEK_VAL (_tokens, _pos - 1));
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+
+  -- Procedure body (the common code path)
+  if (tt <> 999)
+    {
+      declare proc_body any;
+      proc_body := DB.DBA.GQL_PARSE_PROCEDURE_BODY (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 999);
+      return vector ('PROG', proc_body, null);
+    }
+
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 999);
+  return vector ('PROG', session_act, trans_act);
+}
+;
+
+----------------------------------------------------------------------
+-- procedureBody : atSchemaClause? bindingDefinitionClause* statementBlock
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_PROCEDURE_BODY (in _tokens any, inout _pos integer)
+{
+  declare at_schema, binding_defs, stmt_block any;
+
+  at_schema := null;
+  binding_defs := vector ();
+
+  -- Optional USE <graph> at-schema clause
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 248)  -- USE
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255)  -- ANY
+        {
+          _pos := _pos + 1;
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+          at_schema := vector ('ANY_GRAPH');
+        }
+      else
+        at_schema := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+    }
+
+  -- Binding definitions
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 285  -- PREFIX
+         or DB.DBA.GQL_PEEK (_tokens, _pos) = 284  -- DEFINE
+         or DB.DBA.GQL_PEEK (_tokens, _pos) = 415)  -- BASE
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 285)
+        binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_PREFIX (_tokens, _pos)));
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 415)
+        binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_BASE (_tokens, _pos)));
+      else
+        binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_DEFINE (_tokens, _pos)));
+    }
+
+  -- Statement block
+  stmt_block := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
+
+  return vector ('PROC', at_schema, binding_defs, stmt_block);
+}
+;
+
+----------------------------------------------------------------------
+-- compositeQueryStatement : linearDataModifyingStatement? queryStatement
+-- or linearDataModifyingStatement alone
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos integer)
+{
+  declare clauses, clause, set_ops any;
+  declare tt, saved_pos integer;
+
+  clauses := vector ();
+  set_ops := vector ();
+
+  while (1)
+    {
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 999) goto query_done;
+      if (tt = 6) goto query_done;   -- RBRACE (closing block)
+      if (tt = 260)  -- END (closing FOR block)
+        { _pos := _pos + 1; goto query_done; }
+
+      if (tt = 200)  -- MATCH
+        {
+          clause := DB.DBA.GQL_PARSE_MATCH (_tokens, _pos, 0);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 207)  -- OPTIONAL
+        {
+          clause := DB.DBA.GQL_PARSE_MATCH (_tokens, _pos, 1);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 201)  -- INSERT
+        {
+          clause := DB.DBA.GQL_PARSE_INSERT (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 527)  -- CONSTRUCT
+        {
+          clause := DB.DBA.GQL_PARSE_CONSTRUCT (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 528)  -- DESCRIBE
+        {
+          clause := DB.DBA.GQL_PARSE_DESCRIBE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 202)  -- SET
+        {
+          clause := DB.DBA.GQL_PARSE_SET (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 529)  -- FORCE
+        {
+          clause := DB.DBA.GQL_PARSE_FORCE_OPTION (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 203)  -- REMOVE
+        {
+          clause := DB.DBA.GQL_PARSE_REMOVE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 204)  -- DELETE
+        {
+          clause := DB.DBA.GQL_PARSE_DELETE (_tokens, _pos, 0);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 436)  -- DETACH
+        {
+          _pos := _pos + 1;
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 204)  -- DELETE
+            clause := DB.DBA.GQL_PARSE_DELETE (_tokens, _pos, 1);
+          else
+            signal ('GQ003', sprintf ('Expected DELETE after DETACH at position %d', _pos));
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 205)  -- RETURN
+        {
+          clause := DB.DBA.GQL_PARSE_RETURN (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 206)  -- WHERE
+        {
+          clause := DB.DBA.GQL_PARSE_WHERE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 209)  -- FILTER
+        {
+          clause := DB.DBA.GQL_PARSE_FILTER (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 208)  -- FOR
+        {
+          clause := DB.DBA.GQL_PARSE_FOR (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 210)  -- LET
+        {
+          clause := DB.DBA.GQL_PARSE_LET (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 262)  -- GROUP
+        {
+          clause := DB.DBA.GQL_PARSE_GROUP_BY (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 263)  -- HAVING
+        {
+          clause := DB.DBA.GQL_PARSE_HAVING (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 211)  -- ORDER
+        {
+          clause := DB.DBA.GQL_PARSE_ORDER_BY (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 216)  -- SKIP/OFFSET
+        {
+          clause := DB.DBA.GQL_PARSE_SKIP (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 215)  -- LIMIT
+        {
+          clause := DB.DBA.GQL_PARSE_LIMIT (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 248)  -- USE
+        {
+          clause := DB.DBA.GQL_PARSE_USE_GRAPH (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 286)  -- FROM (top-level dataset clause)
+        {
+          clause := DB.DBA.GQL_PARSE_FROM_CLAUSE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 425)  -- SERVICE
+        {
+          clause := DB.DBA.GQL_PARSE_SERVICE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 223)  -- CREATE
+        {
+          clause := DB.DBA.GQL_PARSE_CREATE_STMT (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 224)  -- DROP
+        {
+          clause := DB.DBA.GQL_PARSE_DROP_STMT (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 418)  -- LOAD
+        {
+          clause := DB.DBA.GQL_PARSE_LOAD (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 419)  -- CLEAR
+        {
+          clause := DB.DBA.GQL_PARSE_CLEAR (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 252)  -- CALL
+        {
+          clause := DB.DBA.GQL_PARSE_CALL (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 218 or tt = 219 or tt = 220)  -- UNION/EXCEPT/INTERSECT
+        {
+          declare setop_name varchar;
+          declare left_query, right_query any;
+          if (tt = 218) setop_name := 'UNION';
+          else if (tt = 219) setop_name := 'EXCEPT';
+          else setop_name := 'INTERSECT';
+          _pos := _pos + 1;
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 221)  -- ALL
+            { _pos := _pos + 1; setop_name := concat (setop_name, '_ALL'); }
+          -- Wrap clauses collected so far as the left query branch
+          left_query := vector ('QUERY', clauses, set_ops);
+          -- Parse the right query branch
+          right_query := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
+          return vector ('SETOP', setop_name, left_query, right_query);
+        }
+      else
+        signal ('GQ003', sprintf ('Unexpected token ''%s'' (type %d) at position %d',
+                DB.DBA.GQL_PEEK_VAL (_tokens, _pos), tt, _pos));
+    }
+  query_done:
+  return vector ('QUERY', clauses, set_ops);
+}
+;
+
+----------------------------------------------------------------------
+-- MATCH / OPTIONAL MATCH
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_MATCH (in _tokens any, inout _pos integer, in _is_optional integer)
+{
+  declare patterns, from_graphs any;
+  declare is_all integer;
+  declare shortest_config, s_kind any;
+  declare s_count integer;
+
+  if (_is_optional)
+    _pos := _pos + 1;  -- consume OPTIONAL
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 200);  -- MATCH
+
+  is_all := 0;
+  shortest_config := null;
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 221)  -- ALL
+    {
+      _pos := _pos + 1;
+      is_all := 1;
+    }
+
+  -- SHORTEST [k | ALL | ANY] [GROUPS] PATH
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 271)  -- SHORTEST
+    {
+      _pos := _pos + 1;
+      s_kind := 'ALL';  -- default
+      s_count := 1;     -- default
+      declare s_groups integer;
+      s_groups := 0;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 66)  -- INTEGER
+        {
+          s_count := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 221)  -- ALL
+        {
+          _pos := _pos + 1;
+          s_kind := 'ALL';
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255)  -- ANY
+        {
+          _pos := _pos + 1;
+          s_kind := 'ANY';
+        }
+      -- Optional GROUPS
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 448)  -- GROUPS
+        {
+          _pos := _pos + 1;
+          s_groups := 1;
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 269);  -- PATH
+      shortest_config := vector (s_kind, s_count, s_groups);
+    }
+
+  patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+
+  -- Optional ON/FROM <graph> clause
+  from_graphs := vector ();
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 286)  -- FROM
+    {
+      _pos := _pos + 1;
+      from_graphs := vector_concat (from_graphs, vector (vector ('FROM', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos))));
+    }
+
+  return vector ('MATCH', _is_optional, patterns, from_graphs, is_all, shortest_config);
+}
+;
+
+----------------------------------------------------------------------
+-- RETURN
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_RETURN (in _tokens any, inout _pos integer)
+{
+  declare is_distinct integer;
+  declare items, order_by, skip, limit any;
+  declare tt integer;
+
+  _pos := _pos + 1;  -- consume RETURN
+  is_distinct := 0;
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 222)  -- DISTINCT
+    { is_distinct := 1; _pos := _pos + 1; }
+
+  items := DB.DBA.GQL_PARSE_RETURN_ITEMS (_tokens, _pos);
+
+  -- Optional ORDER BY
+  order_by := vector ();
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 211)  -- ORDER
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 212);  -- BY
+      order_by := DB.DBA.GQL_PARSE_SORT_ITEMS (_tokens, _pos);
+    }
+
+  -- Optional SKIP/OFFSET
+  skip := null;
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+  if (tt = 216)  -- SKIP/OFFSET
+    {
+      _pos := _pos + 1;
+      skip := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+    }
+
+  -- Optional LIMIT
+  limit := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 215)  -- LIMIT
+    {
+      _pos := _pos + 1;
+      limit := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+    }
+
+  return vector ('RETURN', is_distinct, items, order_by, skip, limit);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_RETURN_ITEMS (in _tokens any, inout _pos integer)
+{
+  declare items, item any;
+
+  items := vector ();
+
+  -- Handle RETURN * (all variables)
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 20)  -- STAR
+    {
+      _pos := _pos + 1;
+      return vector (vector ('RETITEM', vector ('VAR', '*'), null));
+    }
+
+  while (1)
+    {
+      declare expr, alias any;
+      expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      alias := null;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 241)  -- AS
+        {
+          _pos := _pos + 1;
+          alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      items := vector_concat (items, vector (vector ('RETITEM', expr, alias)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto retitems_done;
+    }
+  retitems_done:
+  return items;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_SORT_ITEMS (in _tokens any, inout _pos integer)
+{
+  declare items, expr, dir, nulls_order any;
+
+  items := vector ();
+  while (1)
+    {
+      expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      dir := 'ASC';
+      nulls_order := null;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 213)  -- ASC
+        { _pos := _pos + 1; dir := 'ASC'; }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 214)  -- DESC
+        { _pos := _pos + 1; dir := 'DESC'; }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 288)  -- ASCENDING
+        { _pos := _pos + 1; dir := 'ASC'; }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 289)  -- DESCENDING
+        { _pos := _pos + 1; dir := 'DESC'; }
+      -- NULLS FIRST / NULLS LAST
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 519)  -- NULLS
+        {
+          _pos := _pos + 1;
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 438)  -- FIRST
+            { _pos := _pos + 1; nulls_order := 'FIRST'; }
+          else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 439)  -- LAST
+            { _pos := _pos + 1; nulls_order := 'LAST'; }
+          else
+            signal ('GQ003', sprintf ('Expected FIRST or LAST after NULLS at position %d', _pos));
+        }
+      items := vector_concat (items, vector (vector ('SORT', expr, dir, nulls_order)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto sort_done;
+    }
+  sort_done:
+  return items;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_ORDER_BY (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume ORDER
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 212);  -- BY
+  return vector ('ORDER', DB.DBA.GQL_PARSE_SORT_ITEMS (_tokens, _pos));
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_SKIP (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume SKIP/OFFSET
+  return vector ('SKIP', DB.DBA.GQL_PARSE_EXPR (_tokens, _pos));
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LIMIT (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume LIMIT
+  return vector ('LIMIT', DB.DBA.GQL_PARSE_EXPR (_tokens, _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- WHERE / FILTER
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_WHERE (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;
+  return vector ('WHERE', DB.DBA.GQL_PARSE_EXPR (_tokens, _pos));
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_FILTER (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;
+  return vector ('FILTER', DB.DBA.GQL_PARSE_EXPR (_tokens, _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- INSERT
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_INSERT (in _tokens any, inout _pos integer)
+{
+  declare patterns any;
+  _pos := _pos + 1;  -- consume INSERT
+  patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+  return vector ('INSERT', patterns);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_CONSTRUCT (in _tokens any, inout _pos integer)
+{
+  declare patterns any;
+  _pos := _pos + 1;  -- consume CONSTRUCT
+  patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+  return vector ('CONSTRUCT', patterns);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_DESCRIBE (in _tokens any, inout _pos integer)
+{
+  declare items any;
+  items := vector ();
+  _pos := _pos + 1;  -- consume DESCRIBE
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 20)  -- STAR
+    {
+      _pos := _pos + 1;
+      return vector ('DESCRIBE', vector (vector ('VAR', '*')));
+    }
+
+  while (1)
+    {
+      items := vector_concat (items, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto describe_done;
+    }
+describe_done:
+  return vector ('DESCRIBE', items);
+}
+;
+
+----------------------------------------------------------------------
+-- SET (reuses openCypher pattern)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_SET (in _tokens any, inout _pos integer)
+{
+  declare items, item, expr, pname_val any;
+  declare var_name varchar;
+  declare lbls any;
+  declare tt, colon_pos, colon_count integer;
+
+  _pos := _pos + 1;  -- consume SET
+  items := vector ();
+
+  while (1)
+    {
+      -- Handle PNAME_NS for SET var:Label
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)
+        {
+          pname_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          colon_pos := strchr (pname_val, ':');
+          if (colon_pos is not null and colon_pos > 0)
+            {
+              var_name := subseq (pname_val, 0, colon_pos);
+              lbls := vector (subseq (pname_val, colon_pos + 1));
+              _pos := _pos + 1;
+              while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- COLON
+                {
+                  _pos := _pos + 1;
+                  lbls := vector_concat (lbls, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+                  _pos := _pos + 1;
+                }
+              items := vector_concat (items, vector (vector ('SETLABEL', var_name, lbls)));
+              goto set_item_done;
+            }
+        }
+
+      expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      if (tt = 15)  -- EQ
+        {
+          _pos := _pos + 1;
+          item := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+          if (aref (expr, 0) = 'VAR')
+            items := vector_concat (items, vector (vector ('SETALL', aref (expr, 1), item, 0)));
+          else
+            items := vector_concat (items, vector (vector ('SETPROP', expr, item)));
+        }
+      else if (tt = 27)  -- PLUSEQ
+        {
+          _pos := _pos + 1;
+          if (aref (expr, 0) = 'VAR')
+            {
+              item := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+              items := vector_concat (items, vector (vector ('SETALL', aref (expr, 1), item, 1)));
+            }
+          else
+            signal ('GQ003', 'Expected variable before +=');
+        }
+      else if (tt = 7)  -- COLON
+        {
+          if (aref (expr, 0) = 'VAR')
+            {
+              lbls := vector ();
+              while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+                {
+                  _pos := _pos + 1;
+                  lbls := vector_concat (lbls, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+                  _pos := _pos + 1;
+                }
+              items := vector_concat (items, vector (vector ('SETLABEL', aref (expr, 1), lbls)));
+            }
+          else
+            signal ('GQ003', 'Expected variable before :Label in SET');
+        }
+      else
+        signal ('GQ003', 'Expected =, += or :Label in SET clause');
+
+      set_item_done:
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)
+        _pos := _pos + 1;
+      else
+        goto set_done;
+    }
+  set_done:
+  return vector ('SET', items);
+}
+;
+
+----------------------------------------------------------------------
+-- REMOVE (reuses openCypher pattern)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_REMOVE (in _tokens any, inout _pos integer)
+{
+  declare items, expr any;
+  declare tt integer;
+  declare lbls any;
+
+  _pos := _pos + 1;  -- consume REMOVE
+  items := vector ();
+
+  while (1)
+    {
+      expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 7)  -- COLON
+        {
+          if (aref (expr, 0) = 'VAR')
+            {
+              lbls := vector ();
+              while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+                {
+                  _pos := _pos + 1;
+                  lbls := vector_concat (lbls, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+                  _pos := _pos + 1;
+                }
+              items := vector_concat (items, vector (vector ('RMLABEL', aref (expr, 1), lbls)));
+            }
+          else
+            signal ('GQ003', 'Expected variable before :Label in REMOVE');
+        }
+      else
+        items := vector_concat (items, vector (vector ('RMPROP', expr)));
+
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)
+        _pos := _pos + 1;
+      else
+        goto remove_done;
+    }
+  remove_done:
+  return vector ('REMOVE', items);
+}
+;
+
+----------------------------------------------------------------------
+-- DELETE
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_DELETE (in _tokens any, inout _pos integer, in _detach integer)
+{
+  declare items any;
+
+  if (_detach = 0)
+    _pos := _pos + 1;  -- consume DELETE (already consumed if DETACH)
+
+  items := vector ();
+  while (1)
+    {
+      items := vector_concat (items, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)
+        _pos := _pos + 1;
+      else
+        goto delete_done;
+    }
+  delete_done:
+  return vector ('DELETE', _detach, items);
+}
+;
+
+----------------------------------------------------------------------
+-- USE <graph>
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_USE_GRAPH (in _tokens any, inout _pos integer)
+{
+  declare graph_expr any;
+  _pos := _pos + 1;  -- consume USE
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255)  -- ANY
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      return vector ('USE_ANY_GRAPH');
+    }
+  graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('USE', graph_expr);
+}
+;
+
+----------------------------------------------------------------------
+-- FROM <graph> | FROM NAMED <graph>   (SPARQL-style dataset clause)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_FROM_CLAUSE (in _tokens any, inout _pos integer)
+{
+  declare graph_expr any;
+  declare kind varchar;
+
+  _pos := _pos + 1;  -- consume FROM
+  kind := 'FROM';
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 426)  -- NAMED
+    { _pos := _pos + 1; kind := 'FROM_NAMED'; }
+  graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('FROM_CLAUSE', kind, graph_expr);
+}
+;
+
+----------------------------------------------------------------------
+-- SERVICE [SILENT] <endpoint> { ...clauses... }
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_SERVICE (in _tokens any, inout _pos integer)
+{
+  declare endpoint_expr, query_ast any;
+  declare is_silent integer;
+
+  _pos := _pos + 1;  -- consume SERVICE
+  is_silent := 0;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 420)  -- SILENT
+    { _pos := _pos + 1; is_silent := 1; }
+  endpoint_expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 5);  -- LBRACE
+  query_ast := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+  return vector ('SERVICE', endpoint_expr, query_ast, is_silent);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_PREFIX (in _tokens any, inout _pos integer)
+{
+  declare prefix_name, uri_val, full_name varchar;
+  declare colon_pos integer;
+
+  _pos := _pos + 1;  -- consume PREFIX
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- default prefix
+    { prefix_name := ''; _pos := _pos + 1; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 64)  -- IDENT
+    {
+      prefix_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON
+    }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS
+    {
+      full_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      colon_pos := strchr (full_name, ':');
+      if (colon_pos is not null)
+        prefix_name := subseq (full_name, 0, colon_pos);
+      else
+        prefix_name := full_name;
+      _pos := _pos + 1;
+    }
+  else
+    signal ('GQ003', sprintf ('Expected prefix name at position %d', _pos));
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 70)  -- IRIREF
+    { uri_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 65 or DB.DBA.GQL_PEEK (_tokens, _pos) = 72)  -- STRING
+    { uri_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+  else
+    signal ('GQ003', sprintf ('Expected URI after PREFIX at position %d', _pos));
+
+  return vector ('PREFIX', prefix_name, uri_val);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_BASE (in _tokens any, inout _pos integer)
+{
+  declare uri_val varchar;
+
+  _pos := _pos + 1;  -- consume BASE
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 70)  -- IRIREF
+    { uri_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 65 or DB.DBA.GQL_PEEK (_tokens, _pos) = 72)  -- STRING
+    { uri_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+  else
+    signal ('GQ003', sprintf ('Expected URI after BASE at position %d', _pos));
+
+  return vector ('BASE', uri_val);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_DEFINE (in _tokens any, inout _pos integer)
+{
+  declare key_name varchar;
+  declare val_expr any;
+
+  _pos := _pos + 1;  -- consume DEFINE
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 64 and DB.DBA.GQL_PEEK (_tokens, _pos) <> 69)
+    signal ('GQ003', sprintf ('Expected DEFINE key at position %d', _pos));
+  key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  _pos := _pos + 1;
+  val_expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  return vector ('DEFINE', key_name, val_expr);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_FORCE_OPTION (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume FORCE
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 530);  -- CAMELCASE
+  return vector ('FORCE_CAMELCASE');
+}
+;
+
+----------------------------------------------------------------------
+-- FOR / LET
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_FOR (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare expr, ordinality_offset any;
+  _pos := _pos + 1;  -- consume FOR
+  var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 239);  -- IN
+  expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+
+  -- Optional WITH ORDINALITY / WITH OFFSET
+  ordinality_offset := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 253)  -- WITH
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 412)  -- ORDINALITY
+        { _pos := _pos + 1; ordinality_offset := 'ORDINALITY'; }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 216)  -- OFFSET
+        { _pos := _pos + 1; ordinality_offset := 'OFFSET'; }
+      else
+        signal ('GQ003', sprintf ('Expected ORDINALITY or OFFSET after WITH at position %d', _pos));
+    }
+
+  return vector ('FOR', var_name, expr, ordinality_offset);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LET (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare expr any;
+  _pos := _pos + 1;  -- consume LET
+  var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 15);  -- EQ
+  expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  return vector ('LET', var_name, expr);
+}
+;
+
+----------------------------------------------------------------------
+-- GROUP BY
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
+{
+  declare items, expr any;
+  _pos := _pos + 1;  -- consume GROUP
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 212);  -- BY
+
+  items := vector ();
+  -- Empty grouping set: GROUP BY ()
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 2)  -- RPAREN (empty grouping set)
+        { _pos := _pos + 1; return vector ('GROUP', items); }
+      -- Grouping elements enclosed in parens
+      while (1)
+        {
+          expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+          items := vector_concat (items, vector (expr));
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+            _pos := _pos + 1;
+          else
+            goto group_paren_done;
+        }
+    group_paren_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('GROUP', items);
+    }
+
+  -- Comma-separated grouping expressions
+  while (1)
+    {
+      expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      items := vector_concat (items, vector (expr));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto group_done;
+    }
+  group_done:
+  return vector ('GROUP', items);
+}
+;
+
+----------------------------------------------------------------------
+-- HAVING
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_HAVING (in _tokens any, inout _pos integer)
+{
+  declare expr any;
+  _pos := _pos + 1;  -- consume HAVING
+  expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  return vector ('HAVING', expr);
+}
+;
+
+----------------------------------------------------------------------
+-- Expression atom (simplified for Phase 3 — full expr parser in Phase 4)
+-- Handles: literals, variables, property access, basic comparisons
+----------------------------------------------------------------------
+
+-- Expression parser is defined in gql_expr.sql.
+-- Parser procedures reference DB.DBA.GQL_PARSE_EXPR which is resolved at runtime
+-- (Virtuoso PL does not check procedure existence at CREATE PROCEDURE time).
+
+----------------------------------------------------------------------
+-- Pattern parsers
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_PATTERN_LIST (in _tokens any, inout _pos integer)
+{
+  declare patterns, pat any;
+  patterns := vector ();
+  pat := DB.DBA.GQL_PARSE_PATTERN (_tokens, _pos);
+  patterns := vector_concat (patterns, vector (pat));
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+    {
+      _pos := _pos + 1;
+      pat := DB.DBA.GQL_PARSE_PATTERN (_tokens, _pos);
+      patterns := vector_concat (patterns, vector (pat));
+    }
+  return patterns;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_PATTERN (in _tokens any, inout _pos integer)
+{
+  declare elements, elem any;
+  declare path_var varchar;
+  declare tt integer;
+
+  path_var := null;
+
+  -- Check for path variable: ident =
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 64)  -- IDENT
+    {
+      if (_pos + 1 < length (_tokens) and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 15)  -- EQ
+        {
+          path_var := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 2;
+        }
+    }
+
+  elements := vector ();
+
+  -- First element must be a node
+  elem := DB.DBA.GQL_PARSE_NODE_PATTERN (_tokens, _pos);
+  elements := vector_concat (elements, vector (elem));
+
+  -- Then alternating edge-node pairs
+  while (1)
+    {
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 12        -- DASH
+          or tt = 11     -- ARROW_L
+          or tt = 10     -- ARROW_R
+          or tt = 32     -- TILDE
+          or tt = 46     -- MINUS_LEFT_BRACKET (-[)
+          or tt = 47     -- TILDE_LEFT_BRACKET (~[)
+          or tt = 49     -- SLASH_MINUS
+          or tt = 35     -- ARROW_R_PIPE
+          or tt = 36)    -- PIPE_ARROW_L
+        {
+          elem := DB.DBA.GQL_PARSE_EDGE_PATTERN (_tokens, _pos);
+          elements := vector_concat (elements, vector (elem));
+          elem := DB.DBA.GQL_PARSE_NODE_PATTERN (_tokens, _pos);
+          elements := vector_concat (elements, vector (elem));
+        }
+      else
+        goto pattern_done;
+    }
+  pattern_done:
+
+  if (path_var is not null)
+    return vector ('PATH', path_var, elements);
+  return vector ('PATTERN', elements);
+}
+;
+
+----------------------------------------------------------------------
+-- Node pattern: (var:Label1:Label2 {prop: val, ...})
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_TYPE_NAME_VALUE (in _tokens any, inout _pos integer)
+{
+  declare type_name varchar;
+  type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  _pos := _pos + 1;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+    {
+      _pos := _pos + 1;
+      type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+      _pos := _pos + 1;
+    }
+  return type_name;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_COLON_TYPE_NAME (in _tokens any, inout _pos integer, in _sep integer)
+{
+  declare type_name varchar;
+  type_name := DB.DBA.GQL_PARSE_TYPE_NAME_VALUE (_tokens, _pos);
+  if (_sep = 30)
+    return concat ('::', type_name);
+  return type_name;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (in _tokens any, inout _pos integer, in _first_label any)
+{
+  declare labels any;
+  labels := vector (_first_label);
+
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 25 or DB.DBA.GQL_PEEK (_tokens, _pos) = 233)
+    {
+      declare sep integer;
+      _pos := _pos + 1;
+      sep := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (sep = 7 or sep = 30)
+        {
+          _pos := _pos + 1;
+          labels := vector_concat (labels,
+            vector (DB.DBA.GQL_PARSE_COLON_TYPE_NAME (_tokens, _pos, sep)));
+        }
+      else
+        labels := vector_concat (labels,
+          vector (DB.DBA.GQL_PARSE_TYPE_NAME_VALUE (_tokens, _pos)));
+    }
+
+  if (length (labels) = 1)
+    return _first_label;
+  return vector ('LABEL_OR', labels);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_NODE_PATTERN (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare labels, props any;
+  declare tt integer;
+  declare pname_val varchar;
+  declare colon_pos integer;
+  declare label_name varchar;
+
+  var_name := null;
+  labels := vector ();
+  props := vector ();
+
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  -- Empty node ()
+  if (tt = 2)
+    { _pos := _pos + 1; return vector ('NODE', null, labels, props); }
+
+  -- Handle PNAME_NS: tokenizer produced var:Label as single token
+  if (tt = 69)
+    {
+      pname_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      colon_pos := strchr (pname_val, ':');
+      if (colon_pos is not null and colon_pos > 0)
+        {
+          var_name := subseq (pname_val, 0, colon_pos);
+          label_name := subseq (pname_val, colon_pos + 1);
+          if (DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 7)
+            {
+              _pos := _pos + 1;
+              label_name := concat (label_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 1));
+              _pos := _pos + 1;
+            }
+          _pos := _pos + 1;
+          labels := vector_concat (labels,
+            vector (DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (_tokens, _pos, label_name)));
+        }
+      else
+        {
+          var_name := pname_val;
+          _pos := _pos + 1;
+        }
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+  -- Variable name
+  else if (tt = 64)  -- IDENT
+    {
+      var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+
+  -- Colon-introduced labels.  Single colon is the normal label syntax;
+  -- double colon is a base-relative label, e.g. BASE <...#> MATCH (t::Truck).
+  if (tt = 7 or tt = 30)  -- COLON or DOUBLECOLON
+    {
+      while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7 or DB.DBA.GQL_PEEK (_tokens, _pos) = 30)
+        {
+          declare label_sep integer;
+          declare parsed_label any;
+          label_sep := DB.DBA.GQL_PEEK (_tokens, _pos);
+          _pos := _pos + 1;
+          parsed_label := DB.DBA.GQL_PARSE_COLON_TYPE_NAME (_tokens, _pos, label_sep);
+          parsed_label := DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (_tokens, _pos, parsed_label);
+          labels := vector_concat (labels, vector (parsed_label));
+        }
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+    }
+
+  -- Properties
+  if (tt = 5)  -- LBRACE
+    {
+      props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos);
+    }
+
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+  return vector ('NODE', var_name, labels, props);
+}
+;
+
+----------------------------------------------------------------------
+-- Edge path cost/weight clause
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_EDGE_COST (in _tokens any, inout _pos integer)
+{
+  declare tt integer;
+  declare kw varchar;
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+  if (tt <> 64)  -- IDENT; WEIGHT/COST are intentionally not lexer keywords
+    return null;
+
+  kw := upper (DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+  if (kw <> 'WEIGHT' and kw <> 'COST')
+    return null;
+
+  _pos := _pos + 1;
+  return DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+}
+;
+
+----------------------------------------------------------------------
+-- Edge pattern with GQL direction, quantifiers, and path cost
+--   -[...]->, <-[...]-, -[...]-, ~[...]~, /.../, etc.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integer)
+{
+  declare var_name, direction varchar;
+  declare types, props, quantifier, cost_expr any;
+  declare tt, start_dir integer;
+  declare pname_val varchar;
+  declare type_name varchar;
+  declare path_mode varchar;
+  declare colon_pos integer;
+
+  var_name := null;
+  types := vector ();
+  props := vector ();
+  quantifier := null;
+  cost_expr := null;
+  path_mode := null;
+  start_dir := 0;
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  -- Determine start direction
+  if (tt = 11)  -- <- (ARROW_L)
+    { direction := 'LEFT'; _pos := _pos + 1; }
+  else if (tt = 10)  -- ->
+    { direction := 'RIGHT'; _pos := _pos + 1; }
+  else if (tt = 12)  -- -
+    { direction := 'RIGHT'; _pos := _pos + 1; }
+  else if (tt = 32)  -- ~
+    { direction := 'UNDIRECTED'; _pos := _pos + 1; }
+  else if (tt = 46)  -- -[
+    { direction := 'RIGHT'; start_dir := 1; _pos := _pos + 1; }
+  else if (tt = 47)  -- ~[
+    { direction := 'UNDIRECTED'; start_dir := 1; _pos := _pos + 1; }
+  else if (tt = 49)  -- /- (SLASH_MINUS)
+    { direction := 'UNDIRECTED'; _pos := _pos + 1; }
+  else if (tt = 35)  -- ->| (ARROW_R_PIPE)
+    { direction := 'RIGHT'; _pos := _pos + 1; }
+  else if (tt = 36)  -- |-> (PIPE_ARROW_L)
+    { direction := 'RIGHT'; _pos := _pos + 1; }
+  else
+    signal ('GQ003', sprintf ('Expected edge-pattern start at position %d (got type %d: ''%s'')',
+            _pos, tt, DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  -- Optional bracket section [...]
+  if (tt = 3 or start_dir = 1)  -- LBRACKET or combined -[
+    {
+      if (tt = 3)
+        _pos := _pos + 1;
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      -- Handle PNAME_NS for var:Type
+      if (tt = 69)
+        {
+          pname_val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          colon_pos := strchr (pname_val, ':');
+          if (colon_pos is not null and colon_pos > 0)
+            {
+              var_name := subseq (pname_val, 0, colon_pos);
+              type_name := subseq (pname_val, colon_pos + 1);
+              if (DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 7)
+                {
+                  _pos := _pos + 1;
+                  type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 1));
+                  _pos := _pos + 1;
+                }
+              types := vector_concat (types, vector (type_name));
+            }
+          else
+            var_name := pname_val;
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+      -- Variable name
+      else if (tt = 64)  -- IDENT
+        {
+          var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+
+      -- Colon-introduced edge types
+      if (tt = 7)  -- COLON
+        {
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+            {
+              _pos := _pos + 1;
+              type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+              _pos := _pos + 1;
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+                {
+                  _pos := _pos + 1;
+                  type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+                  _pos := _pos + 1;
+                }
+              types := vector_concat (types, vector (type_name));
+            }
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+          -- Pipe-separated additional types (e.g., :KNOWS|LOVES)
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 25)  -- PIPE
+            {
+              _pos := _pos + 1;
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+                _pos := _pos + 1;
+              type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+              _pos := _pos + 1;
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+                {
+                  _pos := _pos + 1;
+                  type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+                  _pos := _pos + 1;
+                }
+              types := vector_concat (types, vector (type_name));
+            }
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+
+      if (cost_expr is null)
+        cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      -- Path mode: WALK (default), ACYCLIC (t_no_cycles), SIMPLE (t_distinct), TRAIL rejected
+      if (tt = 272        -- WALK
+          or tt = 440     -- TRAIL
+          or tt = 360     -- SIMPLE
+          or tt = 343)    -- ACYCLIC
+        {
+          if (tt = 272)
+            path_mode := 'WALK';
+          else if (tt = 440)
+            signal ('G3004', 'Path mode TRAIL is not supported — SPARQL has no edge-distinctness primitive');
+          else if (tt = 360)
+            path_mode := 'SIMPLE';
+          else
+            path_mode := 'ACYCLIC';
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+
+      if (cost_expr is null)
+        cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      -- Quantifier: *, +, ?, .., *N, *N..M
+      if (tt = 20        -- STAR
+          or tt = 19     -- PLUS
+          or tt = 42     -- QUESTION
+          or tt = 26)    -- DOTDOT (shorthand *0..)
+        quantifier := DB.DBA.GQL_PARSE_QUANTIFIER (_tokens, _pos);
+
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      if (cost_expr is null)
+        cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+      -- Brace: could be {min,max} quantifier or {props}
+      if (tt = 5)  -- LBRACE
+        {
+          declare _qsave, _next integer;
+          _qsave := _pos;
+          _pos := _pos + 1;  -- skip {
+          _next := DB.DBA.GQL_PEEK (_tokens, _pos);
+          if (_next = 66 and (_pos + 1 < length (_tokens)
+              and (DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 9     -- COMMA
+                   or DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 6)))  -- RBRACE
+            { _pos := _qsave; quantifier := DB.DBA.GQL_PARSE_QUANTIFIER (_tokens, _pos); }
+          else
+            { _pos := _qsave; props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos); }
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+
+      -- Properties (only if LBRACE wasn't consumed as quantifier or props above)
+      if (tt = 5)  -- LBRACE
+        props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos);
+
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (cost_expr is null)
+        cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 44)  -- ]->
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr); }
+      if (tt = 45)  -- ]~>
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr); }
+	      if (tt = 51)  -- ]-
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'BOTH', quantifier, props, path_mode, cost_expr); }
+	      if (tt = 52)  -- ]~
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'UNDIRECTED', quantifier, props, path_mode, cost_expr); }
+	      DB.DBA.GQL_EXPECT (_tokens, _pos, 4);  -- RBRACKET
+	    }
+
+	  -- Allow the common post-bracket path quantifier form:
+	  --   -[:KNOWS]+->, -[:KNOWS]*->, -[:KNOWS]?->
+	  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+	  if (tt = 20        -- STAR
+	      or tt = 19     -- PLUS
+	      or tt = 42     -- QUESTION
+	      or tt = 26)    -- DOTDOT (shorthand *0..)
+	    quantifier := DB.DBA.GQL_PARSE_QUANTIFIER (_tokens, _pos);
+
+	  -- Determine final direction from end arrow
+	  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  if (direction = 'LEFT')
+    {
+      if (tt = 12)  -- DASH
+        { _pos := _pos + 1; direction := 'LEFT'; }
+      else if (tt = 10)  -- ->
+        { _pos := _pos + 1; direction := 'BOTH'; }
+      else if (tt = 11)  -- <-
+        { _pos := _pos + 1; direction := 'BOTH'; }
+      else
+        signal ('GQ003', 'Expected - or -> after left-directed edge bracket');
+    }
+  else if (direction = 'RIGHT')
+    {
+      if (tt = 10)  -- ->
+        { direction := 'RIGHT'; _pos := _pos + 1; }
+      else if (tt = 44)  -- ]->
+        { direction := 'RIGHT'; _pos := _pos + 1; }
+      else if (tt = 12)  -- DASH
+        { direction := 'BOTH'; _pos := _pos + 1; }
+      else if (tt = 35)  -- ->|
+        { direction := 'RIGHT'; _pos := _pos + 1; }
+      else
+        signal ('GQ003', 'Expected -> or - after edge bracket');
+    }
+  else if (direction = 'UNDIRECTED')
+    {
+      if (tt = 32)  -- ~
+        { _pos := _pos + 1; }
+      else if (tt = 12 or tt = 49 or tt = 48 or tt = 50)  -- DASH, SLASH_MINUS, SLASH_TILDE, TILDE_SLASH
+        { _pos := _pos + 1; }
+      else
+        signal ('GQ003', 'Expected ~, -, or / after undirected edge bracket');
+    }
+
+  return vector ('EDGE', var_name, types, direction, quantifier, props, path_mode, cost_expr);
+}
+;
+
+----------------------------------------------------------------------
+-- Quantifier: *, *min..max, *min.., *..max, +, {min,max}, ?, .., ..max
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_QUANTIFIER (in _tokens any, inout _pos integer)
+{
+  declare min_hops, max_hops any;
+  declare tt integer;
+
+  min_hops := null;
+  max_hops := null;
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  if (tt = 20)  -- STAR (*)
+    {
+      _pos := _pos + 1;
+      min_hops := 0;
+      max_hops := null;  -- unbounded
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 66)  -- INTEGER
+        {
+          min_hops := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          max_hops := min_hops;
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+      if (tt = 26)  -- DOTDOT
+        {
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+          if (tt = 66)  -- INTEGER
+            { max_hops := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)); _pos := _pos + 1; }
+          else
+            max_hops := null;
+        }
+    }
+  else if (tt = 19)  -- PLUS (+)
+    {
+      min_hops := 1;
+      max_hops := null;
+      _pos := _pos + 1;
+    }
+  else if (tt = 42)  -- QUESTION (?)
+    {
+      min_hops := 0;
+      max_hops := 1;
+      _pos := _pos + 1;
+    }
+  else if (tt = 26)  -- DOTDOT (shorthand *0..)
+    {
+      _pos := _pos + 1;
+      min_hops := 0;
+      max_hops := null;
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 66)  -- INTEGER
+        { max_hops := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)); _pos := _pos + 1; }
+    }
+  else if (tt = 5)  -- LBRACE: {min,max} or {exact}
+    {
+      _pos := _pos + 1;
+      min_hops := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 66);  -- INTEGER
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 9)  -- COMMA
+        {
+          _pos := _pos + 1;
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 66)
+            { max_hops := atoi (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)); _pos := _pos + 1; }
+          else
+            max_hops := null;
+        }
+      else
+        max_hops := min_hops;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+    }
+
+  if (min_hops is not null or max_hops is not null)
+    return vector (min_hops, max_hops);
+  return null;
+}
+;
+
+----------------------------------------------------------------------
+-- Properties: { key: value, key2: value2, ... }
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_PROPERTIES (in _tokens any, inout _pos integer)
+{
+  declare props any;
+  declare key_name varchar;
+  declare val any;
+
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 5);  -- LBRACE
+  props := vector ();
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 6)  -- RBRACE (empty)
+    { _pos := _pos + 1; return props; }
+
+  while (1)
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- default-prefixed property
+        {
+          _pos := _pos + 1;
+          key_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+        }
+      else
+        key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;  -- consume key (IDENT, STRING, or default-prefixed local)
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON (GQL uses : not :)... actually GQL uses `:`)
+      val := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      props := vector_concat (props, vector (vector (key_name, val)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto props_done;
+    }
+  props_done:
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+  return props;
+}
+;
+
+----------------------------------------------------------------------
+-- Graph reference: ident, /path/ref, GRAPH <iri>, etc.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_GRAPH_REFERENCE (in _tokens any, inout _pos integer)
+{
+  declare tt integer;
+  declare val any;
+  declare kind varchar;
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  if (tt = 64)  -- IDENT (simple name)
+    {
+      val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      while (DB.DBA.GQL_PEEK (_tokens, _pos) = 8)  -- DOT: urn.analytics.weighted -> urn:analytics:weighted
+        {
+          _pos := _pos + 1;
+          val := concat (val, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- COLON: analytics: or analytics:sales
+        {
+          _pos := _pos + 1;
+          if (DB.DBA.GQL_IS_CLAUSE_START (DB.DBA.GQL_PEEK (_tokens, _pos))
+              or DB.DBA.GQL_PEEK (_tokens, _pos) = 999)
+            val := concat (val, ':');
+          else
+            {
+              val := concat (val, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+              _pos := _pos + 1;
+            }
+          return vector ('GRAPH_REF', val, 'PNAME');
+        }
+      return vector ('GRAPH_REF', val, 'BARE');
+    }
+  if (tt = 70)  -- IRIREF
+    { val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('GRAPH_REF', val, 'IRI'); }
+  if (tt = 69)  -- PNAME_NS
+    { val := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('GRAPH_REF', val, 'PNAME'); }
+  if (tt = 225)  -- GRAPH keyword
+    { _pos := _pos + 1; return DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos); }
+  -- Absolute path: /schema/graph
+  if (tt = 21)  -- SLASH
+    {
+      val := '';
+      while (DB.DBA.GQL_PEEK (_tokens, _pos) = 21)
+        { val := concat (val, '/'); _pos := _pos + 1; val := concat (val, DB.DBA.GQL_PEEK_VAL (_tokens, _pos)); _pos := _pos + 1; }
+      return vector ('GRAPH_REF', val, 'BARE');
+    }
+
+  signal ('GQ003', sprintf ('Expected graph reference at position %d', _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- Catalog-modifying statements (parse-only — rejected at translation)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_CREATE_STMT (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume CREATE
+  declare tt integer;
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+
+  if (tt = 228)  -- SCHEMA
+    return DB.DBA.GQL_PARSE_CREATE_SCHEMA (_tokens, _pos);
+  if (tt = 225)  -- GRAPH
+    {
+      if (_pos + 1 < length (_tokens) and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 226)  -- TYPE
+        return DB.DBA.GQL_PARSE_CREATE_GRAPH_TYPE (_tokens, _pos);
+      return DB.DBA.GQL_PARSE_CREATE_GRAPH (_tokens, _pos, 0);
+    }
+  if (tt = 227)  -- PROPERTY
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_CREATE_GRAPH (_tokens, _pos, 1);
+    }
+  signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, or PROPERTY GRAPH after CREATE at position %d', _pos));
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_CREATE_SCHEMA (in _tokens any, inout _pos integer)
+{
+  declare if_not_exists, or_replace integer;
+  declare schema_ref any;
+
+  _pos := _pos + 1;  -- consume SCHEMA
+  if_not_exists := 0;
+  or_replace := 0;
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 231)  -- NOT
+        { _pos := _pos + 1; if_not_exists := 1; }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 230);  -- EXISTS
+    }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 233)  -- OR
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 338);  -- REPLACE
+      or_replace := 1;
+    }
+
+  schema_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('CREATE_SCHEMA', schema_ref, if_not_exists, or_replace);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_CREATE_GRAPH (in _tokens any, inout _pos integer, in _is_property integer)
+{
+  declare graph_ref, graph_type_ref, copy_of, like_graph any;
+
+  _pos := _pos + 1;  -- consume GRAPH
+  graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  graph_type_ref := null;
+  copy_of := null;
+  like_graph := null;
+
+  -- Optional typed graph initializer: { ... }
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5)  -- LBRACE
+    {
+      declare brace_depth integer;
+      brace_depth := 1;
+      _pos := _pos + 1;
+      while (brace_depth > 0 and _pos < length (_tokens))
+        {
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5) brace_depth := brace_depth + 1;
+          else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 6) brace_depth := brace_depth - 1;
+          _pos := _pos + 1;
+        }
+      graph_type_ref := '<typed_init>';
+    }
+
+  -- AS COPY OF
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 241)  -- AS
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 242)  -- COPY
+        {
+          _pos := _pos + 1;
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 243);  -- OF
+          copy_of := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+        }
+    }
+  -- LIKE
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 240)  -- LIKE
+    {
+      _pos := _pos + 1;
+      like_graph := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+    }
+
+  return vector ('CREATE_GRAPH', graph_ref, graph_type_ref, copy_of, like_graph);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_CREATE_GRAPH_TYPE (in _tokens any, inout _pos integer)
+{
+  declare type_ref, body any;
+
+  _pos := _pos + 1;  -- consume GRAPH
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 226);  -- TYPE
+  type_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+
+  -- Parse body: { ... } — capture as opaque blob for Phase 8
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5)
+    {
+      declare _d integer;
+      _d := 1;
+      _pos := _pos + 1;
+      while (_d > 0 and _pos < length (_tokens))
+        {
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5) _d := _d + 1;
+          else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 6) _d := _d - 1;
+          _pos := _pos + 1;
+        }
+      body := '<graph_type_body>';
+    }
+  else
+    body := null;
+
+  return vector ('CREATE_GRAPH_TYPE', type_ref, body);
+}
+;
+
+----------------------------------------------------------------------
+-- DROP statements
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
+{
+  declare if_exists integer;
+  declare tt integer;
+
+  _pos := _pos + 1;  -- consume DROP
+  if_exists := 0;
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 230);  -- EXISTS
+      if_exists := 1;
+    }
+
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+  if (tt = 228)  -- SCHEMA
+    {
+      _pos := _pos + 1;
+      return vector ('DROP_SCHEMA', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
+    }
+  else if (tt = 225)  -- GRAPH
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 226)  -- TYPE
+        {
+          _pos := _pos + 1;
+          return vector ('DROP_GRAPH_TYPE', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
+        }
+      return vector ('DROP_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
+    }
+
+  signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, or GRAPH TYPE after DROP at position %d', _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- SESSION SET / SESSION RESET (stubs — rejected at translation)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_SESSION_SET (in _tokens any, inout _pos integer)
+{
+  declare setting any;
+  _pos := _pos + 2;  -- consume SESSION SET
+
+  setting := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 228)  -- SCHEMA
+    { _pos := _pos + 1; setting := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos); }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 225 or DB.DBA.GQL_PEEK (_tokens, _pos) = 227)  -- GRAPH or PROPERTY
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 227) _pos := _pos + 1;  -- PROPERTY
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      setting := vector ('SESSION_SET_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos));
+    }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 302)  -- TIME
+    { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 301); setting := vector ('SESSION_SET_TIMEZONE'); _pos := _pos + 1; /* skip value */ if (_pos < length (_tokens)) _pos := _pos + 1; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 279)  -- VALUE
+    { _pos := _pos + 1; while (_pos < length (_tokens) and DB.DBA.GQL_PEEK (_tokens, _pos) <> 999 and not DB.DBA.GQL_IS_CLAUSE_START (DB.DBA.GQL_PEEK (_tokens, _pos))) _pos := _pos + 1; setting := '<session_set_value>'; }
+
+  return vector ('SESSION_SET', setting);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_SESSION_RESET (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 2;  -- consume SESSION RESET
+  while (_pos < length (_tokens) and DB.DBA.GQL_PEEK (_tokens, _pos) <> 999 and not DB.DBA.GQL_IS_CLAUSE_START (DB.DBA.GQL_PEEK (_tokens, _pos)))
+    _pos := _pos + 1;
+  return vector ('SESSION_RESET', null);
+}
+;
+
+----------------------------------------------------------------------
+-- LOAD <iri> [INTO GRAPH <g>]
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_LOAD (in _tokens any, inout _pos integer)
+{
+  declare iri, graph_ref any;
+  _pos := _pos + 1;  -- consume LOAD
+  iri := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  graph_ref := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 287)  -- INTO
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+    }
+  return vector ('LOAD', iri, graph_ref);
+}
+;
+
+----------------------------------------------------------------------
+-- CLEAR GRAPH <g>
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_CLEAR (in _tokens any, inout _pos integer)
+{
+  declare graph_ref any;
+  _pos := _pos + 1;  -- consume CLEAR
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+  graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('CLEAR', graph_ref);
+}
+;
+
+----------------------------------------------------------------------
+-- CALL <ref>([args]) [YIELD vars]  |  CALL { subquery } [YIELD vars]
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_CALL (in _tokens any, inout _pos integer)
+{
+  declare proc_ref, args, yield_vars any;
+  _pos := _pos + 1;  -- consume CALL
+
+  -- CALL { <subquery> }: inline procedure call
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5)  -- LBRACE
+    {
+      declare subquery any;
+      subquery := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+      yield_vars := DB.DBA.GQL_PARSE_YIELD (_tokens, _pos);
+      return vector ('CALL_INLINE', subquery, yield_vars);
+    }
+
+  -- CALL <procedure_reference>
+  proc_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  args := vector ();
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- not RPAREN
+        {
+          args := vector_concat (args, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+            {
+              _pos := _pos + 1;
+              args := vector_concat (args, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+            }
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+    }
+
+  yield_vars := DB.DBA.GQL_PARSE_YIELD (_tokens, _pos);
+  return vector ('CALL', proc_ref, args, yield_vars);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_YIELD (in _tokens any, inout _pos integer)
+{
+  declare yield_vars any;
+  yield_vars := vector ();
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 251)  -- YIELD
+    {
+      _pos := _pos + 1;
+      yield_vars := vector_concat (yield_vars, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+      _pos := _pos + 1;
+      while (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        {
+          _pos := _pos + 1;
+          yield_vars := vector_concat (yield_vars, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+          _pos := _pos + 1;
+        }
+    }
+  return yield_vars;
+}
+;
+
+----------------------------------------------------------------------
+-- Transaction stub
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_TRANSACTION_STUB (in _tokens any, inout _pos integer)
+{
+  _pos := _pos + 1;  -- consume START
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 322)  -- TRANSACTION
+    _pos := _pos + 1;
+  while (_pos < length (_tokens) and DB.DBA.GQL_PEEK (_tokens, _pos) <> 999
+         and not DB.DBA.GQL_IS_CLAUSE_START (DB.DBA.GQL_PEEK (_tokens, _pos)))
+    _pos := _pos + 1;
+  return vector ('TRANSACTION', null);
+}
+;
