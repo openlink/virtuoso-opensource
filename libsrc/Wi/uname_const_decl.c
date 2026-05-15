@@ -196,6 +196,8 @@ caddr_t uname_rdf_ns_uri_ID;
 caddr_t uname_rdf_ns_uri_RDF;
 caddr_t uname_rdf_ns_uri_Seq;
 caddr_t uname_rdf_ns_uri_Statement;
+caddr_t uname_rdf_ns_uri_HTML;
+caddr_t uname_rdf_ns_uri_JSON;
 caddr_t uname_rdf_ns_uri_XMLLiteral;
 caddr_t uname_rdf_ns_uri_langString;
 caddr_t uname_rdf_ns_uri_about;
@@ -205,6 +207,7 @@ caddr_t uname_rdf_ns_uri_nil;
 caddr_t uname_rdf_ns_uri_nodeID;
 caddr_t uname_rdf_ns_uri_object;
 caddr_t uname_rdf_ns_uri_predicate;
+caddr_t uname_rdf_ns_uri_reifies;
 caddr_t uname_rdf_ns_uri_resource;
 caddr_t uname_rdf_ns_uri_rest;
 caddr_t uname_rdf_ns_uri_subject;
@@ -212,6 +215,7 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_rdf_ns_uri_value;
+caddr_t uname_rdfs_ns_uri_Proposition;
 caddr_t uname_rdfdf_ns_uri;
 caddr_t uname_rdfdf_ns_uri_default;
 caddr_t uname_rdfdf_ns_uri_default_nullable;
@@ -524,6 +528,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_RDF			, RDF_NS_URI "RDF"		},
   { &uname_rdf_ns_uri_Seq			, RDF_NS_URI "Seq"		},
   { &uname_rdf_ns_uri_Statement			, RDF_NS_URI "Statement"	},
+  { &uname_rdf_ns_uri_HTML			, RDF_NS_URI "HTML"		},
+  { &uname_rdf_ns_uri_JSON			, RDF_NS_URI "JSON"		},
   { &uname_rdf_ns_uri_XMLLiteral		, RDF_NS_URI "XMLLiteral"	},
   { &uname_rdf_ns_uri_langString			, RDF_NS_URI "langString"			},
   { &uname_rdf_ns_uri_about			, RDF_NS_URI "about"		},
@@ -533,6 +539,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_nodeID			, RDF_NS_URI "nodeID"		},
   { &uname_rdf_ns_uri_object			, RDF_NS_URI "object"		},
   { &uname_rdf_ns_uri_predicate			, RDF_NS_URI "predicate"	},
+  { &uname_rdf_ns_uri_reifies			, RDF_NS_URI "reifies"		},
   { &uname_rdf_ns_uri_resource			, RDF_NS_URI "resource"		},
   { &uname_rdf_ns_uri_subject			, RDF_NS_URI "subject"		},
   { &uname_rdf_ns_uri_rest			, RDF_NS_URI "rest"		},
@@ -540,6 +547,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_datatype			, RDF_NS_URI "datatype"		},
   { &uname_rdf_ns_uri_parseType			, RDF_NS_URI "parseType"	},
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
+  { &uname_rdfs_ns_uri_Proposition		, RDFS_NS_URI "Proposition"	},
   { &uname_rdfdf_ns_uri				, RDFDF_NS_URI			},
   { &uname_rdfdf_ns_uri_default			, RDFDF_NS_URI "default"	},
   { &uname_rdfdf_ns_uri_default_nullable	, RDFDF_NS_URI "default-nullable"	},

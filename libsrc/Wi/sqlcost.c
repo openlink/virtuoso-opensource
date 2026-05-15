@@ -2102,6 +2102,23 @@ rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret)
       *data_ret = box_copy (val);
       return 1;
     }
+  if (IS_IRI_DTP (dtp))
+    {
+      *data_ret = box_copy (val);
+      return 1;
+    }
+  if ((DV_UNAME == dtp) || ((DV_STRING == dtp) && (BF_IRI & box_flags (val))))
+    {
+      caddr_t iri = key_name_to_iri_id (NULL, val, 0);
+      if ((NULL == iri) || (DV_DB_NULL == DV_TYPE_OF (iri)))
+        {
+          if (NULL != iri)
+            dk_free_box (iri);
+          return 0;
+        }
+      *data_ret = iri;
+      return 1;
+    }
   if (DV_STRING == dtp)
     {
       caddr_t r;

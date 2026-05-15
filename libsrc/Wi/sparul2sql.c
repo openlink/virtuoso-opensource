@@ -746,16 +746,26 @@ spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp,
   int memb_ctr;
   if (SPAR_GP != SPART_TYPE (gp))
     spar_error (sparp, "Cannot convert a pattern into constructor template, DELETE WHERE works only for simple quad templates");
-  if ((0 != gp->_.gp.subtype) && (WHERE_L != gp->_.gp.subtype) && (OPTIONAL_L != gp->_.gp.subtype))
-    spar_error (sparp, "DELETE WHERE works only for simple quad templates, only basic group patterns and OPTIONAL are allowed");
+  if ((0 != gp->_.gp.subtype) && (WHERE_L != gp->_.gp.subtype) && (OPTIONAL_L != gp->_.gp.subtype) && (SELECT_L != gp->_.gp.subtype))
+    spar_error (sparp, "DELETE WHERE works only for simple quad templates, only basic group patterns, OPTIONAL and SELECT are allowed");
   /*if (0 != BOX_ELEMENTS_0 (gp->_.gp.filters))
     spar_error (sparp, "DELETE WHERE does not support FILTER");*/
+  /* If this is a SELECT_L GP with a subquery (created by spar_gp_finalize_binds for
+     triple term decomposition), recurse into the subquery's WHERE pattern to find triples. */
+  if (SELECT_L == gp->_.gp.subtype && NULL != gp->_.gp.subquery)
+    {
+      SPART *subq = gp->_.gp.subquery;
+      if (SPAR_REQ_TOP == SPART_TYPE (subq) && NULL != subq->_.req_top.pattern)
+        spar_compose_ctor_triples_from_where_gp (sparp, subtype, subq->_.req_top.pattern, g, ret_tmpls);
+      return;
+    }
   DO_BOX_FAST (SPART *, memb, memb_ctr, gp->_.gp.members)
     {
       SPART *tmpl;
       if (SPAR_TRIPLE != SPART_TYPE (memb))
         {
-          spar_compose_ctor_triples_from_where_gp (sparp, subtype, memb, g, ret_tmpls);
+          if (SPAR_GP == SPART_TYPE (memb))
+            spar_compose_ctor_triples_from_where_gp (sparp, subtype, memb, g, ret_tmpls);
           continue;
         }
       if (DELETE_L == subtype)
@@ -766,6 +776,12 @@ spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp,
             spar_error (sparp, "DELETE WHERE requires default graph but it is not provided");
         }
       tmpl = sparp_tree_full_copy (sparp, memb, gp);
+      if (CONSTRUCT_L == subtype)
+        {
+          /* CONSTRUCT WHERE produces triples in the constructor default graph.
+             A copied WHERE pattern may already have a fixed graph filled in. */
+          tmpl->_.triple.tr_graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
+        }
       t_set_push (ret_tmpls, tmpl);
     }
   END_DO_BOX_FAST;

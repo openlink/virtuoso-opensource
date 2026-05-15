@@ -43,9 +43,6 @@
 #include "nquad_p.h"
 #include "security.h"
 #include "sqlbif.h"
-#if (__NQUAD_NONPUNCT_END != __TTL_NONPUNCT_END)
-  Sources of parsers are out of sync: mismatch between token declarations in nquad_p.y and turtle_p.y
-#endif
 
 #ifdef DEBUG
 
@@ -238,6 +235,9 @@ ttlyyfree (void * ptr , yyscan_t yyscanner)
 	/* State after '@' right after quoted string */
 %x TURTLE_AT_AFTER_QUOTED
 
+	/* State after language tag for RDF 1.2 directional strings (~ltr/~rtl) */
+%x TURTLE_DIR_AFTER_LANG
+
 	/* State after _really_ unexpected character, to skip to the dot and whitespace */
 %x TURTLE_SKIP_TO_DOT_WS
 
@@ -257,7 +257,7 @@ TTL_CR_PLX	(([%]{HEX}{HEX})|([\\][_~.!$&''()*+,;=/?#@%-]))
 SPAR_SQ_PLAIN	([^\x00-\x1f\\''\r\n]|[\t])
 SPAR_DQ_PLAIN	([^\x00-\x1f\\""\r\n]|[\t])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
-SPAR_LANGTAG	([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)
+SPAR_LANGTAG	([a-zA-Z]{1,8})(("-"([a-zA-Z0-9]{1,8}))*)
 SPAR_OLD_LANGTAG	([a-z]+)"_"([a-zA-Z0-9]+)
 S_NL		((\r\n)|(\n\r)|\n|\r)
 S_NLNL		((\r\n([ \t]*)\r\n)|(\n\r([ \t]*)\n\r)|(\n([ \t]*)\n)|(\r([ \t]*)\r))
@@ -322,6 +322,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"@this"		{ return _AT_this_L; }
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@keywords"	{ TTLYYBEGIN(INITIAL); return _AT_keywords_L; }
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@prefix"	{ TTLYYBEGIN(INITIAL); return _AT_prefix_L; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@version"	{ TTLYYBEGIN(INITIAL); return _AT_version_L; }
 <INITIAL>"@forAll"		{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
 <INITIAL>"@forSome"		{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
 <INITIAL>"-INF"			{ return _MINUS_INF_L; }
@@ -331,6 +332,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"true"			{ return true_L; }
 <INITIAL,TWO_CRS>[Bb][Aa][Ss][Ee]		{ TTLYYBEGIN(INITIAL); return BASE_L; }
 <INITIAL,TWO_CRS>[Pp][Rr][Ee][Ff][Ii][Xx]	{ TTLYYBEGIN(INITIAL); return PREFIX_L; }
+<INITIAL,TWO_CRS>[Vv][Ee][Rr][Ss][Ii][Oo][Nn]	{ TTLYYBEGIN(INITIAL); return VERSION_L; }
 
 <INITIAL>"a"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_A, _AT_a_L) }
 <INITIAL>"has"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_HAS, _AT_has_L) }
@@ -387,7 +389,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     return Q_IRI_REF;
   }
 
-<INITIAL>"<"([^>\001-\037]|"\t")*">"	{
+<INITIAL>"<"([^<>\001-\037]|"\t")([^>\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
     if (TTL_MAX_IRI_LEN <= yyleng)
@@ -456,8 +458,26 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     return KEYWORD;
   }
 
+<TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}"--ltr"	{
+    yyless(yyleng - 5);
+    TTLYYBEGIN (TURTLE_DIR_AFTER_LANG);
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
+    ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
+    return LANGTAG;
+  }
+
+<TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}"--rtl"	{
+    yyless(yyleng - 5);
+    TTLYYBEGIN (TURTLE_DIR_AFTER_LANG);
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
+    ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
+    return LANGTAG;
+  }
+
 <TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}	{
-    TTLYYBEGIN (INITIAL);
+    TTLYYBEGIN (TURTLE_DIR_AFTER_LANG);
     if (TTL_MAX_LANGNAME_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
@@ -466,7 +486,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <TURTLE_AT_AFTER_QUOTED>{SPAR_OLD_LANGTAG}	{
     char *tail;
-    TTLYYBEGIN (INITIAL);
+    TTLYYBEGIN (TURTLE_DIR_AFTER_LANG);
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Obsolete format of language; this error can be recovered if proper parser flags are set");
     if (TTL_MAX_LANGNAME_LEN <= yyleng)
@@ -483,10 +503,17 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_AT_AFTER_QUOTED><<EOF>>		{ TTLYYERROR_OR_RECOVER ("Missing language id after '@' at the end of quoted literal"); }
 <TURTLE_AT_AFTER_QUOTED>.		{ TTLYYERROR_OR_RECOVER ("Bad character instead of language id after '@' at the end of quoted literal"); }
 
+<TURTLE_DIR_AFTER_LANG>"~ltr"	{ TTLYYBEGIN (INITIAL); return DIR_LTR; }
+<TURTLE_DIR_AFTER_LANG>"~rtl"	{ TTLYYBEGIN (INITIAL); return DIR_RTL; }
+<TURTLE_DIR_AFTER_LANG>"--ltr"	{ TTLYYBEGIN (INITIAL); return DIR_LTR; }
+<TURTLE_DIR_AFTER_LANG>"--rtl"	{ TTLYYBEGIN (INITIAL); return DIR_RTL; }
+<TURTLE_DIR_AFTER_LANG>.  		{ yyless(0); TTLYYBEGIN (INITIAL); }
+
 
 <INITIAL>([""][^""\\\r\n]*[""])|([''][^''\\\r\n]*['']) {
     if (TTL_MAX_LITERAL_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
+    ttlp_arg->ttlp_last_string_is_long = 0;
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 2);
     return TURTLE_STRING;
   }
@@ -494,6 +521,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>(([""][^""\\\r\n]*[""])|([''][^''\\\r\n]*['']))"@" {
     if (TTL_MAX_LITERAL_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
+    ttlp_arg->ttlp_last_string_is_long = 0;
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 3);
     TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED);
     return TURTLE_STRING;
@@ -501,10 +529,10 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']['']['']		{ yymore(); TTLYYBEGIN (TURTLE_SSSQ); }
 <INITIAL>[""][""][""]		{ yymore(); TTLYYBEGIN (TURTLE_DDDQ); }
-<TURTLE_SSSQ>[''][''](['']+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""]([""]+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
-<TURTLE_SSSQ>['']['']['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
+<TURTLE_SSSQ>[''][''](['']+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 1; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""]([""]+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 1; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 1; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 1; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
 <TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); TTL_ONE_CR; yymore(); }
 <TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); TTL_ONE_CR; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -518,10 +546,10 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']		{ yymore(); TTLYYBEGIN (TURTLE_SQ); }
 <INITIAL>[""]		{ yymore(); TTLYYBEGIN (TURTLE_DQ); }
-<TURTLE_SQ>['']		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
-<TURTLE_DQ>[""]		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
-<TURTLE_SQ>['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
-<TURTLE_DQ>[""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
+<TURTLE_SQ>['']		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 0; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
+<TURTLE_DQ>[""]		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 0; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); TTLYYBEGIN (INITIAL); return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 0; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlp_arg->ttlp_last_string_is_long = 0; ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); TTLYYBEGIN (TURTLE_AT_AFTER_QUOTED); return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
@@ -578,6 +606,14 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>[+-]?{INTEGER_LITERAL}"."([ \t]*)[,;.]		{ int num_len = strchr (yytext, '.') + 1 - yytext; int res = ttlp_NUMBER_int (yylval, ttlp_arg, yyg); yyless (num_len); return res; }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DOUBLE_LITERAL}		{ return ttlp_NUMBER_double (yylval, ttlp_arg, yyg); }
+
+<INITIAL>"<<("		{ return TRIPLE_TERM_L; }
+<INITIAL>")>>"		{ return TRIPLE_TERM_R; }
+<INITIAL>"<<"		{ return REIFIED_TRIPLE_L; }
+<INITIAL>">>"		{ return REIFIED_TRIPLE_R; }
+<INITIAL>"~"		{ return TILDE; }
+<INITIAL>"{|"		{ return ANNOTATION_L; }
+<INITIAL>"|}"		{ return ANNOTATION_R; }
 
 <INITIAL>("#"(.*))?{S_NLNL}[ \t]*				{ TTL_TWO_CRS; }
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>("#"(.*))?{S_NL}		{ TTL_ONE_CR; }
@@ -976,7 +1012,9 @@ resume_sniffing:
       if (flags & TTLP_ALLOW_NQUAD)
         nqyyparse (ttlp, scanner);
       else
-        ttlyyparse (ttlp, scanner);
+        {
+          ttlyyparse (ttlp, scanner);
+        }
       /* ttlyydebug = 0; */
       tf_commit (tf);
     }

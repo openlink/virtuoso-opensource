@@ -32,6 +32,7 @@
 #include "numeric.h"
 #include "sqlcmps.h"
 #include "rdf_core.h"
+#include "sparql.h" /* for RDF_STAR_NS */
 #include "security.h" /* for sec_proc_check() */
 #include "http.h"
 #include "../Dk/Dkhash64.h"
@@ -1057,6 +1058,29 @@ ns_uri_found:
 #endif
 }
 
+int
+ttlp_uri_is_absolute (ccaddr_t uri)
+{
+  const unsigned char *tail = (const unsigned char *) uri;
+  unsigned char ch;
+  if ((NULL == tail) || (0 == tail[0]))
+    return 0;
+  ch = tail[0];
+  if (!((('A' <= ch) && ('Z' >= ch)) || (('a' <= ch) && ('z' >= ch))))
+    return 0;
+  for (tail++; 0 != tail[0]; tail++)
+    {
+      ch = tail[0];
+      if (':' == ch)
+        return 1;
+      if ((('A' <= ch) && ('Z' >= ch)) || (('a' <= ch) && ('z' >= ch)) ||
+          (('0' <= ch) && ('9' >= ch)) || ('+' == ch) || ('-' == ch) || ('.' == ch))
+        continue;
+      return 0;
+    }
+  return 0;
+}
+
 caddr_t
 ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
@@ -1088,9 +1112,59 @@ ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri)
   ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'r' : 'R';
 }
 
-void
-ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+static int
+ttlp_langtag_is_valid (const char *lang)
 {
+  const unsigned char *p = (const unsigned char *) lang;
+  int seg_len = 0;
+  int seg_no = 0;
+  if ((NULL == p) || (0 == p[0]))
+    return 0;
+  for (; p[0]; p++)
+    {
+      unsigned char ch = p[0];
+      if ('-' == ch)
+        {
+          if ((seg_len < 1) || (seg_len > 8))
+            return 0;
+          seg_no++;
+          seg_len = 0;
+          continue;
+        }
+      if (!((('a' <= ch) && ('z' >= ch)) || (('A' <= ch) && ('Z' >= ch)) || (('0' <= ch) && ('9' >= ch))))
+        return 0;
+      if ((0 == seg_no) && !((('a' <= ch) && ('z' >= ch)) || (('A' <= ch) && ('Z' >= ch))))
+        return 0;
+      seg_len++;
+      if (seg_len > 8)
+        return 0;
+    }
+  return ((seg_len >= 1) && (seg_len <= 8));
+}
+
+void
+ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, char o_dir)
+{
+  if ((NULL != o_lang) && (0 != o_lang[0]) && !ttlp_langtag_is_valid (o_lang))
+    ttlyyerror_impl (ttlp_arg, NULL, "Invalid language tag");
+  if (NULL != o_dt)
+    {
+      if (!strcmp (o_dt, RDF_NS_URI "langString"))
+        ttlyyerror_impl (ttlp_arg, NULL, "rdf:langString datatype is not allowed in concrete syntax; use a language tag");
+      if (!strcmp (o_dt, RDF_NS_URI "dirLangString"))
+        ttlyyerror_impl (ttlp_arg, NULL, "rdf:dirLangString datatype is not allowed in concrete syntax; use language tag with direction");
+    }
+  if ((('l' == o_dir) || ('r' == o_dir)) && ((NULL == o_lang) || (0 == o_lang[0])))
+    ttlyyerror_impl (ttlp_arg, NULL, "Language direction requires a language tag");
+  /* Persist language direction in the language tag as <lang>--ltr/rtl.
+     This keeps Turtle/TriG-loaded data consistent with SPARQL parser literals. */
+  if ((NULL != o_lang) && (0 != o_lang[0]) && (('l' == o_dir) || ('r' == o_dir)))
+    {
+      caddr_t merged_lang = box_dv_short_strconcat (o_lang, ('l' == o_dir) ? "--ltr" : "--rtl");
+      if (merged_lang != o_lang)
+        dk_free_tree (o_lang);
+      o_lang = merged_lang;
+    }
   if (ttlp_arg[0].ttlp_obj != o_sqlval)
     {
       if (NULL != ttlp_arg[0].ttlp_obj)
@@ -1109,9 +1183,18 @@ ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt,
         dk_free_tree (ttlp_arg[0].ttlp_obj_lang);
       ttlp_arg[0].ttlp_obj_lang = o_lang;
     }
+  ttlp_arg[0].ttlp_obj_dir = o_dir;
   if (ttlp_arg[0].ttlp_triple_is_prepared)
     ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
   ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'l' : 'L';
+}
+
+/* Triple-term IRIs are built by the shared SQL BIF helper:
+   self-describing urn:rdf-star:triple:<S_IID>:<P_IID>:<O-tag><payload> only. */
+caddr_t
+ttlp_make_triple_term_iri (caddr_t s, caddr_t p, caddr_t o)
+{
+  return rdf_star_tt_iri_from_values_qst (NULL, s, p, o, 0);
 }
 
 void
@@ -1135,6 +1218,28 @@ ttlp_triple_process_prepared (ttlp_t *ttlp_arg)
       ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 1);
       ttlp_arg[0].ttlp_triple_is_prepared = 0;
       return;
+    case 'T': case 't':
+      {
+        /* Triple term <<( s p o )>> as object */
+        caddr_t *tt = (caddr_t *) ttlp_arg[0].ttlp_obj_triple_term;
+        if (NULL != tt)
+          {
+            caddr_t triple_iri = ttlp_make_triple_term_iri (tt[0], tt[1], tt[2]);
+            dk_free_tree (ttlp_arg[0].ttlp_obj);
+            ttlp_arg[0].ttlp_obj = triple_iri;
+            ttlp_triple_and_inf_now (ttlp_arg, triple_iri, ('t' == ttlp_arg[0].ttlp_triple_is_prepared) ? 1 : 0);
+            dk_free_tree (ttlp_arg[0].ttlp_obj_triple_term);
+            ttlp_arg[0].ttlp_obj_triple_term = NULL;
+          }
+        ttlp_arg[0].ttlp_triple_is_prepared = 0;
+        return;
+      }
+    case 's':
+      {
+        /* Reified triple as subject - should have been converted in grammar action */
+        ttlp_arg[0].ttlp_triple_is_prepared = 0;
+        return;
+      }
     case 0: return;
     default: GPF_T1 ("Bad ttlp_triple_is_prepared");
     }
