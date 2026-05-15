@@ -1,0 +1,93 @@
+<!--
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2026 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+-->
+<sticker version="1.0.010505A" xml:lang="en-UK">
+  <caption>
+    <name package="opengql">
+      <prop name="Title"     value="openGQL - ISO/IEC 39075:2024 GQL for Virtuoso (PL translator)"/>
+      <prop name="Developer" value="OpenLink Software"/>
+      <prop name="Copyright" value="(C) 1998-2026 OpenLink Software"/>
+      <prop name="Download"  value="http://www.openlinksw.com/"/>
+    </name>
+    <version package="0.6.0">
+      <prop name="Release Date" value="2026-05-06 00:00"/>
+      <prop name="Build"        value="Release, optimized"/>
+    </version>
+  </caption>
+  <dependencies />
+  <procedures uninstallation="supported">
+    <sql purpose="pre-install"><![CDATA[
+      if (lt (sys_stat ('st_dbms_ver'), '07.20.3200'))
+        {
+          result ('ERROR', 'The openGQL package requires Virtuoso 07.20.3200 or greater');
+          signal ('FATAL', 'The openGQL package requires Virtuoso 07.20.3200 or greater');
+        }
+    ]]></sql>
+    <sql purpose="post-install"></sql>
+  </procedures>
+  <ddls>
+    <sql purpose="pre-install"></sql>
+    <sql purpose="post-install"><![CDATA[
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_runtime.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_lexer.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_expr.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_parser.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_plan.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_var_pass.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_translate.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_sparql_gen.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_main.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_endpoint.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_bootstrap.sql', 0, 'report', 1);
+    ]]></sql>
+    <sql purpose="pre-uninstall"><![CDATA[
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/opengql_uninstall.sql', 0, 'report', 1);
+    ]]></sql>
+  </ddls>
+  <resources>
+    <file type="dav" source="code" source_uri="vad/data/gql_runtime.sql" target_uri="opengql/gql_runtime.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_lexer.sql" target_uri="opengql/gql_lexer.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_parser.sql" target_uri="opengql/gql_parser.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_expr.sql" target_uri="opengql/gql_expr.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_plan.sql" target_uri="opengql/gql_plan.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_var_pass.sql" target_uri="opengql/gql_var_pass.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_translate.sql" target_uri="opengql/gql_translate.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_sparql_gen.sql" target_uri="opengql/gql_sparql_gen.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_main.sql" target_uri="opengql/gql_main.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_endpoint.sql" target_uri="opengql/gql_endpoint.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_bootstrap.sql" target_uri="opengql/gql_bootstrap.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/opengql_install.sql" target_uri="opengql/opengql_install.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/opengql_uninstall.sql" target_uri="opengql/opengql_uninstall.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+  </resources>
+  <registry />
+</sticker>

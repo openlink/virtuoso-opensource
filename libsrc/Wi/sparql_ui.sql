@@ -683,7 +683,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
 { ?>
     <nav class="navbar navbar-expand-md sticky-top bg-light">
     <div class="container-lg">
-        <a class="navbar-brand" href="#"><?V title ?></a>
+        <a class="navbar-brand" href="/sparql"><?V title ?></a>
         <button class="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
@@ -697,7 +697,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
 <?vsp if (display_submenu) { ?>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
-            <li class="nav-item"><a class="nav-link" href="?help=intro">About</a></li>
+            <li class="nav-item"><a class="nav-link" href="/sparql/?help=intro">About</a></li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle"
                     href="#"
@@ -706,10 +706,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
                     data-bs-toggle="dropdown"
                     aria-expanded="false">Tables</a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                      <li><a class="dropdown-item"        href="?help=nsdecl">Namespace&#160;Prefixes</a></li>
-                      <li><a class="dropdown-item"        href="?help=rdfinf">Inference&#160;Rules</a></li>
-                      <li><a class="dropdown-item"        href="?help=macrolibs">Macros</a></li>
-                      <li><a class="dropdown-item"        href="?help=views">RDF Views</a></li>
+                      <li><a class="dropdown-item"        href="/sparql/?help=nsdecl">Namespace&#160;Prefixes</a></li>
+                      <li><a class="dropdown-item"        href="/sparql/?help=rdfinf">Inference&#160;Rules</a></li>
+                      <li><a class="dropdown-item"        href="/sparql/?help=macrolibs">Macros</a></li>
+                      <li><a class="dropdown-item"        href="/sparql/?help=views">RDF Views</a></li>
                   </ul>
             </li>
             </ul>
@@ -742,7 +742,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_OPTION (in lbl varchar, in help varc
     if (enabled)
         color := 'bg-light text-primary';
 
-    http (sprintf ('<a href="?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&#160;\n', help, color, lbl));
+    http (sprintf ('<a href="/sparql/?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&#160;\n', help, color, lbl));
 }
 ;
 
@@ -821,6 +821,20 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --
     declare enable_bootstrap any;
     enable_bootstrap := atoi (registry_get ('sparql-ui-bootstrap', '1'));
+
+    --
+    --  openCypher language mode (Phase 14.6)
+    --
+    declare ui_language varchar;
+    declare ui_can_opencypher integer;
+    declare ui_can_opengql integer;
+    ui_language := lower (trim (coalesce (get_keyword ('language', params, ''), '')));
+    if (ui_language not in ('opencypher', 'sparql', 'opengql'))
+      ui_language := 'sparql';
+    ui_can_opencypher := case when (__proc_exists ('DB.DBA.CYPHER_TO_SPARQL_PARAMS', 1) is not null)
+      then 1 else 0 end;
+    ui_can_opengql := case when (__proc_exists ('DB.DBA.GQL_TO_SPARQL_PARAMS', 1) is not null)
+      then 1 else 0 end;
 
 
     --
@@ -910,6 +924,24 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
                 <?V def_qry ?>
                 </textarea>
         </div>
+
+<?vsp   if (ui_can_opencypher or ui_can_opengql) { ?>
+        <div class="mb-3 row">
+            <label class="col-lg-2 col-form-label" for="language">Query Language</label>
+            <div class="col-lg-10">
+                <select class="form-select form-select-sm" name="language" id="language">
+                    <option value="sparql"<?vsp if (ui_language = 'sparql') http(' selected="selected"'); ?>>SPARQL</option>
+<?vsp   if (ui_can_opencypher) { ?>
+                    <option value="opencypher"<?vsp if (ui_language = 'opencypher') http(' selected="selected"'); ?>>openCypher</option>
+<?vsp   } ?>
+<?vsp   if (ui_can_opengql) { ?>
+                    <option value="opengql"<?vsp if (ui_language = 'opengql') http(' selected="selected"'); ?>>openGQL</option>
+<?vsp   } ?>
+                </select>
+                <small class="form-text text-muted">openCypher and openGQL inputs are translated to SPARQL before execution. The translated SPARQL is exposed via the <code>X-Generated-SPARQL</code> response header; append <code>&amp;dryrun=1</code> to see it directly.</small>
+            </div>
+        </div>
+<?vsp   } ?>
 
         <div class="mb-3 row">
             <label class="col-lg-2 col-form-label" for="format">Results Format</label>
@@ -1154,10 +1186,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_INTRO()
     <h3>Endpoint Information</h3>
     <p>Consult the following links for available information defined on this endpoint:
     <ul>
-    <li><a href="?help=nsdecl">Namespace Prefixes</a>
-    <li><a href="?help=rdfinf">Build-in Inference Rules</a>
-    <li><a href="?help=views">RDF Views</a>
-    <li><a href="?help=macrolibs">SPIN and SPARQL-BI Macro Libraries</a>
+    <li><a href="/sparql/?help=nsdecl">Namespace Prefixes</a>
+    <li><a href="/sparql/?help=rdfinf">Build-in Inference Rules</a>
+    <li><a href="/sparql/?help=views">RDF Views</a>
+    <li><a href="/sparql/?help=macrolibs">SPIN and SPARQL-BI Macro Libraries</a>
     </ul>
     </p>
 
@@ -1333,7 +1365,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_VIEWS()
             http ('  <p>The storage has no default quad map.</p>\n');
 
         for (sparql define output:valmode "LONG" define input:storage "" select ?sml from virtrdf: where { `iri(?:storage)` virtrdf:qsMacroLibrary ?sml } order by asc(str(?sml))) do {
-            http ('  <p>The storage is enriched with SPIN/SPARQL-BI macro library &lt;<a href="?help=macrolibs#' || md5(id_to_iri("sml")) || '">');
+            http ('  <p>The storage is enriched with SPIN/SPARQL-BI macro library &lt;<a href="/sparql/?help=macrolibs#' || md5(id_to_iri("sml")) || '">');
             http_value (id_to_iri ("default_qm")); http ('</a>&gt;<br/>\n');
             --              WS.WS.SPARQL_ENDPOINT_SML_OVERVIEW (default_qm); !!!TBD: write such a function
             http ('  </p>');
@@ -1415,7 +1447,7 @@ macro_compilation_done:
         }
         for (sparql define output:valmode "LONG" define input:storage "" select ?storage from virtrdf: where { ?storage virtrdf:qsMacroLibrary `iri(?:sml)` } order by asc(str(?storage))) do
         {
-            http ('  <p>The macro library is attached to RDF storage &lt;<a href="?help=views#' || md5(id_to_iri("storage")) || '">');
+            http ('  <p>The macro library is attached to RDF storage &lt;<a href="/sparql/?help=views#' || md5(id_to_iri("storage")) || '">');
             http_value (id_to_iri ("storage")); http ('</a>&gt;<br/>\n');
             http ('  </p>');
         }
@@ -1699,6 +1731,33 @@ create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout
     http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
     http_value (title);
     http ('</a></nav>\n', ses);
+
+    --
+    --  Phase 14.6: when the request was routed through the openCypher
+    --  translator, render the generated SPARQL above the result so users
+    --  can see the mapping (and copy-paste it back into SPARQL mode).
+    --
+    declare opencypher_panel any;
+    opencypher_panel := connection_get ('opencypher_generated_sparql');
+    if (isstring (opencypher_panel) and length (opencypher_panel) > 0)
+    {
+      http ('<details class="my-2"><summary class="fw-bold">Generated SPARQL (translated from openCypher)</summary>\n', ses);
+      http ('<pre class="bg-light p-2 border rounded"><code>', ses);
+      http_escape (opencypher_panel, 11, ses, 1, 1);
+      http ('</code></pre></details>\n', ses);
+      connection_set ('opencypher_generated_sparql', null);
+    }
+
+    declare opengql_panel any;
+    opengql_panel := connection_get ('opengql_generated_sparql');
+    if (isstring (opengql_panel) and length (opengql_panel) > 0)
+    {
+      http ('<details class="my-2"><summary class="fw-bold">Generated SPARQL (translated from openGQL)</summary>\n', ses);
+      http ('<pre class="bg-light p-2 border rounded"><code>', ses);
+      http_escape (opengql_panel, 11, ses, 1, 1);
+      http ('</code></pre></details>\n', ses);
+      connection_set ('opengql_generated_sparql', null);
+    }
 }
 ;
 
