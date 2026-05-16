@@ -712,7 +712,18 @@ SQL_FILES_SPARQL	= \
 	$(top_srcdir)/binsrc/cypher/cypher_sparql_gen.sql \
 	$(top_srcdir)/binsrc/cypher/cypher_main.sql \
 	$(top_srcdir)/binsrc/cypher/cypher_opencypher.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_bootstrap.sql
+	$(top_srcdir)/binsrc/cypher/cypher_bootstrap.sql \
+	$(top_srcdir)/binsrc/gql/gql_runtime.sql \
+	$(top_srcdir)/binsrc/gql/gql_lexer.sql \
+	$(top_srcdir)/binsrc/gql/gql_expr.sql \
+	$(top_srcdir)/binsrc/gql/gql_parser.sql \
+	$(top_srcdir)/binsrc/gql/gql_plan.sql \
+	$(top_srcdir)/binsrc/gql/gql_var_pass.sql \
+	$(top_srcdir)/binsrc/gql/gql_translate.sql \
+	$(top_srcdir)/binsrc/gql/gql_sparql_gen.sql \
+	$(top_srcdir)/binsrc/gql/gql_main.sql \
+	$(top_srcdir)/binsrc/gql/gql_endpoint.sql \
+	$(top_srcdir)/binsrc/gql/gql_bootstrap.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql

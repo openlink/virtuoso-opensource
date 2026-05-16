@@ -60,8 +60,10 @@ create procedure DB.DBA.GQL_MINT_NODE_IRI (in _graph varchar, in _labels any, in
 }
 ;
 
-DB.DBA.GQL_REGISTER_NS();
-DB.DBA.GQL_BOOTSTRAP_ENDPOINT_GRANTS();
+DB.DBA.GQL_REGISTER_NS ()
+;
+DB.DBA.GQL_BOOTSTRAP_ENDPOINT_GRANTS ()
+;
 
 ----------------------------------------------------------------------
 -- Schema resolution helper for §17 schema references
