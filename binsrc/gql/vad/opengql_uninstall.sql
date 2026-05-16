@@ -36,7 +36,7 @@ create procedure DB.DBA.OPENGQL_VAD_DROP_ROUTINES ()
 
   for (select P_NAME as _pname from DB.DBA.SYS_PROCEDURES
        where P_NAME like 'DB.DBA.GQL\_%' escape '\'
-          or P_NAME = 'DB.DBA.GQL'
+          or P_NAME = 'DB.DBA.GQL_EXEC'
           or P_NAME like 'DB.DBA.OPENGQL%'
        order by P_NAME) do
     {

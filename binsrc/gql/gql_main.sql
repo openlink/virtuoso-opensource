@@ -24,7 +24,7 @@
 --  Copyright (C) 1998-2026 OpenLink Software
 --
 --  Primary interface:
---    DB.DBA.GQL(query, graph?)
+--    DB.DBA.GQL_EXEC(query, graph?)
 --    DB.DBA.GQL_PARAMS(query, graph?, params?)
 --    DB.DBA.GQL_TO_SPARQL(query, graph?)        -- translation only
 --    DB.DBA.GQL_TO_SPARQL_PARAMS(query, graph?, params?)
@@ -280,7 +280,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_PARAMS (in _query varchar, in _graph varch
 -- Execution entry points
 ----------------------------------------------------------------------
 
-create procedure DB.DBA.GQL (in _query varchar, in _graph varchar := null)
+create procedure DB.DBA.GQL_EXEC (in _query varchar, in _graph varchar := null)
 {
   return DB.DBA.GQL_PARAMS (_query, _graph, null);
 }

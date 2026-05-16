@@ -23,7 +23,7 @@
 --
 --  Copyright (C) 1998-2026 OpenLink Software
 --
---  Provides the DB.DBA.OPENGQL entry point for direct SQL invocation
+--  Provides the DB.DBA.OPENGQL_EXEC entry point for direct SQL invocation
 --  of GQL queries. Parses optional DEFINE/PREFIX preamble, then
 --  dispatches into DB.DBA.GQL / DB.DBA.GQL_PARAMS.
 --
@@ -32,7 +32,7 @@
 -- OPENGQL execution handler
 ----------------------------------------------------------------------
 
-create procedure DB.DBA.OPENGQL (in _query varchar, in _default_graph varchar := null)
+create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varchar := null)
 {
   declare tokens, ast, query_ast any;
   declare proc_body any;
@@ -92,7 +92,7 @@ create procedure DB.DBA.OPENGQL (in _query varchar, in _default_graph varchar :=
   if (sparql_str is null or trim (sparql_str) = '')
     {
       -- INSERT-only or DML-only: execute for side effects
-      DB.DBA.GQL (_query, _default_graph);
+      DB.DBA.GQL_EXEC (_query, _default_graph);
       exec_result_names (vector ('Status'));
       exec_result (vector ('OK'));
       return;

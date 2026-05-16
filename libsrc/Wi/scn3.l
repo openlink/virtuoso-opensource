@@ -357,6 +357,7 @@ void yyfatalerror (const char *s);
 #ifndef SCN3SPLIT
 struct scn3_include_fragment_s;
 void scn3_opencypher_inline (const char * tail_sql_text, struct scn3_include_fragment_s *outer, yyscan_t yyscanner);
+void scn3_opengql_inline (const char * tail_sql_text, struct scn3_include_fragment_s *outer, yyscan_t yyscanner);
 #endif
 
 #define YY_FATAL_ERROR(msg) yyfatalerror (msg)
@@ -533,6 +534,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
           outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
           outer->_.sif_skipped_part = strses_allocate ();
 #endif
+          yylval->subtok = (0 == stricmp (yytext, "GQL") || 0 == stricmp (yytext, "OPENGQL"));
           BEGIN (OPENCYPHER_SKIP);
           RETURN_CODE (OPENCYPHER_L);
         }
@@ -1107,7 +1109,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
         BEGIN(SQL);
 
 #ifndef SCN3SPLIT
-        scn3_opencypher_inline ("\n)\n", outer, yyscanner);
+        if (yylval->subtok)
+          scn3_opengql_inline ("\n)\n", outer, yyscanner);
+        else
+          scn3_opencypher_inline ("\n)\n", outer, yyscanner);
 #else
         TOKCLOSE (')',')');
 #endif
@@ -1125,7 +1130,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
         BEGIN(SQL);
 
 #ifndef SCN3SPLIT
-        scn3_opencypher_inline ("\n;\n", outer, yyscanner);
+        if (yylval->subtok)
+          scn3_opengql_inline ("\n;\n", outer, yyscanner);
+        else
+          scn3_opencypher_inline ("\n;\n", outer, yyscanner);
 #else
         TOK (';');
 #endif
@@ -1144,7 +1152,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
         BEGIN(SQL);
 
 #ifndef SCN3SPLIT
-        scn3_opencypher_inline ("\n}\n", outer, yyscanner);
+        if (yylval->subtok)
+          scn3_opengql_inline ("\n}\n", outer, yyscanner);
+        else
+          scn3_opencypher_inline ("\n}\n", outer, yyscanner);
 #else
         TOKCLOSE ('}','}');
 #endif
@@ -1175,7 +1186,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 #ifndef SCN3SPLIT
     scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
     BEGIN(SQL);
-    scn3_opencypher_inline ("\n;\n", outer, yyscanner);
+    if (yylval->subtok)
+      scn3_opengql_inline ("\n;\n", outer, yyscanner);
+    else
+      scn3_opencypher_inline ("\n;\n", outer, yyscanner);
 #else
     yyterminate();
 #endif
@@ -1268,6 +1282,50 @@ scn3_opencypher_inline (const char * tail_sql_text, scn3_include_fragment_t *out
    strses_free (out);
 
    /* Set up buffer switch (same as scn3_sparp_inline_subselect) */
+   outer->sif_buffer = YY_CURRENT_BUFFER;
+   outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
+   outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
+   outer->_.sif_saved_lineno_increment = global_scs->scs_scn3c.lineno_increment;
+   outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
+   global_scs->scs_scn3c.include_depth++;
+   global_scs->scs_scn3c.lineno_increment = 0;
+
+   yy_scan_buffer (compiled, box_length (compiled) - 1, yyscanner);
+}
+
+void
+scn3_opengql_inline (const char * tail_sql_text, scn3_include_fragment_t *outer, yyscan_t yyscanner)
+{
+   struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+   caddr_t gql_text;
+   dk_session_t *out;
+   caddr_t compiled;
+   int i, len;
+
+   gql_text = t_strses_string (outer->_.sif_skipped_part);
+   strses_free (outer->_.sif_skipped_part);
+   outer->_.sif_skipped_part = NULL;
+
+   out = strses_allocate ();
+   session_buffered_write (out, " \"DB\".\"DBA\".\"OPENGQL_EXEC\" ('", 29);
+
+   len = (int) strlen (gql_text);
+   for (i = 0; i < len; i++)
+     {
+       if (gql_text[i] == '\'')
+         session_buffered_write (out, "''", 2);
+       else
+         session_buffered_write_char (gql_text[i], out);
+     }
+
+   session_buffered_write (out, "')", 2);
+   session_buffered_write (out, tail_sql_text, strlen (tail_sql_text));
+   session_buffered_write_char (0, out);
+   session_buffered_write_char (0, out);
+
+   compiled = t_strses_string (out);
+   strses_free (out);
+
    outer->sif_buffer = YY_CURRENT_BUFFER;
    outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
    outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
