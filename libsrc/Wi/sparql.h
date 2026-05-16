@@ -74,6 +74,8 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_SQLCOL		(ptrlong)1012
 #define SPAR_VARIABLE		(ptrlong)1013
 #define SPAR_TRIPLE		(ptrlong)1014
+#define SPAR_TRIPLE_TERM	(ptrlong)1026	/*!< RDF 1.2 triple term <<(s p o)>> */
+#define SPAR_UNNEST		(ptrlong)1027	/*!< SPARQL UNNEST operator */
 #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015
 #define SPAR_CODEGEN		(ptrlong)1016
 #define SPAR_LIST		(ptrlong)1017
@@ -85,9 +87,13 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_MACROCALL		(ptrlong)1023
 #define SPAR_MACROPU		(ptrlong)1024	/*!< Tree type for macro parameter usage --- the occurence of a variable name in a macro body */
 #define SPAR_PPATH		(ptrlong)1025	/*!< Tree type for property path */
+#define SPAR_GP_TT_MACRO_BINDS	(ptrlong)19001	/*!< Internal GP option key for deferred triple-term constructor binds. */
 #define SPAR_MIN_TREE_TYPE	(ptrlong)1001
-#define SPAR_MAX_TREE_TYPE	(ptrlong)1025	/* Don't forget to adjust */
+#define SPAR_MAX_TREE_TYPE	(ptrlong)1027	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
+
+/*! Namespace prefix for RDF 1.2 triple term IRIs: urn:rdf-star:triple:S:P:O */
+#define RDF_STAR_NS "urn:rdf-star:triple:"
 
 #define SPAR_BOP_EQ_NONOPT		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
@@ -154,7 +160,28 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BIF__GROUPING_LIST			(ptrlong)1159
 #define SPAR_BIF__GROUPING_SET			(ptrlong)1160
 #define SPAR_BIF__GROUPING_SETS			(ptrlong)1161
-#define SPAR_BIF__ROLLUP			(ptrlong)1162
+#define SPAR_BIF_ISTRIPLE				(ptrlong)1162
+#define SPAR_BIF_TRIPLE				(ptrlong)1163
+#define SPAR_BIF_SUBJECT				(ptrlong)1164
+#define SPAR_BIF_PREDICATE				(ptrlong)1165
+#define SPAR_BIF_OBJECT				(ptrlong)1166
+/* Duplicate SPAR_BIF_* definitions (1167-1184) removed: STRLEN, UCASE, LCASE, SUBSTR,
+   REPLACE, STRSTARTS, STRENDS, CONTAINS, STRBEFORE, STRAFTER, ENCODE_FOR_URI,
+   SHA1, SHA256, SHA384, SHA512, ROUND, CEIL, FLOOR already defined above (1105-1149). */
+#define SPAR_BIF_STRDIR				(ptrlong)1167
+#define SPAR_BIF_DIR				(ptrlong)1168
+#define SPAR_BIF__ROLLUP			(ptrlong)1169
+#define SPAR_BIF_TRIPLE_SUBJECT			(ptrlong)1170
+#define SPAR_BIF_TRIPLE_PREDICATE		(ptrlong)1171
+#define SPAR_BIF_TRIPLE_OBJECT			(ptrlong)1172
+#define SPAR_BIF_UNNEST				(ptrlong)1173
+#define SPAR_BIF_HASLANG			(ptrlong)1174
+#define SPAR_BIF_HASLANGDIR			(ptrlong)1175
+#define SPAR_BIF_LANGDIR			(ptrlong)1176
+#define SPAR_BIF_STRLANGDIR			(ptrlong)1177
+#define SPAR_BIF_SAMEVALUE			(ptrlong)1178
+#define SPAR_BIF_CONTAINS_TOKEN			(ptrlong)1179
+#define SPAR_BIF_FORMAT_NUMBER			(ptrlong)1180
 
 #define SPAR_SML_CREATE			(ptrlong)1201
 #define SPAR_SML_DROP			(ptrlong)1202
@@ -330,6 +357,9 @@ typedef struct sparp_env_s
   int			spare_inline_data_colcount;	/*!< Number of variables in VALUES (...) {...} clause, not set for single-variable syntax because it's used only to check the width of data rows */
   SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
   SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
+  dk_set_t		spare_bound_tts;		/*!< Key/value stack of BIND target varnames and triple-term patterns for later parser-side decomposition. */
+  dk_set_t		spare_bound_tt_reprs;		/*!< Key/value stack of BIND target varnames and their current lowered TT representative nodes. */
+  dk_set_t		spare_acc_tt_macro_binds;	/*!< Sets of deferred triple-term constructor binds for not-yet-closed GPs. */
   dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
   dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
   dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
@@ -355,7 +385,10 @@ typedef struct sparp_globals_s {
   ptrlong		sg_sinv_count;			/*!< A count of used items in the beginning of \c sg_sinvs buffer */
   dk_set_t		sg_invalidated_bnode_labels;	/*!< All blank name labels used in basic graph patterns of that are now closed (in the query and all its subqueries) */
   dk_set_t		sg_bnode_label_sets;		/*!< A stack of dk_set_t-s of blank name labels in not-yet-closed basic graph patterns */
+  dk_set_t		sg_tt_ctor_expr_varnames;	/*!< Varnames used as components of TRIPLE()/<<(...)>> in expressions. */
+  dk_set_t		sg_non_tt_expr_varnames;	/*!< Varnames used in non-triple-constructor expressions. */
   int			sg_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
+  int			sg_sparql12_show_triple_terms;	/*!< Flag if internal SPARQL 1.2 triple-term helper variables should be exposed in SELECT * result sets. */
   caddr_t		sg_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c sg_protocol_params */
   caddr_t		sg_output_valmode_name;		/*!< Name of valmode for top-level result-set */
   caddr_t		sg_output_format_name;		/*!< Name of format for serialization of top-level result-set */
@@ -412,12 +445,16 @@ typedef struct sparp_s {
   spar_lexbmk_t sparp_curr_lexem_bmk;
   int sparp_in_precode_expn;		/*!< This bitmask is non-zero when the parser reads precode-safe expressions and the like. Otherwise it is combination of SPARP_PRECODE_xxx bits */
   int sparp_in_ctor_from_where;		/*!< If nonzero then the parser reads WHERE clause of CONSTRUCT WHERE or DELETE WHERE statement */
+  int sparp_in_insert_data;		/*!< Nonzero when parsing INSERT DATA statement - enables annotation block parsing */
+  int sparp_in_annotation_block;	/*!< Nonzero while parsing {| ... |} annotation property lists. */
+  int sparp_in_bind_expr;		/*!< Nonzero while parsing expression inside BIND(...). Used for SPARQL 1.2 triple-term syntax restrictions. */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
   int sparp_scalar_subq_count;		/*!< Counter of scalar subqueries. It's primary purpose is to track whether BIND expression contain scalar subqueries and hence is non-repeatable. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
   int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.rset_varnames lists */
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
+  dk_set_t sparp_bare_tt_nodes;		/*!< Set of SPAR_TRIPLE_TERM nodes built from <<(s p o)>> syntax; used by parser-only validation rules. */
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;
@@ -459,6 +496,7 @@ typedef struct sparp_s {
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
   int sparp_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
   int sparp_global_num_offset;		/*!< If \c sparp_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from \c sparp_global_num_offset up, some number of first params are system-specific. */
+  dk_set_t sparp_ann_reifier_suffixes;	/*!< Accumulated reifier nodes from ~ annotation suffixes, consumed by spar_object_with_ann */
 } sparp_t;
 
 
@@ -691,6 +729,17 @@ typedef struct spar_tree_s
         caddr_t ft_type;
         ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
+    struct {
+        /* #define SPAR_TRIPLE_TERM	(ptrlong)1026 RDF 1.2 triple term <<(s p o)>> */
+        SPART *subject;
+        SPART *predicate;
+        SPART *object;
+      } triple_term;
+    struct {
+        /* #define SPAR_UNNEST	(ptrlong)1027 SPARQL UNNEST operator */
+        SPART *source;       /*!< The vector expression to unnest */
+        SPART *alias;        /*!< The variable alias for output */
+      } unnest;
     struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
         /* #define SPAR_VARIABLE		(ptrlong)1013 */
@@ -977,6 +1026,7 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 #define SPAR_TRIPLE_TRICK_TRANSITIVE	0x1 /*!< Make transitive subquery or a repeating property path, due to transitivity in inference rules or options */
 #define SPAR_TRIPLE_TRICK_INV_UNION	0x2 /*!< Make union gp or property path leaf with '^', due to inverse properties in inference rules */
 #define SPAR_TRIPLE_TRICK_MACRO		0x4 /*!< Check triple pattern for matchong to macro signatures and make macro invocation instead of a triple */
+#define SPAR_TRIPLE_TRICK_TYPE_DR_UNION	0x8 /*!< Make union gp for rdf:type domain/range entailment branches */
 /*! Makes and adds a triple or a macro call or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
 \c banned tricks is a bitmask that is 0 by default, SPAR_ADD_TRIPLELIKE_NO_xxx */
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options, int banned_tricks);
@@ -994,6 +1044,7 @@ extern caddr_t spar_filter_is_freetext_or_rtree (sparp_t *sparp, SPART *filt, SP
 #define SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE	0x02
 #define SPAR_TRIPLE_FOR_FT_SHOULD_EXIST		0x04
 extern SPART *sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *filt, int make_ft_type_check);
+extern void sparp_distinct_varnames_of_tree (sparp_t *sparp, SPART *tree, dk_set_t *acc);
 extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);

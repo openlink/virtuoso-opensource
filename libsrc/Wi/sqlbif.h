@@ -280,6 +280,10 @@ void bif_hosting_init (void);
 caddr_t box_md5 (caddr_t str);
 EXE_EXPORT (caddr_t, md5, (caddr_t str));
 caddr_t md5_ses (dk_session_t *ses);
+
+/* RDF 1.2 triple-term IRI builder with self-describing S/P/O encoding.
+   The allow_legacy_fallback parameter is retained for ABI compatibility and is ignored. */
+extern caddr_t rdf_star_tt_iri_from_values_qst (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback);
 #ifdef _SSL
 caddr_t box_sha1 (caddr_t str);
 caddr_t box_hmac (caddr_t box, caddr_t key, int alg);

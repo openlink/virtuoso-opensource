@@ -359,7 +359,13 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 <SPARQL>">="		{ return _GE		; }
 <SPARQL>">"		{ return _GT		; }
 <SPARQL>"<="		{ return _LE		; }
+<SPARQL>"<<{"		{ return TRIPLE_TERM_ASSERT_L	; }
+<SPARQL>"}>>"		{ return TRIPLE_TERM_ASSERT_R	; }
+<SPARQL>"<<"		{ return TRIPLE_TERM_L	; }
+<SPARQL>">>"		{ return TRIPLE_TERM_R	; }
 <SPARQL>"<"		{ return _LT		; }
+<SPARQL>"--ltr"		{ return DIR_LTR_L	; }
+<SPARQL>"--rtl"		{ return DIR_RTL_L	; }
 <SPARQL>"-"		{ yylval->token_type = yyextra->sparp_lexdepth; return _MINUS		; }
 <SPARQL>"!="		{ return _NOT_EQ	; }
 <SPARQL>"+"		{ yylval->token_type = yyextra->sparp_lexdepth; return _PLUS		; }
@@ -369,6 +375,9 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 <SPARQL>"/"		{ return _SLASH		; }
 <SPARQL>"*"		{ return _STAR		; }
 <SPARQL>"*>"		{ return _STAR_GT	; }
+<SPARQL>"~ltr"		{ return DIR_LTR_L	; }
+<SPARQL>"~rtl"		{ return DIR_RTL_L	; }
+<SPARQL>"~"		{ return TILDE_L	; }
 
 	/* Keyword punctuators */
 
@@ -420,6 +429,13 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
     const struct sparql_keyword *sk = sparql_lex_hash_kw (yytext, yyleng);
     if (NULL == sk)
       {
+        /* SPARQL 1.2 BIFs not in gperf table (case-sensitive mixed-case names) */
+        if (!strcasecmp (yytext, "hasLANG")) { yylval->token_type = SPAR_BIF_HASLANG; return SPARQL_BIF; }
+        if (!strcasecmp (yytext, "hasLANGDIR")) { yylval->token_type = SPAR_BIF_HASLANGDIR; return SPARQL_BIF; }
+        if (!strcasecmp (yytext, "LANGDIR")) { yylval->token_type = SPAR_BIF_LANGDIR; return SPARQL_BIF; }
+        if (!strcasecmp (yytext, "STRLANGDIR")) { yylval->token_type = SPAR_BIF_STRLANGDIR; return SPARQL_BIF; }
+        if (!strcasecmp (yytext, "contains_token")) { yylval->token_type = SPAR_BIF_CONTAINS_TOKEN; return SPARQL_BIF; }
+        if (!strcasecmp (yytext, "format_number")) { yylval->token_type = SPAR_BIF_FORMAT_NUMBER; return SPARQL_BIF; }
         yylval->box = t_box_dv_short_nchars (yytext, yyleng); return SPARQL_PLAIN_ID;
       }
     switch (sk->token)
@@ -446,14 +462,15 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 	/* String lexems */
 
 <SPARQL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
+    yyextra->sparp_string_literal_lexval = 1;
     yylval->box = t_box_dv_short_nchars (yytext+1, yyleng - 2);
     return SPARQL_STRING;
   }
 
 <SPARQL>['']['']['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SSSQ); BEGIN_INNER; }
 <SPARQL>[""][""][""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DDDQ); BEGIN_INNER; }
-<SPARQL_SSSQ>['']['']['']	{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DDDQ>[""][""][""]	{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SSSQ>['']['']['']	{ yyextra->sparp_string_literal_lexval = 3; yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DDDQ>[""][""][""]	{ yyextra->sparp_string_literal_lexval = 3; yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SSSQ>(([''](['']?))?{S_NL})		{ yyextra->sparp_lexlineno++; yymore(); }
 <SPARQL_DDDQ>(([""]([""]?))?{S_NL})		{ yyextra->sparp_lexlineno++; yymore(); }
 <SPARQL_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -468,8 +485,8 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 
 <SPARQL>['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SQ); BEGIN_INNER; }
 <SPARQL>[""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DQ); BEGIN_INNER; }
-<SPARQL_SQ>['']		{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DQ>[""]		{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SQ>['']		{ yyextra->sparp_string_literal_lexval = 1; yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DQ>[""]		{ yyextra->sparp_string_literal_lexval = 1; yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SQ>{S_NL}	{ sparyyerror ("End-of-line in a short single-quoted string"); yymore(); }
 <SPARQL_DQ>{S_NL}	{ sparyyerror ("End-of-line in a short double-quoted string"); yymore(); }
 <SPARQL_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }

@@ -26,7 +26,7 @@
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
 %lex-param {yyscan_t yyscanner}
-%expect 5
+%expect 8
 
 %{
 
@@ -63,7 +63,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
 #define TTLP_URI_RESOLVE_IF_NEEDED(rel) \
   do { \
-    if ((NULL != ttlp_arg->ttlp_tf->tf_base_uri) && strncmp ((rel), "http://", 7)) \
+    if ((NULL != ttlp_arg->ttlp_tf->tf_base_uri) && !ttlp_uri_is_absolute (rel)) \
       (rel) = ttlp_uri_resolve (ttlp_arg, (rel)); \
     } while (0)
 
@@ -108,13 +108,23 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_of_L		/*:: PUNCT_TTL_LAST("@of") ::*/
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
+%token _AT_version_L	/*:: PUNCT_TTL_LAST("@version") ::*/
 %token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
 %token BASE_L		/*:: PUNCT("BASE"), TTL, LAST("BASE "), LAST("Base "), LAST("base ") ::*/
 %token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
 %token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
 %token PREFIX_L		/*:: PUNCT("PREFIX"), TTL, LAST("PREFIX "), LAST("Prefix "), LAST("prefix ") ::*/
+%token VERSION_L	/*:: PUNCT("VERSION"), TTL, LAST("VERSION "), LAST("Version "), LAST("version ") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
+
+%token TRIPLE_TERM_L	/*:: PUNCT_TTL_LAST("<<(") ::*/
+%token TRIPLE_TERM_R	/*:: PUNCT_TTL_LAST(")>>") ::*/
+%token REIFIED_TRIPLE_L	/*:: PUNCT_TTL_LAST("<<") ::*/
+%token REIFIED_TRIPLE_R	/*:: PUNCT_TTL_LAST(">>") ::*/
+%token ANNOTATION_L	/*:: PUNCT_TTL_LAST("{") ::*/
+%token ANNOTATION_R	/*:: PUNCT_TTL_LAST("}") ::*/
+%token TILDE		/*:: PUNCT_TTL_LAST("~") ::*/
 
 %token __TTL_PUNCT_END	/* Delimiting value for syntax highlighting */
 
@@ -127,6 +137,8 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token <box> TURTLE_STRING /*:: LITERAL("%s"), TTL, LAST("'sq'"), LAST("\"dq\""), LAST("'''sq1\nsq2'''"), LAST("\"\"\"dq1\ndq2\"\"\""), LAST("'\"'"), LAST("'-\\\\-\\t-\\v-\\r-\\'-\\\"-\\u1234-\\U12345678-\\uaAfF-'") ::*/
 %token <box> KEYWORD	/*:: LITERAL("@%s"), TTL, LAST("@example") ::*/
 %token <box> LANGTAG	/*:: LITERAL("%s"), TTL, LAST("@ES") ::*/
+%token DIR_LTR	/*:: LITERAL("~ltr"), TTL, LAST("~ltr") ::*/
+%token DIR_RTL	/*:: LITERAL("~rtl"), TTL, LAST("~rtl") ::*/
 
 %token <box> QNAME	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:_f.Rag.2"), LAST(":_f.Rag.2") ::*/
 %token <box> QNAME_NS	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:") ::*/
@@ -147,6 +159,10 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %type<box> blank_node_label
 %type<box> verb
 %type<box> rev_verb
+%type<box> q_complete
+%type<box> q_complete_take
+%type<box> tt_object_take
+%type<box> tt_subject_take
 %type<token_type> keyword
 
 %left _GARBAGE_BEFORE_DOT_WS _DOT_WS
@@ -167,9 +183,54 @@ clause
 	| _AT_keywords_L error { ttlyyerror_action ("Comma-delimited list of names expected after @keywords"); }
 	| base_clause dot_opt
 	| prefix_clause dot_opt
+	| version_clause dot_opt
 	| q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
+		trig_block_or_predicate_object_list
+	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		ttlyyerror_action ("Bare triple term <<(...)>> can not be used as subject"); }
+		trig_block_or_predicate_object_list
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		trig_block_or_predicate_object_list
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL;
+		tf_triple (tf, ttlp_arg->ttlp_subj_uri, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		trig_block_or_predicate_object_list
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, $6);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		trig_block_or_predicate_object_list
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		trig_block_or_predicate_object_list
 	| top_triple_clause_with_nonq_subj
 	| _LBRA_TOP_TRIG {
@@ -180,6 +241,19 @@ clause
 		ttlp_triple_process_prepared (ttlp_arg);
 		ttlp_leave_trig_group (ttlp_arg); }
 	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
+	;
+
+version_clause
+	: version_kwd TURTLE_STRING {
+		  if (ttlp_arg->ttlp_last_string_is_long)
+		    ttlyyerror_action ("Long quoted string is not allowed in VERSION clause");
+		  dk_free_tree ($2); }
+	| version_kwd error { ttlyyerror_action ("Only a string literal is allowed after @version keyword"); }
+	;
+
+version_kwd
+	: _AT_version_L
+	| VERSION_L
 	;
 
 base_clause
@@ -260,6 +334,7 @@ dot_opt
 
 trig_block_or_predicate_object_list
 	: predicate_object_list_or_garbage _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| _DOT_WS		{ /* standalone reified triple or triple term with no predicates */ }
 	| opt_eq_lbra {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
@@ -299,6 +374,7 @@ base_or_prefix_or_inner_triple_clauses_dot
 base_or_prefix_or_inner_triple_clause
 	: base_clause
 	| prefix_clause
+	| version_clause
 	| inner_triple_clause
 	;
 
@@ -322,6 +398,50 @@ inner_triple_clause
 		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	    inner_predicate_object_list
+	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		ttlyyerror_action ("Bare triple term <<(...)>> can not be used as subject"); }
+		predicate_object_list_or_garbage_opt
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		predicate_object_list_or_garbage_opt
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL;
+		tf_triple (tf, ttlp_arg->ttlp_subj_uri, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		predicate_object_list_or_garbage_opt
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, $6);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		predicate_object_list_or_garbage_opt
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = bnode;
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+		predicate_object_list_or_garbage_opt
 	| triple_clause_with_nonq_subj
 	;
 
@@ -470,14 +590,126 @@ object_list
 	;
 
 object_list_nocomma
-	: object
-	| object_list_comma object
+	: object annotation_list_opt
+	| object_list_comma object annotation_list_opt
 	| object_list_comma error { ttlyyerror_action ("Object expected after comma"); }
 	;
 
 object_list_comma
-	: object _COMMA					{ ttlp_triple_process_prepared (ttlp_arg); }
-	| object_list_comma object _COMMA		{ ttlp_triple_process_prepared (ttlp_arg); }
+	: object annotation_list_opt _COMMA				{ ttlp_triple_process_prepared (ttlp_arg); }
+	| object_list_comma object annotation_list_opt _COMMA		{ ttlp_triple_process_prepared (ttlp_arg); }
+	;
+
+annotation_list_opt
+	: /* empty */
+	| annotation_list_opt TILDE q_complete {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  ttlp_arg->ttlp_last_complete_uri = NULL;
+		  tf_triple (tf, reifier, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (reifier); dk_free_tree (obj_copy); } }
+	| annotation_list_opt TILDE blank_node_label {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t bnode = tf_bnode_iid (tf, $3);
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (bnode); dk_free_tree (obj_copy); } }
+	| annotation_list_opt TILDE %prec _COMMA {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t bnode = tf_bnode_iid (tf, NULL);
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (bnode); dk_free_tree (obj_copy); } }
+	| annotation_list_opt ANNOTATION_L {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t bnode = tf_bnode_iid (tf, NULL);
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (obj_copy);
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_pred_uri));
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_obj));
+		  $<box>$ = ttlp_arg->ttlp_subj_uri;
+		  ttlp_arg->ttlp_subj_uri = bnode; } }
+	  predicate_object_list_or_garbage ANNOTATION_R {
+		ttlp_triple_process_prepared (ttlp_arg);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $<box>3;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris);
+		dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
+	| annotation_list_opt TILDE q_complete ANNOTATION_L {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  ttlp_arg->ttlp_last_complete_uri = NULL;
+		  tf_triple (tf, reifier, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (obj_copy);
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_pred_uri));
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_obj));
+		  $<box>$ = ttlp_arg->ttlp_subj_uri;
+		  ttlp_arg->ttlp_subj_uri = box_copy (reifier);
+		  dk_free_tree (reifier); } }
+	  predicate_object_list_or_garbage ANNOTATION_R {
+		ttlp_triple_process_prepared (ttlp_arg);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $<box>5;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris);
+		dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
+	| annotation_list_opt TILDE blank_node_label ANNOTATION_L {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t bnode = tf_bnode_iid (tf, $3);
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (obj_copy);
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_pred_uri));
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_obj));
+		  $<box>$ = ttlp_arg->ttlp_subj_uri;
+		  ttlp_arg->ttlp_subj_uri = box_copy (bnode);
+		  dk_free_tree (bnode); } }
+	  predicate_object_list_or_garbage ANNOTATION_R {
+		ttlp_triple_process_prepared (ttlp_arg);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $<box>5;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris);
+		dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
+	| annotation_list_opt TILDE ANNOTATION_L {
+		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
+		ttlp_triple_process_prepared (ttlp_arg);
+		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		  caddr_t bnode = tf_bnode_iid (tf, NULL);
+		  caddr_t triple_iri = ttlp_make_triple_term_iri (ttlp_arg->ttlp_subj_uri, ttlp_arg->ttlp_pred_uri, obj_copy);
+		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		  dk_free_box (triple_iri); dk_free_tree (obj_copy);
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_pred_uri));
+		  dk_set_push (&ttlp_arg->ttlp_saved_uris, box_copy (ttlp_arg->ttlp_obj));
+		  $<box>$ = ttlp_arg->ttlp_subj_uri;
+		  ttlp_arg->ttlp_subj_uri = bnode; } }
+	  predicate_object_list_or_garbage ANNOTATION_R {
+		ttlp_triple_process_prepared (ttlp_arg);
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = $<box>4;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris);
+		dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
 	;
 
 verb
@@ -576,34 +808,71 @@ object
 	| blank	{
 		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| true_L {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL, 0); }
 	| false_L {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL, 0); }
 	| TURTLE_INTEGER {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL, 0); }
 	| TURTLE_DECIMAL {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL, 0); }
 	| TURTLE_DOUBLE {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| NaN_L {
 	  	double myZERO = 0.0;
 		double myNAN_d = 0.0/myZERO;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| INF_L {
 	  	double myZERO = 0.0;
 		double myPOSINF_d = 1.0/myZERO;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| _MINUS_INF_L {
 	  	double myZERO = 0.0;
 		double myNEGINF_d = -1.0/myZERO;
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNEGINF_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNEGINF_d), uname_xmlschema_ns_uri_hash_double, NULL, 0);	}
 	| TURTLE_STRING	{
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL, 0); }
 	| TURTLE_STRING LANGTAG	{
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 0);	}
+	| TURTLE_STRING LANGTAG DIR_LTR	{
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 'l');	}
+	| TURTLE_STRING LANGTAG DIR_RTL	{
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 'r');	}
 	| TURTLE_STRING _CARET_CARET q_complete {
-		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, ttlp_arg->ttlp_last_complete_uri, NULL);
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, ttlp_arg->ttlp_last_complete_uri, NULL, 0);
 		ttlp_arg->ttlp_last_complete_uri = NULL;		}
+	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		ttlp_triple_and_inf_prepare (ttlp_arg, triple_iri); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		ttlp_triple_and_inf_prepare (ttlp_arg, bnode); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t reifier_id = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL;
+		tf_triple (tf, reifier_id, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		ttlp_triple_and_inf_prepare (ttlp_arg, reifier_id); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, $6);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		ttlp_triple_and_inf_prepare (ttlp_arg, bnode); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		ttlp_triple_and_inf_prepare (ttlp_arg, bnode); }
 	| TTL_RECOVERABLE_ERROR { }
 	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR {
 		dk_free_tree (ttlp_arg->ttlp_obj);
@@ -789,6 +1058,104 @@ blank_node_label
 	| BLANK_NODE_LABEL_TTL
 	;
 
+q_complete_take
+	: q_complete {
+		  $$ = ttlp_arg->ttlp_last_complete_uri;
+		  ttlp_arg->ttlp_last_complete_uri = NULL; }
+	;
+
+tt_subject_take
+	: q_complete_take { $$ = $1; }
+	| blank_node_label { $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1); }
+	| _LSQBRA_RSQBRA { $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
+	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
+		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL;
+		tf_triple (tf, reifier, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = reifier; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, $6);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	;
+
+tt_object_take
+	: q_complete_take { $$ = $1; }
+	| blank_node_label { $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1); }
+	| _LSQBRA_RSQBRA { $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
+	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
+		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
+		ttlp_arg->ttlp_last_complete_uri = NULL;
+		tf_triple (tf, reifier, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = reifier; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, $6);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
+		caddr_t bnode = tf_bnode_iid (tf, NULL);
+		tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
+		dk_free_box (triple_iri);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
+		$$ = bnode; }
+	| TURTLE_STRING { $$ = $1; }
+	| TURTLE_STRING LANGTAG { $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING _CARET_CARET q_complete_take { $$ = $1; dk_free_tree ($3); }
+	| TURTLE_INTEGER { $$ = $1; }
+	| TURTLE_DECIMAL { $$ = $1; }
+	| TURTLE_DOUBLE { $$ = $1; }
+	| true_L { $$ = box_dv_short_string ("true"); }
+	| false_L { $$ = box_dv_short_string ("false"); }
+	;
+
 q_complete
 	: Q_IRI_REF
 		{
@@ -830,5 +1197,4 @@ semis
 	: _SEMI /* empty */
 	| semis _SEMI /* empty */
 	;
-
 
