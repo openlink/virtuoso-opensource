@@ -204,6 +204,7 @@ typedef struct ttlp_s
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
   const char *ttlp_raw_text;	/*!< Raw text of the lexem */
+  char ttlp_last_string_is_long; /*!< 1 if the most recent TURTLE_STRING token came from triple-quoted syntax */
   ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier is qname, not a keyword */
   /* parser */
   const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawler" */
@@ -220,6 +221,9 @@ typedef struct ttlp_s
   caddr_t ttlp_obj;		/*!< Current object URI or value */
   caddr_t ttlp_obj_type;	/*!< Current object type URI */
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
+  char ttlp_obj_dir;		/*!< Current object direction: 'l' for ltr, 'r' for rtl, 0 for none */
+  caddr_t ttlp_obj_triple_term;	/*!< Current object as triple term <<(s p o)>> */
+  caddr_t ttlp_reified_id;	/*!< Identifier for reified triple <<s p o>>~id */
   char ttlp_triple_is_prepared;	/*!< Flags if some triple is prepared but not fed to ttlp_tf. */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
@@ -268,6 +272,7 @@ extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, cad
 #define tf_bnode_iid(tf, boxed_sparyytext) DBG_NAME (tf_bnode_iid) (__FILE__, __LINE__, (tf), (boxed_sparyytext))
 #define tf_formula_bnode_iid(ttlp,boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (boxed_sparyytext))
 #endif
+extern int ttlp_uri_is_absolute (ccaddr_t uri);
 extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 
 /* Numeric values of these constants are important, do not alter them. They are used in tricky way. */
@@ -280,8 +285,9 @@ extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mo
 extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
 extern void ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri);
-extern void ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, char o_dir);
 extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
+extern caddr_t ttlp_make_triple_term_iri (caddr_t s, caddr_t p, caddr_t o);
 #define ttlp_triple_forget_prepared(ttlp_arg) do { (ttlp_arg)->ttlp_triple_is_prepared = 0; } while (0)
 extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
 extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);

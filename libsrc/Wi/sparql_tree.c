@@ -190,10 +190,81 @@ scan_for_children:
         sub_expn_count = SPART_TRIPLE_FIELDS_COUNT;
         break;
       }
+    case SPAR_TRIPLE_TERM:
+      {
+        tree_cat = 1;
+        sub_expns = (SPART **)&tree->_.triple_term.subject;
+        sub_expn_count = 3;
+        break;
+      }
+    case SPAR_UNNEST:
+      {
+        tree_cat = 0;
+        sub_expns = &(tree->_.unnest.source);
+        sub_expn_count = 1;
+        break;
+      }
     case SPAR_LIST:
       {
+        tree_cat = 1;
         sub_expns = tree->_.list.items;
         sub_expn_count = BOX_ELEMENTS (sub_expns);
+        break;
+      }
+    case SPAR_WHERE_MODIFS:
+      {
+        tree_cat = 0;
+        break;
+      }
+    case SPAR_SERVICE_INV:
+      {
+        tree_cat = 0;
+        break;
+      }
+    case SPAR_BINDINGS_INV:
+      {
+        tree_cat = 0;
+        break;
+      }
+    case SPAR_MACROCALL:
+      {
+        tree_cat = 1;
+        sub_expns = tree->_.macrocall.argtrees;
+        sub_expn_count = BOX_ELEMENTS_0 (sub_expns);
+        break;
+      }
+    case SPAR_MACROPU:
+      {
+        tree_cat = 1;
+        break;
+      }
+    case SPAR_CONV:
+      {
+        tree_cat = 1;
+        sub_expns = &(tree->_.conv.arg);
+        sub_expn_count = 1;
+        break;
+      }
+    case SPAR_SQLCOL:
+      {
+        tree_cat = 1;
+        break;
+      }
+    case SPAR_QM_SQL_FUNCALL:
+      {
+        tree_cat = 1;
+        break;
+      }
+    case SPAR_CODEGEN:
+      {
+        tree_cat = 1;
+        break;
+      }
+    case SPAR_GRAPH:
+      {
+        tree_cat = 1;
+        sub_expns = &(tree->_.graph.expn);
+        sub_expn_count = 1;
         break;
       }
     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
@@ -223,7 +294,7 @@ scan_for_children:
       }
     default:
       {
-        spar_internal_error (sparp, "Internal SPARQL compiler error: unsupported subexpression type");
+        spar_internal_error (sparp, t_box_sprintf (100, "Internal SPARQL compiler error: unsupported subexpression type %ld", (long)tree_type));
         break;
       }
     }
@@ -889,6 +960,13 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
             tree->_.triple.options[ctr] = spar_macroprocess_tree (sparp, tree->_.triple.options[ctr], ctx);
           }
         ctx->smpc_defbody_currtabid = NULL;
+        return tree;
+      }
+    case SPAR_TRIPLE_TERM:
+      {
+        tree->_.triple_term.subject = spar_macroprocess_tree (sparp, tree->_.triple_term.subject, ctx);
+        tree->_.triple_term.predicate = spar_macroprocess_tree (sparp, tree->_.triple_term.predicate, ctx);
+        tree->_.triple_term.object = spar_macroprocess_tree (sparp, tree->_.triple_term.object, ctx);
         return tree;
       }
     case SPAR_VARIABLE:
@@ -2497,14 +2575,23 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
     {
       if (SPAR_QNAME == SPART_TYPE (value))
         {
+          caddr_t qname_val = value->_.lit.val;
+          dtp_t qname_dtp = (NULL == qname_val) ? DV_DB_NULL : DV_TYPE_OF (qname_val);
 #ifdef DEBUG
-          if (DV_UNAME != DV_TYPE_OF (value->_.lit.val))
+          if ((NULL != qname_val) && (DV_UNAME != DV_TYPE_OF (qname_val)))
             GPF_T1 ("sparp_" "rvr_set_by_constant(): bad QNAME");
 #endif
-          dest->rvrFixedValue = value->_.lit.val;
+          if ((NULL == qname_val) || ((DV_UNAME != qname_dtp) && (DV_STRING != qname_dtp)))
+            {
+              SPARP_DEBUG_WEIRD(sparp,"bad qname in constant range");
+              dest->rvrRestrictions = SPART_VARR_CONFLICT;
+              sparp_rvr_audit (sparp, dest);
+              return;
+            }
+          dest->rvrFixedValue = qname_val;
           dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
           /*                              0123456789 */
-          if (!strncmp (value->_.lit.val, "nodeID://", 9))
+          if (!strncmp (qname_val, "nodeID://", 9))
             dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
           else
             dest->rvrRestrictions |= SPART_VARR_IS_IRI;
@@ -2513,10 +2600,18 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
         }
       else if (DV_UNAME == DV_TYPE_OF (value))
         {
+          ccaddr_t uname_val = (ccaddr_t)value;
+          if (NULL == uname_val)
+            {
+              SPARP_DEBUG_WEIRD(sparp,"NULL uname in constant range");
+              dest->rvrRestrictions = SPART_VARR_CONFLICT;
+              sparp_rvr_audit (sparp, dest);
+              return;
+            }
           dest->rvrFixedValue = (ccaddr_t)value;
           dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
           /*                              0123456789 */
-          if (!strncmp ((ccaddr_t)value, "nodeID://", 9))
+          if (!strncmp (uname_val, "nodeID://", 9))
             dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
           else
             dest->rvrRestrictions |= SPART_VARR_IS_IRI;
@@ -3443,6 +3538,12 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           tgt->_.triple.tr_fields[fld_ctr] = sparp_tree_full_copy (sparp, orig->_.triple.tr_fields[fld_ctr], parent_gp);
         }
       tgt->_.triple.options = sparp_treelist_full_copy (sparp, orig->_.triple.options, parent_gp);
+      return tgt;
+    case SPAR_TRIPLE_TERM:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.triple_term.subject = sparp_tree_full_copy (sparp, orig->_.triple_term.subject, parent_gp);
+      tgt->_.triple_term.predicate = sparp_tree_full_copy (sparp, orig->_.triple_term.predicate, parent_gp);
+      tgt->_.triple_term.object = sparp_tree_full_copy (sparp, orig->_.triple_term.object, parent_gp);
       return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -4547,6 +4648,7 @@ sparp_get_options_of_tree (sparp_t *sparp, SPART *tree)
     {
     case SPAR_GP: return tree->_.gp.options;
     case SPAR_TRIPLE: return tree->_.triple.options;
+    case SPAR_TRIPLE_TERM: return NULL;
     }
   return NULL;
 }
@@ -4670,6 +4772,10 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         spar_error (sparp, "%s options can be specified only for triple patterns with special predicates, not for plain patterns", (has_ft ? "Free-text" : "Spatial"));
       if (has_service)
         spar_internal_error (sparp, "Triple pattern has SERVICE invocation options, probably due to invalid optimization");
+      break;
+    case SPAR_TRIPLE_TERM:
+      if (needs_transitive || has_transitive || has_ft || has_geo || has_service || has_inference)
+        spar_error (sparp, "Options cannot be specified for triple term patterns");
       break;
     default:
       if (has_inference)
@@ -4896,6 +5002,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case SPAR_REQ_TOP: return "SPARQL query";
     case SPAR_VARIABLE: return "Variable";
     case SPAR_TRIPLE: return "Triple";
+    case SPAR_TRIPLE_TERM: return "TripleTerm";
   }
   return NULL;
 }
@@ -5333,6 +5440,15 @@ spart_dump (const void *tree_arg, dk_session_t *ses, int indent, const char *tit
               spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
               spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
               spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
+              break;
+            }
+          case SPAR_TRIPLE_TERM:
+            {
+              snprintf (buf, sizeof (buf), "TRIPLE_TERM:");
+              SES_PRINT (ses, buf);
+              spart_dump (tree->_.triple_term.subject, ses, indent+2, "SUBJECT", -1);
+              spart_dump (tree->_.triple_term.predicate, ses, indent+2, "PREDICATE", -1);
+              spart_dump (tree->_.triple_term.object, ses, indent+2, "OBJECT", -1);
               break;
             }
           case SPAR_SERVICE_INV:

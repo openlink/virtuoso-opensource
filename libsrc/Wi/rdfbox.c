@@ -36,6 +36,8 @@
 #include "aqueue.h"	/* For aq_allocate() in RDF replication */
 #include "geo.h"
 
+int rb_type__rdf_HTML;
+int rb_type__rdf_JSON;
 int rb_type__rdf_XMLLiteral;
 int rb_type__rdf_langString;
 int rb_type__xsd_ENTITY;
@@ -93,6 +95,8 @@ int rb_type__xsd_yearMonthDuration;
 /**INDENT-OFF**/
 stat_desc_t rdf_preset_datatypes_descs [] =
   {
+    SD_DEF_I32 (rb_type__rdf_HTML, "rb_type__rdf:HTML"),
+    SD_DEF_I32 (rb_type__rdf_JSON, "rb_type__rdf:JSON"),
     SD_DEF_I32 (rb_type__rdf_XMLLiteral, "rb_type__rdf:XMLLiteral"),
     SD_DEF_I32 (rb_type__rdf_langString, "rb_type__rdf:langString"),
     SD_DEF_I32 (rb_type__xsd_ENTITY, "rb_type__xsd:ENTITY"),
@@ -209,6 +213,8 @@ rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
   if (uname_xmlschema_ns_uri_hash_gYear			== dt_uname) return rb_type__xsd_gYear			;
   if (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname) return rb_type__xsd_gYearMonth		;
   if (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) return rb_type__xsd_yearMonthDuration	;
+  if (uname_rdf_ns_uri_HTML				== dt_uname) return rb_type__rdf_HTML			;
+  if (uname_rdf_ns_uri_JSON				== dt_uname) return rb_type__rdf_JSON			;
 
   /* (uname_xmlschema_ns_uri_hash_dayTimeDuration       == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTime              == dt_uname) */
@@ -2334,6 +2340,9 @@ bif_sparql_ebv_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, con
               return rb_new_bool (0);
             return NEW_DB_NULL;
           }
+        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
+        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+          return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rb_ebv_of_plain_box (rb->rb_box);
         if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)
@@ -2394,6 +2403,9 @@ bif_sparql_ebv_int_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
               return (caddr_t)((ptrlong)(0));
             return NEW_DB_NULL;
           }
+        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
+        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+          return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rdf_ebv_int_of_plain_box (rb->rb_box);
         if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)

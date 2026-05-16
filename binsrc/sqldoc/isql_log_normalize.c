@@ -56,7 +56,9 @@ typedef struct cut_env_s
 
 static char errmsg_buf[1000];
 
+#ifndef strdup
 char *strdup(const char *s);
+#endif
 
 void readtextfile (const char *src_name, char **bufptr, size_t *lenptr, char **err_ret)
 {
