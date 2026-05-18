@@ -1340,6 +1340,17 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR105 FAIL: SERVICE without sub-RETURN')); }
 
+  -- TR105a: SERVICE sub-RETURN property shorthand expands inside the SERVICE body
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('SERVICE <http://example.org/sparql> { MATCH (team) RETURN team.rdfs:label AS team_name } RETURN team_name');
+  if (_sparql is not null
+      and strstr (_sparql, 'SERVICE') is not null
+      and strstr (_sparql, '<http://www.w3.org/2000/01/rdf-schema#label> ?prop_') is not null
+      and strstr (_sparql, 'AS ?team_name') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR105a PASS: SERVICE sub-RETURN property shorthand')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR105a FAIL: SERVICE sub-RETURN property shorthand')); }
+
   -- TR106: GQL CONSTRUCT emits SPARQL CONSTRUCT
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> USE GRAPH urn.analytics.weighted MATCH (a:foaf:Person)-[:foaf:knows]->(b:foaf:Person) WHERE a = <urn:a> AND b = <urn:b> CONSTRUCT (a)-[:foaf:knows]->(b)');

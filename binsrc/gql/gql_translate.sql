@@ -1806,19 +1806,19 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
       DB.DBA.GQL_CTX_ADD_FILTER (svc_ctx, wexpr);
     }
 
-  body := DB.DBA.GQL_CTX_GET (svc_ctx, 'values');
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_values'));
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_binds'));
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'triples'));
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'binds'));
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'filters'));
-  body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'optionals'));
-
   triples := DB.DBA.GQL_CTX_GET (_ctx, 'triples');
   if (has_return)
     {
       ret_vars := DB.DBA.GQL_GEN_RETURN (return_ast, svc_ctx, order_clause, limit_clause, skip_clause, is_distinct);
       explicit_from := DB.DBA.GQL_GEN_EXPLICIT_FROM_CLAUSES (svc_ctx);
+
+      body := DB.DBA.GQL_CTX_GET (svc_ctx, 'values');
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_values'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_binds'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'triples'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'binds'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'filters'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'optionals'));
 
       proj := '';
       for (ri := 0; ri < length (ret_vars); ri := ri + 1)
@@ -1878,6 +1878,14 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
     }
   else
     {
+      body := DB.DBA.GQL_CTX_GET (svc_ctx, 'values');
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_values'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'pre_binds'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'triples'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'binds'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'filters'));
+      body := concat (body, DB.DBA.GQL_CTX_GET (svc_ctx, 'optionals'));
+
       if (is_silent)
         triples := concat (triples, '  SERVICE SILENT ', endpoint_str, ' {\n', body, '  }\n');
       else
