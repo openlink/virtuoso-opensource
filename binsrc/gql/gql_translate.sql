@@ -3198,6 +3198,8 @@ create procedure DB.DBA.GQL_GEN_RETURN (in _return_ast any, inout _ctx any, inou
           DB.DBA.GQL_CTX_ADD_ALIAS (_ctx, ria, sparql_expr);
           ret_vars := vector_concat (ret_vars, vector (vector (sparql_expr, ria)));
         }
+      else if (isarray (rie) and aref (rie, 0) = 'VAR')
+        ret_vars := vector_concat (ret_vars, vector (vector (sparql_expr, aref (rie, 1))));
       else
         ret_vars := vector_concat (ret_vars, vector (vector (sparql_expr, null)));
     }

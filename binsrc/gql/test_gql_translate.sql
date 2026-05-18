@@ -81,8 +81,9 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) RETURN n');
   if (_sparql is not null and strstr (_sparql, 'SELECT') is not null
+      and strstr (_sparql, '(?gql_n_n AS ?n)') is not null
       and strstr (_sparql, 'WHERE') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR1 PASS: MATCH RETURN -> SELECT')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR1 PASS: MATCH RETURN -> SELECT with default variable alias')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR1 FAIL: MATCH RETURN')); }
 
@@ -105,8 +106,10 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   -- TR4: MATCH with edge
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n)-[:KNOWS]->(m) RETURN n, m');
-  if (_sparql is not null and strstr (_sparql, 'knows') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR4 PASS: edge -> knows IRI')); }
+  if (_sparql is not null and strstr (_sparql, 'knows') is not null
+      and strstr (_sparql, '(?gql_n_n AS ?n)') is not null
+      and strstr (_sparql, '(?gql_n_m AS ?m)') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR4 PASS: edge -> knows IRI with default variable aliases')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR4 FAIL: edge translation')); }
 
