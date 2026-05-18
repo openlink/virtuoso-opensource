@@ -1873,7 +1873,10 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
               DB.DBA.GQL_CTX_ADD_ALIAS (_ctx, alias, concat ('?', alias));
             }
           else if (isarray (expr) and aref (expr, 0) = 'VAR')
-            DB.DBA.GQL_CTX_ADD_VAR (_ctx, aref (expr, 1));
+            {
+              DB.DBA.GQL_CTX_ADD_VAR (_ctx, aref (expr, 1));
+              DB.DBA.GQL_CTX_ADD_ALIAS (_ctx, aref (expr, 1), concat ('?', aref (expr, 1)));
+            }
         }
     }
   else
@@ -3858,6 +3861,47 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   if (has_delete or has_set or has_remove)
     {
       return DB.DBA.GQL_GEN_DML (delete_ast, set_ast, remove_ast, ctx);
+    }
+
+  -- SERVICE-only SPARQL-FED style query: project variables made visible by
+  -- SERVICE clauses even when the outer GQL query omits an explicit RETURN.
+  if (not has_return and length (service_asts) > 0)
+    {
+      declare service_vars any;
+      declare svi integer;
+      service_vars := DB.DBA.GQL_CTX_GET (ctx, 'vars');
+      if (length (service_vars) > 0)
+        {
+          declare sparql_text, where_body varchar;
+          declare proj_items any;
+          proj_items := vector ();
+          for (svi := 0; svi < length (service_vars); svi := svi + 1)
+            {
+              declare sv_name varchar;
+              sv_name := aref (service_vars, svi);
+              proj_items := vector_concat (proj_items,
+                vector (vector (DB.DBA.GQL_GEN_EXPR (vector ('VAR', sv_name), ctx), sv_name)));
+            }
+
+          sparql_text := concat ('SPARQL ',
+            DB.DBA.GQL_EMIT_PREFIX_BLOCK (ctx),
+            DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
+          sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
+          sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+          sparql_text := concat (sparql_text, DB.DBA.GQL_EMIT_SELECT (ctx, 0, proj_items));
+          sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_FROM_CLAUSES (ctx));
+
+          where_body := '';
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'values'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'pre_values'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'pre_binds'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'triples'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'binds'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'filters'));
+          where_body := concat (where_body, DB.DBA.GQL_CTX_GET (ctx, 'optionals'));
+          sparql_text := concat (sparql_text, DB.DBA.GQL_EMIT_WHERE (ctx, where_body));
+          return sparql_text;
+        }
     }
 
   -- Build SELECT query
