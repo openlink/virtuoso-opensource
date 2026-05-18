@@ -1398,6 +1398,16 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR110 FAIL: node label alternatives with pipe')); }
 
+  -- TR110a: Registered namespace property access works without query-local PREFIX
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (team) RETURN team.rdfs:label AS team_name');
+  if (_sparql is not null
+      and strstr (_sparql, '<http://www.w3.org/2000/01/rdf-schema#label>') is not null
+      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#rdfs:label>') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR110a PASS: registered namespace property access')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR110a FAIL: registered namespace property access')); }
+
   -- TR111: Graph centrality helpers translate to SQL-backed SPARQL calls
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> USE GRAPH urn.analytics.weighted MATCH (n:foaf:Person) RETURN n, eigenvector_centrality(n, "out", foaf:knows, weight) AS ev, closeness_centrality(n, "out", foaf:knows) AS cc, betweenness_centrality(n, "out", foaf:knows, weight) AS bc');

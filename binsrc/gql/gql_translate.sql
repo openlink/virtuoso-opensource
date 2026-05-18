@@ -1390,6 +1390,20 @@ create procedure DB.DBA.GQL_REGISTERED_NS_URI (in _prefix varchar)
   select max (NS_URL) into ns_uri
     from DB.DBA.SYS_XML_PERSISTENT_NS_DECL
    where NS_PREFIX = _prefix;
+  if (isstring (ns_uri) and length (ns_uri) > 0)
+    return ns_uri;
+  if (_prefix = 'rdf')
+    return 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+  if (_prefix = 'rdfs')
+    return 'http://www.w3.org/2000/01/rdf-schema#';
+  if (_prefix = 'owl')
+    return 'http://www.w3.org/2002/07/owl#';
+  if (_prefix = 'xsd')
+    return 'http://www.w3.org/2001/XMLSchema#';
+  if (_prefix = 'foaf')
+    return 'http://xmlns.com/foaf/0.1/';
+  if (_prefix = 'skos')
+    return 'http://www.w3.org/2004/02/skos/core#';
   return ns_uri;
 }
 ;
