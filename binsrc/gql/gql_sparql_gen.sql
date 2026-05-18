@@ -91,7 +91,7 @@ create procedure DB.DBA.GQL_EMIT_SELECT (inout _ctx any, in _is_distinct integer
       alias := aref (item, 1);
       if (proj <> '')
         proj := concat (proj, ' ');
-      if (alias is not null)
+      if (alias is not null and expr <> concat ('?', alias))
         proj := concat (proj, '(', expr, ' AS ?', alias, ')');
       else
         proj := concat (proj, expr);

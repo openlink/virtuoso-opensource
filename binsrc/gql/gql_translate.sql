@@ -1827,7 +1827,7 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
           rv := aref (aref (ret_vars, ri), 0);
           ralias := aref (aref (ret_vars, ri), 1);
           if (proj <> '') proj := concat (proj, ' ');
-          if (ralias is not null)
+          if (ralias is not null and rv <> concat ('?', ralias))
             proj := concat (proj, '(', rv, ' AS ?', ralias, ')');
           else
             proj := concat (proj, rv);

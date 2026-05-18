@@ -1355,7 +1355,8 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('SERVICE <http://example.org/sparql> { MATCH (team) RETURN team, team.rdfs:label AS team_name }');
   if (_sparql is not null
-      and strstr (_sparql, 'SELECT (?team AS ?team) (?team_name AS ?team_name)') is not null
+      and strstr (_sparql, 'SELECT ?team ?team_name') is not null
+      and strstr (_sparql, '(?team_name AS ?team_name)') is null
       and strstr (_sparql, 'SERVICE') is not null
       and strstr (_sparql, '<http://www.w3.org/2000/01/rdf-schema#label> ?prop_') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR105b PASS: SERVICE-only inner RETURN auto-projects')); }
