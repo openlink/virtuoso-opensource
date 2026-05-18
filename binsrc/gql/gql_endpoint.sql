@@ -32,6 +32,18 @@
 -- OPENGQL execution handler
 ----------------------------------------------------------------------
 
+create procedure DB.DBA.OPENGQL (in _query varchar, in _default_graph varchar := null)
+{
+  return DB.DBA.OPENGQL_EXEC (_query, _default_graph);
+}
+;
+
+create procedure DB.DBA.OPENGQL_PARAMS (in _query varchar, in _default_graph varchar := null, in _params any := null)
+{
+  return DB.DBA.GQL_PARAMS (_query, _default_graph, _params);
+}
+;
+
 create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varchar := null)
 {
   declare tokens, ast, query_ast any;
