@@ -20,7 +20,7 @@ VOS includes an HTTP(S) Application Server Platform for deploying web applicatio
 ## Installation
 
 * Virtuoso Server
-  * Downloading prebuilt binaries for Linux, macOS or Windows from [Github releases](https://github.com/openlink/virtuoso-opensource/releases)
+  * Downloading installers for [Linux](https://github.com/openlink/virtuoso-opensource/releases/latest/download/virtuoso-opensource.x86_64-generic_glibc25-linux-gnu.tar.gz), [macOS](https://github.com/openlink/virtuoso-opensource/releases/latest/download/Virtuoso_Open_Source_for_macOS.dmg) or [Windows](https://github.com/openlink/virtuoso-opensource/releases/latest/download/Virtuoso_Open_Source_for_Windows.dmg) from [Github releases](https://github.com/openlink/virtuoso-opensource/releases)
   * Running Virtuoso via [Docker](README.Docker.md)
   * Building from source on [Linux, macOS](README.Building.md) and [Windows](README.WINDOWS.md)
   * Upgrading from [previous versions](README.UPGRADE.md)
