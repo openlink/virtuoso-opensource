@@ -60,7 +60,7 @@ It should set \c shcompo_data field to either some actual data or to NULL, but
 it should not try to fill other fields. */
 typedef struct shcompo_s * (* shcompo_alloc_copy_t) (struct shcompo_s *shc);
 /*! Compiles a key of \c shc and fills in either its \c shcompo_data or \c shcompo_error */
-typedef void (* shcompo_compile_t) (struct shcompo_s *shc, struct query_instance_s *qi, void *env);
+typedef void (* shcompo_compile_t) (struct shcompo_s *shc, caddr_t text, struct query_instance_s *qi, void *env);
 /*! Returns whether a \c shc is stale (so \c shcompo_is_stale should be set) */
 typedef int (* shcompo_check_if_stale_t) (struct shcompo_s *shc);
 /*! Recompiles a key of \c shc and fills in either its \c shcompo_data or \c shcompo_error.
@@ -131,7 +131,7 @@ typedef struct shcompo_s
 /*! Tries to get a thing or create it by compiling a (copy of) key.
 If \c key_is_const then \c key is not changed (cache will store a copy if needed, otherwise \c key can be freed or placed into cache).
 \returns an old or a previously compiled shcompo, locked. */
-extern shcompo_t *shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t key, int key_is_const, struct query_instance_s *qi, void *env, caddr_t *err_ret);
+extern shcompo_t *shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t text, caddr_t key, int key_is_const, struct query_instance_s *qi, void *env, caddr_t *err_ret);
 
 /*! Returns locked shcompo for given key if it exists, otherwise returns NULL.
 There's no function to find if some shcompo exists, because it's useless:
