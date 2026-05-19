@@ -839,6 +839,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     can_qrcode := isstring (__proc_exists ('QRcode encodeString8bit', 2));
     can_sponge := WS.WS.SPARQL_ENDPOINT_CAN_SPONGE (user_id);
 
+    --
+    --  Allow DBA to put an info bar on /sparql form
+    --
+    declare sparql_ui_info_box any;
+    sparql_ui_info_box := registry_get('sparql-ui-info-box', '');
+
 
     --
     --  Check if the user has a $DAV_HOME/saved-sparql-results/ DynaRes directory
@@ -873,7 +879,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --
     --  Popup alerts
     --
-    http ('<div id="alert"></div>');
+    if (length(sparql_ui_info_box)) {
+      http ('<div id="info" class="alert alert-info" role="alert"><div>');
+      http (sparql_ui_info_box);
+      http ('</div></div>\n');
+    }
+    http ('<div id="alert">');
+    http ('</div>\n');
 
 
     --
