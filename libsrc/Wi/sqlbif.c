@@ -3481,6 +3481,8 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  a = bif_arg_nochecks (qst, args, inx);
 	  dtp1 = DV_TYPE_OF (a);
+          if (DV_RDF == dtp1)
+            dtp1 = DV_TYPE_OF (((rdf_box_t *)a)->rb_box); /* completed in 1st loop */
 	  switch (dtp1)
 	    {
 	    case DV_DB_NULL:
