@@ -1988,6 +1988,12 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
+  dk_free_tree (ws->ws_xslt_url);
+  ws->ws_xslt_url = NULL;
+  dk_free_tree (ws->ws_xslt_params);
+  ws->ws_xslt_params = NULL;
+  dk_free_box (ws->ws_xslt_doc_url);
+  ws->ws_xslt_doc_url = NULL;
 }
 
 char http_server_id_string_buf [1024];
