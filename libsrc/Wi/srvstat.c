@@ -517,6 +517,8 @@ extern int32 dk_tcp_ai_idn_enable;
 extern int32 dk_tcp_ai_ipv4_enable;
 extern int32 dk_tcp_ai_ipv6_enable;
 
+extern int32 sparql_all_bif_unsafe;
+
 void
 process_status_report (void)
 {
@@ -2359,6 +2361,7 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),
     SD_DEF_I32 (sqlc_hook_enable, "sqlc_hook_enable"),
+    SD_DEF_I32 (sparql_all_bif_unsafe, "sparql_all_bif_unsafe"),
     {0}
 };
 /**INDENT-ON**/
