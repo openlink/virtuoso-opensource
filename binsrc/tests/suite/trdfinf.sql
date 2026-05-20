@@ -155,6 +155,7 @@ select s, p from rdf_quad table option (with 'inft') where g = iri_to_id ('inft'
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": o = c1 3 rows\n";
 
+drop table DB.DBA.ps if exists;
 
 create table ps (ps iri_id primary key);
 
