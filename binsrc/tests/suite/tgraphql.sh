@@ -28,6 +28,14 @@ TEST_NAME="GraphQL/SPARQL"
 LOGFILE=`basename $0 .sh`.output
 export LOGFILE
 export CASE_MODE=2
+CFGFILE=virtuoso.ini
+DBFILE=virtuoso.db
+DBLOGFILE=virtuoso.trx
+DELETEMASK="virtuoso.log virtuoso.lck $DBLOGFILE $DBFILE virtuoso.tdb virtuoso.ttr"
+SRVMSGLOGFILE=virtuoso.log
+TESTCFGFILE=virtuoso-1111.ini
+LOCKFILE=virtuoso.lck
+export CFGFILE DBFILE DBLOGFILE DELETEMASK SRVMSGLOGFILE TESTCFGFILE LOCKFILE
 . $VIRTUOSO_TEST/testlib.sh
 
 if [ ! -f "$VIRTUOSO_BUILD/binsrc/graphql/.libs//graphql.so" ]
@@ -44,9 +52,28 @@ NOLITE
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
-MAKECFG_FILE_WITH_HTTP $TESTCFGFILE $PORT $HTTPPORT $CFGFILE
-cat $CFGFILE | sed 's/;Load7/Load7/g' > tmp.ini
+rm -f virtuoso.log virtuoso.lck virtuoso.tdb virtuoso.ttr
+PLUGINDIR=.
+export PLUGINDIR
+MAKECFG_FILE "$VIRTUOSO_TEST/$TESTCFGFILE" $PORT $CFGFILE
+sed -e 's/^Load[1-6][   ]*=.*/;&/' $CFGFILE > tmp.ini
 mv -f tmp.ini $CFGFILE
+cat >> $CFGFILE <<END_HTTP_COMPAT
+[HTTPServer]
+HTTPLogFile = http.log
+ServerPort = $HTTPPORT
+ServerRoot = .
+ServerThreads = 3
+MaxKeepAlives = 6
+KeepAliveTimeout = 15
+MaxCachedProxyConnections = 10
+ProxyConnectionCacheTimeout = 15
+
+
+[URIQA]
+DynamicLocal = 1
+DefaultHost = localhost:$HTTPPORT
+END_HTTP_COMPAT
 
 cp -R $VIRTUOSO_BUILD/binsrc/graphql/examples ./examples
 cp -R $VIRTUOSO_BUILD/binsrc/graphql/introspection ./introspection
@@ -88,7 +115,7 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tgraphql.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tgraphql.sql
 
 if test $STATUS -ne 0
 then

@@ -16,16 +16,22 @@ create procedure GQL_TEST (in ql varchar, in xp varchar, in authenticate int := 
   auth := '';
   if (authenticate)
     auth := '\nAuthorization: Basic ZGJhOmRiYQ==';
-  result_string := DB.DBA.HTTP_CLIENT (url=>sprintf ('http://localhost:%s/graphql', server_http_port()), http_method=>'POST', 
+  result_string := DB.DBA.HTTP_CLIENT (url=>'http://localhost:$U{HTTPPORT}/graphql', http_method=>'POST',
     http_headers=>concat('Content-Type: application/json', auth), body=>ql);
   xe := xtree_doc (json2xml (result_string));
   xt := xpath_eval (xp, xe);
   if (xp like 'count(%' and xt = 0)
-    result ('***FAILED', concat (xp, ' : ', xt));
+    {
+      result ('***FAILED', concat (xp, ' : ', xt));
+      result ('***RESPONSE', cast (result_string as varchar));
+    }
   else if (xt is not null)
     result ('PASSED', concat (xp, ' : ', xt));
   else
-    result ('***FAILED', concat (xp, ' : ', xt));
+    {
+      result ('***FAILED', concat (xp, ' : ', xt));
+      result ('***RESPONSE', cast (result_string as varchar));
+    }
 };
 
 TTLP (file_open ('nwgschema.ttl'), '', 'http://localhost:8890/schemas/Demo#');
