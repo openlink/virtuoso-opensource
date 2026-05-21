@@ -24,7 +24,14 @@ TOP=@TOP@
 if WITH_SYNCML_VAD
 nodist_vad_DATA	= syncml_dav.vad
 endif
-noinst_SCRIPTS	= make_vad.sh
+
+all-am:
+	@echo "*"
+	@echo "* The SyncML VAD is deprecated and will be removed in a future version"
+	@echo "*"
+
+
+build: syncml_dav.vad
 
 syncml_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./make_vad.sh
