@@ -1205,7 +1205,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
           constg := (sparql define input:storage "" define output:valmode "LONG"
           SELECT  ?constg WHERE
           { GRAPH `iri(?:self.graph_iid)`
-              { ?tmap  a  rr:TriplesMap
+              { ?tmap  a  rr:TriplesMap .
                   { ?tmap  rr:subjectMap [ rr:graph  ?constg ] . }
                   UNION
                   { ?tmap  rr:predicateObjectMap [ rr:graph  ?constg ] . }
