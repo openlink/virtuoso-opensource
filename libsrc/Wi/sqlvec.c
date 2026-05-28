@@ -1332,7 +1332,8 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	    sel->sel_vec_set_mask = cc_new_instance_slot (sc->sc_cc);
 	    sel->sel_vec_role = SEL_VEC_EXISTS;
 	    ts = (table_source_t *) sel->src_gen.src_prev;
-	    if (IS_TS (ts) && !ts->ts_order_ks->ks_set_no_col_ssl)
+	    if (IS_TS (ts) && !ts->ts_order_ks->ks_set_no_col_ssl
+                && !ts->ts_order_ks->ks_local_test)
 	      ts->ts_max_rows = 1;	/* last ts of existence makes max 1 row, except when reading a gb or proc view temp where the set no is a col in the temp */
 	  }
 	break;
