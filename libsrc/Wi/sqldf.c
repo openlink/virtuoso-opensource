@@ -5765,6 +5765,8 @@ sqlo_strip_in_join (ST* tree, caddr_t joined_table_prefix, caddr_t * joined_col_
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
+  if (ST_P (tree, BOP_NOT) || ST_P (tree, BOP_OR))
+    return;
   if (ST_P (tree, BOP_EQ)
       && ST_COLUMN (tree->_.bin_exp.left, COL_DOTTED) && ST_COLUMN (tree->_.bin_exp.right, COL_DOTTED)
       && tree->_.bin_exp.left->_.col_ref.prefix && tree->_.bin_exp.right->_.col_ref.prefix)
