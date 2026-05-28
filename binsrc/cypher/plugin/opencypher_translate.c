@@ -204,14 +204,11 @@ opencypher_translate_cypher_to_sparql (caddr_t cypher_query,
     caddr_t exec_err = NULL;
 
     /*
-     * Call the PL primitives directly, NOT DB.DBA.CYPHER_TO_SPARQL.
-     * CYPHER_TO_SPARQL itself dispatches back to this BIF when the
-     * plugin is loaded, so calling it here would recurse forever.
-     * Mirror cypher_main.sql's CYPHER_TO_SPARQL body (plugin tokenizer ->
-     * CYP_PARSE -> CYP_TO_SPARQL). Preserve NULL graph values for
-     * read-only RDF-native queries so SPARQL executes without an
-     * injected FROM clause; CYP_TO_SPARQL still applies the openCypher
-     * default graph for write/update forms.
+     * Call the PL primitives directly so the plugin remains an explicit
+     * alternate frontend using its own tokenizer. Preserve NULL graph values
+     * for read-only RDF-native queries so SPARQL executes without an injected
+     * FROM clause; CYP_TO_SPARQL still applies the openCypher default graph
+     * for write/update forms.
      * TODO: bind params for $name parameters; flags currently unused.
      */
     sql_text = box_dv_short_string (

@@ -75,8 +75,9 @@ install: $(TARGET)
 	@mkdir -p $(HOSTING_DIR)
 	cp $(TARGET) $(HOSTING_DIR)/
 	@echo "Installed $(TARGET) -> $(HOSTING_DIR)/"
-	@echo "Plugin is registered in binsrc/virtuoso/virtuoso.ini as"
-	@echo "  Load12 = plain, opencypher_plugin"
+	@echo "Plugin is optional; enable it explicitly in the target virtuoso.ini,"
+	@echo "for example:"
+	@echo "  LoadN = plain, opencypher_plugin"
 	@echo "Restart Virtuoso, then verify:"
 	@echo "  SELECT DB.DBA.OPENCYPHER_PLUGIN_VERSION();"
 	@echo "  SELECT DB.DBA.OPENCYPHER_PLUGIN_AVAILABLE();  -- expect 1"
