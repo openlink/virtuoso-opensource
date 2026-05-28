@@ -247,6 +247,8 @@ vad_check () {
   do_command_safe "$DSN" "VAD_INSTALL ('opencypher_dav.vad', 0);"
   ECHO "VAD OPENCYPHER translation check ..."
   do_command_safe "$DSN" "select case when strstr (cast (DB.DBA.CYPHER_TO_SPARQL_PARAMS ('MATCH(p) FROM <urn:analytics> RETURN p LIMIT 10', null, null) as varchar), 'FROM <urn:analytics>') is not null then 1 else 1/0 end"
+  ECHO "VAD /sparql openCypher routing check ..."
+  do_command_safe "$DSN" "select case when WS.WS.SPARQL_ENDPOINT_OPENCYPHER_BODY ('OPENCYPHER MATCH(p) RETURN p') = 'MATCH(p) RETURN p' then 1 else 1/0 end"
   ECHO "VAD OPENCYPHER empty result check ..."
   do_command_safe "$DSN" "DB.DBA.OPENCYPHER_EXEC ('MATCH(p) FROM <urn:analytics> RETURN p LIMIT 10')"
   ECHO "VAD uninstallation check ..."

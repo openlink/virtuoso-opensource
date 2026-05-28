@@ -21,12 +21,11 @@
 --
 --  openCypher (openCypher for Virtuoso) - VAD package installer.
 --
---  The openCypher VAD ships only the PL translator: it can sit on top of a
---  stock Virtuoso server with no plugin and no core C changes.  Users
---  who cannot deploy `opencypher_plugin.so` (managed Virtuoso, restricted
---  hosts, evaluation environments) can install this VAD and translate
---  / execute openCypher queries through `DB.DBA.CYPHER_TO_SPARQL_PARAMS`
---  and the `/sparql` endpoint's `language=opencypher` mode.
+--  The openCypher VAD ships the SQL/PL translator and runtime only.  It does
+--  not require `opencypher_plugin.so`; `/sparql` language=opencypher support
+--  is provided by the matching Virtuoso core endpoint/UI integration.
+--  Install this VAD to add the DB.DBA.CYPHER* and DB.DBA.CYPHER_TO_SPARQL*
+--  procedures used by that endpoint integration.
 --
 --  This script is shipped inside the package for manual recovery and
 --  reference.  The VAD sticker's post-install stanza performs the actual

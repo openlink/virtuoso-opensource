@@ -23,10 +23,10 @@
 <!--
   openCypher (openCypher for Virtuoso) - VAD sticker.
 
-  This package ships only the PL translator and runtime so it can be
-  installed onto a stock Virtuoso server without the C plugin and
-  without any core server changes.  After install, openCypher queries
-  may be issued through DB.DBA.CYPHER_TO_SPARQL_PARAMS and DB.DBA.CYPHER.
+  This package ships the SQL/PL translator and runtime so openCypher can be
+  installed without the C plugin.  On a Virtuoso build with the matching
+  core /sparql endpoint integration, the installed DB.DBA.CYPHER* and
+  DB.DBA.CYPHER_TO_SPARQL* procedures also back language=opencypher.
 -->
 <sticker version="1.0.010505A" xml:lang="en-UK">
 
