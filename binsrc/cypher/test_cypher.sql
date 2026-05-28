@@ -98,7 +98,7 @@ create procedure DB.DBA.OPENCYPHER_RUN_TESTS ()
     }
   else
     _results := vector_concat (_results,
-      vector ('PLUGIN: not loaded (PL fallback in use)'));
+      vector ('PLUGIN: not loaded (SQL/PL translator in use)'));
   plugin_smoke_done:;
 
   -- ========== Section 0.5: /sparql OPENCYPHER passthrough ==========

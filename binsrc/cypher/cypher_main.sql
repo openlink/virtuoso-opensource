@@ -24,16 +24,13 @@
 --  Primary interface: DB.DBA.CYPHER(query, graph)
 --  Returns: result set for read queries, status for write queries
 --
---  Dispatch order for Cypher -> SPARQL translation:
---    1. If DB.DBA.OPENCYPHER_PLUGIN_AVAILABLE() = 1, route translation
---       through the unqualified C plugin BIF OPENCYPHER_PLUGIN_TO_SPARQL
---       via the DB.DBA wrapper procedures below.
---    2. Otherwise fall back to the PL implementation:
---         CYP_TOKENIZE -> CYP_PARSE -> CYP_PLAN_VALIDATE_SCOPE
---                      -> CYP_TO_SPARQL.
---  The plugin is the preferred production frontend when present;
---  the PL path is the bootstrap/fallback implementation. Both paths
---  must produce equivalent SPARQL - see test_plugin_parity.sql.
+--  Production Cypher -> SPARQL translation uses the SQL/PL implementation:
+--    CYP_TOKENIZE -> CYP_PARSE -> CYP_PLAN_VALIDATE_SCOPE -> CYP_TO_SPARQL.
+--
+--  The optional C plugin is retained as an explicit secondary frontend for
+--  development, benchmarking, and parity testing. Normal DB.DBA.CYPHER* and
+--  DB.DBA.CYPHER_TO_SPARQL* entrypoints do not auto-route through the plugin.
+--  See test_plugin_parity.sql for the explicit PL-vs-plugin comparison path.
 --
 
 -- Main entry point: execute a Cypher query (backward compatible)
@@ -719,8 +716,6 @@ create procedure DB.DBA.CYPHER_TO_SPARQL (in _query varchar, in _graph varchar :
   declare clauses, clause any;
   declare has_merge integer;
 
-  if (DB.DBA.OPENCYPHER_PLUGIN_AVAILABLE ())
-    return DB.DBA.OPENCYPHER_PLUGIN_TO_SPARQL_CALL (_query, _graph, null, 0);
   tokens := DB.DBA.CYP_TOKENIZE (_query);
   ast := DB.DBA.CYP_PARSE (tokens);
 
@@ -985,11 +980,6 @@ create procedure DB.DBA.CYPHER_TO_SPARQL_PARAMS (in _query varchar, in _graph va
   declare tokens, ast any;
   declare sparql_result any;
 
-  -- Check if VSEI plugin is available
-  if (DB.DBA.OPENCYPHER_PLUGIN_AVAILABLE ())
-    return DB.DBA.OPENCYPHER_PLUGIN_TO_SPARQL_CALL (_query, _graph, _params, 0);
-
-  -- Use PL/SQL translator with parameter support
   tokens := DB.DBA.CYP_TOKENIZE (_query);
   ast := DB.DBA.CYP_PARSE (tokens);
   sparql_result := DB.DBA.CYP_TO_SPARQL_PARAMS (ast, _graph, _params);
