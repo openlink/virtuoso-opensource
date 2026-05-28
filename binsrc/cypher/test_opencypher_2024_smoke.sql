@@ -951,6 +951,12 @@ create procedure DB.DBA.OPENCYPHER_OC24_RUN ()
   total := total + 1; passed := passed + 1;
 
   DB.DBA.OPENCYPHER_OC24_EXPECT_TRANSLATION (
+    'SERVICE SILENT translation',
+    'SERVICE SILENT <http://example.org/sparql> { MATCH (n:Person) RETURN n AS n2 } RETURN n2',
+    'SERVICE SILENT <http://example.org/sparql>');
+  total := total + 1; passed := passed + 1;
+
+  DB.DBA.OPENCYPHER_OC24_EXPECT_TRANSLATION (
     'SERVICE prefixed labels use declared URI',
     'PREFIX dbo: <http://dbpedia.org/ontology/> SERVICE <https://dbpedia.org/sparql> { MATCH (film:dbo:Film)-[:dbo:writer]->(writer) RETURN film AS film2 } RETURN film2',
     '<http://dbpedia.org/ontology/Film>');

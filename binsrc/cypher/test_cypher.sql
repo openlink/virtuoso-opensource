@@ -298,6 +298,12 @@ create procedure DB.DBA.OPENCYPHER_RUN_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 2.14 Parse SERVICE block')); }
   _total := _total + 1;
 
+  if (aref (DB.DBA.CYP_PARSE (DB.DBA.CYP_TOKENIZE ('SERVICE SILENT <http://dbpedia.org/sparql> { MATCH (p) RETURN p AS p2 } RETURN p2')), 0) = 'STMT')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 2.14a Parse SERVICE SILENT block')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 2.14a Parse SERVICE SILENT block')); }
+  _total := _total + 1;
+
   if (aref (DB.DBA.CYP_PARSE (DB.DBA.CYP_TOKENIZE ('VALUES name {''Alice'', ''Bob''} BIND (name AS n2) RETURN n2')), 0) = 'STMT')
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 2.14 Parse VALUES BIND')); }
   else
@@ -644,6 +650,13 @@ RETURN m, m.<http://demo.openlinksw.com/movie-ontology#title>, m.mv:released, m.
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.20 Translate SERVICE block')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.20 Translate SERVICE block')); }
+  _total := _total + 1;
+
+  _str := DB.DBA.CYPHER_TO_SPARQL ('SERVICE SILENT <http://dbpedia.org/sparql> { MATCH (p) RETURN p AS p2 } RETURN p2');
+  if (strstr (_str, 'SERVICE SILENT <http://dbpedia.org/sparql>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.20d Translate SERVICE SILENT block')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.20d Translate SERVICE SILENT block')); }
   _total := _total + 1;
 
   _str := DB.DBA.CYPHER_TO_SPARQL ('PREFIX dbo: <http://dbpedia.org/ontology/> SERVICE <https://dbpedia.org/sparql> { MATCH (film:dbo:Film)-[:dbo:writer]->(writer) RETURN film AS film2 } RETURN film2');

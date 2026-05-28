@@ -2196,6 +2196,7 @@ create procedure DB.DBA.CYP_GEN_GRAPHLIKE_CLAUSE (inout _ctx any, in _clause any
   declare inner_ctx any;
   declare prefixes any;
   declare target varchar;
+  declare graphlike_kw varchar;
   declare body varchar;
   declare triples varchar;
   declare extra_from_graphs any;
@@ -2204,6 +2205,9 @@ create procedure DB.DBA.CYP_GEN_GRAPHLIKE_CLAUSE (inout _ctx any, in _clause any
   declare i, j, is_found integer;
 
   target := DB.DBA.CYP_GEN_GRAPH_TERM (aref (_clause, 1), _ctx);
+  graphlike_kw := _kw;
+  if (_kw = 'SERVICE' and length (_clause) > 3 and aref (_clause, 3))
+    graphlike_kw := 'SERVICE SILENT';
   if (_kw = 'GRAPH')
     {
       extra_from_graphs := DB.DBA.CYP_CTX_GET (_ctx, 'extra_from_graphs');
@@ -2232,7 +2236,7 @@ create procedure DB.DBA.CYP_GEN_GRAPHLIKE_CLAUSE (inout _ctx any, in _clause any
   body := concat (body, DB.DBA.CYP_CTX_GET (inner_ctx, 'filters'));
 
   triples := DB.DBA.CYP_CTX_GET (_ctx, 'triples');
-  triples := concat (triples, '    ', _kw, ' ', target, ' {\n', body, '    } .\n');
+  triples := concat (triples, '    ', graphlike_kw, ' ', target, ' {\n', body, '    } .\n');
   DB.DBA.CYP_CTX_SET (_ctx, 'triples', triples);
 
   for (i := 0; i < length (DB.DBA.CYP_CTX_GET (inner_ctx, 'vars')); i := i + 1)

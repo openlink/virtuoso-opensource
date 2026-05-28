@@ -39,7 +39,7 @@
 --    Define:       vector('DEFINE', key, value_expr)
 --    Use:          vector('USE', graph_expr) or vector('USE_ANY_GRAPH')
 --    Graph:        vector('GRAPH', graph_expr, clauses)
---    Service:      vector('SERVICE', endpoint_expr, clauses)
+--    Service:      vector('SERVICE', endpoint_expr, clauses, is_silent)
 --    Values:       vector('VALUES', var_name, values_vec)
 --    Bind:         vector('BIND', expr, alias)
 --    Minus:        vector('MINUS', clauses)
@@ -1995,11 +1995,18 @@ create procedure DB.DBA.CYP_PARSE_SERVICE (in _tokens any, inout _pos integer)
 {
   declare endpoint_expr any;
   declare clauses any;
+  declare is_silent integer;
 
   _pos := _pos + 1;  -- consume SERVICE
+  is_silent := 0;
+  if (DB.DBA.CYP_PEEK (_tokens, _pos) = 174)  -- SILENT
+    {
+      is_silent := 1;
+      _pos := _pos + 1;
+    }
   endpoint_expr := DB.DBA.CYP_PARSE_EXPR (_tokens, _pos);
   clauses := DB.DBA.CYP_PARSE_BLOCK_CLAUSES (_tokens, _pos);
-  return vector ('SERVICE', endpoint_expr, clauses);
+  return vector ('SERVICE', endpoint_expr, clauses, is_silent);
 }
 ;
 
