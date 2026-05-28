@@ -47,7 +47,7 @@
 --            168=LOAD 169=CLEAR 170=DROP 171=ADD 172=MOVE 173=COPY
 --            174=SILENT 175=DEFAULT 176=TO
 --            177=USING 178=INSERT 179=DATA
---            180=SHORTEST 181=GROUPS 182=BASE 183=FORCE 184=CAMELCASE
+--            180=SHORTEST 181=GROUPS 182=BASE 183=FORCE 184=CAMELCASE 185=USE
 --    Special: 55=PNAME_NS (prefixed name), 56=IRIREF (<...>), 999=EOF
 --
 
@@ -142,6 +142,7 @@ create procedure DB.DBA.CYP_KEYWORD (in _w varchar)
   if (w = 'BASE') return 182;
   if (w = 'FORCE') return 183;
   if (w = 'CAMELCASE') return 184;
+  if (w = 'USE') return 185;
   return 0;
 }
 ;

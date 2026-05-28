@@ -921,6 +921,24 @@ create procedure DB.DBA.OPENCYPHER_OC24_RUN ()
   total := total + 1; passed := passed + 1;
 
   DB.DBA.OPENCYPHER_OC24_EXPECT_TRANSLATION (
+    'USE GRAPH dotted graph reference',
+    'USE GRAPH analytics.sales MATCH (n) RETURN n',
+    'FROM <analytics:sales>');
+  total := total + 1; passed := passed + 1;
+
+  DB.DBA.OPENCYPHER_OC24_EXPECT_TRANSLATION (
+    'USE GRAPH prefixed graph reference',
+    'PREFIX ex: <http://example.org/> USE GRAPH ex:analytics MATCH (n) RETURN n',
+    'FROM <http://example.org/analytics>');
+  total := total + 1; passed := passed + 1;
+
+  DB.DBA.OPENCYPHER_OC24_EXPECT_NO_TRANSLATION (
+    'USE ANY GRAPH suppresses default FROM',
+    'USE ANY GRAPH MATCH (n) RETURN n',
+    'FROM <urn:opencypher:default>');
+  total := total + 1; passed := passed + 1;
+
+  DB.DBA.OPENCYPHER_OC24_EXPECT_TRANSLATION (
     'All MATCH FROM NAMED clauses contribute dataset',
     'MATCH (n) FROM NAMED <urn:g1> MATCH (m) FROM NAMED <urn:g2> RETURN n, m',
     'FROM NAMED <urn:g2>');

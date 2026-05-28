@@ -37,6 +37,7 @@
 --    With:         vector('WITH', is_distinct, items, order_by, skip_expr, limit_expr, where_expr)
 --    Union:        vector('UNION', is_all)
 --    Define:       vector('DEFINE', key, value_expr)
+--    Use:          vector('USE', graph_expr) or vector('USE_ANY_GRAPH')
 --    Graph:        vector('GRAPH', graph_expr, clauses)
 --    Service:      vector('SERVICE', endpoint_expr, clauses)
 --    Values:       vector('VALUES', var_name, values_vec)
@@ -116,6 +117,7 @@ create procedure DB.DBA.CYP_IS_CLAUSE_START (in _type integer)
   if (_type = 178) return 1;  -- INSERT
   if (_type = 182) return 1;  -- BASE
   if (_type = 183) return 1;  -- FORCE
+  if (_type = 185) return 1;  -- USE
   return 0;
 }
 ;
@@ -315,6 +317,11 @@ create procedure DB.DBA.CYP_PARSE_STATEMENT (in _tokens any, inout _pos integer)
           clause := DB.DBA.CYP_PARSE_FORCE_OPTION (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 185)  -- USE
+        {
+          clause := DB.DBA.CYP_PARSE_USE_GRAPH (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
       else
         {
           signal ('CY003', sprintf ('Unexpected token ''%s'' (type %d) at position %d',
@@ -331,6 +338,78 @@ create procedure DB.DBA.CYP_PARSE_FORCE_OPTION (in _tokens any, inout _pos integ
   DB.DBA.CYP_EXPECT (_tokens, _pos, 183);  -- FORCE
   DB.DBA.CYP_EXPECT (_tokens, _pos, 184);  -- CAMELCASE
   return vector ('FORCE_CAMELCASE');
+}
+;
+
+create procedure DB.DBA.CYP_PARSE_GRAPH_REFERENCE (in _tokens any, inout _pos integer)
+{
+  declare tt integer;
+  declare graph_name varchar;
+
+  tt := DB.DBA.CYP_PEEK (_tokens, _pos);
+  if (tt = 56)  -- IRIREF
+    {
+      graph_name := DB.DBA.CYP_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      return vector ('IRI', graph_name);
+    }
+  if (tt = 55)  -- PNAME_NS
+    {
+      graph_name := DB.DBA.CYP_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      return vector ('IRI', graph_name);
+    }
+  if (tt = 13)  -- LT, IRI ref start
+    {
+      _pos := _pos + 1;
+      graph_name := '';
+      while (DB.DBA.CYP_PEEK (_tokens, _pos) <> 14 and DB.DBA.CYP_PEEK (_tokens, _pos) <> 999)
+        {
+          graph_name := concat (graph_name, DB.DBA.CYP_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      DB.DBA.CYP_EXPECT (_tokens, _pos, 14);  -- GT
+      return vector ('IRI', graph_name);
+    }
+  if (tt <> 50)
+    signal ('CY010', sprintf ('Expected graph reference at position %d', _pos));
+
+  graph_name := DB.DBA.CYP_PEEK_VAL (_tokens, _pos);
+  _pos := _pos + 1;
+  while (DB.DBA.CYP_PEEK (_tokens, _pos) = 8 or DB.DBA.CYP_PEEK (_tokens, _pos) = 7)
+    {
+      declare sep varchar;
+      sep := ':';
+      _pos := _pos + 1;
+      if (DB.DBA.CYP_PEEK (_tokens, _pos) <> 50)
+        {
+          if (sep = ':' and DB.DBA.CYP_IS_CLAUSE_START (DB.DBA.CYP_PEEK (_tokens, _pos)))
+            {
+              graph_name := concat (graph_name, ':');
+              goto graph_ref_done;
+            }
+          signal ('CY010', sprintf ('Expected graph reference name at position %d', _pos));
+        }
+      graph_name := concat (graph_name, sep, DB.DBA.CYP_PEEK_VAL (_tokens, _pos));
+      _pos := _pos + 1;
+    }
+graph_ref_done:
+  return vector ('IRI', graph_name);
+}
+;
+
+create procedure DB.DBA.CYP_PARSE_USE_GRAPH (in _tokens any, inout _pos integer)
+{
+  DB.DBA.CYP_EXPECT (_tokens, _pos, 185);  -- USE
+  if (DB.DBA.CYP_PEEK (_tokens, _pos) = 150)  -- ANY
+    {
+      _pos := _pos + 1;
+      DB.DBA.CYP_EXPECT (_tokens, _pos, 154);  -- GRAPH
+      return vector ('USE_ANY_GRAPH');
+    }
+  if (DB.DBA.CYP_PEEK (_tokens, _pos) = 154)  -- GRAPH
+    _pos := _pos + 1;
+  return vector ('USE', DB.DBA.CYP_PARSE_GRAPH_REFERENCE (_tokens, _pos));
 }
 ;
 

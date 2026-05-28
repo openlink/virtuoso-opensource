@@ -280,6 +280,18 @@ create procedure DB.DBA.OPENCYPHER_RUN_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 2.13 Parse GRAPH block')); }
   _total := _total + 1;
 
+  if (aref (DB.DBA.CYP_PARSE (DB.DBA.CYP_TOKENIZE ('USE GRAPH analytics.sales MATCH (n) RETURN n')), 0) = 'STMT')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 2.13a Parse USE GRAPH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 2.13a Parse USE GRAPH')); }
+  _total := _total + 1;
+
+  if (aref (DB.DBA.CYP_PARSE (DB.DBA.CYP_TOKENIZE ('USE ANY GRAPH MATCH (n) RETURN n')), 0) = 'STMT')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 2.13b Parse USE ANY GRAPH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 2.13b Parse USE ANY GRAPH')); }
+  _total := _total + 1;
+
   if (aref (DB.DBA.CYP_PARSE (DB.DBA.CYP_TOKENIZE ('SERVICE <http://dbpedia.org/sparql> { MATCH (p) RETURN p AS p2 } RETURN p2')), 0) = 'STMT')
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 2.14 Parse SERVICE block')); }
   else
@@ -604,6 +616,27 @@ RETURN m, m.<http://demo.openlinksw.com/movie-ontology#title>, m.mv:released, m.
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.19 Translate GRAPH block')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.19 Translate GRAPH block')); }
+  _total := _total + 1;
+
+  _str := DB.DBA.CYPHER_TO_SPARQL ('USE GRAPH analytics.sales MATCH (n) RETURN n');
+  if (strstr (_str, 'FROM <analytics:sales>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.19a Translate USE GRAPH dotted name')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.19a Translate USE GRAPH dotted name')); }
+  _total := _total + 1;
+
+  _str := DB.DBA.CYPHER_TO_SPARQL ('PREFIX ex: <http://example.org/> USE GRAPH ex:analytics MATCH (n) RETURN n');
+  if (strstr (_str, 'FROM <http://example.org/analytics>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.19b Translate USE GRAPH prefixed name')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.19b Translate USE GRAPH prefixed name')); }
+  _total := _total + 1;
+
+  _str := DB.DBA.CYPHER_TO_SPARQL ('USE ANY GRAPH MATCH (n) RETURN n');
+  if (strstr (_str, 'FROM <urn:opencypher:default>') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 3.19c Translate USE ANY GRAPH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 3.19c Translate USE ANY GRAPH')); }
   _total := _total + 1;
 
   _str := DB.DBA.CYPHER_TO_SPARQL ('SERVICE <http://dbpedia.org/sparql> { MATCH (p) RETURN p AS p2 } RETURN p2');

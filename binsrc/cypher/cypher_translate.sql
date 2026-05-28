@@ -1544,6 +1544,7 @@ create procedure DB.DBA.CYP_TO_SPARQL (in _ast any, in _graph varchar)
   declare ctype varchar;
   declare wexpr varchar;
   declare match_from_graphs any;
+  declare use_graph_uri varchar;
 
   node_type := aref (_ast, 0);
   if (node_type <> 'STMT')
@@ -1626,6 +1627,21 @@ create procedure DB.DBA.CYP_TO_SPARQL (in _ast any, in _graph varchar)
         DB.DBA.CYP_CTX_SET (ctx, 'force_camelcase', 1);
       else if (ctype = 'DEFINE')
         DB.DBA.CYP_CTX_ADD_DEFINE (ctx, aref (clause, 1), aref (clause, 2));
+      else if (ctype = 'USE')
+        {
+          use_graph_uri := DB.DBA.CYP_GRAPH_EXPR_URI (aref (clause, 1), ctx, _graph);
+          _graph := use_graph_uri;
+          DB.DBA.CYP_CTX_SET (ctx, 'graph', use_graph_uri);
+          DB.DBA.CYP_CTX_SET (ctx, 'reif_graph', use_graph_uri);
+          DB.DBA.CYP_CTX_SET (ctx, 'suppress_default_from', 0);
+        }
+      else if (ctype = 'USE_ANY_GRAPH')
+        {
+          _graph := null;
+          DB.DBA.CYP_CTX_SET (ctx, 'graph', null);
+          DB.DBA.CYP_CTX_SET (ctx, 'reif_graph', null);
+          DB.DBA.CYP_CTX_SET (ctx, 'suppress_default_from', 1);
+        }
       else if (ctype = 'WITH')
         with_asts := vector_concat (with_asts, vector (clause));
       else if (ctype = 'UNWIND')
