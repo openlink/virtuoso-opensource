@@ -41,6 +41,7 @@ DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_translate.sql',  0, 'repor
 DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_sparql_gen.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_main.sql',       0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_opencypher.sql',      0, 'report', 1);
+DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_endpoint.sql',   0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE ('/DAV/VAD/opencypher/cypher_bootstrap.sql',  0, 'report', 1);
 
 -- Sanity check: emit the version so the VAD installer log shows it.

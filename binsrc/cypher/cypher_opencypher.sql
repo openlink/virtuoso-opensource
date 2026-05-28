@@ -56,7 +56,9 @@ create procedure DB.DBA.OPENCYPHER_EXEC (in _opencypher_text varchar, in _defaul
 
   cypher_keywords := vector ('MATCH', 'OPTIONAL', 'CREATE', 'MERGE', 'DELETE',
                              'REMOVE', 'SET', 'RETURN', 'WITH', 'UNWIND', 'CALL',
-                             'LOAD', 'FOREACH', 'START');
+                             'LOAD', 'FOREACH', 'START', 'USE', 'GRAPH', 'SERVICE',
+                             'VALUES', 'BIND', 'MINUS', 'ASK', 'CONSTRUCT', 'DESCRIBE',
+                             'BASE', 'CLEAR', 'DROP', 'ADD', 'MOVE', 'COPY', 'INSERT');
 
   pos := 0;
   n := length (_opencypher_text);

@@ -147,7 +147,7 @@ directory_init () {
   for f in cypher_runtime.sql cypher_lexer.sql cypher_parser.sql \
            cypher_expr.sql cypher_plan.sql cypher_translate.sql \
            cypher_sparql_gen.sql cypher_main.sql cypher_opencypher.sql \
-           cypher_bootstrap.sql
+           cypher_endpoint.sql cypher_bootstrap.sql
   do
     cp -f "$VOS_ROOT/binsrc/cypher/$f" vad/data/
   done

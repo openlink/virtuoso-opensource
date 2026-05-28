@@ -71,6 +71,7 @@
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opencypher/cypher_sparql_gen.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opencypher/cypher_main.sql',       0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opencypher/cypher_opencypher.sql',      0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opencypher/cypher_endpoint.sql',   0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opencypher/cypher_bootstrap.sql',  0, 'report', 1);
     ]]>
   </sql>
@@ -99,6 +100,8 @@
   <file type="dav" source="code" source_uri="vad/data/cypher_main.sql" target_uri="opencypher/cypher_main.sql"
         dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
   <file type="dav" source="code" source_uri="vad/data/cypher_opencypher.sql" target_uri="opencypher/cypher_opencypher.sql"
+        dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+  <file type="dav" source="code" source_uri="vad/data/cypher_endpoint.sql" target_uri="opencypher/cypher_endpoint.sql"
         dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
   <file type="dav" source="code" source_uri="vad/data/cypher_bootstrap.sql" target_uri="opencypher/cypher_bootstrap.sql"
         dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />

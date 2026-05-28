@@ -19,23 +19,40 @@
 --
 --
 --
---  openCypher: OpenCypher for Virtuoso - Loader Script
---
---  Load all openCypher components in dependency order.
---  Usage from isql: LOAD /path/to/cypher_load.sql;
+--  openCypher: SQL/VAD endpoint compatibility helpers.
 --
 
-LOAD binsrc/cypher/cypher_runtime.sql;
-LOAD binsrc/cypher/cypher_lexer.sql;
-LOAD binsrc/cypher/cypher_parser.sql;
-LOAD binsrc/cypher/cypher_expr.sql;
-LOAD binsrc/cypher/cypher_plan.sql;
-LOAD binsrc/cypher/cypher_translate.sql;
-LOAD binsrc/cypher/cypher_sparql_gen.sql;
-LOAD binsrc/cypher/cypher_main.sql;
-LOAD binsrc/cypher/cypher_opencypher.sql;
-LOAD binsrc/cypher/cypher_endpoint.sql;
-LOAD binsrc/cypher/cypher_bootstrap.sql;
+create procedure DB.DBA.OPENCYPHER (in _query varchar, in _default_graph varchar := null)
+{
+  return DB.DBA.OPENCYPHER_EXEC (_query, _default_graph);
+}
+;
 
--- Verify installation
-SELECT DB.DBA.CYPHER_VERSION();
+create procedure DB.DBA.OPENCYPHER_PARAMS (in _query varchar, in _default_graph varchar := null, in _params any := null)
+{
+  return DB.DBA.CYPHER_PARAMS (_query, _default_graph, _params);
+}
+;
+
+create procedure WS.WS.SPARQL_ENDPOINT_OPENCYPHER_BODY (in query varchar)
+{
+  declare q, ql, next_ch varchar;
+
+  if (query is null)
+    return null;
+
+  q := trim (query);
+  ql := lower (q);
+
+  if (ql = 'opencypher')
+    return '';
+  if (length (q) > 10 and subseq (ql, 0, 10) = 'opencypher')
+    {
+      next_ch := subseq (q, 10, 11);
+      if (next_ch in (' ', '\t', '\n', '\r'))
+        return trim (subseq (q, 10));
+    }
+
+  return null;
+}
+;
