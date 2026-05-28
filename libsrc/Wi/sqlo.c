@@ -2332,6 +2332,14 @@ next_and:
       if (additional_ands)
 	{
 	  ST * right_and = NULL, *right = NULL;
+	  /* If first_and_list is empty after extracting common predicates, the first OR
+	   * branch was entirely the common factor (= TRUE after factoring). By absorption,
+	   * A OR (A AND X) = A, so the remaining OR branches add no constraints. */
+	  if (NULL == first_and_list)
+	    {
+	      tree = additional_ands;
+	      goto done;
+	    }
 	  DO_SET (ST *, first_and, &first_and_list)
 	    {
 	      t_st_and (&right_and, first_and);
@@ -2339,7 +2347,6 @@ next_and:
 	  END_DO_SET ();
 	  if (right_and)
 	    t_st_or (&right, right_and);
-
 	  DO_SET (dk_set_t, and_list, &and_lists)
 	    {
 	      right_and = NULL;
@@ -2355,6 +2362,7 @@ next_and:
 	  if (right)
 	    t_st_and (&additional_ands, right);
 	  tree = additional_ands;
+done:;
 	}
     }
   return tree;
