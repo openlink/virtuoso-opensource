@@ -1594,9 +1594,13 @@ pred_gen_1 (sql_comp_t * sc, ST * tree, dk_set_t * code, int succ, int fail, int
   if (ST_P (tree, BOP_OR))
     {
       jmp_label_t temp_fail = sqlc_new_label (sc);
-      pred_gen_1 (sc, tree->_.bin_exp.left, code, succ, temp_fail, temp_fail);
+      jmp_label_t left_unkn = sqlc_new_label (sc);
+      pred_gen_1 (sc, tree->_.bin_exp.left, code, succ, temp_fail, left_unkn);
       cv_label (code, temp_fail);
       pred_gen_1 (sc, tree->_.bin_exp.right, code, succ, fail, unkn);
+      /* UNKNOWN OR TRUE = TRUE; UNKNOWN OR FALSE/UNKNOWN = UNKNOWN */
+      cv_label (code, left_unkn);
+      pred_gen_1 (sc, tree->_.bin_exp.right, code, succ, unkn, unkn);
       return;
     }
   if (ST_P (tree, BOP_AND))
