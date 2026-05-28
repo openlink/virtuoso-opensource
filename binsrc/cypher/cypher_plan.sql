@@ -495,6 +495,8 @@ create procedure DB.DBA.CYP_PLAN_BUILD (in _ast any)
         ops := vector_concat (ops, vector (DB.DBA.CYP_PLAN_OPERATOR ('FORCE_CAMELCASE', clause)));
       else if (ctype = 'DEFINE')
         ops := vector_concat (ops, vector (DB.DBA.CYP_PLAN_OPERATOR ('DEFINE', clause)));
+      else if (ctype = 'USE' or ctype = 'USE_ANY_GRAPH')
+        ops := vector_concat (ops, vector (DB.DBA.CYP_PLAN_OPERATOR (ctype, clause)));
       else if (ctype = 'MATCH')
         {
           if (length (clause) > 1 and aref (clause, 1))
