@@ -528,7 +528,12 @@ sqlo_const_cond (sqlo_t * so, df_elt_t * dfe)
 	  else return dfe;
 	case BOP_EQ:
 	  if (dfe->_.bin.left == dfe->_.bin.right)
-	    return DFE_TRUE;
+            {
+              df_elt_t *col = dfe->_.bin.left;
+              /* except case when col is nullable */
+              if (DFE_COLUMN != col->dfe_type || !col->_.col.col || col->_.col.col->col_sqt.sqt_non_null)
+                return DFE_TRUE;
+            }
 	  return dfe;
 
 	case BOP_NULL:
