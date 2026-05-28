@@ -2207,10 +2207,12 @@ setp_chash_distinct_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
 	  ent = array_##n[pos1_##n]; \
 	  if (!ent) \
 	    { \
+	      if (!is_intersect) { \
 	        cha->cha_distinct_count++;				\
 		cha_add_gb (setp, inst, key_vecs, cha_p_##n, h_##n, pos1_##n, inx + n - 1, first_set, (dtp_t*)nulls); \
                 cha->cha_error |= cha_p_##n->cha_error; \
-		dis_result (n); \
+	      } \
+	      dis_result (n); \
 	      goto done_##n##f; \
 	    } \
 	  if (h_##n == *ent && cmp (cha, ent, key_vecs, inx + n - 1, (dtp_t*)nulls)) \
@@ -2220,9 +2222,11 @@ setp_chash_distinct_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
 	  ent = array_##n[pos2_##n]; \
 	  if (!ent) \
 	    { \
-	      cha->cha_distinct_count++;				\
-	      cha_add_gb (setp, inst, key_vecs, cha_p_##n, h_##n, pos2_##n, inx + n - 1, first_set, (dtp_t*)nulls); \
-              cha->cha_error |= cha_p_##n->cha_error; \
+	      if (!is_intersect) { \
+	        cha->cha_distinct_count++;				\
+	        cha_add_gb (setp, inst, key_vecs, cha_p_##n, h_##n, pos2_##n, inx + n - 1, first_set, (dtp_t*)nulls); \
+                cha->cha_error |= cha_p_##n->cha_error; \
+	      } \
 	      dis_result (n); \
 	      goto done_##n##f; \
 	    } \
@@ -2238,9 +2242,11 @@ setp_chash_distinct_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
 		  dis_dup (n); goto done_##n##f;	\
 		} \
 	    } \
-	  cha->cha_distinct_count++;					\
-	  cha_add_gb (setp, inst, key_vecs, cha_p_##n, h_##n, -1, inx + n - 1, first_set, (dtp_t*)nulls); \
-          cha->cha_error |= cha_p_##n->cha_error; \
+	  if (!is_intersect) { \
+	    cha->cha_distinct_count++;					\
+	    cha_add_gb (setp, inst, key_vecs, cha_p_##n, h_##n, -1, inx + n - 1, first_set, (dtp_t*)nulls); \
+            cha->cha_error |= cha_p_##n->cha_error; \
+	  } \
 	  dis_result (n); \
 	done_##n##f: ;
 
