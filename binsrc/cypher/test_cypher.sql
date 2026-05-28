@@ -132,25 +132,35 @@ create procedure DB.DBA.OPENCYPHER_RUN_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('FAIL: 0.5.4 /sparql OPENCYPHER body did not translate')); }
   _total := _total + 1;
 
+  _state := '00000';
+  _msg := '';
+  exec ('OPENCYPHER
+MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
+  if (_state = '00000')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.5 Raw OPENCYPHER statement compiles from SQL')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.5 Raw OPENCYPHER statement failed: %s %s', _state, _msg))); }
+  _total := _total + 1;
+
   _str := DB.DBA.CYPHER_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> MATCH (x:foaf:Person) RETURN x LIMIT 1');
   if (strstr (_str, 'FROM <') is null and strstr (_str, '?x a <http://xmlns.com/foaf/0.1/Person>') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.5 OPENCYPHER without default graph emits no FROM')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.6 OPENCYPHER without default graph emits no FROM')); }
   else
-    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.5 Expected no FROM for graphless OPENCYPHER translation, got %s', _str))); }
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.6 Expected no FROM for graphless OPENCYPHER translation, got %s', _str))); }
   _total := _total + 1;
 
   _str := DB.DBA.CYPHER_TO_SPARQL ('PREFIX : <#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> MATCH (a)-[r:foaf:knows]->(b) FROM <urn:test:weighted> RETURN r.:weight AS weight');
   if (strstr (_str, 'GRAPH <urn:test:weighted>') is not null and strstr (_str, '<#weight>') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.6 Default-prefix relationship property access')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.7 Default-prefix relationship property access')); }
   else
-    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.6 Expected default-prefix relationship property, got %s', _str))); }
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.7 Expected default-prefix relationship property, got %s', _str))); }
   _total := _total + 1;
 
   _str := DB.DBA.CYPHER_TO_SPARQL ('PREFIX : <#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> MATCH (a)-[r:foaf:knows {:weight: 1.0}]->(b) FROM <urn:test:weighted> RETURN r.:weight AS weight');
   if (strstr (_str, '<#weight>') is not null and strstr (_str, '1.0') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.7 Default-prefix relationship property constraint')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PASS: 0.5.8 Default-prefix relationship property constraint')); }
   else
-    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.7 Expected default-prefix relationship property constraint, got %s', _str))); }
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (sprintf ('FAIL: 0.5.8 Expected default-prefix relationship property constraint, got %s', _str))); }
   _total := _total + 1;
 
   -- ========== Section 1: Tokenizer ==========

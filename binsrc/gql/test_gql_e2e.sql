@@ -72,6 +72,44 @@ create procedure DB.DBA.GQL_E2E_TESTS ()
   }
   e2e3_done:;
 
+  -- E2E3a: Raw GQL statement through SQL parser
+  _total := _total + 1;
+  {
+    declare _state, _msg varchar;
+    declare _meta any;
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E3a FAIL: raw GQL statement errored')); goto e2e3a_done; };
+    _state := '00000';
+    _msg := '';
+    exec ('GQL
+MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
+    if (_state = '00000')
+      _pass := _pass + 1;
+    else
+      { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('E2E3a FAIL: raw GQL returned ', _state, ' ', _msg))); goto e2e3a_done; }
+    _results := vector_concat (_results, vector ('E2E3a PASS: raw GQL statement'));
+  }
+  e2e3a_done:;
+
+  -- E2E3b: Raw OPENGQL statement through SQL parser
+  _total := _total + 1;
+  {
+    declare _state, _msg varchar;
+    declare _meta any;
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E3b FAIL: raw OPENGQL statement errored')); goto e2e3b_done; };
+    _state := '00000';
+    _msg := '';
+    exec ('OPENGQL
+MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
+    if (_state = '00000')
+      _pass := _pass + 1;
+    else
+      { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('E2E3b FAIL: raw OPENGQL returned ', _state, ' ', _msg))); goto e2e3b_done; }
+    _results := vector_concat (_results, vector ('E2E3b PASS: raw OPENGQL statement'));
+  }
+  e2e3b_done:;
+
   -- E2E4: INSERT edge between two nodes
   _total := _total + 1;
   {
