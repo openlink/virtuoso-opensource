@@ -7675,19 +7675,38 @@ GENERAL_DOUBLE_FUNC (bif_sin, "sin", sin (x))
 GENERAL_DOUBLE_FUNC (bif_tan, "tan", tan (x))
 GENERAL_DOUBLE_FUNC (bif_cot, "cot", (((double) 1.0) / tan (x)))
 
-/* Not available on every platform, e.g. tanh not in Windows NT
-   GENERAL_DOUBLE_FUNC(bif_cosh, "cosh", cosh(x))
-   GENERAL_DOUBLE_FUNC(bif_sinh, "sinh", sinh(x))
-   GENERAL_DOUBLE_FUNC(bif_tanh, "tanh", tanh(x))
- */
+/* Hyperbolic functions (C89) and inverse hyperbolic functions (C99). */
+GENERAL_DOUBLE_FUNC (bif_cosh, "cosh", cosh (x))
+GENERAL_DOUBLE_FUNC (bif_sinh, "sinh", sinh (x))
+GENERAL_DOUBLE_FUNC (bif_tanh, "tanh", tanh (x))
+GENERAL_DOUBLE_FUNC (bif_acosh, "acosh", acosh (x))
+GENERAL_DOUBLE_FUNC (bif_asinh, "asinh", asinh (x))
+GENERAL_DOUBLE_FUNC (bif_atanh, "atanh", atanh (x))
 
 GENERAL_DOUBLE_FUNC (bif_degrees, "degrees", (DEGREES_IN_RADIAN * (x)))
 GENERAL_DOUBLE_FUNC (bif_radians, "radians", (RADIANS_IN_DEGREE * (x)))
 
 GENERAL_DOUBLE_FUNC (bif_exp, "exp", exp (x))
+GENERAL_DOUBLE_FUNC (bif_exp2, "exp2", exp2 (x))
+GENERAL_DOUBLE_FUNC (bif_expm1, "expm1", expm1 (x))
 GENERAL_DOUBLE_FUNC (bif_log, "log", log (x))
 GENERAL_DOUBLE_FUNC (bif_log10, "log10", log10 (x))
+GENERAL_DOUBLE_FUNC (bif_log2, "log2", log2 (x))
+GENERAL_DOUBLE_FUNC (bif_log1p, "log1p", log1p (x))
+GENERAL_DOUBLE_FUNC (bif_logb, "logb", logb (x))
 GENERAL_DOUBLE_FUNC (bif_sqrt, "sqrt", sqrt (x))
+GENERAL_DOUBLE_FUNC (bif_cbrt, "cbrt", cbrt (x))
+
+/* Nearest-integer functions returning a double (C99). */
+GENERAL_DOUBLE_FUNC (bif_trunc, "trunc", trunc (x))
+GENERAL_DOUBLE_FUNC (bif_rint, "rint", rint (x))
+GENERAL_DOUBLE_FUNC (bif_nearbyint, "nearbyint", nearbyint (x))
+
+/* Error and gamma functions (C99). */
+GENERAL_DOUBLE_FUNC (bif_erf, "erf", erf (x))
+GENERAL_DOUBLE_FUNC (bif_erfc, "erfc", erfc (x))
+GENERAL_DOUBLE_FUNC (bif_tgamma, "tgamma", tgamma (x))
+GENERAL_DOUBLE_FUNC (bif_lgamma, "lgamma", lgamma (x))
 
 GENERAL_DOUBLE_FUNC (bif_round, "round", (((x-floor(x))>0.5 ? ceil(x):floor(x))))
 
@@ -7702,6 +7721,64 @@ caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
 
 GENERAL_DOUBLE2_FUNC (bif_atan2, "atan2", atan2 (x, y))
 GENERAL_DOUBLE2_FUNC (bif_power, "power", pow (x, y))
+
+GENERAL_DOUBLE2_FUNC (bif_hypot, "hypot", hypot (x, y))
+GENERAL_DOUBLE2_FUNC (bif_copysign, "copysign", copysign (x, y))
+GENERAL_DOUBLE2_FUNC (bif_fmax, "fmax", fmax (x, y))
+GENERAL_DOUBLE2_FUNC (bif_fmin, "fmin", fmin (x, y))
+GENERAL_DOUBLE2_FUNC (bif_fdim, "fdim", fdim (x, y))
+GENERAL_DOUBLE2_FUNC (bif_remainder, "remainder", remainder (x, y))
+GENERAL_DOUBLE2_FUNC (bif_nextafter, "nextafter", nextafter (x, y))
+GENERAL_DOUBLE2_FUNC (bif_ldexp, "ldexp", ldexp (x, (int) y))
+GENERAL_DOUBLE2_FUNC (bif_scalbn, "scalbn", scalbn (x, (int) y))
+
+/* Three-argument double function, e.g. fused multiply-add. */
+#define GENERAL_DOUBLE3_FUNC(BIF_NAME, NAMESTR, OPERATION)\
+caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
+{\
+  int isnull1 = 0, isnull2 = 0, isnull3 = 0; \
+  double x = bif_double_or_null_arg (qst, args, 0, NAMESTR, &isnull1);\
+  double y = bif_double_or_null_arg (qst, args, 1, NAMESTR, &isnull2);\
+  double z = bif_double_or_null_arg (qst, args, 2, NAMESTR, &isnull3);\
+  return ((isnull1 || isnull2 || isnull3) ? NEW_DB_NULL : box_double(OPERATION));\
+}
+
+GENERAL_DOUBLE3_FUNC (bif_fma, "fma", fma (x, y, z))
+
+/*
+ * Floating-point classification predicates (C99), returning an integer
+ * boolean (1/0).  These accept a NULL argument and return NULL.
+ */
+#define GENERAL_DOUBLE_TO_BOOL_FUNC(BIF_NAME, NAMESTR, OPERATION)\
+caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
+{\
+  int isnull = 0; \
+  double x = bif_double_or_null_arg (qst, args, 0, NAMESTR, &isnull);\
+  return(isnull ? NEW_DB_NULL : box_num((OPERATION) ? 1 : 0));\
+}
+
+GENERAL_DOUBLE_TO_BOOL_FUNC (bif_isnan, "isnan", isnan (x))
+GENERAL_DOUBLE_TO_BOOL_FUNC (bif_isinf, "isinf", isinf (x))
+GENERAL_DOUBLE_TO_BOOL_FUNC (bif_isfinite, "isfinite", isfinite (x))
+GENERAL_DOUBLE_TO_BOOL_FUNC (bif_isnormal, "isnormal", isnormal (x))
+GENERAL_DOUBLE_TO_BOOL_FUNC (bif_signbit, "signbit", signbit (x))
+
+/*
+ * modf: returns a two-element vector { fractional_part, integral_part }
+ */
+caddr_t
+bif_modf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  double integral;
+  double x = bif_double_arg (qst, args, 0, "modf");
+  double fractional = modf (x, &integral);
+  dk_set_t ret = NULL;
+
+  dk_set_push (&ret, box_double (integral));
+  dk_set_push (&ret, box_double (fractional));
+
+  return list_to_array (ret);
+}
 
 #define GENERAL_DOUBLE_TO_INT_FUNC(BIF_NAME, NAMESTR, OPERATION)\
 caddr_t BIF_NAME (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)\
@@ -17319,13 +17396,33 @@ sql_bif_init (void)
   bif_define_ex ("sin"			, bif_sin	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("tan"			, bif_tan	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("cot"			, bif_cot	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("cosh"			, bif_cosh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sinh"			, bif_sinh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("tanh"			, bif_tanh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("acosh"		, bif_acosh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("asinh"		, bif_asinh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("atanh"		, bif_atanh	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("frexp"		, bif_frexp	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("modf"			, bif_modf	, BMD_RET_TYPE, &bt_any		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("degrees"		, bif_degrees	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("radians"		, bif_radians	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("exp"			, bif_exp	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("exp2"			, bif_exp2	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("expm1"		, bif_expm1	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("log"			, bif_log	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("log10"		, bif_log10	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("log2"			, bif_log2	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("log1p"		, bif_log1p	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("logb"			, bif_logb	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sqrt"			, bif_sqrt	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("cbrt"			, bif_cbrt	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("trunc"		, bif_trunc	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rint"			, bif_rint	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("nearbyint"		, bif_nearbyint	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("erf"			, bif_erf	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("erfc"			, bif_erfc	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("tgamma"		, bif_tgamma	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("lgamma"		, bif_lgamma	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("atan2"		, bif_atan2	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("power"		, bif_power	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ceiling"		, bif_ceiling	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
@@ -17333,11 +17430,25 @@ sql_bif_init (void)
   bif_define_ex ("pi"			, bif_pi	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("round"		, bif_round	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
 
-  bif_define_ex ("rnd", bif_rnd, BMD_ALIAS, "rand"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/,  BMD_NO_FOLD, BMD_DONE);
+  bif_define_ex ("rnd", bif_rnd, BMD_ALIAS, "rand"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1 /*, BMD_IS_PURE*/,  BMD_NO_FOLD, BMD_DONE);
   bif_define ("randomize", bif_randomize);
   bif_define_ex ("hash"			, bif_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("md5_box", bif_md5_box, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
-      BMD_DONE);
+  bif_define_ex ("md5_box"             , bif_md5_box   , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1 , BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("hypot"		, bif_hypot	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("copysign"		, bif_copysign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fmax"			, bif_fmax	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fmin"			, bif_fmin	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fdim"			, bif_fdim	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("remainder"		, bif_remainder	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("nextafter"		, bif_nextafter	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ldexp"		, bif_ldexp	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("scalbn"		, bif_scalbn	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fma"			, bif_fma	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isnan"		, bif_isnan	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isinf"		, bif_isinf	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isfinite"		, bif_isfinite	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isnormal"		, bif_isnormal	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("signbit"		, bif_signbit	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("box_hash", bif_box_hash, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
 /* Bitwise: */
