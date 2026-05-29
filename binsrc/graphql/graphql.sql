@@ -2057,7 +2057,7 @@ create procedure DB.DBA.HP_AUTH_GRAPHQL_USER (in realm varchar)
           cert=>val_cert,
           webidGraph=>val_webidGraph);
       sparql clear graph ?:val_webidGraph;
-      if (not VAL.DBA.is_admin_user (val_uname) and sys_stat ('enable_g_in_sec') = 1)
+      if (not VAL.DBA.is_admin_user (val_uname) and sys_stat ('enable_g_in_sec') > 0)
         {
           connection_set ('SPARQLUserId', 'VAL_SPARQL_ADMIN_G_CTX');
           VAL.DBA.set_graph_context_query (serviceId=>val_serviceId, realm=>val_realm, certificate=>val_cert);
