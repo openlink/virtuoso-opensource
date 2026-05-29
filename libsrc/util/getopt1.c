@@ -49,15 +49,6 @@
 
 #if !defined(NO_NAMESPACES) || defined (_LIBC) || !defined (__GNU_LIBRARY__)
 
-
-/* This needs to come after some library #include
-   to get __GNU_LIBRARY__ defined.  */
-#ifdef __GNU_LIBRARY__
-#include <stdlib.h>
-#else
-char *getenv ();
-#endif
-
 #ifndef	NULL
 #define NULL 0
 #endif

@@ -185,8 +185,6 @@ static char *my_index (const char *str, int chr);
 /* Avoid depending on library functions or files
    whose names are inconsistent.  */
 
-char *getenv ();
-
 static char *
 my_index (const char *str, int chr)
 {
