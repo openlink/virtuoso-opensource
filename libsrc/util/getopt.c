@@ -185,8 +185,6 @@ static char *my_index (const char *str, int chr);
 /* Avoid depending on library functions or files
    whose names are inconsistent.  */
 
-char *getenv ();
-
 static char *
 my_index (const char *str, int chr)
 {
@@ -688,9 +686,7 @@ getopt (int argc, char *const *argv, const char *optstring)
    the above definition of `getopt'.  */
 
 int
-main (argc, argv)
-     int argc;
-     char **argv;
+main (int argc, char **argv)
 {
   int c;
   int digit_optind = 0;

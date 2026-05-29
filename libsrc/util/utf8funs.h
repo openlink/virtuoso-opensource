@@ -30,7 +30,7 @@
 BEGIN_CPLUSPLUS
 
 #if !defined (_MTX_)
-#if !defined (__APPLE__) || defined (HAVE_WCHAR_H)
+#if defined (HAVE_WCHAR_H)
 #include <wchar.h>
 #else
 typedef unsigned int wint_t;
