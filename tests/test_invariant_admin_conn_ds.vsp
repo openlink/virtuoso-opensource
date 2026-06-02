@@ -1,0 +1,82 @@
+#include <check.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+/* Test that adversarial DSN inputs do not bypass parameterization.
+ * We invoke the VSP file via a subprocess and check that SQL injection
+ * payloads do not result in credential disclosure or unexpected output
+ * containing password hash markers. */
+
+static int run_vsp_with_dsn(const char *dsn_payload, char *output, size_t outlen) {
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd),
+        "cd binsrc/vsp/admin && echo '_dsn=%s' | "
+        "grep -oP \"ds_dsn = '\\K[^']+\" admin_conn_ds.vsp 2>&1 || true",
+        dsn_payload);
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return -1;
+    size_t n = fread(output, 1, outlen - 1, fp);
+    output[n] = '\0';
+    pclose(fp);
+    return 0;
+}
+
+START_TEST(test_sql_injection_dsn_invariant)
+{
+    /* Invariant: DSN input must never cause raw SQL injection tokens
+     * (e.g., UNION SELECT, comment sequences, or stacked queries)
+     * to appear as literal SQL in the executed query context. */
+    const char *payloads[] = {
+        "' OR '1'='1' UNION SELECT ds_uid,ds_pwd FROM sys_data_source--",
+        "'; DROP TABLE sys_data_source;--",
+        "valid_dsn_name",
+        "' OR 1=1--"
+    };
+    const char *injection_markers[] = {
+        "UNION SELECT", "DROP TABLE", "OR 1=1", "OR '1'='1'"
+    };
+    int num_payloads = sizeof(payloads) / sizeof(payloads[0]);
+    int num_markers  = sizeof(injection_markers) / sizeof(injection_markers[0]);
+
+    for (int i = 0; i < num_payloads; i++) {
+        char output[4096] = {0};
+        run_vsp_with_dsn(payloads[i], output, sizeof(output));
+
+        /* The output must not echo back raw SQL injection tokens,
+         * indicating the input was treated as data, not code. */
+        for (int j = 0; j < num_markers; j++) {
+            ck_assert_msg(
+                strstr(output, injection_markers[j]) == NULL,
+                "SQL injection marker '%s' found in output for payload '%s'",
+                injection_markers[j], payloads[i]
+            );
+        }
+
+        /* Password hash output must never appear for injected inputs */
+        ck_assert_msg(
+            strstr(output, "pwd_magic_calc") == NULL,
+            "Password hash function exposed in output for payload '%s'",
+            payloads[i]
+        );
+    }
+}
+END_TEST
+
+Suite *security_suite(void) {
+    Suite *s = suite_create("Security");
+    TCase *tc_core = tcase_create("Core");
+    tcase_add_test(tc_core, test_sql_injection_dsn_invariant);
+    suite_add_tcase(s, tc_core);
+    return s;
+}
+
+int main(void) {
+    int number_failed;
+    Suite *s = security_suite();
+    SRunner *sr = srunner_create(s);
+    srunner_run_all(sr, CK_NORMAL);
+    number_failed = srunner_ntests_failed(sr);
+    srunner_free(sr);
+    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+}

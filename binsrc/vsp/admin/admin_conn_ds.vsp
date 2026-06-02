@@ -70,7 +70,9 @@ function ch_url()
 
   if (not is_empty_or_null(get_keyword ('save', params, '')))
     {
-	  select pwd_magic_calc (ds_uid, ds_pwd, 1) into _pass from sys_data_source where ds_dsn = _dsn;
+	  exec ('select pwd_magic_calc (ds_uid, ds_pwd, 1) from sys_data_source where ds_dsn = ?',
+	        state, msg, vector (_dsn), m_dta, res);
+	  _pass := res[0][0];
 
   	  if (_pass_n1 <> _pass_n2)
 	    {
@@ -104,13 +106,10 @@ function ch_url()
     }
   else if (not is_empty_or_null(get_keyword ('refresh', params, '')))
     {
-	  select
-	      pwd_magic_calc (ds_uid, ds_pwd, 1),
-	      ds_uid
-	      into
-	      _pass,
-	      _user
-	  from sys_data_source where ds_dsn = _dsn;
+	  exec ('select pwd_magic_calc (ds_uid, ds_pwd, 1), ds_uid from sys_data_source where ds_dsn = ?',
+	        state, msg, vector (_dsn), m_dta, res);
+	  _pass := res[0][0];
+	  _user := res[0][1];
 
 	  state := '00000';
 	  msg := 'none';
