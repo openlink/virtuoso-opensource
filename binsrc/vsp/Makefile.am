@@ -57,47 +57,9 @@ EXTRA_DIST =  \
 	*.sql \
 	*.txt \
 	*.vsp \
-	admin/*.css \
-	admin/*.html \
-	admin/*.js \
-	admin/*.sql \
 	admin/*.vsp \
-	admin/*.vspx \
-	admin/admin_dav/*.css \
-	admin/admin_dav/*.html \
-	admin/admin_dav/*.js \
-	admin/admin_dav/*.sql \
-	admin/admin_dav/*.vsp \
-	admin/admin_dav/*.vspx \
-	admin/admin_dav/*.xml \
-	admin/admin_dav/*.xsl \
 	admin/admin_dav/images/16x16/*.gif \
-	admin/admin_news/*.sql \
-	admin/admin_news/*.vsp \
-	admin/admin_repl/*.js \
-	admin/admin_repl/*.vsp \
-	admin/admin_trx_repl/*.vsp \
-	admin/dbpump/*.html \
-	admin/dbpump/*.sql \
-	admin/dbpump/*.txt \
-	admin/dbpump/*.vsp \
-	admin/dbpump/*.xsl \
-	admin/dbpump/oper.pars \
-	admin/dbpump/operpars.awk \
-	admin/dbpump/parse_oper_pars.sh \
-	admin/dbpump/root.isql \
-	admin/dbpump/schema.osql \
-	admin/debug/*.sql \
-	admin/debug/*.vspx \
 	admin/debug/filter.awk \
-	admin/debug/make_vad.sh \
-	admin/debug/read.me \
-	admin/debug/run_tests.sh \
-	admin/images/*.gif \
-	admin/images/*.jpg \
-	admin/vad/*.gif \
-	admin/vad/*.vsp \
-	admin/vad/vad_sticker.dtd \
 	doc/*.css \
 	doc/*.gif \
 	doc/*.jpg \
@@ -113,8 +75,6 @@ EXTRA_DIST =  \
 	images/*.jpg \
 	images/*.png \
 	install.sh \
-	mime/*.htm \
-	mime/*.vsp \
 	soapdemo/*.css \
 	soapdemo/*.html \
 	soapdemo/*.java \
