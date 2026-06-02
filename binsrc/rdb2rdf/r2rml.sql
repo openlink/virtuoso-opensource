@@ -474,6 +474,7 @@ create function DB.DBA.R2RML_XSD_TYPE_OF_DTP (in dtp integer)
   if (__tag of double precision = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of numeric = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of real = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
+  if (__tag of float = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
   if (__tag of XML) return 'http://www.w3.org/2001/XMLSchema#XMLLiteral';
   if (238) return default_geo_type();
   return 'http://www.w3.org/2001/XMLSchema#any';
@@ -582,7 +583,7 @@ create_iol_class:
           declare argdtp integer;
           declare raw_argname, argname varchar;
           argdtp := argtypes[argctr][0];
-          if (argcount = 1 and argdtp in (__tag of date, __tag of time, __tag of datetime))
+          if (termtype = 'http://www.w3.org/ns/r2rml#IRI' and argcount = 1 and argdtp in (__tag of date, __tag of time, __tag of datetime))
             argdtp := __tag of varchar;
           raw_argname := format_parts[argctr * 2 + 1];
           argname := replace (replace (replace (replace (sprintf ('%U', raw_argname), '-', '_'), '@', '_'), '`', '_'), '~', '_');
@@ -598,7 +599,8 @@ create_iol_class:
               when __tag of integer then 'integer'
               when __tag of smallint then 'integer'
               when __tag of bigint then 'integer'
-              when __tag of real then 'real'
+              when __tag of real then 'double precision'
+              when __tag of float then 'double precision'
               when __tag of double precision then 'double precision'
               when __tag of numeric then 'numeric'
               when __tag of varchar then 'varchar'
