@@ -1016,7 +1016,7 @@ void blob_log_replace (it_cursor_t * it, blob_layout_t * bl);
 
 void rd_fixup_blob_refs (it_cursor_t * itc, row_delta_t * rd);
 caddr_t blob_to_string_it (lock_trx_t * lt, index_tree_t *it, caddr_t bhp);
-caddr_t blob_to_string (lock_trx_t * lt, caddr_t bhp);
+EXE_EXPORT(caddr_t, blob_to_string, (lock_trx_t * lt, caddr_t bhp));
 caddr_t safe_blob_to_string (lock_trx_t * lt, caddr_t bhp, caddr_t *err);
 dk_session_t *blob_to_string_output_it (lock_trx_t * lt, index_tree_t *it, caddr_t bhp);
 dk_session_t *blob_to_string_output (lock_trx_t * lt, caddr_t bhp);

@@ -3015,6 +3015,86 @@ fi
 
 ##########################################################################
 ##									##
+##  delta_sharing using carquet						##
+##									##
+##########################################################################
+AC_ARG_ENABLE(delta_sharing, [dnl
+AC_HELP_STRING([--enable-delta_sharing(=DIR)], [enable the delta_sharing plugin (default)])
+AC_HELP_STRING([--disable-delta_sharing], [disable the delta_sharing plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_delta_sharing="yes" ;;
+       no)	with_delta_sharing="no" ;;
+       /*)	with_delta_sharing="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-delta_sharing) ;;
+     esac
+  ],
+  [ with_carquet="yes" ]
+)
+
+if test "x$with_delta_sharing" != "xno"
+then
+    AC_MSG_CHECKING([carquet library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    if test "x$with_delta_sharing" = "xyes"
+    then
+	DELTA_SHARING_CPPFLAGS=""
+	DELTA_SHARING_LDFLAGS=""
+    else
+        DELTA_SHARING_CPPFLAGS="-I$with_delta_sharing/include"
+        DELTA_SHARING_LDFLAGS="-L$with_delta_sharing/lib"
+    fi
+    DELTA_SHARING_LIBS="-lcarquet -lzstd -llz4 -lz"
+
+    CPPFLAGS="$CPPFLAGS $DELTA_SHARING_CPPFLAGS"
+    LIBS="$LIBS $DELTA_SHARING_LDFLAGS $DELTA_SHARING_LIBS -lpthread -lm"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_delta_sharing/lib"
+    export LD_LIBRARY_PATH
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include "carquet/carquet.h"
+int
+main ()
+{
+  carquet_error_t err = CARQUET_ERROR_INIT;
+
+  /* Schema */
+  carquet_schema_t* schema = carquet_schema_create(&err);
+
+  if (!schema) {
+    exit (1);
+  }
+  exit (0);
+}],
+[
+  BUILD_OPTS="$BUILD_OPTS delta_sharing"
+  AC_MSG_RESULT(good)
+],
+[
+  AC_MSG_RESULT([bad. Check config.log for details])
+  with_delta_sharing="no"
+  AC_MSG_WARN([The carquet plugin will not be built])
+])
+
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
+fi
+
+AM_CONDITIONAL(WITH_DELTA_SHARING, test "x$with_delta_sharing" != "xno" )
+AC_SUBST(DELTA_SHARING_CPPFLAGS)
+AC_SUBST(DELTA_SHARING_LDFLAGS)
+AC_SUBST(DELTA_SHARING_LIBS)
+
+##########################################################################
+##									##
 ##  Operating System extentions						##
 ##									##
 ##########################################################################
@@ -3300,6 +3380,7 @@ AC_CONFIG_FILES([
 	binsrc/vspx/Makefile
 	binsrc/websocket/Makefile
 	binsrc/ws/Makefile
+	binsrc/ws/delta_sharing/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile
 	binsrc/conductor/Makefile
