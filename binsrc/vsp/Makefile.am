@@ -75,32 +75,6 @@ EXTRA_DIST =  \
 	images/*.jpg \
 	images/*.png \
 	install.sh \
-	soapdemo/*.css \
-	soapdemo/*.html \
-	soapdemo/*.java \
-	soapdemo/*.sql \
-	soapdemo/*.vsp \
-	soapdemo/demo.jar \
-	soapdemo/GNUmakefile \
-	soapdemo/r4/*.sql \
-	soapdemo/r4/complex-doc-1.xsd \
-	soapdemo/r4/complex-doc-2.xsd \
-	soapdemo/r4/complex-doc-3.xsd \
-	soapdemo/r4/complex-rpc-encoded.xsd \
-	soapdemo/r4/dime-doc.xsd \
-	soapdemo/r4/dime-rpc.xsd \
-	soapdemo/r4/round4xsd-1.xsd \
-	soapdemo/r4/round4xsd-2.xsd \
-	soapdemo/r4/round4xsd-3.xsd \
-	soapdemo/r4/round4xsd-4.xsd \
-	soapdemo/r4/simple-doc-literal-1.xsd \
-	soapdemo/r4/simple-doc-literal-2.xsd \
-	soapdemo/r4/simple-doc-literal-3.xsd \
-	soapdemo/r4/simple-rpc-encoded.xsd \
-	soapdemo/round2-base.vb \
-	soapdemo/saxapi.jar \
-	soapdemo/soaprt.jar \
-	soapdemo/xerces.jar \
 	vsmx/*.css \
 	vsmx/*.gif \
 	vsmx/*.jpg \

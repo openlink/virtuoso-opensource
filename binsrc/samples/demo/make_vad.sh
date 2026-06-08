@@ -291,43 +291,43 @@ directory_init() {
   cp -f uninst.sql                                              vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
   #cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/fishselect.sql                vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/soap_validator.sql            vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/interop-xsd.sql               vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/round2.sql                    vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/round3-D.sql                  vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/extensions.wsdl.vsp           vad/data/demo/interop3/wsdl
-  cp -f $HOME/binsrc/vsp/soapdemo/extensions_required.wsdl.vsp  vad/data/demo/interop3/wsdl
+  cp -f $HOME/binsrc/samples/demo/soapdemo/fishselect.sql                vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/soap_validator.sql            vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/interop-xsd.sql               vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/round2.sql                    vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/round3-D.sql                  vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/extensions.wsdl.vsp           vad/data/demo/interop3/wsdl
+  cp -f $HOME/binsrc/samples/demo/soapdemo/extensions_required.wsdl.vsp  vad/data/demo/interop3/wsdl
 
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/dime-doc.xsd               vad/data/demo/interop3/wsdl/r4
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/dime-rpc.xsd               vad/data/demo/interop3/wsdl/r4
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-rpc-encoded.xsd     vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-doc-literal-1.xsd   vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-doc-literal-2.xsd   vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-doc-literal-3.xsd   vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-rpc-encoded.xsd    vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/round4xsd-1.xsd            vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/round4xsd-2.xsd            vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/round4xsd-3.xsd            vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/round4xsd-3.xsd            vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/round4xsd-4.xsd            vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-doc-1.xsd          vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-doc-2.xsd          vad/data/demo/interop3/wsdl/r4  
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-doc-3.xsd          vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/dime-doc.xsd               vad/data/demo/interop3/wsdl/r4
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/dime-rpc.xsd               vad/data/demo/interop3/wsdl/r4
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-rpc-encoded.xsd     vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-doc-literal-1.xsd   vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-doc-literal-2.xsd   vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-doc-literal-3.xsd   vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-rpc-encoded.xsd    vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/round4xsd-1.xsd            vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/round4xsd-2.xsd            vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/round4xsd-3.xsd            vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/round4xsd-3.xsd            vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/round4xsd-4.xsd            vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-doc-1.xsd          vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-doc-2.xsd          vad/data/demo/interop3/wsdl/r4  
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-doc-3.xsd          vad/data/demo/interop3/wsdl/r4  
 
-  cp -f $HOME/binsrc/vsp/soapdemo/round3-E.sql                  vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/round3-F_vad.sql              vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/dime-doc.sql               vad/data/demo/sql   
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/dime-rpc.sql               vad/data/demo/sql   
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/mime-doc.sql               vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/mime-rpc.sql               vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-doc-literal.sql     vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/simple-rpc-encoded.sql     vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-rpc-encoded_vad.sql    vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/complex-doc-literal_vad.sql    vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/xsd.sql                    vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/r4/load_xsd_vad.sql           vad/data/demo/sql
-  cp -f $HOME/binsrc/vsp/soapdemo/interop_client.sql            vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/round3-E.sql                  vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/round3-F_vad.sql              vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/dime-doc.sql               vad/data/demo/sql   
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/dime-rpc.sql               vad/data/demo/sql   
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/mime-doc.sql               vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/mime-rpc.sql               vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-doc-literal.sql     vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/simple-rpc-encoded.sql     vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-rpc-encoded_vad.sql    vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/complex-doc-literal_vad.sql    vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/xsd.sql                    vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/r4/load_xsd_vad.sql           vad/data/demo/sql
+  cp -f $HOME/binsrc/samples/demo/soapdemo/interop_client.sql            vad/data/demo/sql
   cp -f $HOME/binsrc/tests/suite/emp.xsl                        vad/data/demo/xmlsql/emp_orig.xsl
   cp -f $HOME/binsrc/tests/suite/emp_my.xsl                     vad/data/demo/xmlsql/emp.xsl
   cp -f $HOME/binsrc/tests/suite/docsrc/html_v.xsl              vad/data/demo/xmlsql/xtml_v.xsl

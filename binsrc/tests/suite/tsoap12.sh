@@ -4261,9 +4261,9 @@ mkdir soap12
 chmod 775 soap12
 cd $TESTDIR/soap12
 
-cp $HOME/binsrc/vsp/soapdemo/interop-xsd.sql . 
-cp $HOME/binsrc/vsp/soapdemo/round2.sql . 
-cp $HOME/binsrc/vsp/soapdemo/soap12-addon.sql . 
+cp $HOME/binsrc/samples/demo/soapdemo/interop-xsd.sql . 
+cp $HOME/binsrc/samples/demo/soapdemo/round2.sql . 
+cp $HOME/binsrc/samples/demo/soapdemo/soap12-addon.sql . 
 
 cp -f $VIRTUOSO_TEST/tvspxex.awk .
 #MakeIni
