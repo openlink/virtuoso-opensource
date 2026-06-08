@@ -43,7 +43,7 @@ delta_sharing_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 delta_sharing_la_CFLAGS  +=  @DELTA_SHARING_CPPFLAGS@
 
 delta_sharing_la_LDFLAGS = -module -avoid-version -export-dynamic
-delta_sharing_la_LDFLAGS += -export-symbols delta_sharing_plugin.exp
+delta_sharing_la_LDFLAGS += -export-symbols delta_sharing.exp
 delta_sharing_la_LIBADD = @DELTA_SHARING_LDFLAGS@ @DELTA_SHARING_LIBS@
 
 sql_code_delta_sharing.c: sql/server.sql $(SQL_AWK_DEPS) Makefile.am
@@ -64,5 +64,6 @@ generated: sql_code_delta_sharing.c
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	$(srcdir)/delta_sharing.def \
 	$(srcdir)/delta_sharing.exp \
-	$(srcdir)/sql/server.sql
+	$(srcdir)/sql/*.sql
