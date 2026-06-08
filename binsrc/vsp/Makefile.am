@@ -52,31 +52,18 @@ uninstall-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
-	*.css \
-	*.html \
-	*.sql \
-	*.txt \
-	*.vsp \
-	admin/*.vsp \
-	admin/admin_dav/images/16x16/*.gif \
-	admin/debug/filter.awk \
-	doc/*.css \
-	doc/*.gif \
-	doc/*.jpg \
-	doc/*.png \
-	doc/*.vsp \
-	doc/*.vspx \
-	doc/*.xsl \
-	favicon.ico \
-	favicon/*.png \
-	favicon/*.svg \
-	favicon/manifest.webmanifest \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
-	install.sh \
-	vsmx/*.css \
-	vsmx/*.gif \
-	vsmx/*.jpg \
-	vsmx/*.vspx \
-	vsmx/*.xsl
+	$(srcdir)/*.css \
+	$(srcdir)/*.html \
+	$(srcdir)/*.txt \
+	$(srcdir)/admin/*.vsp \
+	$(srcdir)/favicon.ico \
+	$(srcdir)/favicon/*.png \
+	$(srcdir)/favicon/*.svg \
+	$(srcdir)/favicon/manifest.webmanifest \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
+	$(srcdir)/vsmx/*.css \
+	$(srcdir)/vsmx/*.gif \
+	$(srcdir)/vsmx/*.jpg \
+	$(srcdir)/vsmx/*.vspx
