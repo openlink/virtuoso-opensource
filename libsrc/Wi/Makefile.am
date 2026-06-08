@@ -722,7 +722,7 @@ SQL_FILES_VDB		= \
 	$(srcdir)/vdb.sql
 
 SQL_FILES_WS		= \
-	$(top_srcdir)/binsrc/vsp/vsp_auth.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/vsp_auth.sql \
 	$(srcdir)/soap.sql \
 	$(srcdir)/wsrp_ultim.xsl \
 	$(srcdir)/wsrp_resp.xsl \
