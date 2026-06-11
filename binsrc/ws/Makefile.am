@@ -27,4 +27,9 @@ SUBDIRS = wsrm delta_sharing
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	wstr/*.sql
+	$(srcdir)/common/admin/*.sql \
+	$(srcdir)/common/admin/admin_dav/*.sql \
+	$(srcdir)/common/admin/admin_news/*.sql \
+	$(srcdir)/common/admin/dbpump/*.sql \
+	$(srcdir)/common/admin/debug/filter.awk \
+	$(srcdir)/wstr/*.sql

@@ -330,9 +330,7 @@ LOG "Directory init..."
   #mkdir vad/data/doc/pdf
   #$LN docsrc/pdf/*.html vad/data/doc/pdf/.
 
-  $CP -f $HOME/binsrc/vsp/doc/* vad/data/doc/.
-  $CP -f $HOME/docsrc/vsp/doc/* vad/data/doc/.
-  # the later has latest stuff in and should be used.
+  $CP doc/* vad/data/doc/.
 
 #  $CP docsrc/html_virt/*.html vad/data/doc/html/.
 #  $CP docsrc/html_virt/*.css vad/data/doc/html/.

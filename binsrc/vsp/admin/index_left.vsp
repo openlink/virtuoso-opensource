@@ -90,7 +90,6 @@ again:
 
       <ul class="left_nav">
 	  <!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
-      <!--li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li-->
       <?vsp if (have_doc) { ?>
       <li><img src="/images/docs_16.png" width="16" height="16" /><a href="/doc/html/" target="_top">Documentation<small> (local)</small></a></li>
       <?vsp } else { ?>
