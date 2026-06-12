@@ -941,6 +941,10 @@ then
 	#include <openssl/rand.h>
 	#include <stdio.h>
 	#include <string.h>
+
+	#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	# define TLS_client_method() SSLv23_client_method()
+	#endif
 	int
 	main ()
 	{
@@ -958,7 +962,7 @@ then
 	    SSLeay_add_ssl_algorithms();
 	    PKCS12_PBE_add ();
 
-	    ssl_server_method = SSLv23_client_method();
+	    ssl_server_method = TLS_client_method();
 	    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
 
 	    if (!ssl_server_ctx)

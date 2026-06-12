@@ -1033,7 +1033,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	  /*
 	   *  Switch socket to SSL protocol
 	   */
-	  ctx->hcctx_ssl_method = SSLv23_client_method();
+	  ctx->hcctx_ssl_method = TLS_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
 	  if (ctx->hcctx_timeout > 0)

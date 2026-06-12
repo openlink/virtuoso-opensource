@@ -9405,7 +9405,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *dhparam = https_dhparam;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
-  ssl_meth = SSLv23_server_method ();
+  ssl_meth = TLS_server_method ();
   ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
 
   /* Initialize the parameters */
@@ -12364,7 +12364,7 @@ http_init_part_two (void)
       char err_buf [1024];
       SSL_CTX* ssl_ctx = NULL;
       const SSL_METHOD *ssl_meth = NULL;
-      ssl_meth = SSLv23_server_method();
+      ssl_meth = TLS_server_method();
       ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
       if (!ssl_ctx)
 	{

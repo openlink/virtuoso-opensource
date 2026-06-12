@@ -306,7 +306,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 #ifdef _SSL
       int ssl_err = 0;
       int fd = tcpses_get_fd (ses->dks_session);
-      ssl_method = SSLv23_client_method ();
+      ssl_method = TLS_client_method ();
       ssl_ctx = SSL_CTX_new (ssl_method);
       ssl = SSL_new (ssl_ctx);
       SSL_set_fd (ssl, fd);

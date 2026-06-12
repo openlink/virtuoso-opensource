@@ -4568,7 +4568,7 @@ reconnect:
 	  int ssl_err = 0;
 	  int dst = tcpses_get_fd (http_out->dks_session);
 
-	  ssl_meth = SSLv23_client_method();
+	  ssl_meth = TLS_client_method();
 	  ssl_ctx = SSL_CTX_new (ssl_meth);
 
 	  ssl = SSL_new (ssl_ctx);

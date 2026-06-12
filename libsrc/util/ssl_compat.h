@@ -85,6 +85,11 @@
  */
 #define OPENSSL_malloc_init	CRYPTO_malloc_init
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+# define TLS_client_method() SSLv23_client_method()
+# define TLS_server_method() SSLv23_server_method()
+#endif
+
 
 /*
  *  Check INLINE situation

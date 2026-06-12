@@ -4270,7 +4270,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	  SSL *ssl = NULL;
 	  int ssl_err = 0;
 	  int dst = tcpses_get_fd (session->dks_session);
-	  const SSL_METHOD *ssl_method = SSLv23_client_method ();
+	  const SSL_METHOD *ssl_method = TLS_client_method ();
 	  SSL_CTX *ssl_ctx = SSL_CTX_new (ssl_method);
 	  ssl = SSL_new (ssl_ctx);
 	  SSL_set_fd (ssl, dst);
@@ -5241,9 +5241,9 @@ ssl_server_init (void)
   PKCS12_PBE_add ();		/* stub */
 
 #ifdef NO_THREAD
-  ssl_server_method = SSLv23_client_method ();
+  ssl_server_method = TLS_client_method ();
 #else
-  ssl_server_method = SSLv23_server_method ();
+  ssl_server_method = TLS_server_method ();
 #endif
   ssl_server_ctx = SSL_CTX_new (ssl_server_method);
   if (!ssl_server_ctx)
