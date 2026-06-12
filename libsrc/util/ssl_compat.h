@@ -672,6 +672,14 @@ void X509_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, const X509 *
  * ASN1
  * ----------------------------------------------------------------------
  */
+
+SSL_COMPAT_INLINE const unsigned char *
+ASN1_STRING_get0_data (const ASN1_STRING *x)
+{
+  return ASN1_STRING_data ((ASN1_STRING *) x);
+}
+
+
 #if 0
 SSL_COMPAT_INLINE
 int ASN1_TIME_to_tm (const ASN1_TIME * s, struct tm *tm)
