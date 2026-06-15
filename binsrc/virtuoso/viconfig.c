@@ -1342,21 +1342,25 @@ cfg_setup (void)
   section = "Flags";
   {
     stat_desc_t *sd = &dbf_descs[0];
-    size_t v;
+    size_t vu;
+    int64 v;
     int32 v32;
     while (sd->sd_name)
       {
+	vu = 0;
 	v32 = INT32_MAX;
-	if (cfg_getsize (pconfig, section, sd->sd_name, &v) != -1 ||
+	if (cfg_getsize (pconfig, section, sd->sd_name, &vu) != -1 ||
 	    cfg_getlong (pconfig, section, sd->sd_name, &v32) != -1)	/* this is for cases of negative flags or zero */
 	  {
 	    if (v32 != INT32_MAX)
 	      v = v32;
+	    else
+	      v = (int64) vu;
 	    switch (sd->sd_type)
 	      {
 	      case SD_TYPE_INT32:
 		{
-		  if (v > INT32_MIN && v < INT32_MAX)
+		  if (v >= INT32_MIN && v <= INT32_MAX)
 		    *((int32 *) sd->sd_value) = (int32) v;
 		  else
 		    log_error ("Cannot set flag %s, value out of int32 range", sd->sd_name);
@@ -1366,13 +1370,16 @@ cfg_setup (void)
 		*((int64 *) sd->sd_value) = v;
 		break;
 	      case SD_TYPE_LONG:
-		*(long *) (sd->sd_value) = (long) v;
+		if (sizeof (long) < sizeof (int64) && (v < LONG_MIN || v > LONG_MAX))
+		  log_error ("Cannot set flag %s, value out of long range", sd->sd_name);
+		else
+		  *(long *) (sd->sd_value) = (long) v;
 		break;
 	      default:
 		log_error ("Cannot set flag %s", sd->sd_name);
 	      }
 	  }
-        sd++;
+	sd++;
       }
   }
 
