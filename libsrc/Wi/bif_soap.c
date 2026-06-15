@@ -4312,6 +4312,8 @@ bif_soap_print_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char * ca);
 #endif
 
+int32 https_soap_seclevel = -1;
+
 static caddr_t
 bif_soap_call (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -4570,6 +4572,13 @@ reconnect:
 
 	  ssl_meth = TLS_client_method();
 	  ssl_ctx = SSL_CTX_new (ssl_meth);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	  if (https_soap_seclevel >= 0)
+	    {
+	      SSL_CTX_set_security_level (ssl_ctx, https_soap_seclevel);
+	    }
+#endif
 
 	  ssl = SSL_new (ssl_ctx);
 	  SSL_set_fd (ssl, dst);
@@ -5781,6 +5790,8 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ctx.sc_params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, me);
 
   ctx.sc_http_client = http_cli_std_init (bif_string_arg (qst, args, 1, me), qst);
+
+  http_cli_ssl_seclevel (ctx.sc_http_client, https_soap_seclevel);
 
 #ifndef _USE_CACHED_SES
   http_cli_set_http_10 (ctx.sc_http_client);

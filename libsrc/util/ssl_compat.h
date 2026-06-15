@@ -92,6 +92,14 @@
 
 
 /*
+ *  OpenSSL 1.0.2 and LibreSSL do not have this function
+ */
+#if defined (LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10100000L
+#define SSL_CTX_set_security_level(x,y)		((void)0)
+#endif
+
+
+/*
  *  Check INLINE situation
  */
 #ifndef NDEBUG

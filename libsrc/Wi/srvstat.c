@@ -519,6 +519,9 @@ extern int32 dk_tcp_ai_ipv6_enable;
 
 extern int32 sparql_all_bif_unsafe;
 
+extern int32 https_client_seclevel;
+extern int32 https_soap_seclevel;
+
 void
 process_status_report (void)
 {
@@ -2362,6 +2365,8 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),
     SD_DEF_I32 (sqlc_hook_enable, "sqlc_hook_enable"),
     SD_DEF_I32 (sparql_all_bif_unsafe, "sparql_all_bif_unsafe"),
+    SD_DEF_I32 (https_client_seclevel, "https_client_seclevel"),
+    SD_DEF_I32 (https_soap_seclevel, "https_soap_seclevel"),
     {0}
 };
 /**INDENT-ON**/

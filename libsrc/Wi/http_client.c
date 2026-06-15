@@ -74,6 +74,9 @@ int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char * ca);
 int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret);
 #endif
 
+int32 https_client_seclevel = -1;
+
+
 #define XML_VERSION		"1.0"
 
 /*#define _USE_CACHED_SES from http.h */
@@ -185,6 +188,9 @@ http_cli_ctx_init (void)
   ctx->hcctx_prv_req_hdrs = strses_allocate ();
   ctx->hcctx_pub_req_hdrs = strses_allocate ();
   ctx->hcctx_req_body = strses_allocate ();
+#ifdef _SSL
+  ctx->hcctx_ssl_seclevel = -1;
+#endif
   return ctx;
 }
 
@@ -654,6 +660,15 @@ http_cli_handle_socks_conn_post (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_v
   return (HC_RET_OK);
 }
 
+HC_RET
+http_cli_ssl_seclevel (http_cli_ctx* ctx, int32 level)
+{
+#ifdef _SSL
+  ctx->hcctx_ssl_seclevel = level;
+#endif
+  return (HC_RET_OK);
+}
+
 #ifdef _SSL
 HC_RET
 http_cli_ssl_cert (http_cli_ctx * ctx, caddr_t val)
@@ -1035,9 +1050,18 @@ http_cli_connect (http_cli_ctx * ctx)
 	   */
 	  ctx->hcctx_ssl_method = TLS_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	  if (ctx->hcctx_ssl_seclevel >= 0)
+	    {
+	      SSL_CTX_set_security_level (ctx->hcctx_ssl_ctx, ctx->hcctx_ssl_seclevel);
+	    }
+#endif
+
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
 	  if (ctx->hcctx_timeout > 0)
 	    to.to_sec = ctx->hcctx_timeout;
+
 
 #ifndef OPENSSL_NO_TLSEXT
 	  {
