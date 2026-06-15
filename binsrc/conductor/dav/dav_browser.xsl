@@ -1449,7 +1449,7 @@
                 {
                   http ('    <tr>');
                   http (sprintf ('<td valign="top"><img src="%H" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
-                  http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
+                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
                   http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
                   http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
                   http (sprintf ('<td valign="top">%V</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
@@ -2237,7 +2237,7 @@
                 </tr>
                 <tr>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'name') ?></td>
-                  <td><?vsp http (WEBDAV.DBA.ui_size (self.dav_vector [2]), 'R', self.dir_fileSize); ?></td>
+                  <td><?vsp http (WEBDAV.DBA.ui_size (self.dav_vector [2], 'R', self.dir_fileSize)); ?></td>
                   <td><?vsp http (WEBDAV.DBA.ui_date (now())); ?></td>
                   <td><?V self.dav_vector [3] ?></td>
                   <td><?V WEBDAV.DBA.user_name (self.dav_vector [5]) ?></td>
