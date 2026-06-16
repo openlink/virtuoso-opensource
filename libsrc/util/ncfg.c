@@ -167,7 +167,7 @@ _cfg_freeimage (PCONFIG pconfig)
   /*
    *  Partially re-initialize struct
    *
-   *  Dont reset the fileName and mtx fields
+   *  Don't reset the fileName and mtx fields
    */
   pconfig->image = NULL;
   pconfig->entries = NULL;
