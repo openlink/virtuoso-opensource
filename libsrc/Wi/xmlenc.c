@@ -6309,7 +6309,7 @@ bif_print_KI (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t xenc_x509_get_key_identifier (X509 * cert)
 {
   ASN1_OCTET_STRING *ikeyid = NULL;
-  X509_EXTENSION *ext;
+  const X509_EXTENSION *ext;
   int i;
   caddr_t ret;
   if (!cert)
@@ -6346,8 +6346,8 @@ caddr_t xenc_x509_get_key_identifier (X509 * cert)
       return ret;
     }
 
-  ret = dk_alloc_box (ikeyid->length, DV_BIN);
-  memcpy (ret, ikeyid->data, ikeyid->length);
+  ret = dk_alloc_box (ASN1_STRING_length (ikeyid), DV_BIN);
+  memcpy (ret, ASN1_STRING_get0_data (ikeyid), ASN1_STRING_length (ikeyid));
   ASN1_OCTET_STRING_free(ikeyid);
   return ret;
 }
@@ -6390,7 +6390,7 @@ bif_x509_get_subject (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   xenc_key_t * k = xenc_get_key_by_name (name, 1);
   X509 * cert;
   ASN1_OCTET_STRING *ikeyid = NULL;
-  X509_EXTENSION *ext;
+  const X509_EXTENSION *ext;
   int i;
   caddr_t ret;
   if (!k || !k->xek_x509)
@@ -6406,8 +6406,8 @@ bif_x509_get_subject (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("42000", "XENC24", "could not get subject key identifier for %s certificate", name);
     }
 
-  ret = dk_alloc_box (ikeyid->length, DV_BIN);
-  memcpy (ret, ikeyid->data, ikeyid->length);
+  ret = dk_alloc_box (ASN1_STRING_length (ikeyid), DV_BIN);
+  memcpy (ret, ASN1_STRING_get0_data (ikeyid), ASN1_STRING_length (ikeyid));
   ASN1_OCTET_STRING_free(ikeyid);
   return ret;
 }

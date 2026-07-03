@@ -370,12 +370,12 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 
 	      opp = op;
 	      os = d2i_ASN1_OCTET_STRING (NULL, (const unsigned char **)&opp, len + hl);
-	      if (os != NULL && os->length > 0)
+	      if (os != NULL && ASN1_STRING_length (os) > 0)
 		{
-		  opp = os->data;
+		  opp = ASN1_STRING_get0_data (os);
 		  /* testing whether the octet string is
 		   * printable */
-		  for (i = 0; i < os->length; i++)
+		  for (i = 0; i < ASN1_STRING_length (os); i++)
 		    {
 		      if (((opp[i] < ' ') && (opp[i] != '\n') && (opp[i] != '\r') && (opp[i] != '\t')) || (opp[i] > '~'))
 			{
@@ -388,7 +388,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 		    {
 		      /*if (BIO_write(bp,":",1) <= 0)
 		         goto end; */
-		      if (BIO_write (bp, (const char *) opp, os->length) <= 0)
+		      if (BIO_write (bp, (const char *) opp, ASN1_STRING_length (os)) <= 0)
 			goto end;
 		    }
 		  else if (!dump)
@@ -397,7 +397,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 		    {
 		      /*if (BIO_write(bp,"[HEX DUMP]:",11) <= 0)
 		         goto end; */
-		      for (i = 0; i < os->length; i++)
+		      for (i = 0; i < ASN1_STRING_length (os); i++)
 			{
 			  if (BIO_printf (bp, "%02X", opp[i]) <= 0)
 			    goto end;
@@ -412,7 +412,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 			     goto end; */
 			  ;
 			}
-		      if (BIO_dump_indent (bp, (const char *) opp, ((dump == -1 || dump > os->length) ? os->length : dump), dump_indent) <= 0)
+		      if (BIO_dump_indent (bp, (const char *) opp, ((dump == -1 || dump > ASN1_STRING_length (os)) ? ASN1_STRING_length (os) : dump), dump_indent) <= 0)
 			goto end;
 		      nl = 1;
 		    }
@@ -433,15 +433,15 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
-		  if (bs->type == V_ASN1_NEG_INTEGER)
+		  if (ASN1_STRING_type (bs) == V_ASN1_NEG_INTEGER)
 		    if (BIO_write (bp, "-", 1) <= 0)
 		      goto end;
-		  for (i = 0; i < bs->length; i++)
+		  for (i = 0; i < ASN1_STRING_length (bs); i++)
 		    {
-		      if (BIO_printf (bp, "%02X", bs->data[i]) <= 0)
+		      if (BIO_printf (bp, "%02X", ASN1_STRING_get0_data (bs)[i]) <= 0)
 			goto end;
 		    }
-		  if (bs->length == 0)
+		  if (ASN1_STRING_length (bs) == 0)
 		    {
 		      if (BIO_write (bp, "00", 2) <= 0)
 			goto end;
@@ -464,15 +464,15 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
-		  if (bs->type == V_ASN1_NEG_ENUMERATED)
+		  if (ASN1_STRING_type (bs) == V_ASN1_NEG_ENUMERATED)
 		    if (BIO_write (bp, "-", 1) <= 0)
 		      goto end;
-		  for (i = 0; i < bs->length; i++)
+		  for (i = 0; i < ASN1_STRING_length (bs); i++)
 		    {
-		      if (BIO_printf (bp, "%02X", bs->data[i]) <= 0)
+		      if (BIO_printf (bp, "%02X", ASN1_STRING_get0_data (bs)[i]) <= 0)
 			goto end;
 		    }
-		  if (bs->length == 0)
+		  if (ASN1_STRING_length (bs) == 0)
 		    {
 		      if (BIO_write (bp, "00", 2) <= 0)
 			goto end;
@@ -1742,8 +1742,8 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 
         i2t_ASN1_OBJECT(buf,sizeof (buf), sigalg->algorithm);
 
-	n = sig->length;
-	s = sig->data;
+	n = ASN1_STRING_length (sig);
+	s = ASN1_STRING_get0_data (sig);
 	val = dk_alloc_box ((n * 2) + 1, DV_SHORT_STRING);
 	for (i = 0; i < n; i ++)
 	  {
