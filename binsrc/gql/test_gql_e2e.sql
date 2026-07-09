@@ -164,6 +164,28 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   }
   e2e8_done:;
 
+  -- E2E9: ASK returns boolean result
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E9 FAIL: ASK errored')); goto e2e9_done; };
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person) ASK');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E9 PASS: ASK returns result'));
+  }
+  e2e9_done:;
+
+  -- E2E10: MINUS removes matching solutions
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E10 FAIL: MINUS errored')); goto e2e10_done; };
+    -- Insert test data for MINUS
+    DB.DBA.GQL_RUN ('INSERT (:Person { name: ''Carol'' }), (:Employee { name: ''Carol'' })');
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person) MINUS (n:Employee) RETURN n.name');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E10 PASS: MINUS removes matching solutions'));
+  }
+  e2e10_done:;
+
   -- Clean up
   DB.DBA.GQL_RESET ();
 

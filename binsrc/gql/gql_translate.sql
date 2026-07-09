@@ -3790,9 +3790,9 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   declare clauses any;
   declare i, n integer;
   declare ctx any;
-  declare has_return, has_insert, has_construct, has_describe, has_delete, has_set, has_remove integer;
+  declare has_return, has_insert, has_construct, has_describe, has_delete, has_set, has_remove, has_ask integer;
   declare return_ast, insert_asts, construct_asts, describe_ast, delete_ast, set_ast, remove_ast any;
-  declare match_asts, where_asts any;
+  declare match_asts, where_asts, minus_asts any;
   declare for_asts, let_asts, service_asts any;
   declare use_ast any;
   declare group_ast, having_ast any;
@@ -3968,6 +3968,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   has_delete := 0;
   has_set := 0;
   has_remove := 0;
+  has_ask := 0;
   return_ast := null;
   insert_asts := vector ();
   construct_asts := vector ();
@@ -3977,6 +3978,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   remove_ast := null;
   match_asts := vector ();
   where_asts := vector ();
+  minus_asts := vector ();
   service_asts := vector ();
   for_asts := vector ();
   let_asts := vector ();
@@ -4025,6 +4027,10 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         { has_set := 1; set_ast := clause; }
       else if (ctype = 'REMOVE')
         { has_remove := 1; remove_ast := clause; }
+      else if (ctype = 'ASK')
+        { has_ask := 1; }
+      else if (ctype = 'MINUS')
+        { minus_asts := vector_concat (minus_asts, vector (clause)); }
       else if (ctype = 'USE')
         {
           declare use_graph_val varchar;
@@ -4235,6 +4241,31 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       DB.DBA.GQL_CTX_ADD_FILTER (ctx, wexpr);
     }
 
+  -- Emit MINUS patterns → MINUS { ... } blocks
+  for (i := 0; i < length (minus_asts); i := i + 1)
+    {
+      declare m_ast any;
+      declare m_patterns, m_body varchar;
+      declare mi integer;
+      declare m_ctx any;
+      m_ast := aref (minus_asts, i);
+      m_patterns := aref (m_ast, 1);
+      -- Build MINUS body in a sub-context so triples don't pollute the main WHERE
+      m_ctx := DB.DBA.GQL_CTX_NEW (DB.DBA.GQL_CTX_GET (ctx, 'graph'));
+      -- Copy prefixes from parent context
+      declare mp any;
+      mp := DB.DBA.GQL_CTX_GET (ctx, 'prefixes');
+      DB.DBA.GQL_CTX_SET (m_ctx, 'prefixes', mp);
+      DB.DBA.GQL_CTX_SET (m_ctx, 'base_uri', DB.DBA.GQL_CTX_GET (ctx, 'base_uri'));
+      DB.DBA.GQL_CTX_SET (m_ctx, 'force_camelcase', DB.DBA.GQL_CTX_GET (ctx, 'force_camelcase'));
+      for (mi := 0; mi < length (m_patterns); mi := mi + 1)
+        DB.DBA.GQL_GEN_MATCH (vector ('MATCH', 0, vector (aref (m_patterns, mi)), vector (), 0, null), m_ctx);
+      m_body := DB.DBA.GQL_CTX_GET (m_ctx, 'triples');
+      m_body := concat (m_body, DB.DBA.GQL_CTX_GET (m_ctx, 'binds'));
+      m_body := concat (m_body, DB.DBA.GQL_CTX_GET (m_ctx, 'filters'));
+      DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (ctx, concat ('  MINUS {\n', m_body, '  }\n'));
+    }
+
   -- Handle INSERT
   if (has_insert and length (match_asts) > 0)
     {
@@ -4343,6 +4374,32 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   if (has_delete or has_set or has_remove)
     {
       return DB.DBA.GQL_GEN_DML (delete_ast, set_ast, remove_ast, ctx);
+    }
+
+  -- Handle ASK: boolean query form — emits ASK instead of SELECT
+  if (has_ask)
+    {
+      declare ask_sparql varchar;
+      declare ask_where_body varchar;
+      if (has_insert or has_delete or has_set or has_remove or has_construct or has_describe)
+        signal ('G2004', 'ASK cannot be combined with DML, CONSTRUCT, or DESCRIBE clauses');
+      ask_sparql := concat ('SPARQL ',
+        DB.DBA.GQL_EMIT_PREFIX_BLOCK (ctx),
+        DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
+      ask_sparql := concat (ask_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
+      ask_sparql := concat (ask_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+      ask_sparql := concat (ask_sparql, 'ASK ');
+      ask_sparql := concat (ask_sparql, DB.DBA.GQL_GEN_FROM_CLAUSES (ctx));
+      ask_where_body := '';
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'values'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'pre_values'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'pre_binds'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'triples'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'binds'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'filters'));
+      ask_where_body := concat (ask_where_body, DB.DBA.GQL_CTX_GET (ctx, 'optionals'));
+      ask_sparql := concat (ask_sparql, DB.DBA.GQL_EMIT_WHERE (ctx, ask_where_body));
+      return ask_sparql;
     }
 
   -- SERVICE-only SPARQL-FED style query: project variables made visible by

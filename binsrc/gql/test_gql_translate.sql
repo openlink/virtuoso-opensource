@@ -1513,6 +1513,45 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR119 FAIL: INSERT DATA should not have WHERE')); }
 
+  --------------------------------------------------------------------
+  -- Phase 1 tests: §5A ASK and MINUS
+  --------------------------------------------------------------------
+
+  -- TR120: ASK → SPARQL ASK
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n:Person) ASK');
+  if (_sparql is not null and strstr (_sparql, 'ASK') is not null
+      and strstr (_sparql, 'WHERE') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR120 PASS: ASK → SPARQL ASK')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR120 FAIL: ASK translation')); }
+
+  -- TR121: ASK with WHERE filter
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n:Person) WHERE n.name = "Alice" ASK');
+  if (_sparql is not null and strstr (_sparql, 'ASK') is not null
+      and strstr (_sparql, 'FILTER') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR121 PASS: ASK with WHERE filter')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR121 FAIL: ASK with WHERE')); }
+
+  -- TR122: MINUS → SPARQL MINUS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n:Person) MINUS (n:Employee) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'MINUS') is not null
+      and strstr (_sparql, '{') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR122 PASS: MINUS → SPARQL MINUS')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR122 FAIL: MINUS translation')); }
+
+  -- TR123: MINUS with edge pattern
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a:Person)-[:KNOWS]->(b:Person) MINUS (a)-[:DISLIKES]->(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'MINUS') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR123 PASS: MINUS with edge pattern')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR123 FAIL: MINUS with edge')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

@@ -258,6 +258,18 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_MATCH (_tokens, _pos, 0);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 531)  -- ASK
+        {
+          _pos := _pos + 1;
+          clauses := vector_concat (clauses, vector (vector ('ASK')));
+        }
+      else if (tt = 532)  -- MINUS
+        {
+          declare minus_patterns any;
+          _pos := _pos + 1;
+          minus_patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (vector ('MINUS', minus_patterns)));
+        }
       else if (tt = 207)  -- OPTIONAL
         {
           clause := DB.DBA.GQL_PARSE_MATCH (_tokens, _pos, 1);
