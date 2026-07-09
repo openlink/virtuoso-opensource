@@ -249,6 +249,7 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
       if (tt = 999) goto query_done;
       if (tt = 6) goto query_done;   -- RBRACE (closing block)
+      if (tt = 2) goto query_done;   -- RPAREN (closing TABLE sub-query)
       if (tt = 260)  -- END (closing FOR block)
         { _pos := _pos + 1; goto query_done; }
 
@@ -334,6 +335,24 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
       else if (tt = 210)  -- LET
         {
           clause := DB.DBA.GQL_PARSE_LET (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 279)  -- VALUE (alias for LET)
+        {
+          clause := DB.DBA.GQL_PARSE_LET (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 225  -- GRAPH
+               and _pos + 2 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 64  -- IDENT
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 2) = 15)  -- EQ
+        {
+          clause := DB.DBA.GQL_PARSE_GRAPH_BINDING (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
+      else if (tt = 281)  -- TABLE
+        {
+          clause := DB.DBA.GQL_PARSE_TABLE_BINDING (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
       else if (tt = 262)  -- GROUP
@@ -1046,6 +1065,46 @@ create procedure DB.DBA.GQL_PARSE_LET (in _tokens any, inout _pos integer)
   DB.DBA.GQL_EXPECT (_tokens, _pos, 15);  -- EQ
   expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
   return vector ('LET', var_name, expr);
+}
+;
+
+----------------------------------------------------------------------
+-- GRAPH binding: GRAPH var = graphExpression
+-- Binds a variable to a graph reference for subsequent MATCH clauses.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_GRAPH_BINDING (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare graph_ref any;
+  _pos := _pos + 1;  -- consume GRAPH
+  var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 15);  -- EQ
+  graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('LET_GRAPH', var_name, graph_ref);
+}
+;
+
+----------------------------------------------------------------------
+-- TABLE binding: TABLE var = bindingTableExpression
+-- Binds a variable to a tabular result (sub-query).
+-- Currently supports: TABLE var = ( queryExpression )
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_TABLE_BINDING (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare sub_query any;
+  _pos := _pos + 1;  -- consume TABLE
+  var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 15);  -- EQ
+  -- Parse a sub-query enclosed in parentheses
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+  sub_query := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+  return vector ('LET_TABLE', var_name, sub_query);
 }
 ;
 

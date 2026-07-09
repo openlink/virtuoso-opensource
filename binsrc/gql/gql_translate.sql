@@ -4017,6 +4017,10 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         for_asts := vector_concat (for_asts, vector (clause));
       else if (ctype = 'LET')
         let_asts := vector_concat (let_asts, vector (clause));
+      else if (ctype = 'LET_GRAPH')
+        let_asts := vector_concat (let_asts, vector (clause));
+      else if (ctype = 'LET_TABLE')
+        let_asts := vector_concat (let_asts, vector (clause));
       else if (ctype = 'GROUP')
         group_ast := clause;
       else if (ctype = 'HAVING')
@@ -4132,14 +4136,53 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
     {
       declare let_ast, let_var, let_expr any;
       declare let_sparql_var, let_sparql_expr varchar;
+      declare let_type varchar;
       let_ast := aref (let_asts, i);
+      let_type := aref (let_ast, 0);
       let_var := aref (let_ast, 1);
-      let_expr := aref (let_ast, 2);
-      let_sparql_var := concat ('?gql_v_', let_var);
-      let_sparql_expr := DB.DBA.GQL_GEN_EXPR (let_expr, ctx);
-      DB.DBA.GQL_CTX_ADD_BIND (ctx, let_sparql_var, let_sparql_expr);
-      DB.DBA.GQL_CTX_ADD_VAR (ctx, let_var);
-      DB.DBA.GQL_CTX_ADD_ALIAS (ctx, let_var, let_sparql_var);
+
+      if (let_type = 'LET_GRAPH')
+        {
+          -- GRAPH var = graphRef: set the active graph for subsequent patterns
+          declare graph_ref any;
+          declare graph_val varchar;
+          graph_ref := aref (let_ast, 2);
+          graph_val := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, ctx);
+          let_sparql_var := concat ('?gql_v_', let_var);
+          DB.DBA.GQL_CTX_ADD_BIND (ctx, let_sparql_var, concat ('IRI(', graph_val, ')'));
+          DB.DBA.GQL_CTX_ADD_VAR (ctx, let_var);
+          DB.DBA.GQL_CTX_ADD_ALIAS (ctx, let_var, let_sparql_var);
+          -- Also register as a graph reference for FROM clauses
+          DB.DBA.GQL_CTX_SET (ctx, 'graph', graph_val);
+          DB.DBA.GQL_CTX_SET (ctx, 'active_graph', graph_val);
+        }
+      else if (let_type = 'LET_TABLE')
+        {
+          -- TABLE var = (subquery): emit as sub-SELECT and bind result
+          declare sub_query any;
+          declare sub_sparql varchar;
+          declare saved_graph varchar;
+          sub_query := aref (let_ast, 2);
+          saved_graph := DB.DBA.GQL_CTX_GET (ctx, 'graph');
+          sub_sparql := DB.DBA.GQL_TO_SPARQL_IMPL (sub_query, saved_graph);
+          -- Strip 'SPARQL ' prefix for inline use
+          if (length (sub_sparql) >= 7 and subseq (sub_sparql, 0, 7) = 'SPARQL ')
+            sub_sparql := subseq (sub_sparql, 7);
+          let_sparql_var := concat ('?gql_v_', let_var);
+          DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (ctx, concat ('  { ', sub_sparql, ' }\n'));
+          DB.DBA.GQL_CTX_ADD_VAR (ctx, let_var);
+          DB.DBA.GQL_CTX_ADD_ALIAS (ctx, let_var, let_sparql_var);
+        }
+      else
+        {
+          -- LET var = expr: simple value binding
+          let_expr := aref (let_ast, 2);
+          let_sparql_var := concat ('?gql_v_', let_var);
+          let_sparql_expr := DB.DBA.GQL_GEN_EXPR (let_expr, ctx);
+          DB.DBA.GQL_CTX_ADD_BIND (ctx, let_sparql_var, let_sparql_expr);
+          DB.DBA.GQL_CTX_ADD_VAR (ctx, let_var);
+          DB.DBA.GQL_CTX_ADD_ALIAS (ctx, let_var, let_sparql_var);
+        }
     }
 
   -- Emit WHERE clauses → FILTER

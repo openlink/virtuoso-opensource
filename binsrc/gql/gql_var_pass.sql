@@ -126,6 +126,16 @@ create procedure DB.DBA.GQL_VAR_RESOLVE_CLAUSE (in _clause any, inout _ctx any)
       let_var := aref (_clause, 1);
       DB.DBA.GQL_VAR_RESOLVE_REGISTER (let_var, 'value', _ctx);
     }
+  else if (ctype = 'LET_GRAPH')
+    {
+      let_var := aref (_clause, 1);
+      DB.DBA.GQL_VAR_RESOLVE_REGISTER (let_var, 'graph', _ctx);
+    }
+  else if (ctype = 'LET_TABLE')
+    {
+      let_var := aref (_clause, 1);
+      DB.DBA.GQL_VAR_RESOLVE_REGISTER (let_var, 'table', _ctx);
+    }
   else if (ctype = 'FOR')
     {
       for_var := aref (_clause, 1);

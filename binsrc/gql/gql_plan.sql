@@ -131,6 +131,10 @@ create procedure DB.DBA.GQL_PLAN_COLLECT_CLAUSE_VARS (in _clause any, in _vars a
     }
   else if (ctype = 'LET')
     _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
+  else if (ctype = 'LET_GRAPH')
+    _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
+  else if (ctype = 'LET_TABLE')
+    _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
   else if (ctype = 'FOR')
     _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
   else if (ctype = 'SERVICE')
@@ -451,7 +455,8 @@ create procedure DB.DBA.GQL_PLAN_VALIDATE_SCOPE (in _ast any)
       clause := aref (clauses, i);
       if (not isarray (clause)) goto next_clause;
       ctype := aref (clause, 0);
-      if (ctype = 'MATCH' or ctype = 'INSERT' or ctype = 'LET' or ctype = 'FOR'
+      if (ctype = 'MATCH' or ctype = 'INSERT' or ctype = 'LET' or ctype = 'LET_GRAPH'
+          or ctype = 'LET_TABLE' or ctype = 'FOR'
           or ctype = 'SERVICE')
         bound_vars := DB.DBA.GQL_PLAN_COLLECT_CLAUSE_VARS (clause, bound_vars);
       else if (ctype = 'WHERE' or ctype = 'FILTER')
