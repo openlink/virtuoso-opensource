@@ -1672,6 +1672,171 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR137 FAIL: DEFINE output:dict-format')); }
 
+  --------------------------------------------------------------------
+  -- Phase 3 tests: §5C Advanced Virtuoso features
+  --------------------------------------------------------------------
+
+  -- TR138: COUNT(DISTINCT x) — DISTINCT keyword in aggregate
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) RETURN COUNT(DISTINCT n.name) AS cnt');
+  if (_sparql is not null and strstr (_sparql, 'COUNT(DISTINCT') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR138 PASS: COUNT(DISTINCT x)')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR138 FAIL: COUNT(DISTINCT): ', cast (_sparql as varchar)))); }
+
+  -- TR139: SUM(DISTINCT x) — DISTINCT in non-COUNT aggregate
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) RETURN SUM(DISTINCT n.salary) AS total');
+  if (_sparql is not null and strstr (_sparql, 'SUM(DISTINCT') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR139 PASS: SUM(DISTINCT x)')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR139 FAIL: SUM(DISTINCT): ', cast (_sparql as varchar)))); }
+
+  -- TR140: GROUPING SETS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) GROUP BY GROUPING SETS ((n.dept), (n.dept, n.role), ()) RETURN n.dept, COUNT(*) AS cnt');
+  if (_sparql is not null and strstr (_sparql, 'GROUPING SETS') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR140 PASS: GROUPING SETS')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR140 FAIL: GROUPING SETS: ', cast (_sparql as varchar)))); }
+
+  -- TR141: CUBE
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) GROUP BY CUBE (n.dept, n.role) RETURN n.dept, n.role, COUNT(*) AS cnt');
+  if (_sparql is not null and strstr (_sparql, 'CUBE') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR141 PASS: CUBE')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR141 FAIL: CUBE: ', cast (_sparql as varchar)))); }
+
+  -- TR142: ROLLUP
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) GROUP BY ROLLUP (n.dept, n.role) RETURN n.dept, n.role, COUNT(*) AS cnt');
+  if (_sparql is not null and strstr (_sparql, 'ROLLUP') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR142 PASS: ROLLUP')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR142 FAIL: ROLLUP: ', cast (_sparql as varchar)))); }
+
+  -- TR143: RDF-star TRIPLE() accessor function
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) RETURN TRIPLE(a, e, b) AS t');
+  if (_sparql is not null and strstr (_sparql, 'TRIPLE(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR143 PASS: TRIPLE() function')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR143 FAIL: TRIPLE(): ', cast (_sparql as varchar)))); }
+
+  -- TR144: RDF-star SUBJECT() accessor function
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) RETURN SUBJECT(e) AS s');
+  if (_sparql is not null and strstr (_sparql, 'SUBJECT(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR144 PASS: SUBJECT() function')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR144 FAIL: SUBJECT(): ', cast (_sparql as varchar)))); }
+
+  -- TR145: RDF-star isTRIPLE() function
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) WHERE isTRIPLE(e) RETURN e');
+  if (_sparql is not null and strstr (_sparql, 'isTRIPLE(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR145 PASS: isTRIPLE() function')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR145 FAIL: isTRIPLE(): ', cast (_sparql as varchar)))); }
+
+  -- TR146: RDF-star emission mode via DEFINE input:rdf-star
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:rdf-star "yes" MATCH (a)-[e]->(b) RETURN e');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:rdf-star') is not null
+      and strstr (_sparql, 'TRIPLE(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR146 PASS: RDF-star emission mode')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR146 FAIL: RDF-star mode: ', cast (_sparql as varchar)))); }
+
+  -- TR147: UNNEST with list literal
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) UNNEST(["a", "b", "c"] AS tag) RETURN n.name, tag');
+  if (_sparql is not null and strstr (_sparql, 'VALUES') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR147 PASS: UNNEST list literal')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR147 FAIL: UNNEST list: ', cast (_sparql as varchar)))); }
+
+  -- TR148: FOR ... WITH ORDINALITY (list literal)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('FOR x IN ["a", "b"] WITH ORDINALITY RETURN x');
+  if (_sparql is not null and strstr (_sparql, 'VALUES') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR148 PASS: FOR WITH ORDINALITY')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR148 FAIL: FOR WITH ORDINALITY: ', cast (_sparql as varchar)))); }
+
+  -- TR149: DEFINE input:grab-destination pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:grab-destination "urn:grab" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:grab-destination') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR149 PASS: DEFINE input:grab-destination pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR149 FAIL: DEFINE input:grab-destination: ', cast (_sparql as varchar)))); }
+
+  -- TR150: DEFINE input:sparql11-draft pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:sparql11-draft "yes" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:sparql11-draft') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR150 PASS: DEFINE input:sparql11-draft pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR150 FAIL: DEFINE input:sparql11-draft: ', cast (_sparql as varchar)))); }
+
+  -- TR151: DEFINE sql:comments pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE sql:comments "yes" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE sql:comments') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR151 PASS: DEFINE sql:comments pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR151 FAIL: DEFINE sql:comments: ', cast (_sparql as varchar)))); }
+
+  -- TR152: DEFINE lang:dialect pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE lang:dialect "GQL" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE lang:dialect') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR152 PASS: DEFINE lang:dialect pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR152 FAIL: DEFINE lang:dialect: ', cast (_sparql as varchar)))); }
+
+  -- TR153: SHORTEST 1 GROUPS PATH (should not signal G3005)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 1 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_ONLY') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR153 PASS: SHORTEST 1 GROUPS PATH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR153 FAIL: SHORTEST 1 GROUPS: ', cast (_sparql as varchar)))); }
+
+  -- TR154: SHORTEST 3 GROUPS PATH (should use T_MAX, not signal G3005)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 3 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'T_MAX') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154 PASS: SHORTEST 3 GROUPS PATH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154 FAIL: SHORTEST 3 GROUPS: ', cast (_sparql as varchar)))); }
+
+  -- TR155: Undirected quantified edge (should emit (iri|^iri)* not signal G3006)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:KNOWS*]-(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, '|^') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR155 PASS: Undirected quantified edge')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR155 FAIL: Undirected quantified edge: ', cast (_sparql as varchar)))); }
+
+  -- TR156: Property-path negation !iri on edge
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:!KNOWS]->(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, '!') is not null and strstr (_sparql, 'NOT EXISTS') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR156 PASS: Property-path negation !iri')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR156 FAIL: Property-path negation !iri: ', cast (_sparql as varchar)))); }
+
+  -- TR157: Property-path negation !(iri1|iri2) on edge
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:!(KNOWS|LIKES)]->(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, '!(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR157 PASS: Property-path negation !(iri1|iri2)')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR157 FAIL: Property-path negation !(iri1|iri2): ', cast (_sparql as varchar)))); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

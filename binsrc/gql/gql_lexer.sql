@@ -176,6 +176,11 @@ create procedure DB.DBA.GQL_KEYWORD (in _w varchar)
   if (w = 'T_FINAL_AS') return 536;
   if (w = 'T_NO_ORDER') return 537;
   if (w = 'BIJECTION') return 538;
+  if (w = 'GROUPING') return 539;
+  if (w = 'SETS') return 540;
+  if (w = 'CUBE') return 541;
+  if (w = 'ROLLUP') return 542;
+  if (w = 'UNNEST') return 543;
   -- ORDER FULL
   if (w = 'ASCENDING') return 288;
   if (w = 'DESCENDING') return 289;

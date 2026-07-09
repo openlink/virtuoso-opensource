@@ -375,6 +375,11 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_FOR (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 543)  -- UNNEST
+        {
+          clause := DB.DBA.GQL_PARSE_UNNEST (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
       else if (tt = 210)  -- LET
         {
           clause := DB.DBA.GQL_PARSE_LET (_tokens, _pos);
@@ -1164,6 +1169,25 @@ create procedure DB.DBA.GQL_PARSE_FOR (in _tokens any, inout _pos integer)
 }
 ;
 
+----------------------------------------------------------------------
+-- UNNEST
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_UNNEST (in _tokens any, inout _pos integer)
+{
+  declare var_name varchar;
+  declare expr any;
+  _pos := _pos + 1;  -- consume UNNEST
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+  expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 236);  -- AS
+  var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+  return vector ('UNNEST', var_name, expr);
+}
+;
+
 create procedure DB.DBA.GQL_PARSE_LET (in _tokens any, inout _pos integer)
 {
   declare var_name varchar;
@@ -1224,8 +1248,93 @@ create procedure DB.DBA.GQL_PARSE_TABLE_BINDING (in _tokens any, inout _pos inte
 create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
 {
   declare items, expr any;
+  declare sets, set_items any;
   _pos := _pos + 1;  -- consume GROUP
   DB.DBA.GQL_EXPECT (_tokens, _pos, 212);  -- BY
+
+  -- GROUPING SETS (set1, set2, ...)
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 539)  -- GROUPING
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 540);  -- SETS
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      sets := vector ();
+      while (1)
+        {
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN for each set
+          set_items := vector ();
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 2)  -- RPAREN (empty set)
+            { _pos := _pos + 1; }
+          else
+            {
+              while (1)
+                {
+                  expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+                  set_items := vector_concat (set_items, vector (expr));
+                  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+                    _pos := _pos + 1;
+                  else
+                    goto set_items_done;
+                }
+            set_items_done:
+              DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+            }
+          sets := vector_concat (sets, vector (set_items));
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+            _pos := _pos + 1;
+          else
+            goto sets_done;
+        }
+    sets_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('GROUP_SETS', sets);
+    }
+
+  -- CUBE (expr1, expr2, ...)
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 541)  -- CUBE
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      items := vector ();
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- not RPAREN
+        {
+          while (1)
+            {
+              expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+              items := vector_concat (items, vector (expr));
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+                _pos := _pos + 1;
+              else
+                goto cube_done;
+            }
+        }
+      cube_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('GROUP_CUBE', items);
+    }
+
+  -- ROLLUP (expr1, expr2, ...)
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 542)  -- ROLLUP
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      items := vector ();
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- not RPAREN
+        {
+          while (1)
+            {
+              expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+              items := vector_concat (items, vector (expr));
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+                _pos := _pos + 1;
+              else
+                goto rollup_done;
+            }
+        }
+      rollup_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('GROUP_ROLLUP', items);
+    }
 
   items := vector ();
   -- Empty grouping set: GROUP BY ()

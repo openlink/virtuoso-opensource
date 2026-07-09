@@ -186,6 +186,50 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   }
   e2e10_done:;
 
+  -- E2E11: SHORTEST 1 GROUPS PATH executes without error (no G3005)
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E11 FAIL: SHORTEST 1 GROUPS errored')); goto e2e11_done; };
+    DB.DBA.GQL_RUN ('INSERT (:Person { name: ''P1'' }), (:Person { name: ''P2'' }), (:Person { name: ''P3'' })');
+    DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P1'' }), (b:Person { name: ''P2'' }) INSERT (a)-[:KNOWS]->(b)');
+    DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P2'' }), (b:Person { name: ''P3'' }) INSERT (a)-[:KNOWS]->(b)');
+    _data := DB.DBA.GQL_RUN ('MATCH SHORTEST 1 GROUPS PATH (a:Person { name: ''P1'' })-[:KNOWS*]->(b:Person { name: ''P3'' }) RETURN a.name, b.name');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E11 PASS: SHORTEST 1 GROUPS PATH executes'));
+  }
+  e2e11_done:;
+
+  -- E2E12: Undirected quantified edge executes without error (no G3006)
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E12 FAIL: undirected quantified edge errored')); goto e2e12_done; };
+    _data := DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P3'' })-[:KNOWS*]-(b:Person { name: ''P1'' }) RETURN a.name, b.name');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E12 PASS: undirected quantified edge executes'));
+  }
+  e2e12_done:;
+
+  -- E2E13: Property-path negation !iri executes without error
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E13 FAIL: !iri negated property path errored')); goto e2e13_done; };
+    DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P1'' }), (b:Person { name: ''P3'' }) INSERT (a)-[:LIKES]->(b)');
+    _data := DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P1'' })-[:!KNOWS]->(b) RETURN b.name');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E13 PASS: !iri negated property path executes'));
+  }
+  e2e13_done:;
+
+  -- E2E14: Property-path negation !(iri1|iri2) executes without error
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E14 FAIL: !(iri1|iri2) negated property path errored')); goto e2e14_done; };
+    _data := DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''P1'' })-[:!(KNOWS|LIKES)]->(b) RETURN b.name');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E14 PASS: !(iri1|iri2) negated property path'));
+  }
+  e2e14_done:;
+
   -- Clean up
   DB.DBA.GQL_RESET ();
 

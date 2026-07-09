@@ -199,3 +199,30 @@ create procedure DB.DBA.GQL_PERCENTILE_DISC (in _vals any, in _p double precisio
   return cast(aref(sorted, idx) as double precision);
 }
 ;
+
+----------------------------------------------------------------------
+-- UNNEST helper: runtime array expansion
+-- Returns a result set with (value, index) columns.
+-- Used by GQL_GEN_UNNEST for variable/complex expressions and
+-- by FOR ... WITH ORDINALITY (shared infrastructure, see §7).
+-- Called via sql: prefix from generated SPARQL.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_UNNEST_PL (in _arr any)
+{
+  declare i integer;
+  declare _val any;
+  declare _idx integer;
+  _idx := 0;
+  result_names (_val, _idx);
+  if (isarray (_arr))
+    {
+      for (i := 0; i < length (_arr); i := i + 1)
+        {
+          _val := aref (_arr, i);
+          _idx := i;
+          result (_val, _idx);
+        }
+    }
+}
+;

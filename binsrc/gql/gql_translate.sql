@@ -91,6 +91,7 @@ create procedure DB.DBA.GQL_CTX_NEW (in _graph varchar)
     'using_graphs', vector (),
     'suppress_default_from', 0,
     'force_camelcase', 0,
+    'rdf_star_mode', 0,
     'var_map', vector (),
     'in_optional_depth', 0,
     'in_set_op', 0,
@@ -1139,24 +1140,47 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_EDGE_VAR (inout _ctx any, in _edge_v
 
   bindings := DB.DBA.GQL_CTX_GET (_ctx, 'edge_bindings');
   esv := DB.DBA.GQL_EDGE_SPARQL_VAR (_edge_var);
-  for (i := 0; i < length (bindings); i := i + 1)
+
+  if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode') = 1)
     {
-      declare binding any;
-      binding := aref (bindings, i);
-      if (aref (binding, 0) = _edge_var)
+      declare tt_expr varchar;
+      tt_expr := null;
+      for (i := 0; i < length (bindings); i := i + 1)
         {
-          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-            concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'type>'),
-            concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Statement>'));
-          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-            concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
-            aref (binding, 1));
-          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-            concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'predicate>'),
-            aref (binding, 2));
-          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-            concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
-            aref (binding, 3));
+          declare binding any;
+          binding := aref (bindings, i);
+          if (aref (binding, 0) = _edge_var)
+            {
+              if (tt_expr is null)
+                tt_expr := concat ('TRIPLE(', aref (binding, 1), ', ', aref (binding, 2), ', ', aref (binding, 3), ')');
+              else
+                tt_expr := concat ('COALESCE(', tt_expr, ', TRIPLE(', aref (binding, 1), ', ', aref (binding, 2), ', ', aref (binding, 3), '))');
+            }
+        }
+      if (tt_expr is not null)
+        DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, esv, tt_expr);
+    }
+  else
+    {
+      for (i := 0; i < length (bindings); i := i + 1)
+        {
+          declare binding any;
+          binding := aref (bindings, i);
+          if (aref (binding, 0) = _edge_var)
+            {
+              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'type>'),
+                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Statement>'));
+              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
+                aref (binding, 1));
+              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'predicate>'),
+                aref (binding, 2));
+              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
+                aref (binding, 3));
+            }
         }
     }
 
@@ -1529,41 +1553,42 @@ create procedure DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (in _label_expr any, in _src va
         }
       return and_results;
     }
-  -- LABEL_NOT: emit triple with fresh var, add FILTER NOT EXISTS
+  -- LABEL_NOT: emit SPARQL negated property path !iri or !(iri1|iri2)
+  -- For !% (wildcard negation), use NOT EXISTS (semantically "no edge at all")
   else if (expr_type = 'LABEL_NOT')
     {
       declare not_child any;
-      declare pred_var varchar;
       not_child := aref (_label_expr, 1);
-      pred_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_type_');
-      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _src, pred_var, _dst);
       if (isvector (not_child) and aref (not_child, 0) = 'LABEL_WILDCARD')
         {
-          -- !% on edge: no edge at all — contradiction, but emit anyway
+          -- !% on edge: no edge at all — emit triple with fresh var + NOT EXISTS
+          declare pred_var varchar;
+          pred_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_type_');
+          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _src, pred_var, _dst);
           DB.DBA.GQL_CTX_ADD_FILTER (_ctx, concat ('NOT EXISTS { ', _src, ' ?any_p ', _dst, ' }'));
+          return vector (vector (pred_var, 1));
         }
       else if (isvector (not_child) and aref (not_child, 0) = 'LABEL_OR')
         {
+          -- !(iri1|iri2) -> SPARQL negated property path
           declare or_choices any;
           declare oi2 integer;
-          declare not_filter varchar;
+          declare neg_pp varchar;
           or_choices := aref (not_child, 1);
-          not_filter := 'NOT EXISTS { ';
+          neg_pp := '!(';
           for (oi2 := 0; oi2 < length (or_choices); oi2 := oi2 + 1)
             {
-              if (oi2 > 0) not_filter := concat (not_filter, ' UNION ');
-              not_filter := concat (not_filter, '{ ', _src, ' ',
-                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (or_choices, oi2), _ctx), ' ', _dst, ' }');
+              if (oi2 > 0) neg_pp := concat (neg_pp, '|');
+              neg_pp := concat (neg_pp, DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (or_choices, oi2), _ctx));
             }
-          not_filter := concat (not_filter, ' }');
-          DB.DBA.GQL_CTX_ADD_FILTER (_ctx, not_filter);
+          neg_pp := concat (neg_pp, ')');
+          return vector (vector (neg_pp, 1));
         }
       else
         {
-          DB.DBA.GQL_CTX_ADD_FILTER (_ctx, concat ('NOT EXISTS { ', _src, ' ',
-            DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (not_child, _ctx), ' ', _dst, ' }'));
+          -- !iri -> SPARQL negated property path
+          return vector (vector (concat ('!', DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (not_child, _ctx)), 1));
         }
-      return vector (vector (pred_var, 1));
     }
   -- LABEL_WILDCARD: any edge type
   else if (expr_type = 'LABEL_WILDCARD')
@@ -1953,6 +1978,7 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
   DB.DBA.GQL_CTX_SET (svc_ctx, 'base_uri', DB.DBA.GQL_CTX_GET (_ctx, 'base_uri'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'defines', DB.DBA.GQL_CTX_GET (_ctx, 'defines'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'force_camelcase', DB.DBA.GQL_CTX_GET (_ctx, 'force_camelcase'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'rdf_star_mode', DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'var_counter', DB.DBA.GQL_CTX_GET (_ctx, 'var_counter'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'reif_graph', DB.DBA.GQL_CTX_GET (_ctx, 'reif_graph'));
 
@@ -2015,7 +2041,14 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
       DB.DBA.GQL_GEN_MATCH (m_ast, svc_ctx);
     }
   for (i := 0; i < length (for_asts); i := i + 1)
-    DB.DBA.GQL_GEN_FOR_VALUES (aref (for_asts, i), svc_ctx);
+    {
+      declare fc any;
+      fc := aref (for_asts, i);
+      if (aref (fc, 0) = 'UNNEST')
+        DB.DBA.GQL_GEN_UNNEST (fc, svc_ctx);
+      else
+        DB.DBA.GQL_GEN_FOR_VALUES (fc, svc_ctx);
+    }
   for (i := 0; i < length (where_asts); i := i + 1)
     {
       declare wexpr varchar;
@@ -2159,7 +2192,11 @@ create procedure DB.DBA.GQL_GEN_FOR_VALUES (in _for_ast any, inout _ctx any)
     ordinality_offset := aref (_for_ast, 3);
 
   if (ordinality_offset = 'ORDINALITY')
-    signal ('G2003', 'FOR ... WITH ORDINALITY is not supported — ordinality requires runtime list expansion which has no SPARQL equivalent');
+    {
+      -- ORDINALITY: emit companion VALUES with 1-based indices
+      -- (same as OFFSET but 1-based, and works for list literals)
+      ;
+    }
 
   if (not isarray (expr) or aref (expr, 0) <> 'LIST')
     signal ('G2002', 'FOR currently supports only list literals');
@@ -2193,6 +2230,69 @@ create procedure DB.DBA.GQL_GEN_FOR_VALUES (in _for_ast any, inout _ctx any)
       DB.DBA.GQL_CTX_ADD_VALUES (_ctx, offset_var, offset_vals);
       DB.DBA.GQL_CTX_ADD_VAR (_ctx, concat (var_name, '_offset'));
     }
+
+  -- WITH ORDINALITY: emit a companion VALUES block with 1-based indices
+  if (ordinality_offset = 'ORDINALITY')
+    {
+      declare ord_var varchar;
+      declare ord_vals varchar;
+      ord_var := concat ('?gql_v_', var_name, '_ordinality');
+      ord_vals := '';
+      for (i := 0; i < length (items); i := i + 1)
+        {
+          if (ord_vals <> '')
+            ord_vals := concat (ord_vals, ' ');
+          ord_vals := concat (ord_vals, cast (i + 1 as varchar));
+        }
+      DB.DBA.GQL_CTX_ADD_VALUES (_ctx, ord_var, ord_vals);
+      DB.DBA.GQL_CTX_ADD_VAR (_ctx, concat (var_name, '_ordinality'));
+    }
+}
+;
+
+create procedure DB.DBA.GQL_GEN_UNNEST (in _unnest_ast any, inout _ctx any)
+{
+  declare var_name, var_sparql, values_list varchar;
+  declare expr, items any;
+  declare i integer;
+
+  var_name := aref (_unnest_ast, 1);
+  expr := aref (_unnest_ast, 2);
+
+  -- For list literals, expand into VALUES (same as FOR)
+  if (isarray (expr) and aref (expr, 0) = 'LIST')
+    {
+      items := aref (expr, 1);
+      values_list := '';
+      for (i := 0; i < length (items); i := i + 1)
+        {
+          if (values_list <> '')
+            values_list := concat (values_list, ' ');
+          values_list := concat (values_list, DB.DBA.GQL_GEN_EXPR (aref (items, i), _ctx));
+        }
+      var_sparql := DB.DBA.GQL_NODE_SPARQL_VAR (var_name);
+      DB.DBA.GQL_CTX_ADD_VAR (_ctx, var_name);
+      DB.DBA.GQL_CTX_ADD_VALUES (_ctx, var_sparql, values_list);
+      return;
+    }
+
+  -- For variable/complex expressions, use PL-based array expansion
+  -- via a subquery that calls GQL_UNNEST_PL
+  declare expr_sparql varchar;
+  expr_sparql := DB.DBA.GQL_GEN_EXPR (expr, _ctx);
+  var_sparql := DB.DBA.GQL_NODE_SPARQL_VAR (var_name);
+  DB.DBA.GQL_CTX_ADD_VAR (_ctx, var_name);
+
+  -- Emit a subquery: { SELECT ?gql_unnest_v WHERE { ?gql_unnest_v sql:GQL_UNNEST_PL(expr) } }
+  -- The PL procedure returns a result set with one row per array element.
+  declare unnest_subquery varchar;
+  declare unnest_idx_var varchar;
+  unnest_idx_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'unnest_idx_');
+  unnest_subquery := concat (
+    '  { SELECT ', var_sparql, ' ', unnest_idx_var, ' WHERE { ',
+    var_sparql, ' ', unnest_idx_var, ' sql:GQL_UNNEST_PL(', expr_sparql, ') } }\n');
+  DB.DBA.GQL_CTX_SET (_ctx, 'triples',
+    concat (DB.DBA.GQL_CTX_GET (_ctx, 'triples'), unnest_subquery));
 }
 ;
 
@@ -2404,13 +2504,20 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       declare fname, fname_orig, fargs varchar;
       declare fi integer;
       declare args_vec any;
+      declare distinct_kw varchar;
       fname_orig := aref (_expr, 1);
       fname := lower (cast (fname_orig as varchar));
       fargs := '';
       if (etype = 'FUNC_DISTINCT')
-        args_vec := aref (_expr, 2);
+        {
+          args_vec := aref (_expr, 2);
+          distinct_kw := 'DISTINCT ';
+        }
       else
-        args_vec := aref (_expr, 3);
+        {
+          args_vec := aref (_expr, 3);
+          distinct_kw := '';
+        }
       if (lower (fname) = 'degree_centrality')
         return DB.DBA.GQL_GEN_DEGREE_CENTRALITY (args_vec, _ctx);
       if (lower (fname) = 'eigenvector_centrality')
@@ -2429,15 +2536,15 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if ((length (fname) > 4 and subseq (fname, 0, 4) = 'sql:')
           or (length (fname) > 4 and subseq (fname, 0, 4) = 'bif:'))
         return concat (fname_orig, '(', fargs, ')');
-      -- Aggregate functions: map GQL names to SPARQL built-ins
-      if (fname = 'count') return concat ('COUNT(', fargs, ')');
-      if (fname = 'sum') return concat ('SUM(', fargs, ')');
-      if (fname = 'avg') return concat ('AVG(', fargs, ')');
-      if (fname = 'min') return concat ('MIN(', fargs, ')');
-      if (fname = 'max') return concat ('MAX(', fargs, ')');
-      if (fname = 'sample') return concat ('SAMPLE(', fargs, ')');
+      -- Aggregate functions: map GQL names to SPARQL built-ins (with optional DISTINCT)
+      if (fname = 'count') return concat ('COUNT(', distinct_kw, fargs, ')');
+      if (fname = 'sum') return concat ('SUM(', distinct_kw, fargs, ')');
+      if (fname = 'avg') return concat ('AVG(', distinct_kw, fargs, ')');
+      if (fname = 'min') return concat ('MIN(', distinct_kw, fargs, ')');
+      if (fname = 'max') return concat ('MAX(', distinct_kw, fargs, ')');
+      if (fname = 'sample') return concat ('SAMPLE(', distinct_kw, fargs, ')');
       if (fname = 'group_concat')
-        return concat ('GROUP_CONCAT(', fargs, ')');
+        return concat ('GROUP_CONCAT(', distinct_kw, fargs, ')');
       -- Path materialisation helpers for MATCH SHORTEST PATH p = ...
       if (length (args_vec) = 1 and isarray (aref (args_vec, 0))
           and aref (aref (args_vec, 0), 0) = 'VAR')
@@ -2524,9 +2631,9 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'st_x') return concat ('bif:st_x(', fargs, ')');
       if (fname = 'st_y') return concat ('bif:st_y(', fargs, ')');
       -- Aggregate functions via native sql: user-defined aggregates
-      if (fname = 'stddev') return concat ('sql:STDDEV(', fargs, ')');
-      if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', fargs, ')');
-      if (fname = 'stddev_pop') return concat ('sql:STDDEV_POP(', fargs, ')');
+      if (fname = 'stddev') return concat ('sql:STDDEV(', distinct_kw, fargs, ')');
+      if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', distinct_kw, fargs, ')');
+      if (fname = 'stddev_pop') return concat ('sql:STDDEV_POP(', distinct_kw, fargs, ')');
       -- Aggregate functions via gqlc C plugin BIFs
       if (fname = 'percentile_cont') return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
       if (fname = 'percentile_disc') return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
@@ -2581,6 +2688,12 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'exists') return concat ('EXISTS { ', fargs, ' }');
       -- Element identity
       if (fname = 'element_id') return concat ('STR(', fargs, ')');
+      -- RDF-star / SPARQL 1.2 triple-term accessors (same name in SPARQL)
+      if (fname = 'triple') return concat ('TRIPLE(', fargs, ')');
+      if (fname = 'subject') return concat ('SUBJECT(', fargs, ')');
+      if (fname = 'predicate') return concat ('PREDICATE(', fargs, ')');
+      if (fname = 'object') return concat ('OBJECT(', fargs, ')');
+      if (fname = 'istriple') return concat ('isTRIPLE(', fargs, ')');
       -- Default pass-through for sql:, bif:, and unknown functions
       return concat (fname_orig, '(', fargs, ')');
     }
@@ -3263,10 +3376,10 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
             { declare tmp varchar; tmp := esrc; esrc := edst; edst := tmp; }
           else if (edir = 'BOTH' or edir = 'UNDIRECTED')
             {
-              -- Undirected quantified edges require bipartite property path
-              -- syntax (<iri>|^<iri>)* which is not yet generated.
-              if (equant is not null)
-                signal ('G3006', 'Undirected property paths with quantifiers (*, +, ?) are not yet supported — use a directed edge or expand to two directed patterns');
+              -- Undirected quantified edges use SPARQL property path
+              -- (iri|^iri)* to match both directions.  The wrapping is
+              -- applied in the edge emission loop below.
+              ;
             }
           -- RIGHT is default
 
@@ -3331,41 +3444,70 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
                     DB.DBA.GQL_CTX_ADD_TRIPLE_OPTION (_ctx, esrc, edge_iri, edst, option_text);
                 }
               else if (pp_suffix <> '')
-                DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, concat (edge_iri, pp_suffix), edst);
+                {
+                  declare emit_pred varchar;
+                  emit_pred := edge_iri;
+                  if ((edir = 'BOTH' or edir = 'UNDIRECTED') and equant is not null)
+                    emit_pred := concat ('(', edge_iri, '|^', edge_iri, ')');
+                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, concat (emit_pred, pp_suffix), edst);
+                }
               else
                 {
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, edge_iri, edst);
-                  DB.DBA.GQL_CTX_ADD_EDGE_BINDING (_ctx, evar, esrc, edge_iri, edst);
+                  if (aref (aref (all_edge_iris, eidx), 1) = 0)
+                    DB.DBA.GQL_CTX_ADD_EDGE_BINDING (_ctx, evar, esrc, edge_iri, edst);
                 }
             }
 
-          -- If edge has properties, emit reification
+          -- If edge has properties, emit reification or RDF-star annotations
           if (length (eprops) > 0 and evar is not null)
             {
-              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'type>'),
-                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Statement>'));
-              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
-                esrc);
-              -- Emit predicate for each type
-              for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+              if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode') = 1)
+                {
+                  -- RDF-star: emit <<(src pred dst)> prop val . for each edge type
+                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                    {
+                      declare tt_subject varchar;
+                      tt_subject := concat ('<<(', esrc, ' ',
+                        aref (aref (all_edge_iris, eidx), 0), ' ', edst, ')>>');
+                      for (epi := 0; epi < length (eprops); epi := epi + 1)
+                        {
+                          declare epkey any;
+                          declare epval_str varchar;
+                          epkey := aref (aref (eprops, epi), 0);
+                          epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, tt_subject,
+                            DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                        }
+                    }
+                }
+              else
                 {
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-                    concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'predicate>'),
-                    aref (aref (all_edge_iris, eidx), 0));
-                }
-              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
-                concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
-                edst);
-              -- Edge properties go on the reification node
-              for (epi := 0; epi < length (eprops); epi := epi + 1)
-                {
-                  declare epkey any;
-                  epkey := aref (aref (eprops, epi), 0);
-                  declare epval_str varchar;
-                  epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
-                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv, DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                    concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'type>'),
+                    concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Statement>'));
+                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                    concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
+                    esrc);
+                  -- Emit predicate for each type
+                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                    {
+                      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                        concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'predicate>'),
+                        aref (aref (all_edge_iris, eidx), 0));
+                    }
+                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
+                    concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
+                    edst);
+                  -- Edge properties go on the reification node
+                  for (epi := 0; epi < length (eprops); epi := epi + 1)
+                    {
+                      declare epkey any;
+                      epkey := aref (aref (eprops, epi), 0);
+                      declare epval_str varchar;
+                      epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv, DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                    }
                 }
               DB.DBA.GQL_CTX_SET (_ctx, 'edge_vars',
                 vector_concat (DB.DBA.GQL_CTX_GET (_ctx, 'edge_vars'), vector (evar)));
@@ -3468,14 +3610,14 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
         {
           topt := concat (topt, ', T_STEP_LIMIT 1');
         }
-      -- SHORTEST k (counted) → limit to k results
-      else if (sc_count > 1)
+      -- SHORTEST k (counted, no GROUPS) → limit to k results
+      else if (sc_count > 1 and sc_groups = 0)
         {
           topt := concat (topt, ', T_MAX ', cast (sc_count as varchar));
         }
-      -- SHORTEST k GROUPS → group by path length
-      if (sc_groups = 1)
-        signal ('G3005', 'SHORTEST k GROUPS: path-length grouping is not yet supported — requires nested SELECT with GROUP BY path length');
+      -- SHORTEST k GROUPS with k > 1 → generous T_MAX for multi-length results
+      if (sc_groups = 1 and sc_count > 1)
+        topt := concat (topt, ', T_MAX ', cast (sc_count * 100 as varchar));
       if (DB.DBA.GQL_CTX_GET (_ctx, 'has_where_filters') = 0)
         {
           declare anchor_ok integer;
@@ -4101,12 +4243,18 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       else if (ctype = 'BASE')
         { DB.DBA.GQL_CTX_SET (ctx, 'base_uri', aref (clause, 1)); }
       else if (ctype = 'DEFINE')
-        { DB.DBA.GQL_CTX_ADD_DEFINE (ctx, aref (clause, 1), aref (clause, 2)); }
+        {
+          DB.DBA.GQL_CTX_ADD_DEFINE (ctx, aref (clause, 1), aref (clause, 2));
+          if (lower (cast (aref (clause, 1) as varchar)) = 'input:rdf-star')
+            DB.DBA.GQL_CTX_SET (ctx, 'rdf_star_mode', 1);
+        }
       else if (ctype = 'FORCE_CAMELCASE')
         { DB.DBA.GQL_CTX_SET (ctx, 'force_camelcase', 1); }
       else if (ctype = 'UNION')
         { ; }  -- handled at a higher level
       else if (ctype = 'FOR')
+        for_asts := vector_concat (for_asts, vector (clause));
+      else if (ctype = 'UNNEST')
         for_asts := vector_concat (for_asts, vector (clause));
       else if (ctype = 'LET')
         let_asts := vector_concat (let_asts, vector (clause));
@@ -4114,7 +4262,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         let_asts := vector_concat (let_asts, vector (clause));
       else if (ctype = 'LET_TABLE')
         let_asts := vector_concat (let_asts, vector (clause));
-      else if (ctype = 'GROUP')
+      else if (ctype = 'GROUP' or ctype = 'GROUP_SETS' or ctype = 'GROUP_CUBE' or ctype = 'GROUP_ROLLUP')
         group_ast := clause;
       else if (ctype = 'HAVING')
         having_ast := clause;
@@ -4219,9 +4367,16 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   for (i := 0; i < length (service_asts); i := i + 1)
     DB.DBA.GQL_GEN_SERVICE (aref (service_asts, i), ctx);
 
-  -- Emit FOR list bindings as SPARQL VALUES.
+  -- Emit FOR/UNNEST list bindings as SPARQL VALUES.
   for (i := 0; i < length (for_asts); i := i + 1)
-    DB.DBA.GQL_GEN_FOR_VALUES (aref (for_asts, i), ctx);
+    {
+      declare fc any;
+      fc := aref (for_asts, i);
+      if (aref (fc, 0) = 'UNNEST')
+        DB.DBA.GQL_GEN_UNNEST (fc, ctx);
+      else
+        DB.DBA.GQL_GEN_FOR_VALUES (fc, ctx);
+    }
 
   -- Emit LET clauses → BIND (after MATCH/FOR so referenced vars are bound,
   -- before WHERE/FILTER so filter can reference LET variables).
@@ -4634,22 +4789,65 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       -- GROUP BY
       if (group_ast is not null)
         {
+          declare group_type varchar;
           declare group_items any;
           declare group_vars any;
           declare gi integer;
+          group_type := aref (group_ast, 0);
           group_items := aref (group_ast, 1);
-          group_vars := vector ();
-          if (length (group_items) > 0)
+
+          if (group_type = 'GROUP_SETS')
             {
+              declare group_sets_s varchar;
+              declare gsi, gsj integer;
+              group_sets_s := 'GROUP BY GROUPING SETS (';
+              for (gsi := 0; gsi < length (group_items); gsi := gsi + 1)
+                {
+                  declare set_exprs any;
+                  if (gsi > 0) group_sets_s := concat (group_sets_s, ', ');
+                  set_exprs := aref (group_items, gsi);
+                  group_sets_s := concat (group_sets_s, '(');
+                  for (gsj := 0; gsj < length (set_exprs); gsj := gsj + 1)
+                    {
+                      if (gsj > 0) group_sets_s := concat (group_sets_s, ', ');
+                      group_sets_s := concat (group_sets_s, DB.DBA.GQL_GEN_EXPR (aref (set_exprs, gsj), ctx));
+                    }
+                  group_sets_s := concat (group_sets_s, ')');
+                }
+              group_sets_s := concat (group_sets_s, ')\n');
+              sparql_text := concat (sparql_text, group_sets_s);
+            }
+          else if (group_type = 'GROUP_CUBE' or group_type = 'GROUP_ROLLUP')
+            {
+              declare cube_rollup_s varchar;
+              declare cr_kw varchar;
+              cr_kw := case when group_type = 'GROUP_CUBE' then 'CUBE' else 'ROLLUP' end;
+              cube_rollup_s := concat ('GROUP BY ', cr_kw, ' (');
               for (gi := 0; gi < length (group_items); gi := gi + 1)
                 {
                   declare gexpr_sparql varchar;
+                  if (gi > 0) cube_rollup_s := concat (cube_rollup_s, ', ');
                   gexpr_sparql := DB.DBA.GQL_GEN_EXPR (aref (group_items, gi), ctx);
-                  group_vars := vector_concat (group_vars, vector (gexpr_sparql));
+                  cube_rollup_s := concat (cube_rollup_s, gexpr_sparql);
                 }
+              cube_rollup_s := concat (cube_rollup_s, ')\n');
+              sparql_text := concat (sparql_text, cube_rollup_s);
             }
-          sparql_text := concat (sparql_text,
-            DB.DBA.GQL_EMIT_GROUP_MODIFIER (ctx, group_vars, null));
+          else
+            {
+              group_vars := vector ();
+              if (length (group_items) > 0)
+                {
+                  for (gi := 0; gi < length (group_items); gi := gi + 1)
+                    {
+                      declare gexpr_sparql varchar;
+                      gexpr_sparql := DB.DBA.GQL_GEN_EXPR (aref (group_items, gi), ctx);
+                      group_vars := vector_concat (group_vars, vector (gexpr_sparql));
+                    }
+                }
+              sparql_text := concat (sparql_text,
+                DB.DBA.GQL_EMIT_GROUP_MODIFIER (ctx, group_vars, null));
+            }
         }
 
       -- HAVING
