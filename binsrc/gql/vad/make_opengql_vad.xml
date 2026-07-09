@@ -46,6 +46,7 @@
     <sql purpose="pre-install"></sql>
     <sql purpose="post-install"><![CDATA[
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_runtime.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_pl.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_lexer.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_expr.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_parser.sql', 0, 'report', 1);
@@ -63,6 +64,8 @@
   </ddls>
   <resources>
     <file type="dav" source="code" source_uri="vad/data/gql_runtime.sql" target_uri="opengql/gql_runtime.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_pl.sql" target_uri="opengql/gql_pl.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
     <file type="dav" source="code" source_uri="vad/data/gql_lexer.sql" target_uri="opengql/gql_lexer.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />

@@ -158,7 +158,7 @@ directory_init () {
   for f in gql_runtime.sql gql_lexer.sql gql_parser.sql \
            gql_expr.sql gql_plan.sql gql_var_pass.sql \
            gql_translate.sql gql_sparql_gen.sql gql_main.sql \
-           gql_endpoint.sql gql_bootstrap.sql
+           gql_endpoint.sql gql_bootstrap.sql gql_pl.sql
   do
     cp -f "$VOS_ROOT/binsrc/gql/$f" vad/data/
   done

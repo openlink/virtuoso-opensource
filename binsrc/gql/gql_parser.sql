@@ -1248,7 +1248,8 @@ create procedure DB.DBA.GQL_PARSE_TABLE_BINDING (in _tokens any, inout _pos inte
 create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
 {
   declare items, expr any;
-  declare sets, set_items any;
+  declare grp_sets any;
+  declare set_items any;
   _pos := _pos + 1;  -- consume GROUP
   DB.DBA.GQL_EXPECT (_tokens, _pos, 212);  -- BY
 
@@ -1258,7 +1259,7 @@ create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
       _pos := _pos + 1;
       DB.DBA.GQL_EXPECT (_tokens, _pos, 540);  -- SETS
       DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
-      sets := vector ();
+      grp_sets := vector ();
       while (1)
         {
           DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN for each set
@@ -1279,7 +1280,7 @@ create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
             set_items_done:
               DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
             }
-          sets := vector_concat (sets, vector (set_items));
+          grp_sets := vector_concat (grp_sets, vector (set_items));
           if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
             _pos := _pos + 1;
           else
@@ -1287,7 +1288,7 @@ create procedure DB.DBA.GQL_PARSE_GROUP_BY (in _tokens any, inout _pos integer)
         }
     sets_done:
       DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
-      return vector ('GROUP_SETS', sets);
+      return vector ('GROUP_SETS', grp_sets);
     }
 
   -- CUBE (expr1, expr2, ...)
