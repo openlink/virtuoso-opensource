@@ -716,6 +716,7 @@ SQL_FILES_SPARQL	= \
 	$(top_srcdir)/binsrc/cypher/cypher_endpoint.sql \
 	$(top_srcdir)/binsrc/cypher/cypher_bootstrap.sql \
 	$(top_srcdir)/binsrc/gql/gql_runtime.sql \
+	$(top_srcdir)/binsrc/gql/gql_pl.sql \
 	$(top_srcdir)/binsrc/gql/gql_lexer.sql \
 	$(top_srcdir)/binsrc/gql/gql_expr.sql \
 	$(top_srcdir)/binsrc/gql/gql_parser.sql \

@@ -26,6 +26,7 @@
 --
 
 LOAD binsrc/gql/gql_runtime.sql;
+LOAD binsrc/gql/gql_pl.sql;
 LOAD binsrc/gql/gql_lexer.sql;
 LOAD binsrc/gql/gql_expr.sql;
 LOAD binsrc/gql/gql_parser.sql;
