@@ -270,6 +270,37 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           minus_patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
           clauses := vector_concat (clauses, vector (vector ('MINUS', minus_patterns)));
         }
+      else if (tt = 533)  -- MODIFY
+        {
+          declare mod_delete_items, mod_insert_patterns any;
+          _pos := _pos + 1;  -- consume MODIFY
+          -- Expect DELETE <items>
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 204)  -- DELETE
+            {
+              _pos := _pos + 1;
+              mod_delete_items := vector ();
+              while (1)
+                {
+                  mod_delete_items := vector_concat (mod_delete_items, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+                  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)
+                    _pos := _pos + 1;
+                  else
+                    goto mod_del_done;
+                }
+              mod_del_done:
+              -- Expect INSERT <patterns>
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 201)  -- INSERT
+                {
+                  _pos := _pos + 1;
+                  mod_insert_patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+                }
+              else
+                mod_insert_patterns := vector ();
+              clauses := vector_concat (clauses, vector (vector ('MODIFY', mod_delete_items, mod_insert_patterns)));
+            }
+          else
+            signal ('GQ003', sprintf ('Expected DELETE after MODIFY at position %d', _pos));
+        }
       else if (tt = 207)  -- OPTIONAL
         {
           clause := DB.DBA.GQL_PARSE_MATCH (_tokens, _pos, 1);

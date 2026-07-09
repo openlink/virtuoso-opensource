@@ -1578,6 +1578,16 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR126 FAIL: normal DELETE backward compat')); }
 
+  -- TR127: MODIFY → combined DELETE { } INSERT { } WHERE { }
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n:Person {name: "Alice"}) MODIFY DELETE n INSERT (n:Employee {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, 'DELETE') is not null
+      and strstr (_sparql, 'INSERT') is not null
+      and strstr (_sparql, 'WHERE') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR127 PASS: MODIFY → combined DELETE+INSERT+WHERE')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR127 FAIL: MODIFY translation')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

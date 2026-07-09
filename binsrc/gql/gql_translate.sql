@@ -3790,8 +3790,8 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   declare clauses any;
   declare i, n integer;
   declare ctx any;
-  declare has_return, has_insert, has_construct, has_describe, has_delete, has_set, has_remove, has_ask integer;
-  declare return_ast, insert_asts, construct_asts, describe_ast, delete_ast, set_ast, remove_ast any;
+  declare has_return, has_insert, has_construct, has_describe, has_delete, has_set, has_remove, has_ask, has_modify integer;
+  declare return_ast, insert_asts, construct_asts, describe_ast, delete_ast, set_ast, remove_ast, modify_ast any;
   declare match_asts, where_asts, minus_asts any;
   declare for_asts, let_asts, service_asts any;
   declare use_ast any;
@@ -3969,6 +3969,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   has_set := 0;
   has_remove := 0;
   has_ask := 0;
+  has_modify := 0;
   return_ast := null;
   insert_asts := vector ();
   construct_asts := vector ();
@@ -3976,6 +3977,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   delete_ast := null;
   set_ast := null;
   remove_ast := null;
+  modify_ast := null;
   match_asts := vector ();
   where_asts := vector ();
   minus_asts := vector ();
@@ -4029,6 +4031,8 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         { has_remove := 1; remove_ast := clause; }
       else if (ctype = 'ASK')
         { has_ask := 1; }
+      else if (ctype = 'MODIFY')
+        { has_modify := 1; modify_ast := clause; }
       else if (ctype = 'MINUS')
         { minus_asts := vector_concat (minus_asts, vector (clause)); }
       else if (ctype = 'USE')
@@ -4374,6 +4378,72 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   if (has_delete or has_set or has_remove)
     {
       return DB.DBA.GQL_GEN_DML (delete_ast, set_ast, remove_ast, ctx);
+    }
+
+  -- Handle MODIFY: atomic DELETE+INSERT in one operation
+  if (has_modify)
+    {
+      declare mod_sparql varchar;
+      declare mod_del_items, mod_ins_patterns any;
+      declare mod_del_body, mod_ins_body, mod_where_body varchar;
+      declare mdi integer;
+      if (has_return)
+        signal ('G2004', 'MODIFY with RETURN is not yet supported — use separate statements');
+      mod_del_items := aref (modify_ast, 1);
+      mod_ins_patterns := aref (modify_ast, 2);
+      -- Build DELETE body from delete items (same logic as GQL_GEN_DML)
+      mod_del_body := '';
+      for (mdi := 0; mdi < length (mod_del_items); mdi := mdi + 1)
+        {
+          declare mditem any;
+          mditem := aref (mod_del_items, mdi);
+          if (isarray (mditem) and aref (mditem, 0) = 'VAR')
+            {
+              declare mdvar varchar;
+              mdvar := DB.DBA.GQL_NODE_SPARQL_VAR (aref (mditem, 1));
+              mod_del_body := concat (mod_del_body, '  ', mdvar, ' ?p', cast (mdi as varchar), ' ?o', cast (mdi as varchar), ' .\n');
+            }
+        }
+      -- Build INSERT body from insert patterns (reuse INSERT WHERE body builder)
+      mod_ins_body := '';
+      if (length (mod_ins_patterns) > 0)
+        {
+          declare mod_ins_asts, mod_ins_sparql any;
+          declare mod_prefix_len integer;
+          mod_ins_asts := vector (vector ('INSERT', mod_ins_patterns));
+          -- Use GQL_GEN_INSERT_WHERE with empty match to get INSERT DATA body,
+          -- then extract the body between 'GRAPH <g> {\n' and '  }\n'
+          mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, vector (), ctx);
+          -- Extract the insert body from the INSERT DATA { GRAPH <g> { ... } } output
+          declare mod_graph_str varchar;
+          declare mod_body_start, mod_body_end integer;
+          mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+          mod_body_start := strstr (mod_ins_sparql, mod_graph_str);
+          if (mod_body_start is not null)
+            {
+              mod_body_start := mod_body_start + length (mod_graph_str);
+              mod_body_end := strstr (subseq (mod_ins_sparql, mod_body_start), '  }\n');
+              if (mod_body_end is not null)
+                mod_ins_body := subseq (mod_ins_sparql, mod_body_start, mod_body_start + mod_body_end);
+            }
+        }
+      -- Build WHERE body from accumulated context
+      mod_where_body := DB.DBA.GQL_CTX_GET (ctx, 'pre_values');
+      mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'pre_binds'));
+      mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'triples'));
+      mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'binds'));
+      mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'filters'));
+      mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'optionals'));
+      -- Compose SPARQL
+      mod_sparql := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
+      mod_sparql := concat (mod_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
+      mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+      mod_sparql := concat (mod_sparql, 'DELETE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_del_body, '  }\n');
+      mod_sparql := concat (mod_sparql, '} INSERT {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_ins_body, '  }\n');
+      mod_sparql := concat (mod_sparql, '} WHERE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+      mod_sparql := concat (mod_sparql, mod_where_body);
+      mod_sparql := concat (mod_sparql, '  }\n}\n');
+      return mod_sparql;
     }
 
   -- Handle ASK: boolean query form — emits ASK instead of SELECT
