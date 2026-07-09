@@ -828,6 +828,49 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
       declare del_items any;
       declare di integer;
       declare del_body, where_body varchar;
+      declare del_mode varchar;
+      declare del_patterns any;
+
+      del_mode := aref (_delete_ast, 3);
+      del_patterns := aref (_delete_ast, 4);
+
+      -- DELETE DATA (pattern) → DELETE DATA { GRAPH <g> { ... } }
+      -- Ground-triple bulk delete, no WHERE clause
+      if (del_mode = 'DATA')
+        {
+          declare dd_ctx any;
+          declare dd_body varchar;
+          declare dd_pi integer;
+          dd_ctx := DB.DBA.GQL_CTX_NEW (graph);
+          DB.DBA.GQL_CTX_SET (dd_ctx, 'prefixes', DB.DBA.GQL_CTX_GET (_ctx, 'prefixes'));
+          DB.DBA.GQL_CTX_SET (dd_ctx, 'base_uri', DB.DBA.GQL_CTX_GET (_ctx, 'base_uri'));
+          DB.DBA.GQL_CTX_SET (dd_ctx, 'force_camelcase', DB.DBA.GQL_CTX_GET (_ctx, 'force_camelcase'));
+          for (dd_pi := 0; dd_pi < length (del_patterns); dd_pi := dd_pi + 1)
+            DB.DBA.GQL_GEN_MATCH (vector ('MATCH', 0, vector (aref (del_patterns, dd_pi)), vector (), 0, null), dd_ctx);
+          dd_body := DB.DBA.GQL_CTX_GET (dd_ctx, 'triples');
+          sparql_text := concat (sparql_text, 'DELETE DATA {\n  GRAPH <', graph, '> {\n', dd_body, '  }\n}\n');
+          goto dml_set_section;
+        }
+
+      -- DELETE WHERE (pattern) → DELETE WHERE { GRAPH <g> { ... } }
+      -- Shorthand: template = WHERE body, no separate DELETE template
+      if (del_mode = 'WHERE')
+        {
+          declare dw_ctx any;
+          declare dw_body varchar;
+          declare dw_pi integer;
+          dw_ctx := DB.DBA.GQL_CTX_NEW (graph);
+          DB.DBA.GQL_CTX_SET (dw_ctx, 'prefixes', DB.DBA.GQL_CTX_GET (_ctx, 'prefixes'));
+          DB.DBA.GQL_CTX_SET (dw_ctx, 'base_uri', DB.DBA.GQL_CTX_GET (_ctx, 'base_uri'));
+          DB.DBA.GQL_CTX_SET (dw_ctx, 'force_camelcase', DB.DBA.GQL_CTX_GET (_ctx, 'force_camelcase'));
+          for (dw_pi := 0; dw_pi < length (del_patterns); dw_pi := dw_pi + 1)
+            DB.DBA.GQL_GEN_MATCH (vector ('MATCH', 0, vector (aref (del_patterns, dw_pi)), vector (), 0, null), dw_ctx);
+          dw_body := DB.DBA.GQL_CTX_GET (dw_ctx, 'triples');
+          dw_body := concat (dw_body, DB.DBA.GQL_CTX_GET (dw_ctx, 'binds'));
+          dw_body := concat (dw_body, DB.DBA.GQL_CTX_GET (dw_ctx, 'filters'));
+          sparql_text := concat (sparql_text, 'DELETE WHERE {\n  GRAPH <', graph, '> {\n', dw_body, '  }\n}\n');
+          goto dml_set_section;
+        }
 
       del_items := aref (_delete_ast, 2);
       del_body := '';
@@ -885,6 +928,7 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
       sparql_text := concat (sparql_text, '  }\n}\n');
     }
 
+  dml_set_section:
   -- SET section (separated by ;\n for multi-statement execution)
   if (_set_ast is not null)
     {

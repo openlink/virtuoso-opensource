@@ -882,9 +882,32 @@ create procedure DB.DBA.GQL_PARSE_REMOVE (in _tokens any, inout _pos integer)
 create procedure DB.DBA.GQL_PARSE_DELETE (in _tokens any, inout _pos integer, in _detach integer)
 {
   declare items any;
+  declare del_mode varchar;
 
   if (_detach = 0)
     _pos := _pos + 1;  -- consume DELETE (already consumed if DETACH)
+
+  del_mode := 'NORMAL';
+
+  -- DELETE DATA (pattern) — ground-triple bulk delete
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 417)  -- DATA
+    {
+      _pos := _pos + 1;
+      del_mode := 'DATA';
+      declare patterns any;
+      patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+      return vector ('DELETE', _detach, items, del_mode, patterns);
+    }
+
+  -- DELETE WHERE (pattern) — shorthand: template = WHERE body
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 206)  -- WHERE
+    {
+      _pos := _pos + 1;
+      del_mode := 'WHERE';
+      declare patterns any;
+      patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+      return vector ('DELETE', _detach, items, del_mode, patterns);
+    }
 
   items := vector ();
   while (1)
@@ -896,7 +919,7 @@ create procedure DB.DBA.GQL_PARSE_DELETE (in _tokens any, inout _pos integer, in
         goto delete_done;
     }
   delete_done:
-  return vector ('DELETE', _detach, items);
+  return vector ('DELETE', _detach, items, del_mode, null);
 }
 ;
 

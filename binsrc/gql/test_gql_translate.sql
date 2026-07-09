@@ -1552,6 +1552,32 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR123 FAIL: MINUS with edge')); }
 
+  -- TR124: DELETE DATA → SPARQL DELETE DATA (no WHERE)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DELETE DATA (:Person {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, 'DELETE DATA') is not null
+      and strstr (_sparql, 'WHERE') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR124 PASS: DELETE DATA without WHERE')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR124 FAIL: DELETE DATA')); }
+
+  -- TR125: DELETE WHERE → SPARQL DELETE WHERE
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DELETE WHERE (n:Person {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, 'DELETE WHERE') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR125 PASS: DELETE WHERE shorthand')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR125 FAIL: DELETE WHERE')); }
+
+  -- TR126: Normal DELETE still works (backward compat)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) DELETE n');
+  if (_sparql is not null and strstr (_sparql, 'DELETE') is not null
+      and strstr (_sparql, 'WHERE') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR126 PASS: normal DELETE backward compat')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR126 FAIL: normal DELETE backward compat')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));
