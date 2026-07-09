@@ -131,49 +131,11 @@ create procedure DB.DBA.GQL_DURATION_BETWEEN (in _start any, in _end any)
 -- These operate on a vector of values collected by the translator.
 -- The translator generates a sub-SELECT to collect values into a list,
 -- then calls these PL procedures.
+--
+-- Note: STDDEV, STDDEV_SAMP, STDDEV_POP are native SQL user-defined
+-- aggregates (create aggregate DB.DBA.STDDEV...), accessible via sql:
+-- prefix in SPARQL. No PL wrapper needed.
 ----------------------------------------------------------------------
-
-create procedure DB.DBA.GQL_STDDEV_SAMP (in _vals any)
-{
-  declare n integer;
-  declare mean, sum_sq, val double precision;
-  declare i integer;
-  n := length(_vals);
-  if (n < 2) return null;
-  mean := 0;
-  for (i := 0; i < n; i := i + 1)
-    mean := mean + cast(aref(_vals, i) as double precision);
-  mean := mean / n;
-  sum_sq := 0;
-  for (i := 0; i < n; i := i + 1)
-    {
-      val := cast(aref(_vals, i) as double precision) - mean;
-      sum_sq := sum_sq + val * val;
-    }
-  return sqrt(sum_sq / (n - 1));
-}
-;
-
-create procedure DB.DBA.GQL_STDDEV_POP (in _vals any)
-{
-  declare n integer;
-  declare mean, sum_sq, val double precision;
-  declare i integer;
-  n := length(_vals);
-  if (n < 1) return null;
-  mean := 0;
-  for (i := 0; i < n; i := i + 1)
-    mean := mean + cast(aref(_vals, i) as double precision);
-  mean := mean / n;
-  sum_sq := 0;
-  for (i := 0; i < n; i := i + 1)
-    {
-      val := cast(aref(_vals, i) as double precision) - mean;
-      sum_sq := sum_sq + val * val;
-    }
-  return sqrt(sum_sq / n);
-}
-;
 
 create procedure DB.DBA.GQL_PERCENTILE_CONT (in _vals any, in _p double precision)
 {
@@ -235,23 +197,5 @@ create procedure DB.DBA.GQL_PERCENTILE_DISC (in _vals any, in _p double precisio
   if (idx < 0) idx := 0;
   if (idx >= n) idx := n - 1;
   return cast(aref(sorted, idx) as double precision);
-}
-;
-
-----------------------------------------------------------------------
--- COLLECT_LIST
--- Collects values into a vector. The translator generates a sub-SELECT
--- that collects values via GROUP_CONCAT, then this procedure splits
--- the concatenated string back into a vector.
-----------------------------------------------------------------------
-
-create procedure DB.DBA.GQL_COLLECT_LIST (in _concat_str varchar, in _sep varchar)
-{
-  declare parts any;
-  if (_concat_str is null) return vector();
-  if (_sep is null) _sep := '\u0001';
-  parts := split_and_decode(_concat_str, 0, '\u0000', _sep);
-  if (parts is null) return vector();
-  return parts;
 }
 ;

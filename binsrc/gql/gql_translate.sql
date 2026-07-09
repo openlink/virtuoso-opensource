@@ -2506,12 +2506,14 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       -- Duration functions via PL procedures
       if (fname = 'duration') return concat ('bif:GQL_DURATION(', fargs, ')');
       if (fname = 'duration_between') return concat ('bif:GQL_DURATION_BETWEEN(', fargs, ')');
-      -- Aggregate functions via PL procedures
-      if (fname = 'stddev_samp') return concat ('bif:GQL_STDDEV_SAMP(', fargs, ')');
-      if (fname = 'stddev_pop') return concat ('bif:GQL_STDDEV_POP(', fargs, ')');
+      -- Aggregate functions via native sql: user-defined aggregates
+      if (fname = 'stddev') return concat ('sql:STDDEV(', fargs, ')');
+      if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', fargs, ')');
+      if (fname = 'stddev_pop') return concat ('sql:STDDEV_POP(', fargs, ')');
+      -- Aggregate functions via PL procedures (no native equivalent)
       if (fname = 'percentile_cont') return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
       if (fname = 'percentile_disc') return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
-      if (fname = 'collect_list') return concat ('bif:GQL_COLLECT_LIST(', fargs, ')');
+      if (fname = 'collect_list') return concat ('sql:VECTOR_AGG(', fargs, ')');
       -- Temporal functions (same name in SPARQL)
       if (fname = 'year') return concat ('YEAR(', fargs, ')');
       if (fname = 'month') return concat ('MONTH(', fargs, ')');
