@@ -3826,7 +3826,7 @@ execute_query:
           {
             if ((__SQL_STATE = 'GQ092')
                 and not (opengql_dryrun = '1' or opengql_dryrun = 'true')
-                and __proc_exists ('DB.DBA.GQL_EXEC', 1) is not null)
+                and __proc_exists ('DB.DBA.GQL_RUN', 1) is not null)
               {
                 declare gql_exec_result any;
                 declare exit handler for sqlstate '*'
@@ -3836,7 +3836,7 @@ execute_query:
                       opengql_body, __SQL_STATE, __SQL_MESSAGE, format);
                     return;
                   };
-                gql_exec_result := DB.DBA.GQL_EXEC (opengql_body, opengql_graph);
+                gql_exec_result := DB.DBA.GQL_RUN (opengql_body, opengql_graph);
                 opengql_translated := DB.DBA.GQL_TO_SPARQL (opengql_body, opengql_graph);
                 goto opengql_translate_ok;
               }

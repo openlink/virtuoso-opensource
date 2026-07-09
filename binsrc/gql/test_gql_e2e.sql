@@ -43,7 +43,7 @@ create procedure DB.DBA.GQL_E2E_TESTS ()
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E1 FAIL: MATCH on empty graph errored')); goto e2e1_done; };
-    _data := DB.DBA.GQL_EXEC ('MATCH (n) RETURN n LIMIT 1');
+    _data := DB.DBA.GQL_RUN ('MATCH (n) RETURN n LIMIT 1');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E1 PASS: MATCH on empty graph'));
   }
   e2e1_done:;
@@ -53,7 +53,7 @@ create procedure DB.DBA.GQL_E2E_TESTS ()
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E2 FAIL: INSERT node errored')); goto e2e2_done; };
-    DB.DBA.GQL_EXEC ('INSERT (:Person { name: ''Alice'', age: 30 })');
+    DB.DBA.GQL_RUN ('INSERT (:Person { name: ''Alice'', age: 30 })');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E2 PASS: INSERT node'));
   }
   e2e2_done:;
@@ -63,7 +63,7 @@ create procedure DB.DBA.GQL_E2E_TESTS ()
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E3 FAIL: MATCH after INSERT errored')); goto e2e3_done; };
-    _data := DB.DBA.GQL_EXEC ('MATCH (n:Person) RETURN n.name, n.age LIMIT 1');
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person) RETURN n.name, n.age LIMIT 1');
     if (_data is not null and length (_data) > 0)
       _pass := _pass + 1;
     else
@@ -115,7 +115,7 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E4 FAIL: INSERT edge errored')); goto e2e4_done; };
-    DB.DBA.GQL_EXEC ('MATCH (a:Person { name: ''Alice'' }) INSERT (:Person { name: ''Bob'' }), (a)-[:KNOWS]->(:Person { name: ''Bob'' })');
+    DB.DBA.GQL_RUN ('MATCH (a:Person { name: ''Alice'' }) INSERT (:Person { name: ''Bob'' }), (a)-[:KNOWS]->(:Person { name: ''Bob'' })');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E4 PASS: INSERT edge'));
   }
   e2e4_done:;
@@ -125,7 +125,7 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E5 FAIL: MATCH edge errored')); goto e2e5_done; };
-    _data := DB.DBA.GQL_EXEC ('MATCH (a:Person)-[:KNOWS]->(b:Person) RETURN a.name, b.name LIMIT 1');
+    _data := DB.DBA.GQL_RUN ('MATCH (a:Person)-[:KNOWS]->(b:Person) RETURN a.name, b.name LIMIT 1');
     if (_data is not null and length (_data) > 0)
       _pass := _pass + 1;
     else
@@ -139,7 +139,7 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E6 FAIL: SET property errored')); goto e2e6_done; };
-    DB.DBA.GQL_EXEC ('MATCH (n:Person { name: ''Alice'' }) SET n.age = 31');
+    DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Alice'' }) SET n.age = 31');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E6 PASS: SET property'));
   }
   e2e6_done:;
@@ -149,7 +149,7 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E7 FAIL: COUNT errored')); goto e2e7_done; };
-    _data := DB.DBA.GQL_EXEC ('MATCH (n:Person) RETURN count(n) AS cnt');
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person) RETURN count(n) AS cnt');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E7 PASS: COUNT aggregation'));
   }
   e2e7_done:;
@@ -159,7 +159,7 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   {
     declare exit handler for sqlstate '*'
       { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E8 FAIL: DETACH DELETE errored')); goto e2e8_done; };
-    DB.DBA.GQL_EXEC ('MATCH (n:Person { name: ''Alice'' }) DETACH DELETE n');
+    DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Alice'' }) DETACH DELETE n');
     _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E8 PASS: DETACH DELETE'));
   }
   e2e8_done:;
