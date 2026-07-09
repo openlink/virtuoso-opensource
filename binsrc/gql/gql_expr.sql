@@ -616,6 +616,66 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
       return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
     }
 
+  -- STDDEV_POP/STDDEV_SAMP/COLLECT_LIST/PERCENTILE_CONT/PERCENTILE_DISC
+  if (tt = 407 or tt = 408 or tt = 409 or tt = 410 or tt = 411)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- Numeric keyword functions: SQRT, EXP, LOG, LN, POWER, MOD, SIN, COS, TAN, COT,
+  -- ASIN, ACOS, ATAN, DEGREES, RADIANS, CEILING, ABS, FLOOR, ROUND, LOG10
+  if (tt = 369 or tt = 370 or tt = 371 or tt = 372 or tt = 373 or tt = 374
+      or tt = 375 or tt = 376 or tt = 377 or tt = 378 or tt = 379 or tt = 380
+      or tt = 381 or tt = 382 or tt = 383 or tt = 387 or tt = 388 or tt = 389 or tt = 390
+      or tt = 518)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- String keyword functions: TRIM, BTRIM, LTRIM, RTRIM, SUBSTRING, UPPER, LOWER,
+  -- LEFT, RIGHT, CHAR_LENGTH, CHARACTER_LENGTH, BYTE_LENGTH, OCTET_LENGTH
+  if (tt = 361 or tt = 362 or tt = 363 or tt = 364 or tt = 365 or tt = 367 or tt = 368
+      or tt = 493 or tt = 494 or tt = 391 or tt = 392 or tt = 393 or tt = 394)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- List/cardinality functions: SIZE, CARDINALITY
+  if (tt = 395 or tt = 413)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- Conditional functions: COALESCE, NULLIF, IFNULL, GREATEST, LEAST
+  if (tt = 397 or tt = 398 or tt = 399 or tt = 400 or tt = 401)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- Datetime functions: CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP
+  if (tt = 520 or tt = 521 or tt = 522)
+    {
+      _pos := _pos + 1;
+      -- These may be called with no args: CURRENT_DATE or CURRENT_DATE()
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+        return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+      return vector ('FUNC', val, 0, vector ());
+    }
+
+  -- LOCAL_TIME, LOCAL_TIMESTAMP (no-arg datetime functions)
+  if (tt = 307 or tt = 309)
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+        return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+      return vector ('FUNC', val, 0, vector ());
+    }
+
   -- CASE
   if (tt = 256)  -- CASE
     return DB.DBA.GQL_PARSE_CASE (_tokens, _pos);

@@ -2252,11 +2252,42 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'replace') return concat ('REPLACE(', fargs, ')');
       if (fname = 'concat') return concat ('CONCAT(', fargs, ')');
       if (fname = 'trim') return concat ('TRIM(', fargs, ')');
+      -- String functions via bif: pass-through
+      if (fname = 'left') return concat ('bif:left(', fargs, ')');
+      if (fname = 'right') return concat ('bif:right(', fargs, ')');
+      if (fname = 'btrim') return concat ('bif:trim(', fargs, ')');
+      if (fname = 'ltrim') return concat ('bif:ltrim(', fargs, ')');
+      if (fname = 'rtrim') return concat ('bif:rtrim(', fargs, ')');
+      if (fname = 'char_length') return concat ('bif:length(', fargs, ')');
+      if (fname = 'character_length') return concat ('bif:length(', fargs, ')');
+      if (fname = 'octet_length') return concat ('bif:length(', fargs, ')');
+      if (fname = 'byte_length') return concat ('bif:length(', fargs, ')');
+      -- List/cardinality functions via bif: pass-through
+      if (fname = 'cardinality') return concat ('bif:length(', fargs, ')');
+      if (fname = 'size') return concat ('bif:length(', fargs, ')');
       -- Numeric functions (same name in SPARQL, mapped explicitly for clarity)
       if (fname = 'abs') return concat ('ABS(', fargs, ')');
       if (fname = 'ceil') return concat ('CEIL(', fargs, ')');
+      if (fname = 'ceiling') return concat ('bif:ceiling(', fargs, ')');
       if (fname = 'floor') return concat ('FLOOR(', fargs, ')');
       if (fname = 'round') return concat ('ROUND(', fargs, ')');
+      -- Numeric functions via bif: pass-through (not in SPARQL standard)
+      if (fname = 'sqrt') return concat ('bif:sqrt(', fargs, ')');
+      if (fname = 'exp') return concat ('bif:exp(', fargs, ')');
+      if (fname = 'log') return concat ('bif:log(', fargs, ')');
+      if (fname = 'log10') return concat ('bif:log10(', fargs, ')');
+      if (fname = 'ln') return concat ('bif:log(', fargs, ')');
+      if (fname = 'power') return concat ('bif:power(', fargs, ')');
+      if (fname = 'mod') return concat ('bif:mod(', fargs, ')');
+      if (fname = 'sin') return concat ('bif:sin(', fargs, ')');
+      if (fname = 'cos') return concat ('bif:cos(', fargs, ')');
+      if (fname = 'tan') return concat ('bif:tan(', fargs, ')');
+      if (fname = 'cot') return concat ('bif:cot(', fargs, ')');
+      if (fname = 'asin') return concat ('bif:asin(', fargs, ')');
+      if (fname = 'acos') return concat ('bif:acos(', fargs, ')');
+      if (fname = 'atan') return concat ('bif:atan(', fargs, ')');
+      if (fname = 'degrees') return concat ('bif:degrees(', fargs, ')');
+      if (fname = 'radians') return concat ('bif:radians(', fargs, ')');
       -- Temporal functions (same name in SPARQL)
       if (fname = 'year') return concat ('YEAR(', fargs, ')');
       if (fname = 'month') return concat ('MONTH(', fargs, ')');
@@ -2287,6 +2318,21 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       -- Conditional
       if (fname = 'coalesce') return concat ('COALESCE(', fargs, ')');
       if (fname = 'if') return concat ('IF(', fargs, ')');
+      if (fname = 'nullif' and length (args_vec) = 2)
+        {
+          declare nf_a, nf_b varchar;
+          nf_a := DB.DBA.GQL_GEN_EXPR (aref (args_vec, 0), _ctx);
+          nf_b := DB.DBA.GQL_GEN_EXPR (aref (args_vec, 1), _ctx);
+          return concat ('IF(', nf_a, ' = ', nf_b, ', NULL, ', nf_a, ')');
+        }
+      if (fname = 'greatest') return concat ('bif:__max(', fargs, ')');
+      if (fname = 'least') return concat ('bif:__min(', fargs, ')');
+      -- Datetime functions via bif: pass-through
+      if (fname = 'current_date') return concat ('bif:current_date(', fargs, ')');
+      if (fname = 'current_time') return concat ('bif:current_time(', fargs, ')');
+      if (fname = 'current_timestamp') return concat ('bif:current_timestamp(', fargs, ')');
+      if (fname = 'local_time') return concat ('bif:curtime(', fargs, ')');
+      if (fname = 'local_timestamp') return concat ('bif:now(', fargs, ')');
       -- Existence
       if (fname = 'bound') return concat ('BOUND(', fargs, ')');
       if (fname = 'exists') return concat ('EXISTS { ', fargs, ' }');
