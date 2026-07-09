@@ -269,7 +269,7 @@ vad_check () {
   ECHO "VAD openGQL param translation check ..."
   do_command_safe "$DSN" "select case when strstr (cast (DB.DBA.GQL_TO_SPARQL_PARAMS ('MATCH (p) RETURN p LIMIT 10', null, null) as varchar), 'SELECT') is not null then 1 else 1/0 end"
   ECHO "VAD openGQL execution check ..."
-  do_command_safe "$DSN" "DB.DBA.OPENGQL ('MATCH (p) RETURN p LIMIT 10')"
+  do_command_safe "$DSN" "DB.DBA.OPENGQL_EXEC ('MATCH (p) RETURN p LIMIT 10')"
   ECHO "VAD uninstallation check ..."
   do_command_safe "$DSN" "VAD_UNINSTALL ('opengql/$VERSION');"
 }

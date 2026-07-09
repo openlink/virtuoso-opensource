@@ -32,7 +32,7 @@
 -- OPENGQL execution handler
 ----------------------------------------------------------------------
 
-create procedure DB.DBA.OPENGQL (in _query varchar, in _default_graph varchar := null)
+create procedure DB.DBA."OPENGQL" (in _query varchar, in _default_graph varchar := null)
 {
   return DB.DBA.OPENGQL_EXEC (_query, _default_graph);
 }
