@@ -1764,6 +1764,8 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
         for_asts := vector_concat (for_asts, vector (clause));
       else if (ctype = 'RETURN')
         { has_return := 1; return_ast := clause; }
+      else if (ctype = 'FINISH')
+        { has_return := 0; }
       else if (ctype = 'PREFIX')
         DB.DBA.GQL_CTX_ADD_PREFIX (svc_ctx, aref (clause, 1), aref (clause, 2));
       else if (ctype = 'BASE')
@@ -2336,6 +2338,8 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       -- Existence
       if (fname = 'bound') return concat ('BOUND(', fargs, ')');
       if (fname = 'exists') return concat ('EXISTS { ', fargs, ' }');
+      -- Element identity
+      if (fname = 'element_id') return concat ('STR(', fargs, ')');
       -- Default pass-through for sql:, bif:, and unknown functions
       return concat (fname_orig, '(', fargs, ')');
     }
@@ -2347,6 +2351,141 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (aref (_expr, 2) = 1)
         return concat ('(!BOUND(', lhs, '))');
       return concat ('(BOUND(', lhs, '))');
+    }
+
+  -- IS DIRECTED / IS NOT DIRECTED — all RDF edges are directed
+  if (etype = 'IS_DIRECTED')
+    {
+      if (aref (_expr, 2) = 1)
+        return '(1 = 0)';
+      return '(1 = 1)';
+    }
+
+  -- IS TYPED <type>
+  if (etype = 'IS_TYPED')
+    {
+      declare tt_lhs, tt_type varchar;
+      declare tt_types any;
+      tt_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      tt_type := aref (_expr, 2);
+      tt_types := vector (
+        'INTEGER', 'http://www.w3.org/2001/XMLSchema#integer',
+        'INT', 'http://www.w3.org/2001/XMLSchema#integer',
+        'STRING', 'http://www.w3.org/2001/XMLSchema#string',
+        'BOOLEAN', 'http://www.w3.org/2001/XMLSchema#boolean',
+        'BOOL', 'http://www.w3.org/2001/XMLSchema#boolean',
+        'FLOAT', 'http://www.w3.org/2001/XMLSchema#float',
+        'DOUBLE', 'http://www.w3.org/2001/XMLSchema#double',
+        'DATE', 'http://www.w3.org/2001/XMLSchema#date',
+        'TIME', 'http://www.w3.org/2001/XMLSchema#time',
+        'DATETIME', 'http://www.w3.org/2001/XMLSchema#dateTime',
+        'TIMESTAMP', 'http://www.w3.org/2001/XMLSchema#dateTime');
+      declare tt_idx integer;
+      declare tt_xsd varchar;
+      tt_xsd := null;
+      for (tt_idx := 0; tt_idx < length (tt_types); tt_idx := tt_idx + 2)
+        {
+          if (upper (tt_type) = aref (tt_types, tt_idx))
+            { tt_xsd := aref (tt_types, tt_idx + 1); goto tt_found; }
+        }
+      tt_found:
+      if (tt_xsd is null)
+        tt_xsd := concat ('http://www.w3.org/2001/XMLSchema#', lower (tt_type));
+      if (aref (_expr, 3) = 1)
+        return concat ('(DATATYPE(', tt_lhs, ') != <', tt_xsd, '>)');
+      return concat ('(DATATYPE(', tt_lhs, ') = <', tt_xsd, '>)');
+    }
+
+  -- IS SOURCE OF / IS DESTINATION OF — variable equality with edge endpoint
+  if (etype = 'IS_SOURCE_OF')
+    {
+      declare so_lhs, so_edge varchar;
+      so_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      so_edge := DB.DBA.GQL_GEN_EXPR (aref (_expr, 2), _ctx);
+      if (aref (_expr, 3) = 1)
+        return concat ('(', so_lhs, ' != ', so_edge, '_src)');
+      return concat ('(', so_lhs, ' = ', so_edge, '_src)');
+    }
+  if (etype = 'IS_DEST_OF')
+    {
+      declare do_lhs, do_edge varchar;
+      do_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      do_edge := DB.DBA.GQL_GEN_EXPR (aref (_expr, 2), _ctx);
+      if (aref (_expr, 3) = 1)
+        return concat ('(', do_lhs, ' != ', do_edge, '_dst)');
+      return concat ('(', do_lhs, ' = ', do_edge, '_dst)');
+    }
+
+  -- IS LABEL — check rdf:type
+  if (etype = 'ISLABEL')
+    {
+      declare il_lhs, il_label varchar;
+      il_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      il_label := DB.DBA.GQL_GEN_LABEL_IRI_CTX (aref (_expr, 2), _ctx);
+      return concat ('EXISTS { ', il_lhs, ' rdf:type ', il_label, ' }');
+    }
+
+  -- String concatenation operator (||)
+  if (etype = 'STROP')
+    {
+      declare sc_lhs, sc_rhs varchar;
+      sc_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 2), _ctx);
+      sc_rhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 3), _ctx);
+      return concat ('CONCAT(', sc_lhs, ', ', sc_rhs, ')');
+    }
+
+  -- ALL_DIFFERENT (var1, var2, ...) — pairwise inequality
+  if (etype = 'ALL_DIFFERENT')
+    {
+      declare ad_args any;
+      declare ad_i, ad_j integer;
+      declare ad_lhs, ad_rhs varchar;
+      declare ad_result varchar;
+      ad_args := aref (_expr, 1);
+      ad_result := '';
+      for (ad_i := 0; ad_i < length (ad_args); ad_i := ad_i + 1)
+        {
+          for (ad_j := ad_i + 1; ad_j < length (ad_args); ad_j := ad_j + 1)
+            {
+              ad_lhs := DB.DBA.GQL_GEN_EXPR (aref (ad_args, ad_i), _ctx);
+              ad_rhs := DB.DBA.GQL_GEN_EXPR (aref (ad_args, ad_j), _ctx);
+              if (ad_result <> '') ad_result := concat (ad_result, ' && ');
+              ad_result := concat (ad_result, '(', ad_lhs, ' != ', ad_rhs, ')');
+            }
+        }
+      if (ad_result = '') return '(1 = 1)';
+      return concat ('(', ad_result, ')');
+    }
+
+  -- SAME (var1, var2, ...) — all equal
+  if (etype = 'SAME_PRED')
+    {
+      declare sm_args any;
+      declare sm_i integer;
+      declare sm_lhs, sm_rhs varchar;
+      declare sm_result varchar;
+      sm_args := aref (_expr, 1);
+      sm_result := '';
+      for (sm_i := 1; sm_i < length (sm_args); sm_i := sm_i + 1)
+        {
+          sm_lhs := DB.DBA.GQL_GEN_EXPR (aref (sm_args, 0), _ctx);
+          sm_rhs := DB.DBA.GQL_GEN_EXPR (aref (sm_args, sm_i), _ctx);
+          if (sm_result <> '') sm_result := concat (sm_result, ' && ');
+          sm_result := concat (sm_result, '(', sm_lhs, ' = ', sm_rhs, ')');
+        }
+      if (sm_result = '') return '(1 = 1)';
+      return concat ('(', sm_result, ')');
+    }
+
+  -- PROPERTY_EXISTS (var, propName) — EXISTS check on property triple
+  if (etype = 'PROP_EXISTS')
+    {
+      declare pe_lhs, pe_prop varchar;
+      declare pe_prop_iri varchar;
+      pe_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      pe_prop := aref (_expr, 2);
+      pe_prop_iri := concat ('<', DB.DBA.GQL_TERM_URI (_ctx, pe_prop, 'property'), '>');
+      return concat ('EXISTS { ', pe_lhs, ' ', pe_prop_iri, ' ?pe_val }');
     }
 
   -- IN expression

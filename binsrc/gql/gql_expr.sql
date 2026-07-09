@@ -315,18 +315,50 @@ create procedure DB.DBA.GQL_PARSE_CONTAINS_OPTIONS (in _tokens any, inout _pos i
 create procedure DB.DBA.GQL_TRY_IS_EXPR (in _tokens any, inout _pos integer, in _expr any)
 {
   declare nxt integer;
+  declare is_not integer;
   if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 235)  -- IS
     return _expr;
   _pos := _pos + 1;
+  is_not := 0;
   nxt := DB.DBA.GQL_PEEK (_tokens, _pos);
   if (nxt = 231)  -- NOT
-    { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 236); return vector ('ISNULL', _expr, 1); }  -- NULL_KW
+    { is_not := 1; _pos := _pos + 1; nxt := DB.DBA.GQL_PEEK (_tokens, _pos); }
   if (nxt = 236)  -- NULL_KW
-    { _pos := _pos + 1; return vector ('ISNULL', _expr, 0); }
+    { _pos := _pos + 1; return vector ('ISNULL', _expr, is_not); }
+  -- IS DIRECTED
+  if (nxt = 344)  -- DIRECTED
+    { _pos := _pos + 1; return vector ('IS_DIRECTED', _expr, is_not); }
+  -- IS TYPED <type>
+  if (nxt = 474)  -- TYPED
+    {
+      declare type_name varchar;
+      _pos := _pos + 1;
+      type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      return vector ('IS_TYPED', _expr, type_name, is_not);
+    }
+  -- IS SOURCE OF <edge>
+  if (nxt = 347)  -- SOURCE
+    {
+      declare src_edge any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 243);  -- OF
+      src_edge := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      return vector ('IS_SOURCE_OF', _expr, src_edge, is_not);
+    }
+  -- IS DESTINATION OF <edge>
+  if (nxt = 348)  -- DESTINATION
+    {
+      declare dst_edge any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 243);  -- OF
+      dst_edge := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      return vector ('IS_DEST_OF', _expr, dst_edge, is_not);
+    }
   -- IS <label> — parse as label name
   if (nxt = 64 or nxt = 69)  -- IDENT or PNAME_NS
     { declare lbl varchar; lbl := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('ISLABEL', _expr, lbl); }
-  signal ('GQ004', sprintf ('Expected NULL, NOT NULL, or label after IS at position %d', _pos));
+  signal ('GQ004', sprintf ('Expected NULL, NOT NULL, DIRECTED, TYPED, SOURCE OF, DESTINATION OF, or label after IS at position %d', _pos));
 }
 ;
 
@@ -365,6 +397,8 @@ create procedure DB.DBA.GQL_PARSE_ADD_EXPR (in _tokens any, inout _pos integer)
         { _pos := _pos + 1; rhs := DB.DBA.GQL_PARSE_MUL_EXPR (_tokens, _pos); lhs := vector ('BINOP', '+', lhs, rhs); }
       else if (tt = 12)  -- DASH (minus)
         { _pos := _pos + 1; rhs := DB.DBA.GQL_PARSE_MUL_EXPR (_tokens, _pos); lhs := vector ('BINOP', '-', lhs, rhs); }
+      else if (tt = 54)  -- || (concatenation)
+        { _pos := _pos + 1; rhs := DB.DBA.GQL_PARSE_MUL_EXPR (_tokens, _pos); lhs := vector ('STROP', '||', lhs, rhs); }
       else
         return lhs;
     }
@@ -679,6 +713,71 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
   -- CASE
   if (tt = 256)  -- CASE
     return DB.DBA.GQL_PARSE_CASE (_tokens, _pos);
+
+  -- ALL_DIFFERENT (var1, var2, ...)
+  if (tt = 449)  -- ALL_DIFFERENT
+    {
+      declare ad_args any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      ad_args := vector ();
+      while (1)
+        {
+          ad_args := vector_concat (ad_args, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+            _pos := _pos + 1;
+          else
+            goto ad_done;
+        }
+      ad_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('ALL_DIFFERENT', ad_args);
+    }
+
+  -- SAME (var1, var2, ...)
+  if (tt = 277)  -- SAME
+    {
+      declare sm_args any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      sm_args := vector ();
+      while (1)
+        {
+          sm_args := vector_concat (sm_args, vector (DB.DBA.GQL_PARSE_EXPR (_tokens, _pos)));
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+            _pos := _pos + 1;
+          else
+            goto sm_done;
+        }
+      sm_done:
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('SAME_PRED', sm_args);
+    }
+
+  -- PROPERTY_EXISTS (var, propertyName)
+  if (tt = 276)  -- PROPERTY_EXISTS
+    {
+      declare pe_var, pe_prop any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      pe_var := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+      pe_prop := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('PROP_EXISTS', pe_var, pe_prop);
+    }
+
+  -- ELEMENT_ID (var)
+  if (tt = 351)  -- ELEMENT_ID
+    {
+      declare ei_var any;
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      ei_var := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('FUNC', 'element_id', 0, vector (ei_var));
+    }
 
   -- EXISTS
   if (tt = 230)  -- EXISTS

@@ -311,6 +311,11 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_RETURN (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 328)  -- FINISH
+        {
+          _pos := _pos + 1;
+          clauses := vector_concat (clauses, vector (vector ('FINISH')));
+        }
       else if (tt = 206)  -- WHERE
         {
           clause := DB.DBA.GQL_PARSE_WHERE (_tokens, _pos);
@@ -396,13 +401,14 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_CALL (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
-      else if (tt = 218 or tt = 219 or tt = 220)  -- UNION/EXCEPT/INTERSECT
+      else if (tt = 218 or tt = 219 or tt = 220 or tt = 430)  -- UNION/EXCEPT/INTERSECT/OTHERWISE
         {
           declare setop_name varchar;
           declare left_query, right_query any;
           if (tt = 218) setop_name := 'UNION';
           else if (tt = 219) setop_name := 'EXCEPT';
-          else setop_name := 'INTERSECT';
+          else if (tt = 220) setop_name := 'INTERSECT';
+          else setop_name := 'OTHERWISE';
           _pos := _pos + 1;
           if (DB.DBA.GQL_PEEK (_tokens, _pos) = 221)  -- ALL
             { _pos := _pos + 1; setop_name := concat (setop_name, '_ALL'); }

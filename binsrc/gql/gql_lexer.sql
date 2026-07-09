@@ -753,7 +753,7 @@ create procedure DB.DBA.GQL_TOKENIZE (in _q varchar)
             { tokens := vector_concat (tokens, vector (vector (12, '-', vector (line, col)))); i := i + 1; col := col + 1; }
         }
 
-      -- '|' : PIPE_ARROW_L or PIPE
+      -- '|' : PIPE_ARROW_L, ||, or PIPE
       else if (ch = 124)
         {
           if (i + 2 < qlen and aref (_q, i + 1) = 45 and aref (_q, i + 2) = 62)  -- '|->'
@@ -763,6 +763,8 @@ create procedure DB.DBA.GQL_TOKENIZE (in _q varchar)
               else
                 { tokens := vector_concat (tokens, vector (vector (36, '|->', vector (line, col)))); i := i + 3; col := col + 3; }
             }
+          else if (i + 1 < qlen and aref (_q, i + 1) = 124)  -- '||'
+            { tokens := vector_concat (tokens, vector (vector (54, '||', vector (line, col)))); i := i + 2; col := col + 2; }
           else
             { tokens := vector_concat (tokens, vector (vector (25, '|', vector (line, col)))); i := i + 1; col := col + 1; }
         }
