@@ -1221,6 +1221,114 @@ create procedure DB.DBA.GQL_PARSE_COLON_TYPE_NAME (in _tokens any, inout _pos in
 }
 ;
 
+----------------------------------------------------------------------
+-- Label expression parser: handles & (AND), | (OR), ! (NOT), % (wildcard), ()
+-- Grammar: labelExpression : !labelExpression | labelExpression & labelExpression
+--          | labelExpression | labelExpression | % | (labelExpression)
+-- Precedence: ! (highest) > & > | (lowest)
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_LABEL_EXPR_PRIMARY (in _tokens any, inout _pos integer)
+{
+  declare tt integer;
+  tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+  if (tt = 22)  -- PERCENT (wildcard)
+    { _pos := _pos + 1; return vector ('LABEL_WILDCARD'); }
+  if (tt = 1)  -- LPAREN (sub-expression)
+    {
+      declare expr any;
+      _pos := _pos + 1;
+      expr := DB.DBA.GQL_PARSE_LABEL_EXPR_OR (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN (increments _pos)
+      return expr;
+    }
+  if (tt >= 64)  -- IDENT or keyword
+    {
+      declare label_name varchar;
+      label_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- COLON for prefixed name
+        {
+          _pos := _pos + 1;
+          label_name := concat (label_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      return label_name;
+    }
+  signal ('GQ004', sprintf ('Expected label name, %% or ( in label expression at position %d', _pos));
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LABEL_EXPR_UNARY (in _tokens any, inout _pos integer)
+{
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 24)  -- BANG (NOT)
+    {
+      _pos := _pos + 1;
+      return vector ('LABEL_NOT', DB.DBA.GQL_PARSE_LABEL_EXPR_UNARY (_tokens, _pos));
+    }
+  return DB.DBA.GQL_PARSE_LABEL_EXPR_PRIMARY (_tokens, _pos);
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LABEL_EXPR_AND (in _tokens any, inout _pos integer, in _first any)
+{
+  declare lhs any;
+  if (_first is not null and _first <> '')
+    lhs := _first;
+  else
+    lhs := DB.DBA.GQL_PARSE_LABEL_EXPR_UNARY (_tokens, _pos);
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 29)  -- AMPERSAND
+    {
+      declare rhs any;
+      _pos := _pos + 1;
+      rhs := DB.DBA.GQL_PARSE_LABEL_EXPR_UNARY (_tokens, _pos);
+      if (isvector (lhs) and aref (lhs, 0) = 'LABEL_AND')
+        lhs := vector ('LABEL_AND', vector_concat (aref (lhs, 1), vector (rhs)));
+      else
+        lhs := vector ('LABEL_AND', vector (lhs, rhs));
+    }
+  return lhs;
+}
+;
+
+create procedure DB.DBA.GQL_PARSE_LABEL_EXPR_OR (in _tokens any, inout _pos integer)
+{
+  declare lhs any;
+  lhs := DB.DBA.GQL_PARSE_LABEL_EXPR_AND (_tokens, _pos, null);
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 25 or DB.DBA.GQL_PEEK (_tokens, _pos) = 233)  -- PIPE or OR
+    {
+      declare rhs any;
+      _pos := _pos + 1;
+      rhs := DB.DBA.GQL_PARSE_LABEL_EXPR_AND (_tokens, _pos, null);
+      if (isvector (lhs) and aref (lhs, 0) = 'LABEL_OR')
+        lhs := vector ('LABEL_OR', vector_concat (aref (lhs, 1), vector (rhs)));
+      else
+        lhs := vector ('LABEL_OR', vector (lhs, rhs));
+    }
+  return lhs;
+}
+;
+
+-- Entry point: parse a full label expression.
+-- _first_label: optional pre-parsed first label (for PNAME_NS var:Label case)
+create procedure DB.DBA.GQL_PARSE_LABEL_EXPRESSION (in _tokens any, inout _pos integer, in _first_label any)
+{
+  declare lhs any;
+  lhs := DB.DBA.GQL_PARSE_LABEL_EXPR_AND (_tokens, _pos, _first_label);
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 25 or DB.DBA.GQL_PEEK (_tokens, _pos) = 233)  -- PIPE or OR
+    {
+      declare rhs any;
+      _pos := _pos + 1;
+      rhs := DB.DBA.GQL_PARSE_LABEL_EXPR_AND (_tokens, _pos, null);
+      if (isvector (lhs) and aref (lhs, 0) = 'LABEL_OR')
+        lhs := vector ('LABEL_OR', vector_concat (aref (lhs, 1), vector (rhs)));
+      else
+        lhs := vector ('LABEL_OR', vector (lhs, rhs));
+    }
+  return lhs;
+}
+;
+
 create procedure DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (in _tokens any, inout _pos integer, in _first_label any)
 {
   declare labels any;
@@ -1286,7 +1394,7 @@ create procedure DB.DBA.GQL_PARSE_NODE_PATTERN (in _tokens any, inout _pos integ
             }
           _pos := _pos + 1;
           labels := vector_concat (labels,
-            vector (DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (_tokens, _pos, label_name)));
+            vector (DB.DBA.GQL_PARSE_LABEL_EXPRESSION (_tokens, _pos, label_name)));
         }
       else
         {
@@ -1303,8 +1411,8 @@ create procedure DB.DBA.GQL_PARSE_NODE_PATTERN (in _tokens any, inout _pos integ
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
     }
 
-  -- Colon-introduced labels.  Single colon is the normal label syntax;
-  -- double colon is a base-relative label, e.g. BASE <...#> MATCH (t::Truck).
+  -- Colon-introduced labels.  Single colon supports full label expressions
+  -- (&, |, !, %, ()); double colon is a base-relative label, e.g. BASE <...#> MATCH (t::Truck).
   if (tt = 7 or tt = 30)  -- COLON or DOUBLECOLON
     {
       while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7 or DB.DBA.GQL_PEEK (_tokens, _pos) = 30)
@@ -1313,8 +1421,13 @@ create procedure DB.DBA.GQL_PARSE_NODE_PATTERN (in _tokens any, inout _pos integ
           declare parsed_label any;
           label_sep := DB.DBA.GQL_PEEK (_tokens, _pos);
           _pos := _pos + 1;
-          parsed_label := DB.DBA.GQL_PARSE_COLON_TYPE_NAME (_tokens, _pos, label_sep);
-          parsed_label := DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (_tokens, _pos, parsed_label);
+          if (label_sep = 30)  -- DOUBLECOLON: base-relative label (no expression)
+            {
+              parsed_label := DB.DBA.GQL_PARSE_COLON_TYPE_NAME (_tokens, _pos, label_sep);
+              parsed_label := DB.DBA.GQL_PARSE_LABEL_ALTERNATIVES (_tokens, _pos, parsed_label);
+            }
+          else
+            parsed_label := DB.DBA.GQL_PARSE_LABEL_EXPRESSION (_tokens, _pos, null);
           labels := vector_concat (labels, vector (parsed_label));
         }
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
@@ -1425,11 +1538,15 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
                   type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 1));
                   _pos := _pos + 1;
                 }
-              types := vector_concat (types, vector (type_name));
+              _pos := _pos + 1;
+              types := vector_concat (types,
+                vector (DB.DBA.GQL_PARSE_LABEL_EXPRESSION (_tokens, _pos, type_name)));
             }
           else
-            var_name := pname_val;
-          _pos := _pos + 1;
+            {
+              var_name := pname_val;
+              _pos := _pos + 1;
+            }
           tt := DB.DBA.GQL_PEEK (_tokens, _pos);
         }
       -- Variable name
@@ -1440,38 +1557,19 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
           tt := DB.DBA.GQL_PEEK (_tokens, _pos);
         }
 
-      -- Colon-introduced edge types
+      -- Colon-introduced edge types (supports full label expressions)
       if (tt = 7)  -- COLON
         {
-          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
+          _pos := _pos + 1;
+          declare edge_label_expr any;
+          edge_label_expr := DB.DBA.GQL_PARSE_LABEL_EXPRESSION (_tokens, _pos, null);
+          types := vector_concat (types, vector (edge_label_expr));
+          -- Additional colon-separated type expressions (conjunction)
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- COLON
             {
               _pos := _pos + 1;
-              type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
-              _pos := _pos + 1;
-              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
-                {
-                  _pos := _pos + 1;
-                  type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
-                  _pos := _pos + 1;
-                }
-              types := vector_concat (types, vector (type_name));
-            }
-          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
-          -- Pipe-separated additional types (e.g., :KNOWS|LOVES)
-          while (DB.DBA.GQL_PEEK (_tokens, _pos) = 25)  -- PIPE
-            {
-              _pos := _pos + 1;
-              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
-                _pos := _pos + 1;
-              type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
-              _pos := _pos + 1;
-              if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)
-                {
-                  _pos := _pos + 1;
-                  type_name := concat (type_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
-                  _pos := _pos + 1;
-                }
-              types := vector_concat (types, vector (type_name));
+              edge_label_expr := DB.DBA.GQL_PARSE_LABEL_EXPRESSION (_tokens, _pos, null);
+              types := vector_concat (types, vector (edge_label_expr));
             }
           tt := DB.DBA.GQL_PEEK (_tokens, _pos);
         }

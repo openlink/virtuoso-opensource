@@ -1365,6 +1365,215 @@ create procedure DB.DBA.GQL_EDGE_SPARQL_VAR (in _name varchar)
 }
 ;
 
+-----------------------------------------------------------------------
+-- Label expression emitter: recursively generates SPARQL for label
+-- expressions (LABEL_OR, LABEL_AND, LABEL_NOT, LABEL_WILDCARD, plain string)
+-----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_EMIT_LABEL_EXPR (in _label_expr any, in _node_var varchar, inout _ctx any)
+{
+  declare expr_type varchar;
+  if (isvector (_label_expr))
+    expr_type := aref (_label_expr, 0);
+  else
+    expr_type := '';
+
+  -- Plain label: emit rdf:type triple
+  if (expr_type = '')
+    {
+      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _node_var, 'rdf:type',
+        DB.DBA.GQL_GEN_LABEL_IRI_CTX (_label_expr, _ctx));
+    }
+  -- LABEL_OR: VALUES + rdf:type triple
+  else if (expr_type = 'LABEL_OR')
+    {
+      declare label_choices any;
+      declare label_var, values_s varchar;
+      declare lci integer;
+      label_choices := aref (_label_expr, 1);
+      label_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'label_');
+      values_s := concat ('  VALUES ', label_var, ' {');
+      for (lci := 0; lci < length (label_choices); lci := lci + 1)
+        values_s := concat (values_s, ' ',
+          DB.DBA.GQL_GEN_LABEL_IRI_CTX (aref (label_choices, lci), _ctx));
+      values_s := concat (values_s, ' }\n');
+      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _node_var, 'rdf:type', label_var);
+      DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx, values_s);
+    }
+  -- LABEL_AND: recursively emit each child
+  else if (expr_type = 'LABEL_AND')
+    {
+      declare and_children any;
+      declare ai integer;
+      and_children := aref (_label_expr, 1);
+      for (ai := 0; ai < length (and_children); ai := ai + 1)
+        DB.DBA.GQL_EMIT_LABEL_EXPR (aref (and_children, ai), _node_var, _ctx);
+    }
+  -- LABEL_NOT: FILTER NOT EXISTS
+  else if (expr_type = 'LABEL_NOT')
+    {
+      declare not_filter varchar;
+      declare not_child any;
+      not_child := aref (_label_expr, 1);
+      if (isvector (not_child) and aref (not_child, 0) = 'LABEL_WILDCARD')
+        {
+          -- !% means "no label at all"
+          declare any_type_var varchar;
+          any_type_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'any_type_');
+          not_filter := concat ('NOT EXISTS { ', _node_var, ' rdf:type ', any_type_var, ' }');
+        }
+      else if (isvector (not_child) and aref (not_child, 0) = 'LABEL_OR')
+        {
+          -- !(A|B) -> NOT EXISTS { { ?node rdf:type A } UNION { ?node rdf:type B } }
+          declare or_choices any;
+          declare oi integer;
+          or_choices := aref (not_child, 1);
+          not_filter := 'NOT EXISTS { ';
+          for (oi := 0; oi < length (or_choices); oi := oi + 1)
+            {
+              if (oi > 0) not_filter := concat (not_filter, ' UNION ');
+              not_filter := concat (not_filter, '{ ', _node_var, ' rdf:type ',
+                DB.DBA.GQL_GEN_LABEL_IRI_CTX (aref (or_choices, oi), _ctx), ' }');
+            }
+          not_filter := concat (not_filter, ' }');
+        }
+      else if (isvector (not_child) and aref (not_child, 0) = 'LABEL_AND')
+        {
+          -- !(A&B) -> NOT EXISTS { ?node rdf:type A . ?node rdf:type B }
+          declare and_children2 any;
+          declare ai2 integer;
+          and_children2 := aref (not_child, 1);
+          not_filter := 'NOT EXISTS { ';
+          for (ai2 := 0; ai2 < length (and_children2); ai2 := ai2 + 1)
+            {
+              not_filter := concat (not_filter, _node_var, ' rdf:type ',
+                DB.DBA.GQL_GEN_LABEL_IRI_CTX (aref (and_children2, ai2), _ctx), ' . ');
+            }
+          not_filter := concat (not_filter, '}');
+        }
+      else
+        {
+          -- !Label -> NOT EXISTS { ?node rdf:type :Label }
+          not_filter := concat ('NOT EXISTS { ', _node_var, ' rdf:type ',
+            DB.DBA.GQL_GEN_LABEL_IRI_CTX (not_child, _ctx), ' }');
+        }
+      DB.DBA.GQL_CTX_ADD_FILTER (_ctx, not_filter);
+    }
+  -- LABEL_WILDCARD: % means any node — emit a triple to ensure node exists
+  else if (expr_type = 'LABEL_WILDCARD')
+    {
+      declare any_pred, any_obj varchar;
+      any_pred := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'node_p_');
+      any_obj := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'node_o_');
+      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _node_var, any_pred, any_obj);
+    }
+}
+;
+
+-----------------------------------------------------------------------
+-- Edge label expression emitter: handles edge type label expressions.
+-- For plain strings and LABEL_OR, returns a vector of IRI strings.
+-- For LABEL_AND, LABEL_NOT, LABEL_WILDCARD, emits FILTER constraints
+-- and returns a vector with a fresh predicate variable.
+-- Returns: vector of (iri_or_var, is_complex) pairs.
+-----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (in _label_expr any, in _src varchar, in _dst varchar, inout _ctx any)
+{
+  declare expr_type varchar;
+  if (isvector (_label_expr))
+    expr_type := aref (_label_expr, 0);
+  else
+    expr_type := '';
+
+  -- Plain label: single edge type IRI
+  if (expr_type = '')
+    {
+      return vector (vector (DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (_label_expr, _ctx), 0));
+    }
+  -- LABEL_OR: use SPARQL property path alternative (iri1|iri2|...)
+  else if (expr_type = 'LABEL_OR')
+    {
+      declare or_choices any;
+      declare oi integer;
+      declare pp varchar;
+      or_choices := aref (_label_expr, 1);
+      pp := '';
+      for (oi := 0; oi < length (or_choices); oi := oi + 1)
+        {
+          declare child_result any;
+          declare child_iri varchar;
+          child_result := DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (aref (or_choices, oi), _src, _dst, _ctx);
+          -- Use the first IRI from each child (children should be plain labels)
+          child_iri := aref (aref (child_result, 0), 0);
+          if (oi > 0) pp := concat (pp, '|');
+          pp := concat (pp, child_iri);
+        }
+      return vector (vector (concat ('(', pp, ')'), 0));
+    }
+  -- LABEL_AND: emit first type as triple, rest as FILTER on the edge variable
+  else if (expr_type = 'LABEL_AND')
+    {
+      declare and_children any;
+      declare ai integer;
+      declare and_results any;
+      and_children := aref (_label_expr, 1);
+      and_results := vector ();
+      for (ai := 0; ai < length (and_children); ai := ai + 1)
+        {
+          declare child_result any;
+          child_result := DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (aref (and_children, ai), _src, _dst, _ctx);
+          and_results := vector_concat (and_results, child_result);
+        }
+      return and_results;
+    }
+  -- LABEL_NOT: emit triple with fresh var, add FILTER NOT EXISTS
+  else if (expr_type = 'LABEL_NOT')
+    {
+      declare not_child any;
+      declare pred_var varchar;
+      not_child := aref (_label_expr, 1);
+      pred_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_type_');
+      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _src, pred_var, _dst);
+      if (isvector (not_child) and aref (not_child, 0) = 'LABEL_WILDCARD')
+        {
+          -- !% on edge: no edge at all — contradiction, but emit anyway
+          DB.DBA.GQL_CTX_ADD_FILTER (_ctx, concat ('NOT EXISTS { ', _src, ' ?any_p ', _dst, ' }'));
+        }
+      else if (isvector (not_child) and aref (not_child, 0) = 'LABEL_OR')
+        {
+          declare or_choices any;
+          declare oi2 integer;
+          declare not_filter varchar;
+          or_choices := aref (not_child, 1);
+          not_filter := 'NOT EXISTS { ';
+          for (oi2 := 0; oi2 < length (or_choices); oi2 := oi2 + 1)
+            {
+              if (oi2 > 0) not_filter := concat (not_filter, ' UNION ');
+              not_filter := concat (not_filter, '{ ', _src, ' ',
+                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (or_choices, oi2), _ctx), ' ', _dst, ' }');
+            }
+          not_filter := concat (not_filter, ' }');
+          DB.DBA.GQL_CTX_ADD_FILTER (_ctx, not_filter);
+        }
+      else
+        {
+          DB.DBA.GQL_CTX_ADD_FILTER (_ctx, concat ('NOT EXISTS { ', _src, ' ',
+            DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (not_child, _ctx), ' ', _dst, ' }'));
+        }
+      return vector (vector (pred_var, 1));
+    }
+  -- LABEL_WILDCARD: any edge type
+  else if (expr_type = 'LABEL_WILDCARD')
+    {
+      declare any_edge_var varchar;
+      any_edge_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_type_');
+      return vector (vector (any_edge_var, 1));
+    }
+  return vector ();
+}
+;
+
 ----------------------------------------------------------------------
 -- IRI construction for labels, edge types, and properties
 ----------------------------------------------------------------------
@@ -2924,30 +3133,10 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
             nsv := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'anon_node_');
           DB.DBA.GQL_CTX_ADD_VAR (_ctx, nvar);
 
-          -- Emit labels as rdf:type triples
+          -- Emit labels via label expression emitter
           for (li := 0; li < length (nlabels); li := li + 1)
             {
-              declare label_item any;
-              label_item := aref (nlabels, li);
-              if (isarray (label_item) and aref (label_item, 0) = 'LABEL_OR')
-                {
-                  declare label_choices any;
-                  declare label_var, values_s varchar;
-                  declare lci integer;
-                  label_choices := aref (label_item, 1);
-                  label_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'label_');
-                  values_s := concat ('  VALUES ', label_var, ' {');
-                  for (lci := 0; lci < length (label_choices); lci := lci + 1)
-                    values_s := concat (values_s, ' ',
-                      DB.DBA.GQL_GEN_LABEL_IRI_CTX (aref (label_choices, lci), _ctx));
-                  values_s := concat (values_s, ' }\n');
-                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, nsv, 'rdf:type', label_var);
-                  DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx, values_s);
-                }
-              else
-                DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, nsv,
-                  'rdf:type',
-                  DB.DBA.GQL_GEN_LABEL_IRI_CTX (label_item, _ctx));
+              DB.DBA.GQL_EMIT_LABEL_EXPR (aref (nlabels, li), nsv, _ctx);
             }
 
           -- Emit properties
@@ -3030,59 +3219,69 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
           declare pp_suffix varchar;
           pp_suffix := DB.DBA.GQL_PROPERTY_PATH_SUFFIX (equant);
 
-	          -- Emit edge type triples (with property path suffix if quantified)
-	          for (eidx := 0; eidx < length (etypes); eidx := eidx + 1)
-		            {
-		              declare edge_iri varchar;
-		              declare transitive_options varchar;
-		              declare active_path_var varchar;
-		              declare cost_prop varchar;
-		              declare is_shortest_path integer;
-		              edge_iri := DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, eidx), _ctx);
-		              transitive_options := DB.DBA.GQL_CTX_GET (_ctx, 'transitive_options');
-		              active_path_var := DB.DBA.GQL_CTX_GET (_ctx, 'active_path_var');
-		              cost_prop := DB.DBA.GQL_EDGE_COST_PROP_NAME (ecost, evar);
-		              if (ecost is not null and cost_prop is null)
-		                signal ('G3010', 'WEIGHT/COST currently expects an edge property expression such as r.weight');
-		              is_shortest_path := 0;
-		              if (transitive_options is not null and strstr (transitive_options, 'T_SHORTEST_ONLY') is not null)
-		                is_shortest_path := 1;
-		              if (transitive_options is not null and transitive_options <> '' and (equant is not null or is_shortest_path))
-		                {
-		                  declare option_text varchar;
-		                  option_text := concat (transitive_options, ', T_IN (', esrc, '), T_OUT (', edst, ')');
-	                  if (active_path_var is not null and active_path_var <> '')
-	                    {
-	                      declare path_cost_var varchar;
-	                      path_cost_var := DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'cost');
-	                      option_text := concat (option_text,
-	                        ', T_STEP(''path_id'') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'id'),
-	                        ', T_STEP(''step_no'') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'index'),
-	                        ', T_STEP(', esrc, ') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'node'),
-	                        ', T_DIRECTION 1');
-	                      DB.DBA.GQL_CTX_MATERIALIZE_PATH_STEP (_ctx, active_path_var);
-	                      DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'value'),
-	                        concat ('CONCAT("path ", STR(', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'id'), '))'));
-	                      if (cost_prop is not null)
-	                        {
-	                          DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'step_value'),
-	                            concat ('CONCAT(STR(', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'index'), '), ": ", STR(',
-	                              DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'node'), '), " cost=", STR(', path_cost_var, '))'));
-	                          DB.DBA.GQL_CTX_ADD_TRANSITIVE_WEIGHTED_SUBQUERY_OPTION (_ctx, esrc, edge_iri, edst, cost_prop, path_cost_var, option_text);
-	                        }
-	                      else
-	                        DB.DBA.GQL_CTX_ADD_TRANSITIVE_SUBQUERY_OPTION (_ctx, esrc, edge_iri, edst, option_text);
-	                    }
-	                  else
-	                    DB.DBA.GQL_CTX_ADD_TRIPLE_OPTION (_ctx, esrc, edge_iri, edst, option_text);
-	                }
-	              else if (pp_suffix <> '')
-	                DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, concat (edge_iri, pp_suffix), edst);
-		              else
-		                {
-	                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, edge_iri, edst);
-	                  DB.DBA.GQL_CTX_ADD_EDGE_BINDING (_ctx, evar, esrc, edge_iri, edst);
-	                }
+          -- Expand edge type label expressions into a flat list of IRIs
+          declare all_edge_iris any;
+          all_edge_iris := vector ();
+          for (eidx := 0; eidx < length (etypes); eidx := eidx + 1)
+            {
+              declare edge_iris any;
+              edge_iris := DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (aref (etypes, eidx), esrc, edst, _ctx);
+              all_edge_iris := vector_concat (all_edge_iris, edge_iris);
+            }
+
+          -- Emit edge type triples (with property path suffix if quantified)
+          for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+            {
+              declare edge_iri varchar;
+              declare transitive_options varchar;
+              declare active_path_var varchar;
+              declare cost_prop varchar;
+              declare is_shortest_path integer;
+              edge_iri := aref (aref (all_edge_iris, eidx), 0);
+              transitive_options := DB.DBA.GQL_CTX_GET (_ctx, 'transitive_options');
+              active_path_var := DB.DBA.GQL_CTX_GET (_ctx, 'active_path_var');
+              cost_prop := DB.DBA.GQL_EDGE_COST_PROP_NAME (ecost, evar);
+              if (ecost is not null and cost_prop is null)
+                signal ('G3010', 'WEIGHT/COST currently expects an edge property expression such as r.weight');
+              is_shortest_path := 0;
+              if (transitive_options is not null and strstr (transitive_options, 'T_SHORTEST_ONLY') is not null)
+                is_shortest_path := 1;
+              if (transitive_options is not null and transitive_options <> '' and (equant is not null or is_shortest_path))
+                {
+                  declare option_text varchar;
+                  option_text := concat (transitive_options, ', T_IN (', esrc, '), T_OUT (', edst, ')');
+                  if (active_path_var is not null and active_path_var <> '')
+                    {
+                      declare path_cost_var varchar;
+                      path_cost_var := DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'cost');
+                      option_text := concat (option_text,
+                        ', T_STEP(''path_id'') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'id'),
+                        ', T_STEP(''step_no'') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'index'),
+                        ', T_STEP(', esrc, ') AS ', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'node'),
+                        ', T_DIRECTION 1');
+                      DB.DBA.GQL_CTX_MATERIALIZE_PATH_STEP (_ctx, active_path_var);
+                      DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'value'),
+                        concat ('CONCAT("path ", STR(', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'id'), '))'));
+                      if (cost_prop is not null)
+                        {
+                          DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'step_value'),
+                            concat ('CONCAT(STR(', DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'index'), '), ": ", STR(',
+                              DB.DBA.GQL_PATH_FIELD_VAR (active_path_var, 'node'), '), " cost=", STR(', path_cost_var, '))'));
+                          DB.DBA.GQL_CTX_ADD_TRANSITIVE_WEIGHTED_SUBQUERY_OPTION (_ctx, esrc, edge_iri, edst, cost_prop, path_cost_var, option_text);
+                        }
+                      else
+                        DB.DBA.GQL_CTX_ADD_TRANSITIVE_SUBQUERY_OPTION (_ctx, esrc, edge_iri, edst, option_text);
+                    }
+                  else
+                    DB.DBA.GQL_CTX_ADD_TRIPLE_OPTION (_ctx, esrc, edge_iri, edst, option_text);
+                }
+              else if (pp_suffix <> '')
+                DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, concat (edge_iri, pp_suffix), edst);
+              else
+                {
+                  DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esrc, edge_iri, edst);
+                  DB.DBA.GQL_CTX_ADD_EDGE_BINDING (_ctx, evar, esrc, edge_iri, edst);
+                }
             }
 
           -- If edge has properties, emit reification
@@ -3095,11 +3294,11 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
                 concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
                 esrc);
               -- Emit predicate for each type
-              for (eidx := 0; eidx < length (etypes); eidx := eidx + 1)
+              for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
                 {
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
                     concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'predicate>'),
-                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, eidx), _ctx));
+                    aref (aref (all_edge_iris, eidx), 0));
                 }
               DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
                 concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
