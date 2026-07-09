@@ -2512,7 +2512,7 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'stddev') return concat ('sql:STDDEV(', fargs, ')');
       if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', fargs, ')');
       if (fname = 'stddev_pop') return concat ('sql:STDDEV_POP(', fargs, ')');
-      -- Aggregate functions via PL procedures (no native equivalent)
+      -- Aggregate functions via gqlc C plugin BIFs
       if (fname = 'percentile_cont') return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
       if (fname = 'percentile_disc') return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
       if (fname = 'collect_list') return concat ('sql:VECTOR_AGG(', fargs, ')');
@@ -3408,6 +3408,8 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
                     path_mode_flags := concat (path_mode_flags, ', t_no_cycles');
                   else if (pm = 'SIMPLE')
                     path_mode_flags := concat (path_mode_flags, ', t_distinct');
+                  else if (pm = 'TRAIL')
+                    path_mode_flags := concat (path_mode_flags, ', t_trail');
                 }
             pme_next:;
             }

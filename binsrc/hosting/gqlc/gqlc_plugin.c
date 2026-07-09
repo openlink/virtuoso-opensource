@@ -325,6 +325,149 @@ bif_gqlc_is_normalized (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
 }
 
 /* ------------------------------------------------------------------ */
+/* BIF: GQL_PERCENTILE_CONT(vals, p)                                  */
+/*                                                                    */
+/* Continuous percentile: linear interpolation between closest ranks. */
+/* vals is a vector of numeric values, p is 0..1.                      */
+/* Returns NULL if vals is NULL or empty.                              */
+/* ------------------------------------------------------------------ */
+static int
+gqlc_dbl_cmp (const void *a, const void *b)
+{
+  double da = *(const double *)a;
+  double db = *(const double *)b;
+  if (da < db) return -1;
+  if (da > db) return 1;
+  return 0;
+}
+
+static caddr_t
+bif_gqlc_percentile_cont (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  caddr_t vals_arg;
+  double p;
+  int n, i;
+  double *sorted;
+  caddr_t result;
+
+  vals_arg = bif_array_or_null_arg (qst, args, 0, "GQL_PERCENTILE_CONT");
+  if (vals_arg == NULL)
+    return dk_alloc_box (0, DV_STRING);
+
+  p = bif_double_arg (qst, args, 1, "GQL_PERCENTILE_CONT");
+  if (p < 0.0 || p > 1.0)
+    sqlr_new_error ("22023", "GQ4D1",
+        "GQL_PERCENTILE_CONT: percentile must be between 0 and 1");
+
+  n = BOX_ELEMENTS (vals_arg);
+  if (n < 1)
+    return dk_alloc_box (0, DV_STRING);
+
+  sorted = (double *) dk_alloc (sizeof (double) * (size_t) n);
+  if (sorted == NULL)
+    sqlr_new_error ("HY000", "GQ4D2",
+        "GQL_PERCENTILE_CONT: memory allocation failed");
+
+  for (i = 0; i < n; i++)
+    {
+      caddr_t item = ((caddr_t *) vals_arg)[i];
+      if (DV_TYPE_OF (item) == DV_DOUBLE_FLOAT)
+        sorted[i] = *(double *) item;
+      else
+        sorted[i] = unbox (item);
+    }
+
+  qsort (sorted, (size_t) n, sizeof (double), gqlc_dbl_cmp);
+
+  if (n == 1)
+    {
+      result = box_double (sorted[0]);
+      dk_free (sorted, sizeof (double) * (size_t) n);
+      return result;
+    }
+
+  {
+    double rank, lo_d, hi_d;
+    int lo, hi;
+    double lo_val, hi_val;
+
+    rank = p * (double) (n - 1);
+    lo = (int) floor (rank);
+    hi = (int) ceil (rank);
+    lo_d = (double) lo;
+    hi_d = (double) hi;
+
+    if (lo == hi)
+      result = box_double (sorted[lo]);
+    else
+      {
+        lo_val = sorted[lo];
+        hi_val = sorted[hi];
+        result = box_double (lo_val + (hi_val - lo_val) * (rank - lo_d));
+      }
+  }
+
+  dk_free (sorted, sizeof (double) * (size_t) n);
+  return result;
+}
+
+/* ------------------------------------------------------------------ */
+/* BIF: GQL_PERCENTILE_DISC(vals, p)                                  */
+/*                                                                    */
+/* Discrete percentile: returns the value at the nearest rank.        */
+/* vals is a vector of numeric values, p is 0..1.                      */
+/* Returns NULL if vals is NULL or empty.                              */
+/* ------------------------------------------------------------------ */
+static caddr_t
+bif_gqlc_percentile_disc (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  caddr_t vals_arg;
+  double p;
+  int n, i;
+  double *sorted;
+  caddr_t result;
+
+  vals_arg = bif_array_or_null_arg (qst, args, 0, "GQL_PERCENTILE_DISC");
+  if (vals_arg == NULL)
+    return dk_alloc_box (0, DV_STRING);
+
+  p = bif_double_arg (qst, args, 1, "GQL_PERCENTILE_DISC");
+  if (p < 0.0 || p > 1.0)
+    sqlr_new_error ("22023", "GQ4D3",
+        "GQL_PERCENTILE_DISC: percentile must be between 0 and 1");
+
+  n = BOX_ELEMENTS (vals_arg);
+  if (n < 1)
+    return dk_alloc_box (0, DV_STRING);
+
+  sorted = (double *) dk_alloc (sizeof (double) * (size_t) n);
+  if (sorted == NULL)
+    sqlr_new_error ("HY000", "GQ4D4",
+        "GQL_PERCENTILE_DISC: memory allocation failed");
+
+  for (i = 0; i < n; i++)
+    {
+      caddr_t item = ((caddr_t *) vals_arg)[i];
+      if (DV_TYPE_OF (item) == DV_DOUBLE_FLOAT)
+        sorted[i] = *(double *) item;
+      else
+        sorted[i] = unbox (item);
+    }
+
+  qsort (sorted, (size_t) n, sizeof (double), gqlc_dbl_cmp);
+
+  {
+    int idx = (int) ceil (p * (double) n) - 1;
+    if (idx < 0) idx = 0;
+    if (idx >= n) idx = n - 1;
+    result = box_double (sorted[idx]);
+  }
+
+  dk_free (sorted, sizeof (double) * (size_t) n);
+  return result;
+}
+
+/* ------------------------------------------------------------------ */
 /* Plugin connect / disconnect                                        */
 /* ------------------------------------------------------------------ */
 static void
@@ -332,6 +475,8 @@ gqlc_plugin_connect (void *appdata)
 {
   bif_define ("GQL_NORMALIZE", bif_gqlc_normalize);
   bif_define ("GQL_IS_NORMALIZED", bif_gqlc_is_normalized);
+  bif_define ("GQL_PERCENTILE_CONT", bif_gqlc_percentile_cont);
+  bif_define ("GQL_PERCENTILE_DISC", bif_gqlc_percentile_disc);
 }
 
 static void
@@ -347,7 +492,7 @@ static unit_version_t gqlc_plugin_version = {
   PLAIN_PLUGIN_TYPE,			/*!< Title of unit, filled by unit */
   DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
   "OpenLink Software",			/*!< Plugin's developer, filled by unit */
-  "GQL Phase 4 C functions (Unicode normalization via ICU)", /*!< Additional info */
+  "GQL Phase 4 C functions (Unicode normalization via ICU, percentile aggregates)", /*!< Additional info */
   0,					/*!< Error message, filled by unit loader */
   0,					/*!< Name of file with unit's code, filled by unit loader */
   gqlc_plugin_connect,			/*!< Pointer to connection function, cannot be 0 */

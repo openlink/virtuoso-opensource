@@ -4698,6 +4698,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         case T_NO_CYCLES_L:
         case T_NO_ORDER_L:
         case T_SHORTEST_ONLY_L:
+        case T_TRAIL_L:
           needs_transitive++; continue;
         case T_DIRECTION_L: needs_transitive++;
           direction = (ptrlong)(val);

@@ -213,6 +213,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "T_NO_ORDER",		T_NO_ORDER_L		, 0
 "T_SHORTEST_ONLY",	T_SHORTEST_ONLY_L	, 0
 "T_STEP",		T_STEP_L		, 0
+"T_TRAIL",		T_TRAIL_L		, 0
 "UCASE",		SPARQL_BIF		, SPAR_BIF_UCASE
 "UNBOUND",		UNBOUND_L		, 0
 "UNDEF",		UNDEF_L			, 0

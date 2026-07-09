@@ -654,7 +654,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %token <box> TRANSACTION_L ISOLATION_L LEVEL_L READ_L COMMITTED_L UNCOMMITTED_L REPEATABLE_L SERIALIZABLE_L
 
  /* transitive subquery options */
-%token T_FINAL_AS T_MIN T_MAX T_IN T_OUT T_SHORTEST_ONLY T_DISTINCT T_EXISTS T_NO_ORDER T_NO_CYCLES T_CYCLES_ONLY T_END_FLAG T_DIRECTION
+%token T_FINAL_AS T_MIN T_MAX T_IN T_OUT T_SHORTEST_ONLY T_DISTINCT T_EXISTS T_NO_ORDER T_NO_CYCLES T_CYCLES_ONLY T_END_FLAG T_DIRECTION T_TRAIL
 
 
 
@@ -1889,6 +1889,7 @@ trans_opt
 	| T_EXISTS { global_trans->_.trans.exists = 1; }
 	| T_NO_CYCLES { global_trans->_.trans.no_cycles = 1; }
 	| T_CYCLES_ONLY { global_trans->_.trans.cycles_only = 1; }
+	| T_TRAIL { global_trans->_.trans.trail = 1; }
 	| T_NO_ORDER { global_trans->_.trans.no_order = 1; }
 	| T_SHORTEST_ONLY { global_trans->_.trans.shortest_only = 1; }
 	| T_IN colnum_commalist { global_trans->_.trans.in = (ptrlong*) $2; }

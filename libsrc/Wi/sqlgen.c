@@ -2181,6 +2181,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   tn->tn_is_second_in_direction3 = tl->tl_is_second_in_direction3;
   tn->tn_no_cycles = trans->_.trans.no_cycles;
   tn->tn_cycles_only = trans->_.trans.cycles_only;
+  tn->tn_trail = trans->_.trans.trail;
   tn->tn_exists = trans->_.trans.exists;
   tn->tn_ordered = !trans->_.trans.no_order;
   tn->tn_shortest_only = trans->_.trans.shortest_only;

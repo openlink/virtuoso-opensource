@@ -1637,7 +1637,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
-      -- Path mode: WALK (default), ACYCLIC (t_no_cycles), SIMPLE (t_distinct), TRAIL rejected
+      -- Path mode: WALK (default), ACYCLIC (t_no_cycles), SIMPLE (t_distinct), TRAIL (t_trail)
       if (tt = 272        -- WALK
           or tt = 440     -- TRAIL
           or tt = 360     -- SIMPLE
@@ -1646,7 +1646,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
           if (tt = 272)
             path_mode := 'WALK';
           else if (tt = 440)
-            signal ('G3004', 'Path mode TRAIL is not supported — SPARQL has no edge-distinctness primitive');
+            path_mode := 'TRAIL';
           else if (tt = 360)
             path_mode := 'SIMPLE';
           else

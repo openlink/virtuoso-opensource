@@ -1,7 +1,8 @@
 -- gqlc.sql — GQL Phase 4 C plugin setup
 --
 -- This script is for manual testing. The plugin registers BIFs
--- GQL_NORMALIZE and GQL_IS_NORMALIZED at load time via its connect callback.
+-- GQL_NORMALIZE, GQL_IS_NORMALIZED, GQL_PERCENTILE_CONT, and
+-- GQL_PERCENTILE_DISC at load time via its connect callback.
 -- No SQL-side setup is strictly required, but this script verifies
 -- the functions are available.
 
@@ -27,6 +28,22 @@ create procedure DB.DBA.GQLC_SELF_TEST ()
     result ('PASS', 'GQL_IS_NORMALIZED: plain ASCII is normalized', '', '');
   else
     result ('FAIL', sprintf ('GQL_IS_NORMALIZED: expected 1, got %d', is_norm), '', '');
+
+  -- Test GQL_PERCENTILE_CONT (continuous percentile with interpolation)
+  declare pctc_result double;
+  pctc_result := bif:GQL_PERCENTILE_CONT (vector (10, 20, 30, 40, 50), 0.5);
+  if (pctc_result = 30.0)
+    result ('PASS', sprintf ('GQL_PERCENTILE_CONT median = %f', pctc_result), '', '');
+  else
+    result ('FAIL', sprintf ('GQL_PERCENTILE_CONT: expected 30.0, got %f', pctc_result), '', '');
+
+  -- Test GQL_PERCENTILE_DISC (discrete percentile, nearest rank)
+  declare pctd_result double;
+  pctd_result := bif:GQL_PERCENTILE_DISC (vector (10, 20, 30, 40, 50), 0.5);
+  if (pctd_result = 30.0)
+    result ('PASS', sprintf ('GQL_PERCENTILE_DISC median = %f', pctd_result), '', '');
+  else
+    result ('FAIL', sprintf ('GQL_PERCENTILE_DISC: expected 30.0, got %f', pctd_result), '', '');
 
   result ('DONE', 'GQL Phase 4 C plugin self-test complete', '', '');
 }
