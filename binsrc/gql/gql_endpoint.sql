@@ -110,7 +110,7 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
       return;
     }
 
-  -- Execute SPARQL
+  -- Execute SPARQL and stream rows to the client
   state := '00000';
   msg := '';
   exec (sparql_str, state, msg, vector (), 0, meta, data);
@@ -118,6 +118,16 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
   if (state <> '00000')
     signal (state, msg);
 
-  return data;
+  if (meta is not null and length (meta) > 0)
+    {
+      declare j, nrows integer;
+      exec_result_names (meta[0]);
+      if (data is not null)
+        {
+          nrows := length (data);
+          for (j := 0; j < nrows; j := j + 1)
+            exec_result (aref (data, j));
+        }
+    }
 }
 ;
