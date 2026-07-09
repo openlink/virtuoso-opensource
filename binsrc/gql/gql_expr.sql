@@ -332,7 +332,11 @@ create procedure DB.DBA.GQL_TRY_IS_EXPR (in _tokens any, inout _pos integer, in 
   if (nxt = 474)  -- TYPED
     {
       declare type_name varchar;
+      declare type_tok integer;
       _pos := _pos + 1;
+      type_tok := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (type_tok < 64)  -- must be IDENT or keyword, not a structural token
+        signal ('GQ004', sprintf ('Expected type name after TYPED at position %d', _pos));
       type_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
       _pos := _pos + 1;
       return vector ('IS_TYPED', _expr, type_name, is_not);
@@ -754,7 +758,7 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
       return vector ('SAME_PRED', sm_args);
     }
 
-  -- PROPERTY_EXISTS (var, propertyName)
+  -- PROPERTY_EXISTS (var, .propertyName)
   if (tt = 276)  -- PROPERTY_EXISTS
     {
       declare pe_var, pe_prop any;
@@ -762,6 +766,8 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
       DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
       pe_var := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
       DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 8)  -- DOT
+        _pos := _pos + 1;
       pe_prop := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
       _pos := _pos + 1;
       DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN

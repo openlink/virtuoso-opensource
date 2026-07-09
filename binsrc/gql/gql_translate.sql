@@ -3686,6 +3686,19 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           return concat (ihdr, 'WHERE { { ', ibody, ' } FILTER EXISTS { ', irbody, ' } } ', itail);
         }
 
+      if (setop_name = 'OTHERWISE')
+        {
+          -- OTHERWISE → return left if non-empty, else right.
+          -- { left_body } UNION { right_body FILTER NOT EXISTS { left_body } }
+          declare ohdr, obody_l, obody_r, otail varchar;
+          ohdr := DB.DBA.GQL_EXTRACT_SELECT_HEADER (left_sparql);
+          obody_l := DB.DBA.GQL_EXTRACT_WHERE_BODY (left_sparql);
+          obody_r := DB.DBA.GQL_EXTRACT_WHERE_BODY (right_sparql);
+          otail := DB.DBA.GQL_EXTRACT_POST_WHERE (left_sparql);
+          return concat (ohdr, 'WHERE { { ', obody_l, ' } UNION { ', obody_r,
+                         ' FILTER NOT EXISTS { ', obody_l, ' } } } ', otail);
+        }
+
       signal ('G2004', sprintf ('Unsupported set operation: %s', setop_name));
     }
 
