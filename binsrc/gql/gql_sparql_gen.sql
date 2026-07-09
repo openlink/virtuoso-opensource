@@ -300,6 +300,42 @@ create procedure DB.DBA.GQL_EMIT_GRAPH_BLOCK (inout _ctx any, in _graph_uri varc
 ;
 
 ----------------------------------------------------------------------
+-- gql_gen_update_dataset: emit WITH / USING / USING NAMED for SPARQL-Update
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_GEN_UPDATE_DATASET (inout _ctx any)
+{
+  declare out_s varchar;
+  declare with_graph varchar;
+  declare using_list any;
+  declare i integer;
+
+  out_s := '';
+  with_graph := DB.DBA.GQL_CTX_GET (_ctx, 'with_graph');
+  if (with_graph is not null)
+    out_s := concat (out_s, 'WITH <', with_graph, '>\n');
+
+  using_list := DB.DBA.GQL_CTX_GET (_ctx, 'using_graphs');
+  if (using_list is not null and length (using_list) > 0)
+    {
+      for (i := 0; i < length (using_list); i := i + 1)
+        {
+          declare entry any;
+          declare kind, gval varchar;
+          entry := aref (using_list, i);
+          kind := aref (entry, 0);
+          gval := aref (entry, 1);
+          if (kind = 'USING_NAMED')
+            out_s := concat (out_s, 'USING NAMED <', gval, '>\n');
+          else
+            out_s := concat (out_s, 'USING <', gval, '>\n');
+        }
+    }
+  return out_s;
+}
+;
+
+----------------------------------------------------------------------
 -- Part 2: DML Generation
 -- INSERT with MATCH: INSERT { triples } WHERE { match block }
 ----------------------------------------------------------------------
@@ -494,6 +530,9 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
   sparql_text := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (_ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (_ctx));
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
   sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+
+  -- WITH / USING / USING NAMED for SPARQL-Update dataset specification
+  sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_UPDATE_DATASET (_ctx));
 
   -- Standalone INSERT (no MATCH): emit INSERT DATA { GRAPH <g> { ... } }
   if (length (_match_asts) = 0)
@@ -821,6 +860,9 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
 
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
   sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+
+  -- WITH / USING / USING NAMED for SPARQL-Update dataset specification
+  sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_UPDATE_DATASET (_ctx));
 
   -- DELETE section
   if (_delete_ast is not null)

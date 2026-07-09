@@ -87,6 +87,8 @@ create procedure DB.DBA.GQL_CTX_NEW (in _graph varchar)
     'has_where_filters', 0,
     'var_counter', 0,
     'extra_from_graphs', vector (),
+    'with_graph', null,
+    'using_graphs', vector (),
     'suppress_default_from', 0,
     'force_camelcase', 0,
     'var_map', vector (),
@@ -4052,6 +4054,18 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           extra_from := vector_concat (extra_from,
             vector (vector (aref (clause, 1), DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 2), ctx))));
           DB.DBA.GQL_CTX_SET (ctx, 'extra_from_graphs', extra_from);
+        }
+      else if (ctype = 'WITH')
+        {
+          DB.DBA.GQL_CTX_SET (ctx, 'with_graph', DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 1), ctx));
+        }
+      else if (ctype = 'USING_CLAUSE')
+        {
+          declare using_list any;
+          using_list := DB.DBA.GQL_CTX_GET (ctx, 'using_graphs');
+          using_list := vector_concat (using_list,
+            vector (vector (aref (clause, 1), DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 2), ctx))));
+          DB.DBA.GQL_CTX_SET (ctx, 'using_graphs', using_list);
         }
       else if (ctype = 'SERVICE')
         service_asts := vector_concat (service_asts, vector (clause));

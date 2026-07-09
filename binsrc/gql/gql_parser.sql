@@ -433,6 +433,24 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_FROM_CLAUSE (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 264)  -- WITH <graph> (SPARQL-Update dataset)
+        {
+          declare with_graph any;
+          _pos := _pos + 1;
+          with_graph := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (vector ('WITH', with_graph)));
+        }
+      else if (tt = 416)  -- USING / USING NAMED (SPARQL-Update dataset)
+        {
+          declare using_kind varchar;
+          declare using_graph any;
+          _pos := _pos + 1;
+          using_kind := 'USING';
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 426)  -- NAMED
+            { _pos := _pos + 1; using_kind := 'USING_NAMED'; }
+          using_graph := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (vector ('USING_CLAUSE', using_kind, using_graph)));
+        }
       else if (tt = 425)  -- SERVICE
         {
           clause := DB.DBA.GQL_PARSE_SERVICE (_tokens, _pos);

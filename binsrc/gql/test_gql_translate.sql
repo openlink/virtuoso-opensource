@@ -1588,6 +1588,30 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR127 FAIL: MODIFY translation')); }
 
+  -- TR128: WITH <graph> in DML
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('WITH <urn:test> MATCH (n) DELETE n');
+  if (_sparql is not null and strstr (_sparql, 'WITH <urn:test>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR128 PASS: WITH graph in DML')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR128 FAIL: WITH graph')); }
+
+  -- TR129: USING <graph> in DML
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USING <urn:src> MATCH (n) DELETE n');
+  if (_sparql is not null and strstr (_sparql, 'USING <urn:src>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR129 PASS: USING graph in DML')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR129 FAIL: USING graph')); }
+
+  -- TR130: USING NAMED <graph> in DML
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USING NAMED <urn:named> MATCH (n) DELETE n');
+  if (_sparql is not null and strstr (_sparql, 'USING NAMED <urn:named>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR130 PASS: USING NAMED graph in DML')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR130 FAIL: USING NAMED graph')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));
