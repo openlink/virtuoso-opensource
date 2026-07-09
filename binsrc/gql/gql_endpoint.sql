@@ -68,7 +68,12 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
     proc_body := aref (ast, 1);
   if (proc_body is not null and isarray (proc_body) and aref (proc_body, 0) = 'PROC'
       and aref (proc_body, 1) is not null)
-    _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
+    {
+      if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'ANY_GRAPH')
+        _default_graph := null;
+      else
+        _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
+    }
 
   -- Validate scope
   ast := DB.DBA.GQL_PLAN_VALIDATE_SCOPE (ast);
@@ -114,10 +119,8 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
   state := '00000';
   msg := '';
   exec (sparql_str, state, msg, vector (), 0, meta, data);
-
   if (state <> '00000')
     signal (state, msg);
-
   if (meta is not null and length (meta) > 0)
     {
       declare j, nrows integer;
