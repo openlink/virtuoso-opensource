@@ -171,6 +171,11 @@ create procedure DB.DBA.GQL_KEYWORD (in _w varchar)
   if (w = 'ASK') return 531;
   if (w = 'MINUS') return 532;
   if (w = 'MODIFY') return 533;
+  if (w = 'T_CYCLES_ONLY') return 534;
+  if (w = 'T_END_FLAG') return 535;
+  if (w = 'T_FINAL_AS') return 536;
+  if (w = 'T_NO_ORDER') return 537;
+  if (w = 'BIJECTION') return 538;
   -- ORDER FULL
   if (w = 'ASCENDING') return 288;
   if (w = 'DESCENDING') return 289;

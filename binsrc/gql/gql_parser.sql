@@ -433,6 +433,13 @@ create procedure DB.DBA.GQL_PARSE_COMPOSITE_QUERY (in _tokens any, inout _pos in
           clause := DB.DBA.GQL_PARSE_FROM_CLAUSE (_tokens, _pos);
           clauses := vector_concat (clauses, vector (clause));
         }
+      else if (tt = 231 and _pos + 1 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 286)  -- NOT FROM
+        {
+          _pos := _pos + 1;  -- consume NOT
+          clause := DB.DBA.GQL_PARSE_NOT_FROM_CLAUSE (_tokens, _pos);
+          clauses := vector_concat (clauses, vector (clause));
+        }
       else if (tt = 264)  -- WITH <graph> (SPARQL-Update dataset)
         {
           declare with_graph any;
@@ -1004,6 +1011,24 @@ create procedure DB.DBA.GQL_PARSE_FROM_CLAUSE (in _tokens any, inout _pos intege
   kind := 'FROM';
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 426)  -- NAMED
     { _pos := _pos + 1; kind := 'FROM_NAMED'; }
+  graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  return vector ('FROM_CLAUSE', kind, graph_expr);
+}
+;
+
+----------------------------------------------------------------------
+-- NOT FROM / NOT FROM NAMED — negative dataset restriction
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_NOT_FROM_CLAUSE (in _tokens any, inout _pos integer)
+{
+  declare graph_expr any;
+  declare kind varchar;
+
+  _pos := _pos + 1;  -- consume FROM (NOT already consumed)
+  kind := 'NOT_FROM';
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 426)  -- NAMED
+    { _pos := _pos + 1; kind := 'NOT_FROM_NAMED'; }
   graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
   return vector ('FROM_CLAUSE', kind, graph_expr);
 }
@@ -1738,6 +1763,26 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
           _pos := _pos + 1;
           tt := DB.DBA.GQL_PEEK (_tokens, _pos);
         }
+
+      -- Advanced transitive options: T_CYCLES_ONLY, T_END_FLAG, T_FINAL_AS,
+      -- T_NO_ORDER, BIJECTION — collected as comma-separated flags
+      declare trans_extra varchar;
+      trans_extra := '';
+      while (tt = 534 or tt = 535 or tt = 536 or tt = 537 or tt = 538)
+        {
+          if (tt = 534) trans_extra := concat (trans_extra, ', t_cycles_only');
+          else if (tt = 535) trans_extra := concat (trans_extra, ', t_end_flag');
+          else if (tt = 536) trans_extra := concat (trans_extra, ', t_final_as');
+          else if (tt = 537) trans_extra := concat (trans_extra, ', t_no_order');
+          else if (tt = 538) trans_extra := concat (trans_extra, ', bijection');
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+      -- Store in path_mode as suffix if any extra flags were collected
+      if (trans_extra <> '' and path_mode is null)
+        path_mode := concat ('WALK', trans_extra);
+      else if (trans_extra <> '')
+        path_mode := concat (path_mode, trans_extra);
 
       if (cost_expr is null)
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);

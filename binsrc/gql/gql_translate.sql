@@ -1870,6 +1870,10 @@ create procedure DB.DBA.GQL_GEN_FROM_CLAUSES (inout _ctx any)
           gval := aref (entry, 1);
           if (kind = 'FROM_NAMED')
             out_s := concat (out_s, 'FROM NAMED <', gval, '>\n');
+          else if (kind = 'NOT_FROM')
+            out_s := concat (out_s, 'NOT FROM <', gval, '>\n');
+          else if (kind = 'NOT_FROM_NAMED')
+            out_s := concat (out_s, 'NOT FROM NAMED <', gval, '>\n');
           else
             { out_s := concat (out_s, 'FROM <', gval, '>\n'); any_default := 1; }
         }
@@ -2510,6 +2514,15 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       -- Duration functions via PL procedures
       if (fname = 'duration') return concat ('bif:GQL_DURATION(', fargs, ')');
       if (fname = 'duration_between') return concat ('bif:GQL_DURATION_BETWEEN(', fargs, ')');
+      -- Geospatial functions via bif: pass-through
+      if (fname = 'st_intersects') return concat ('bif:st_intersects(', fargs, ')');
+      if (fname = 'st_contains') return concat ('bif:st_contains(', fargs, ')');
+      if (fname = 'st_within') return concat ('bif:st_within(', fargs, ')');
+      if (fname = 'st_may_intersect') return concat ('bif:st_may_intersect(', fargs, ')');
+      if (fname = 'st_distance') return concat ('bif:st_distance(', fargs, ')');
+      if (fname = 'st_area') return concat ('bif:st_area(', fargs, ')');
+      if (fname = 'st_x') return concat ('bif:st_x(', fargs, ')');
+      if (fname = 'st_y') return concat ('bif:st_y(', fargs, ')');
       -- Aggregate functions via native sql: user-defined aggregates
       if (fname = 'stddev') return concat ('sql:STDDEV(', fargs, ')');
       if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', fargs, ')');
@@ -3405,13 +3418,27 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
               if (peetype = 'EDGE' and length (pee) > 6 and aref (pee, 6) is not null)
                 {
                   declare pm varchar;
+                  declare pm_extra varchar;
+                  declare pm_comma integer;
                   pm := aref (pee, 6);
+                  -- Check for extended path_mode with appended transitive options
+                  pm_comma := strstr (pm, ', ');
+                  pm_extra := '';
+                  if (pm_comma is not null)
+                    {
+                      pm_extra := subseq (pm, pm_comma);
+                      pm := subseq (pm, 0, pm_comma);
+                    }
                   if (pm = 'ACYCLIC')
-                    path_mode_flags := concat (path_mode_flags, ', t_no_cycles');
+                    path_mode_flags := concat (path_mode_flags, ', t_no_cycles', pm_extra);
                   else if (pm = 'SIMPLE')
-                    path_mode_flags := concat (path_mode_flags, ', t_distinct');
+                    path_mode_flags := concat (path_mode_flags, ', t_distinct', pm_extra);
                   else if (pm = 'TRAIL')
-                    path_mode_flags := concat (path_mode_flags, ', t_trail');
+                    path_mode_flags := concat (path_mode_flags, ', t_trail', pm_extra);
+                  else if (pm = 'WALK')
+                    path_mode_flags := concat (path_mode_flags, pm_extra);
+                  else
+                    path_mode_flags := concat (path_mode_flags, pm_extra);
                 }
             pme_next:;
             }

@@ -1612,6 +1612,66 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR130 FAIL: USING NAMED graph')); }
 
+  --------------------------------------------------------------------
+  -- Phase 2 tests: §5B Virtuoso SPARQL extensions
+  --------------------------------------------------------------------
+
+  -- TR131: Geospatial st_intersects function mapping
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) WHERE st_intersects(n.geo, n.area) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'bif:st_intersects') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR131 PASS: st_intersects → bif:st_intersects')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR131 FAIL: st_intersects mapping')); }
+
+  -- TR132: Geospatial st_contains function mapping
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) WHERE st_contains(n.geo, n.area) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'bif:st_contains') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR132 PASS: st_contains → bif:st_contains')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR132 FAIL: st_contains mapping')); }
+
+  -- TR133: NOT FROM graph
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('NOT FROM <urn:excluded> MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'NOT FROM <urn:excluded>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR133 PASS: NOT FROM graph')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR133 FAIL: NOT FROM graph')); }
+
+  -- TR134: NOT FROM NAMED graph
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('NOT FROM NAMED <urn:excluded> MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'NOT FROM NAMED <urn:excluded>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR134 PASS: NOT FROM NAMED graph')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR134 FAIL: NOT FROM NAMED graph')); }
+
+  -- TR135: Advanced transitive option T_CYCLES_ONLY
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:KNOWS* T_CYCLES_ONLY]->(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 't_cycles_only') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR135 PASS: T_CYCLES_ONLY transitive option')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR135 FAIL: T_CYCLES_ONLY')); }
+
+  -- TR136: Advanced transitive option BIJECTION
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:KNOWS* BIJECTION]->(b) RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'bijection') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR136 PASS: BIJECTION transitive option')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR136 FAIL: BIJECTION')); }
+
+  -- TR137: DEFINE output:dict-format pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE output:dict-format "1" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE output:dict-format') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR137 PASS: DEFINE output:dict-format pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR137 FAIL: DEFINE output:dict-format')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));
