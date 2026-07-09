@@ -328,6 +328,17 @@ create procedure DB.DBA.GQL_TRY_IS_EXPR (in _tokens any, inout _pos integer, in 
   -- IS DIRECTED
   if (nxt = 344)  -- DIRECTED
     { _pos := _pos + 1; return vector ('IS_DIRECTED', _expr, is_not); }
+  -- IS [NFC|NFD|NFKC|NFKD] NORMALIZED
+  if (nxt = 359)  -- NORMALIZED
+    { _pos := _pos + 1; return vector ('IS_NORMALIZED', _expr, 'NFC', is_not); }
+  if (nxt = 354 or nxt = 355 or nxt = 356 or nxt = 357)  -- NFC/NFD/NFKC/NFKD
+    {
+      declare norm_form varchar;
+      norm_form := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 359);  -- NORMALIZED
+      return vector ('IS_NORMALIZED', _expr, norm_form, is_not);
+    }
   -- IS TYPED <type>
   if (nxt = 474)  -- TYPED
     {
@@ -362,7 +373,7 @@ create procedure DB.DBA.GQL_TRY_IS_EXPR (in _tokens any, inout _pos integer, in 
   -- IS <label> — parse as label name
   if (nxt = 64 or nxt = 69)  -- IDENT or PNAME_NS
     { declare lbl varchar; lbl := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('ISLABEL', _expr, lbl); }
-  signal ('GQ004', sprintf ('Expected NULL, NOT NULL, DIRECTED, TYPED, SOURCE OF, DESTINATION OF, or label after IS at position %d', _pos));
+  signal ('GQ004', sprintf ('Expected NULL, NOT NULL, DIRECTED, NORMALIZED, TYPED, SOURCE OF, DESTINATION OF, or label after IS at position %d', _pos));
 }
 ;
 
@@ -674,9 +685,10 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
     }
 
   -- String keyword functions: TRIM, BTRIM, LTRIM, RTRIM, SUBSTRING, UPPER, LOWER,
-  -- LEFT, RIGHT, CHAR_LENGTH, CHARACTER_LENGTH, BYTE_LENGTH, OCTET_LENGTH
+  -- LEFT, RIGHT, CHAR_LENGTH, CHARACTER_LENGTH, BYTE_LENGTH, OCTET_LENGTH, NORMALIZE
   if (tt = 361 or tt = 362 or tt = 363 or tt = 364 or tt = 365 or tt = 367 or tt = 368
-      or tt = 493 or tt = 494 or tt = 391 or tt = 392 or tt = 393 or tt = 394)
+      or tt = 493 or tt = 494 or tt = 391 or tt = 392 or tt = 393 or tt = 394
+      or tt = 358)  -- NORMALIZE
     {
       _pos := _pos + 1;
       return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);

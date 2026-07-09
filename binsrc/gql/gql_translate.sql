@@ -2473,6 +2473,8 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'character_length') return concat ('bif:length(', fargs, ')');
       if (fname = 'octet_length') return concat ('bif:length(', fargs, ')');
       if (fname = 'byte_length') return concat ('bif:length(', fargs, ')');
+      -- Unicode normalization via gqlc C plugin BIFs
+      if (fname = 'normalize') return concat ('bif:GQL_NORMALIZE(', fargs, ')');
       -- List/cardinality functions via bif: pass-through
       if (fname = 'cardinality') return concat ('bif:length(', fargs, ')');
       if (fname = 'size') return concat ('bif:length(', fargs, ')');
@@ -2593,6 +2595,19 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (aref (_expr, 2) = 1)
         return '(1 = 0)';
       return '(1 = 1)';
+    }
+
+  -- IS NORMALIZED / IS NOT NORMALIZED — via gqlc C plugin BIF
+  if (etype = 'IS_NORMALIZED')
+    {
+      declare in_lhs, in_form varchar;
+      in_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      in_form := aref (_expr, 2);
+      if (in_form is null or in_form = '')
+        in_form := 'NFC';
+      if (aref (_expr, 3) = 1)
+        return concat ('(!bif:GQL_IS_NORMALIZED(', in_lhs, ', ', DB.DBA.GQL_GEN_LITERAL (in_form), '))');
+      return concat ('(bif:GQL_IS_NORMALIZED(', in_lhs, ', ', DB.DBA.GQL_GEN_LITERAL (in_form), '))');
     }
 
   -- IS TYPED <type>
