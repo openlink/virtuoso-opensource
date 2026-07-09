@@ -689,7 +689,66 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT76 FAIL: INSERT')); }
 
   -- ===================================================================
-  -- Section 16: Sample file round-trips (embed key samples)
+  -- Section 16: New keywords (ASK, MINUS, MODIFY)
+  -- ===================================================================
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('ASK');
+  if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 531)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT80 PASS: ASK keyword')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT80 FAIL: ASK keyword')); }
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('MINUS');
+  if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 532)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT81 PASS: MINUS keyword')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT81 FAIL: MINUS keyword')); }
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('MODIFY');
+  if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 533)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT82 PASS: MODIFY keyword')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT82 FAIL: MODIFY keyword')); }
+
+  -- ===================================================================
+  -- Section 17: DEFINE namespaced key tokenization (§6.1 verification)
+  -- ===================================================================
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('DEFINE input:inference "urn:rules"');
+  if (length (_tokens) >= 4
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 284  -- DEFINE
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 1)) = 69   -- PNAME (input:inference)
+      and DB.DBA.GQL_TOK_VAL (aref (_tokens, 1)) = 'input:inference')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT83 PASS: DEFINE input:inference namespaced key')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT83 FAIL: DEFINE namespaced key')); }
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('DEFINE input:same-as "yes"');
+  if (length (_tokens) >= 4
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 284  -- DEFINE
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 1)) = 69   -- PNAME (input:same-as)
+      and DB.DBA.GQL_TOK_VAL (aref (_tokens, 1)) = 'input:same-as')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT84 PASS: DEFINE input:same-as namespaced key')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT84 FAIL: DEFINE input:same-as key')); }
+
+  _total := _total + 1;
+  _tokens := DB.DBA.GQL_TOKENIZE ('DEFINE output:format "json"');
+  if (length (_tokens) >= 4
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 284  -- DEFINE
+      and DB.DBA.GQL_TOK_TYPE (aref (_tokens, 1)) = 69   -- PNAME (output:format)
+      and DB.DBA.GQL_TOK_VAL (aref (_tokens, 1)) = 'output:format')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT85 PASS: DEFINE output:format namespaced key')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT85 FAIL: DEFINE output:format key')); }
+
+  -- ===================================================================
+  -- Section 18: Sample file round-trips (embed key samples)
   -- ===================================================================
 
   _total := _total + 1;

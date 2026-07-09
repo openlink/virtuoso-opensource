@@ -168,6 +168,9 @@ create procedure DB.DBA.GQL_KEYWORD (in _w varchar)
   if (w = 'INTO') return 287;
   if (w = 'FORCE') return 529;
   if (w = 'CAMELCASE') return 530;
+  if (w = 'ASK') return 531;
+  if (w = 'MINUS') return 532;
+  if (w = 'MODIFY') return 533;
   -- ORDER FULL
   if (w = 'ASCENDING') return 288;
   if (w = 'DESCENDING') return 289;

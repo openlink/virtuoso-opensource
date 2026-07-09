@@ -1458,6 +1458,61 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR113 FAIL: FORCE CAMELCASE should normalize edge names')); }
 
+  --------------------------------------------------------------------
+  -- Phase 0 tests: §6.1 DEFINE pass-through verification
+  --------------------------------------------------------------------
+
+  -- TR114: DEFINE input:inference pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:inference "urn:rules" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:inference') is not null
+      and strstr (_sparql, 'urn:rules') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR114 PASS: DEFINE input:inference pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR114 FAIL: DEFINE input:inference pass-through')); }
+
+  -- TR115: DEFINE input:same-as pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:same-as "yes" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:same-as') is not null
+      and strstr (_sparql, '"yes"') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR115 PASS: DEFINE input:same-as pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR115 FAIL: DEFINE input:same-as pass-through')); }
+
+  -- TR116: DEFINE input:storage pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:storage "default" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:storage') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR116 PASS: DEFINE input:storage pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR116 FAIL: DEFINE input:storage pass-through')); }
+
+  -- TR117: DEFINE output:format pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE output:format "json" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE output:format') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR117 PASS: DEFINE output:format pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR117 FAIL: DEFINE output:format pass-through')); }
+
+  -- TR118: DEFINE input:ifp pass-through
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:ifp "urn:ifp" MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, 'DEFINE input:ifp') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR118 PASS: DEFINE input:ifp pass-through')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR118 FAIL: DEFINE input:ifp pass-through')); }
+
+  -- TR119: Standalone INSERT → INSERT DATA (no WHERE generated)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('INSERT (:Person {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, 'INSERT DATA') is not null
+      and strstr (_sparql, 'WHERE') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR119 PASS: standalone INSERT → INSERT DATA without WHERE')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR119 FAIL: INSERT DATA should not have WHERE')); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));
