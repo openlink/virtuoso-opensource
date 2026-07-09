@@ -2499,6 +2499,19 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'atan') return concat ('bif:atan(', fargs, ')');
       if (fname = 'degrees') return concat ('bif:degrees(', fargs, ')');
       if (fname = 'radians') return concat ('bif:radians(', fargs, ')');
+      -- Hyperbolic functions via PL procedures
+      if (fname = 'sinh') return concat ('bif:GQL_SINH(', fargs, ')');
+      if (fname = 'cosh') return concat ('bif:GQL_COSH(', fargs, ')');
+      if (fname = 'tanh') return concat ('bif:GQL_TANH(', fargs, ')');
+      -- Duration functions via PL procedures
+      if (fname = 'duration') return concat ('bif:GQL_DURATION(', fargs, ')');
+      if (fname = 'duration_between') return concat ('bif:GQL_DURATION_BETWEEN(', fargs, ')');
+      -- Aggregate functions via PL procedures
+      if (fname = 'stddev_samp') return concat ('bif:GQL_STDDEV_SAMP(', fargs, ')');
+      if (fname = 'stddev_pop') return concat ('bif:GQL_STDDEV_POP(', fargs, ')');
+      if (fname = 'percentile_cont') return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
+      if (fname = 'percentile_disc') return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
+      if (fname = 'collect_list') return concat ('bif:GQL_COLLECT_LIST(', fargs, ')');
       -- Temporal functions (same name in SPARQL)
       if (fname = 'year') return concat ('YEAR(', fargs, ')');
       if (fname = 'month') return concat ('MONTH(', fargs, ')');
@@ -2551,6 +2564,16 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'element_id') return concat ('STR(', fargs, ')');
       -- Default pass-through for sql:, bif:, and unknown functions
       return concat (fname_orig, '(', fargs, ')');
+    }
+
+  -- CAST(expr AS type)
+  if (etype = 'CAST')
+    {
+      declare cast_val varchar;
+      declare cast_type varchar;
+      cast_val := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
+      cast_type := aref (_expr, 2);
+      return concat ('bif:GQL_CAST(', cast_val, ', ', DB.DBA.GQL_GEN_LITERAL (cast_type), ')');
     }
 
   -- IS NULL / IS NOT NULL

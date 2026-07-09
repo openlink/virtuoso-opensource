@@ -662,10 +662,11 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
     }
 
   -- Numeric keyword functions: SQRT, EXP, LOG, LN, POWER, MOD, SIN, COS, TAN, COT,
-  -- ASIN, ACOS, ATAN, DEGREES, RADIANS, CEILING, ABS, FLOOR, ROUND, LOG10
+  -- ASIN, ACOS, ATAN, SINH, COSH, TANH, DEGREES, RADIANS, CEILING, ABS, FLOOR, ROUND, LOG10
   if (tt = 369 or tt = 370 or tt = 371 or tt = 372 or tt = 373 or tt = 374
       or tt = 375 or tt = 376 or tt = 377 or tt = 378 or tt = 379 or tt = 380
-      or tt = 381 or tt = 382 or tt = 383 or tt = 387 or tt = 388 or tt = 389 or tt = 390
+      or tt = 381 or tt = 382 or tt = 383 or tt = 384 or tt = 385 or tt = 386
+      or tt = 387 or tt = 388 or tt = 389 or tt = 390
       or tt = 518)
     {
       _pos := _pos + 1;
@@ -690,6 +691,43 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
 
   -- Conditional functions: COALESCE, NULLIF, IFNULL, GREATEST, LEAST
   if (tt = 397 or tt = 398 or tt = 399 or tt = 400 or tt = 401)
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- CAST(expr AS type) — special syntax, not a regular function call
+  if (tt = 402)  -- CAST
+    {
+      declare cast_expr any;
+      declare cast_type varchar;
+      _pos := _pos + 1;  -- consume CAST
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+      cast_expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 241);  -- AS
+      -- Type name is an IDENT or keyword
+      cast_type := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      if (cast_type is null) cast_type := '';
+      _pos := _pos + 1;
+      -- Handle multi-word type names like DOUBLE PRECISION, CHARACTER VARYING
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 64)  -- IDENT (e.g. PRECISION, VARYING)
+        {
+          cast_type := concat (cast_type, ' ', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+      return vector ('CAST', cast_expr, upper (cast_type));
+    }
+
+  -- DURATION(string) — parse ISO 8601 duration
+  if (tt = 314)  -- DURATION
+    {
+      _pos := _pos + 1;
+      return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
+    }
+
+  -- DURATION_BETWEEN(a, b)
+  if (tt = 524)  -- DURATION_BETWEEN
     {
       _pos := _pos + 1;
       return DB.DBA.GQL_PARSE_FUNC_CALL (_tokens, _pos, val);
