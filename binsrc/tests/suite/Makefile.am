@@ -60,6 +60,7 @@ check_SCRIPTS = \
 	testall.sh \
 	testlib.sh \
 	tgraphql.sh \
+	tgql_rdf_equiv.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
@@ -155,6 +156,11 @@ EXTRA_DIST= \
 	$(srcdir)/tdav_meta_050512.zip \
 	$(srcdir)/tdav_meta_050528.zip \
 	$(srcdir)/tgql_intro.ql \
+	$(top_srcdir)/binsrc/gql/test_gql_rdf_api.sql \
+	$(top_srcdir)/binsrc/gql/test_gql_rdf_inference.sql \
+	$(top_srcdir)/binsrc/gql/test_gql_rdf_load.sql \
+	$(top_srcdir)/binsrc/gql/test_gql_rdf_acid.sql \
+	$(top_srcdir)/binsrc/gql/test_gql_rdf_runner.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \
 	$(srcdir)/treplh-dsn-odbc.cfg \
