@@ -621,21 +621,42 @@ if (typeof marked !== 'undefined') {
 function highlightCode(code) {
   // Escape HTML first
   let html = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // Comments (line)
-  html = html.replace(/(\/\/[^\n]*)/g, '<span class="tok-comment">$1</span>');
-  // Comments (block)
-  html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>');
-  // SQL comments (-- ...)
-  html = html.replace(/(^|\n)(--[^\n]*)/g, '$1<span class="tok-comment">$2</span>');
-  // Strings (single, double, backtick)
-  html = html.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, '<span class="tok-string">$1</span>');
-  // Numbers
-  html = html.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-number">$1</span>');
-  // Keywords (GQL/SPARQL/SQL)
-  const keywords = /\b(MATCH|WHERE|RETURN|ORDER|BY|GROUP|HAVING|LIMIT|OFFSET|UNION|EXCEPT|INTERSECT|ALL|DISTINCT|INSERT|DELETE|SET|REMOVE|MODIFY|DETACH|CREATE|DROP|SCHEMA|GRAPH|TYPE|OPTIONAL|OPTION|FROM|NAMED|NOT|SERVICE|CONSTRUCT|DESCRIBE|PREFIX|BASE|ASK|SELECT|CONSTRUCT|WHERE|FILTER|BIND|AS|AND|OR|NOT|IN|EXISTS|IS|NULL|NOT|TRUE|FALSE|PREFIX|BASE|LOAD|CLEAR|ADD|COPY|MOVE|CREATE|DROP|WITH|USING|DEFAULT|SEED|KEY|VALUE|LABEL|ELEMENT|NODE|EDGE|PATH|WALK|TRAIL|SIMPLE|ACYCLIC|SHORTEST|GROUPING|SETS|CUBE|ROLLUP|VERSION|DEFINE|LET|FOR|CALL|YIELD|CASE|WHEN|THEN|ELSE|END|IF|COALESCE|NULLS|FIRST|LAST|ASC|DESC|COUNT|SUM|AVG|MIN|MAX|COLLECT|BOOL|INT|FLOAT|STRING|DATE|TIME|TIMESTAMP|LIST|SET)\b/g;
-  html = html.replace(keywords, '<span class="tok-keyword">$1</span>');
-  // Functions (word followed by paren)
-  html = html.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(\s*\()/g, '<span class="tok-function">$1</span>$2');
+
+  // Use placeholder tokens to prevent double-processing
+  const tokens = [];
+  function tok(content, cls) {
+    const id = tokens.length;
+    tokens.push('<span class="' + cls + '">' + content + '</span>');
+    return '\x00' + id + '\x00';
+  }
+
+  // 1. Strings first (protect URLs and quoted values from comment/keyword matching)
+  html = html.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, m => tok(m, 'tok-string'));
+
+  // 2. Block comments (/* ... */)
+  html = html.replace(/(\/\*[\s\S]*?\*\/)/g, m => tok(m, 'tok-comment'));
+
+  // 3. Line comments (// but NOT :// which is a URL protocol)
+  html = html.replace(/(^|[^:])(\/\/[^\n]*)/g, (m, pre, c) => pre + tok(c, 'tok-comment'));
+
+  // 4. SQL line comments (-- ...)
+  html = html.replace(/(^|\n)(--[^\n]*)/g, (m, pre, c) => pre + tok(c, 'tok-comment'));
+
+  // 5. IRI/URI literals (<...>) — common in SPARQL/GQL PREFIX declarations
+  html = html.replace(/(&lt;[^&\s]+&gt;)/g, m => tok(m, 'tok-string'));
+
+  // 6. Numbers
+  html = html.replace(/\b(\d+\.?\d*)\b/g, m => tok(m, 'tok-number'));
+
+  // 7. Keywords (GQL/SPARQL/SQL)
+  const kw = /\b(MATCH|WHERE|RETURN|ORDER|BY|GROUP|HAVING|LIMIT|OFFSET|UNION|EXCEPT|INTERSECT|ALL|DISTINCT|INSERT|DELETE|SET|REMOVE|MODIFY|DETACH|CREATE|DROP|SCHEMA|GRAPH|TYPE|OPTIONAL|OPTION|FROM|NAMED|NOT|SERVICE|CONSTRUCT|DESCRIBE|PREFIX|BASE|ASK|SELECT|FILTER|BIND|AS|AND|OR|IN|EXISTS|IS|NULL|TRUE|FALSE|LOAD|CLEAR|ADD|COPY|MOVE|WITH|USING|DEFAULT|SEED|KEY|VALUE|LABEL|ELEMENT|NODE|EDGE|PATH|WALK|TRAIL|SIMPLE|ACYCLIC|SHORTEST|GROUPING|SETS|CUBE|ROLLUP|VERSION|DEFINE|LET|FOR|CALL|YIELD|CASE|WHEN|THEN|ELSE|END|IF|COALESCE|NULLS|FIRST|LAST|ASC|DESC|COUNT|SUM|AVG|MIN|MAX|COLLECT|BOOL|INT|FLOAT|STRING|DATE|TIME|TIMESTAMP|LIST)\b/g;
+  html = html.replace(kw, m => tok(m, 'tok-keyword'));
+
+  // 8. Functions (identifier followed by paren)
+  html = html.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(\s*\()/g, (m, name, paren) => tok(name, 'tok-function') + paren);
+
+  // Restore all tokens
+  html = html.replace(/\x00(\d+)\x00/g, (m, id) => tokens[parseInt(id)]);
   return html;
 }
 
