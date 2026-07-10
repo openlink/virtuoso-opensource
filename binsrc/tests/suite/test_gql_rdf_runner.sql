@@ -37,25 +37,25 @@ ECHO BOTH "=============================================\n";
 -- Suite 1: RDF API equivalence (mirrors trdfapi.sql)
 -- ============================================================
 ECHO BOTH "\n--- Suite 1: RDF API equivalence ---\n";
-LOAD binsrc/gql/test_gql_rdf_api.sql;
+LOAD binsrc/tests/suite/test_gql_rdf_api.sql;
 
 -- ============================================================
 -- Suite 2: RDF inference & reasoning (mirrors trdfinf.sql)
 -- ============================================================
 ECHO BOTH "\n--- Suite 2: RDF inference & reasoning ---\n";
-LOAD binsrc/gql/test_gql_rdf_inference.sql;
+LOAD binsrc/tests/suite/test_gql_rdf_inference.sql;
 
 -- ============================================================
 -- Suite 3: RDF loading (mirrors trdfld.sql)
 -- ============================================================
 ECHO BOTH "\n--- Suite 3: RDF loading ---\n";
-LOAD binsrc/gql/test_gql_rdf_load.sql;
+LOAD binsrc/tests/suite/test_gql_rdf_load.sql;
 
 -- ============================================================
 -- Suite 4: ACID transactions (mirrors tsparql_acid.sql)
 -- ============================================================
 ECHO BOTH "\n--- Suite 4: ACID transactions ---\n";
-LOAD binsrc/gql/test_gql_rdf_acid.sql;
+LOAD binsrc/tests/suite/test_gql_rdf_acid.sql;
 
 ECHO BOTH "\n=============================================\n";
 ECHO BOTH "COMPLETED: GQL RDF equivalence test runner\n";

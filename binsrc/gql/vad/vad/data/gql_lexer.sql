@@ -490,6 +490,7 @@ create procedure DB.DBA.GQL_KEYWORD (in _w varchar)
   if (w = 'CURRENT_SCHEMA') return 523;
   -- DURATION_BETWEEN
   if (w = 'DURATION_BETWEEN') return 524;
+  if (w = 'VERSION') return 544;
   return 0;
 }
 ;

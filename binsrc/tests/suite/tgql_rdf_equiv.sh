@@ -73,26 +73,19 @@ cp $VIRTUOSO_TEST/tst2.nq .
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-# Load GQL modules (must run from build root so relative paths in gql_load.sql resolve)
-LOG "Loading GQL modules"
-_save_dir=`pwd`
-_save_logfile="$LOGFILE"
-cd $VIRTUOSO_BUILD
-LOGFILE="$_save_dir/$_save_logfile"
-export LOGFILE
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/gql_load.sql
-cd $_save_dir
-LOGFILE="$_save_logfile"
-export LOGFILE
+# GQL modules are compiled into the binary (sql_code_sparql.c) and loaded on startup.
+# Verify they are available.
+LOG "Verifying GQL modules"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT 'EXEC=DB.DBA.GQL_VERSION()'
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: gql_load.sql: loading GQL modules"
+    LOG "***ABORTED: GQL modules not loaded"
     exit 3
 fi
 
 # Run the RDF API equivalence tests (mirrors trdfapi.sql)
 LOG "Running GQL RDF API equivalence tests"
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/test_gql_rdf_api.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_gql_rdf_api.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: test_gql_rdf_api.sql"
@@ -101,7 +94,7 @@ fi
 
 # Run the RDF inference equivalence tests (mirrors trdfinf.sql)
 LOG "Running GQL RDF inference equivalence tests"
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/test_gql_rdf_inference.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_gql_rdf_inference.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: test_gql_rdf_inference.sql"
@@ -110,7 +103,7 @@ fi
 
 # Run the RDF loading equivalence tests (mirrors trdfld.sql)
 LOG "Running GQL RDF loading equivalence tests"
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/test_gql_rdf_load.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_gql_rdf_load.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: test_gql_rdf_load.sql"
@@ -119,7 +112,7 @@ fi
 
 # Run the ACID transaction equivalence tests (mirrors tsparql_acid.sql)
 LOG "Running GQL ACID transaction equivalence tests"
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/test_gql_rdf_acid.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_gql_rdf_acid.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: test_gql_rdf_acid.sql"

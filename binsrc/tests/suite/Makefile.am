@@ -156,11 +156,11 @@ EXTRA_DIST= \
 	$(srcdir)/tdav_meta_050512.zip \
 	$(srcdir)/tdav_meta_050528.zip \
 	$(srcdir)/tgql_intro.ql \
-	$(top_srcdir)/binsrc/gql/test_gql_rdf_api.sql \
-	$(top_srcdir)/binsrc/gql/test_gql_rdf_inference.sql \
-	$(top_srcdir)/binsrc/gql/test_gql_rdf_load.sql \
-	$(top_srcdir)/binsrc/gql/test_gql_rdf_acid.sql \
-	$(top_srcdir)/binsrc/gql/test_gql_rdf_runner.sql \
+	$(srcdir)/test_gql_rdf_api.sql \
+	$(srcdir)/test_gql_rdf_inference.sql \
+	$(srcdir)/test_gql_rdf_load.sql \
+	$(srcdir)/test_gql_rdf_acid.sql \
+	$(srcdir)/test_gql_rdf_runner.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \
 	$(srcdir)/treplh-dsn-odbc.cfg \

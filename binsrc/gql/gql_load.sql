@@ -25,18 +25,18 @@
 --  Usage from isql: LOAD binsrc/gql/gql_load.sql;
 --
 
-LOAD binsrc/gql/gql_runtime.sql;
-LOAD binsrc/gql/gql_pl.sql;
-LOAD binsrc/gql/gql_lexer.sql;
-LOAD binsrc/gql/gql_expr.sql;
-LOAD binsrc/gql/gql_parser.sql;
-LOAD binsrc/gql/gql_plan.sql;
-LOAD binsrc/gql/gql_var_pass.sql;
-LOAD binsrc/gql/gql_translate.sql;
-LOAD binsrc/gql/gql_sparql_gen.sql;
-LOAD binsrc/gql/gql_main.sql;
-LOAD binsrc/gql/gql_endpoint.sql;
-LOAD binsrc/gql/gql_bootstrap.sql;
+LOAD libsrc/Wi/gql_runtime.sql;
+LOAD libsrc/Wi/gql_pl.sql;
+LOAD libsrc/Wi/gql_lexer.sql;
+LOAD libsrc/Wi/gql_expr.sql;
+LOAD libsrc/Wi/gql_parser.sql;
+LOAD libsrc/Wi/gql_plan.sql;
+LOAD libsrc/Wi/gql_var_pass.sql;
+LOAD libsrc/Wi/gql_translate.sql;
+LOAD libsrc/Wi/gql_sparql_gen.sql;
+LOAD libsrc/Wi/gql_main.sql;
+LOAD libsrc/Wi/gql_endpoint.sql;
+LOAD libsrc/Wi/gql_bootstrap.sql;
 
 -- Verify installation
 SELECT DB.DBA.GQL_VERSION();
