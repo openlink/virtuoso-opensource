@@ -643,7 +643,7 @@ function highlightCode(code) {
   function tok(content, cls) {
     const id = tokens.length;
     tokens.push('<span class="' + cls + '">' + content + '</span>');
-    return '\x00' + id + '\x00';
+    return '\u0001T' + id + 'T\u0001';
   }
 
   // 1. Strings first (protect URLs and quoted values from comment/keyword matching)
@@ -672,7 +672,7 @@ function highlightCode(code) {
   html = html.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(\s*\()/g, (m, name, paren) => tok(name, 'tok-function') + paren);
 
   // Restore all tokens
-  html = html.replace(/\x00(\d+)\x00/g, (m, id) => tokens[parseInt(id)]);
+  html = html.replace(/\u0001T(\d+)T\u0001/g, (m, id) => tokens[parseInt(id)]);
   return html;
 }
 
@@ -820,11 +820,6 @@ async function loadPage(href) {
     const html = renderMarkdown(md);
     content.innerHTML = html;
     buildTOC(html);
-    // Re-apply syntax highlighting after render
-    content.querySelectorAll('pre code').forEach(block => {
-      const code = block.textContent;
-      block.innerHTML = highlightCode(code);
-    });
     window.scrollTo({ top: 0, behavior: 'instant' });
     // If URL has a heading fragment, scroll to it after render
     const hash = window.location.hash;
