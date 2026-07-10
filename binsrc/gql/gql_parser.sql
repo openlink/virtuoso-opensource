@@ -214,12 +214,15 @@ create procedure DB.DBA.GQL_PARSE_PROCEDURE_BODY (in _tokens any, inout _pos int
   -- Binding definitions
   while (DB.DBA.GQL_PEEK (_tokens, _pos) = 285  -- PREFIX
          or DB.DBA.GQL_PEEK (_tokens, _pos) = 284  -- DEFINE
-         or DB.DBA.GQL_PEEK (_tokens, _pos) = 415)  -- BASE
+         or DB.DBA.GQL_PEEK (_tokens, _pos) = 415  -- BASE
+         or DB.DBA.GQL_PEEK (_tokens, _pos) = 544)  -- VERSION
     {
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 285)
         binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_PREFIX (_tokens, _pos)));
       else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 415)
         binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_BASE (_tokens, _pos)));
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 544)
+        binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_VERSION (_tokens, _pos)));
       else
         binding_defs := vector_concat (binding_defs, vector (DB.DBA.GQL_PARSE_DEFINE (_tokens, _pos)));
     }
@@ -1130,6 +1133,19 @@ create procedure DB.DBA.GQL_PARSE_DEFINE (in _tokens any, inout _pos integer)
 }
 ;
 
+create procedure DB.DBA.GQL_PARSE_VERSION (in _tokens any, inout _pos integer)
+{
+  declare version_str varchar;
+
+  _pos := _pos + 1;  -- consume VERSION
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 65 and DB.DBA.GQL_PEEK (_tokens, _pos) <> 72)
+    signal ('GQ003', sprintf ('Expected version string after VERSION at position %d', _pos));
+  version_str := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  _pos := _pos + 1;
+  return vector ('VERSION', version_str);
+}
+;
+
 create procedure DB.DBA.GQL_PARSE_FORCE_OPTION (in _tokens any, inout _pos integer)
 {
   _pos := _pos + 1;  -- consume FORCE
@@ -1758,6 +1774,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
   declare type_name varchar;
   declare path_mode varchar;
   declare colon_pos integer;
+  declare annot_mode integer;
 
   var_name := null;
   types := vector ();
@@ -1766,6 +1783,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
   cost_expr := null;
   path_mode := null;
   start_dir := 0;
+  annot_mode := 0;
 
   tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
@@ -1911,7 +1929,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
-      -- Brace: could be {min,max} quantifier or {props}
+      -- Brace: could be {min,max} quantifier, {props}, or {| props |} annotation
       if (tt = 5)  -- LBRACE
         {
           declare _qsave, _next integer;
@@ -1922,6 +1940,8 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
               and (DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 9     -- COMMA
                    or DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 6)))  -- RBRACE
             { _pos := _qsave; quantifier := DB.DBA.GQL_PARSE_QUANTIFIER (_tokens, _pos); }
+          else if (_next = 25)  -- PIPE → {| props |} RDF 1.2 annotation syntax
+            { _pos := _qsave; props := DB.DBA.GQL_PARSE_ANNOTATION_PROPERTIES (_tokens, _pos); annot_mode := 1; }
           else
             { _pos := _qsave; props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos); }
           tt := DB.DBA.GQL_PEEK (_tokens, _pos);
@@ -1929,20 +1949,25 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
 
       -- Properties (only if LBRACE wasn't consumed as quantifier or props above)
       if (tt = 5)  -- LBRACE
-        props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos);
+        {
+          if (DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 25)  -- PIPE → annotation
+            { props := DB.DBA.GQL_PARSE_ANNOTATION_PROPERTIES (_tokens, _pos); annot_mode := 1; }
+          else
+            props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos);
+        }
 
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
       if (cost_expr is null)
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
       if (tt = 44)  -- ]->
-        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr); }
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode); }
       if (tt = 45)  -- ]~>
-        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr); }
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode); }
 	      if (tt = 51)  -- ]-
-	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'BOTH', quantifier, props, path_mode, cost_expr); }
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'BOTH', quantifier, props, path_mode, cost_expr, annot_mode); }
 	      if (tt = 52)  -- ]~
-	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'UNDIRECTED', quantifier, props, path_mode, cost_expr); }
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'UNDIRECTED', quantifier, props, path_mode, cost_expr, annot_mode); }
 	      DB.DBA.GQL_EXPECT (_tokens, _pos, 4);  -- RBRACKET
 	    }
 
@@ -1992,7 +2017,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
         signal ('GQ003', 'Expected ~, -, or / after undirected edge bracket');
     }
 
-  return vector ('EDGE', var_name, types, direction, quantifier, props, path_mode, cost_expr);
+  return vector ('EDGE', var_name, types, direction, quantifier, props, path_mode, cost_expr, annot_mode);
 }
 ;
 
@@ -2114,6 +2139,50 @@ create procedure DB.DBA.GQL_PARSE_PROPERTIES (in _tokens any, inout _pos integer
         goto props_done;
     }
   props_done:
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+  return props;
+}
+;
+
+----------------------------------------------------------------------
+-- Annotation properties: {| key: value, key2: value2, ... |}
+-- RDF 1.2 annotation syntax for edge properties
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARSE_ANNOTATION_PROPERTIES (in _tokens any, inout _pos integer)
+{
+  declare props any;
+  declare key_name varchar;
+  declare val any;
+
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 5);  -- LBRACE
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 25);  -- PIPE
+  props := vector ();
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 25  -- PIPE (empty {| |})
+      and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 6)  -- RBRACE
+    { _pos := _pos + 2; return props; }
+
+  while (1)
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- default-prefixed property
+        {
+          _pos := _pos + 1;
+          key_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+        }
+      else
+        key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;  -- consume key
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON
+      val := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      props := vector_concat (props, vector (vector (key_name, val)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto annot_props_done;
+    }
+  annot_props_done:
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 25);  -- PIPE
   DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
   return props;
 }

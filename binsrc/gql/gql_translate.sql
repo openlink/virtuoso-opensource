@@ -91,7 +91,7 @@ create procedure DB.DBA.GQL_CTX_NEW (in _graph varchar)
     'using_graphs', vector (),
     'suppress_default_from', 0,
     'force_camelcase', 0,
-    'rdf_star_mode', 0,
+    'rdf12_mode', 0,
     'var_map', vector (),
     'in_optional_depth', 0,
     'in_set_op', 0,
@@ -1141,7 +1141,7 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_EDGE_VAR (inout _ctx any, in _edge_v
   bindings := DB.DBA.GQL_CTX_GET (_ctx, 'edge_bindings');
   esv := DB.DBA.GQL_EDGE_SPARQL_VAR (_edge_var);
 
-  if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode') = 1)
+  if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
     {
       declare tt_expr varchar;
       tt_expr := null;
@@ -1978,7 +1978,7 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
   DB.DBA.GQL_CTX_SET (svc_ctx, 'base_uri', DB.DBA.GQL_CTX_GET (_ctx, 'base_uri'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'defines', DB.DBA.GQL_CTX_GET (_ctx, 'defines'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'force_camelcase', DB.DBA.GQL_CTX_GET (_ctx, 'force_camelcase'));
-  DB.DBA.GQL_CTX_SET (svc_ctx, 'rdf_star_mode', DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'rdf12_mode', DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'var_counter', DB.DBA.GQL_CTX_GET (_ctx, 'var_counter'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'reif_graph', DB.DBA.GQL_CTX_GET (_ctx, 'reif_graph'));
 
@@ -2688,7 +2688,7 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'exists') return concat ('EXISTS { ', fargs, ' }');
       -- Element identity
       if (fname = 'element_id') return concat ('STR(', fargs, ')');
-      -- RDF-star / SPARQL 1.2 triple-term accessors (same name in SPARQL)
+      -- RDF 1.2 triple-term accessors (same name in SPARQL)
       if (fname = 'triple') return concat ('TRIPLE(', fargs, ')');
       if (fname = 'subject') return concat ('SUBJECT(', fargs, ')');
       if (fname = 'predicate') return concat ('PREDICATE(', fargs, ')');
@@ -3459,25 +3459,53 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
                 }
             }
 
-          -- If edge has properties, emit reification or RDF-star annotations
+          -- If edge has properties, emit reification or RDF 1.2 annotations
           if (length (eprops) > 0 and evar is not null)
             {
-              if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf_star_mode') = 1)
+              declare annot_mode integer;
+              annot_mode := 0;
+              if (length (elem) > 8)
+                annot_mode := aref (elem, 8);
+              if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
                 {
-                  -- RDF-star: emit <<(src pred dst)> prop val . for each edge type
-                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                  if (annot_mode = 1)
                     {
-                      declare tt_subject varchar;
-                      tt_subject := concat ('<<(', esrc, ' ',
-                        aref (aref (all_edge_iris, eidx), 0), ' ', edst, ')>>');
-                      for (epi := 0; epi < length (eprops); epi := epi + 1)
+                      -- RDF 1.2 annotation syntax: emit `s p o {| prop val . |} .` for each edge type
+                      for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
                         {
-                          declare epkey any;
-                          declare epval_str varchar;
-                          epkey := aref (aref (eprops, epi), 0);
-                          epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
-                          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, tt_subject,
-                            DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                          declare annot_body varchar;
+                          annot_body := '';
+                          for (epi := 0; epi < length (eprops); epi := epi + 1)
+                            {
+                              declare epkey any;
+                              declare epval_str varchar;
+                              epkey := aref (aref (eprops, epi), 0);
+                              epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                              annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), ' ', epval_str, ' . ');
+                            }
+                          DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx,
+                            concat ('  ', esrc, ' ',
+                              aref (aref (all_edge_iris, eidx), 0), ' ', edst,
+                              ' {| ', annot_body, '|} .\n'));
+                        }
+                    }
+                  else
+                    {
+                      -- RDF 1.2 triple-term: emit <<(src pred dst)>> prop val . for each edge type
+                      for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                        {
+                          declare tt_subject varchar;
+                          tt_subject := concat ('<<(', esrc, ' ',
+                            aref (aref (all_edge_iris, eidx), 0), ' ', edst, ')>>');
+                          for (epi := 0; epi < length (eprops); epi := epi + 1)
+                            {
+                              declare epkey any;
+                              declare epval_str varchar;
+                              epkey := aref (aref (eprops, epi), 0);
+                              epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, tt_subject,
+                                DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                            }
                         }
                     }
                 }
@@ -4032,6 +4060,14 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
                         DB.DBA.GQL_CTX_ADD_PREFIX (graph_ctx, aref (aref (binding_defs, bi), 1), aref (aref (binding_defs, bi), 2));
                       else if (isarray (aref (binding_defs, bi)) and aref (aref (binding_defs, bi), 0) = 'BASE')
                         DB.DBA.GQL_CTX_SET (graph_ctx, 'base_uri', aref (aref (binding_defs, bi), 1));
+                      else if (isarray (aref (binding_defs, bi)) and aref (aref (binding_defs, bi), 0) = 'VERSION')
+                        {
+                          declare _ver_str varchar;
+                          _ver_str := lower (cast (aref (aref (binding_defs, bi), 1) as varchar));
+                          if (_ver_str like 'rdf 1.2%' or _ver_str like '1.2%'
+                              or _ver_str like 'rdf12%' or _ver_str like '"rdf 1.2"%')
+                            DB.DBA.GQL_CTX_SET (graph_ctx, 'rdf12_mode', 1);
+                        }
                     }
                   _graph := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (at_schema, graph_ctx);
                 }
@@ -4153,6 +4189,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   where_asts := vector ();
   minus_asts := vector ();
   service_asts := vector ();
+  pattern_asts := vector ();
   for_asts := vector ();
   let_asts := vector ();
   group_ast := null;
@@ -4178,6 +4215,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       if (ctype = 'MATCH')
         {
           match_asts := vector_concat (match_asts, vector (clause));
+          pattern_asts := vector_concat (pattern_asts, vector (clause));
           if (length (clause) > 4 and aref (clause, 4) = 1)
             DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1);
         }
@@ -4237,7 +4275,10 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           DB.DBA.GQL_CTX_SET (ctx, 'using_graphs', using_list);
         }
       else if (ctype = 'SERVICE')
-        service_asts := vector_concat (service_asts, vector (clause));
+        {
+          service_asts := vector_concat (service_asts, vector (clause));
+          pattern_asts := vector_concat (pattern_asts, vector (clause));
+        }
       else if (ctype = 'PREFIX')
         { DB.DBA.GQL_CTX_ADD_PREFIX (ctx, aref (clause, 1), aref (clause, 2)); }
       else if (ctype = 'BASE')
@@ -4245,8 +4286,17 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       else if (ctype = 'DEFINE')
         {
           DB.DBA.GQL_CTX_ADD_DEFINE (ctx, aref (clause, 1), aref (clause, 2));
-          if (lower (cast (aref (clause, 1) as varchar)) = 'input:rdf-star')
-            DB.DBA.GQL_CTX_SET (ctx, 'rdf_star_mode', 1);
+          if (lower (cast (aref (clause, 1) as varchar)) = 'input:rdf-star'
+              or lower (cast (aref (clause, 1) as varchar)) = 'input:rdf12')
+            DB.DBA.GQL_CTX_SET (ctx, 'rdf12_mode', 1);
+        }
+      else if (ctype = 'VERSION')
+        {
+          declare ver_str varchar;
+          ver_str := lower (cast (aref (clause, 1) as varchar));
+          if (ver_str like 'rdf 1.2%' or ver_str like '1.2%'
+              or ver_str like 'rdf12%' or ver_str like '"rdf 1.2"%')
+            DB.DBA.GQL_CTX_SET (ctx, 'rdf12_mode', 1);
         }
       else if (ctype = 'FORCE_CAMELCASE')
         { DB.DBA.GQL_CTX_SET (ctx, 'force_camelcase', 1); }
@@ -4352,20 +4402,22 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         DB.DBA.GQL_PREBIND_ENDPOINT_FILTERS (aref (aref (where_asts, i), 1), ctx);
     }
 
-  -- Emit MATCH clauses → triple patterns
-  for (i := 0; i < length (match_asts); i := i + 1)
+  -- Emit MATCH and SERVICE clauses in source order → triple patterns / SERVICE blocks
+  for (i := 0; i < length (pattern_asts); i := i + 1)
     {
-      declare m_ast any;
-      m_ast := aref (match_asts, i);
-      if (length (m_ast) > 4 and aref (m_ast, 4) = 1)
-        DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1);
-      DB.DBA.GQL_GEN_MATCH (m_ast, ctx);
+      declare p_ast any;
+      declare p_type varchar;
+      p_ast := aref (pattern_asts, i);
+      p_type := aref (p_ast, 0);
+      if (p_type = 'MATCH')
+        {
+          if (length (p_ast) > 4 and aref (p_ast, 4) = 1)
+            DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1);
+          DB.DBA.GQL_GEN_MATCH (p_ast, ctx);
+        }
+      else if (p_type = 'SERVICE')
+        DB.DBA.GQL_GEN_SERVICE (p_ast, ctx);
     }
-
-  -- Emit SERVICE clauses → SERVICE blocks (after MATCH so local triples
-  -- precede the federated block in the WHERE pattern).
-  for (i := 0; i < length (service_asts); i := i + 1)
-    DB.DBA.GQL_GEN_SERVICE (aref (service_asts, i), ctx);
 
   -- Emit FOR/UNNEST list bindings as SPARQL VALUES.
   for (i := 0; i < length (for_asts); i := i + 1)

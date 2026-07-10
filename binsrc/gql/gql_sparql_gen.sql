@@ -452,10 +452,14 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                   declare evar, etypes, edir, eprops any;
                   declare etidx integer;
                   declare esrc_var, edst_var varchar;
+                  declare annot_mode integer;
                   evar := aref (elem, 1);
                   etypes := aref (elem, 2);
                   edir := aref (elem, 3);
                   eprops := aref (elem, 5);
+                  annot_mode := 0;
+                  if (length (elem) > 8)
+                    annot_mode := aref (elem, 8);
 
                   -- Find source and destination from adjacent NODEs
                   esrc_var := null; edst_var := null;
@@ -487,29 +491,72 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                         edst_var, ' .\n');
                     }
 
-                  -- Reification for edge properties
+                  -- Edge properties: RDF 1.2 or classic reification
                   if (length (eprops) > 0)
                     {
-                      declare esv varchar;
-                      esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI (), '>');
-                      if (evar is not null)
-                        DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
-
-                      insert_body := concat (insert_body, '  ', esv, ' a rdf:Statement .\n');
-                      insert_body := concat (insert_body, '  ', esv, ' rdf:subject ', esrc_var, ' .\n');
-                      for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                      if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
                         {
-                          insert_body := concat (insert_body, '  ', esv, ' rdf:predicate ',
-                            DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' .\n');
+                          if (evar is not null)
+                            DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
+                          if (annot_mode = 1)
+                            {
+                              -- RDF 1.2 annotation syntax: {| prop val . |}
+                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                                {
+                                  declare annot_body varchar;
+                                  annot_body := '';
+                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                    {
+                                      annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
+                                    }
+                                  insert_body := concat (insert_body, '  ', esrc_var, ' ',
+                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                    edst_var, ' {| ', annot_body, '|} .\n');
+                                }
+                            }
+                          else
+                            {
+                              -- RDF 1.2 triple-term: <<(src pred dst)>> prop val .
+                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                                {
+                                  declare tt_subject varchar;
+                                  tt_subject := concat ('<<(', esrc_var, ' ',
+                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                    edst_var, ')>>');
+                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                    {
+                                      insert_body := concat (insert_body, '  ', tt_subject, ' ',
+                                        DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                                    }
+                                }
+                            }
                         }
-                      insert_body := concat (insert_body, '  ', esv, ' rdf:object ', edst_var, ' .\n');
-
-                      declare epi integer;
-                      for (epi := 0; epi < length (eprops); epi := epi + 1)
+                      else
                         {
-                          insert_body := concat (insert_body, '  ', esv, ' ',
-                            DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                            DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                          -- Classic reification
+                          declare esv varchar;
+                          esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI (), '>');
+                          if (evar is not null)
+                            DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
+
+                          insert_body := concat (insert_body, '  ', esv, ' a rdf:Statement .\n');
+                          insert_body := concat (insert_body, '  ', esv, ' rdf:subject ', esrc_var, ' .\n');
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                            {
+                              insert_body := concat (insert_body, '  ', esv, ' rdf:predicate ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' .\n');
+                            }
+                          insert_body := concat (insert_body, '  ', esv, ' rdf:object ', edst_var, ' .\n');
+
+                          declare epi integer;
+                          for (epi := 0; epi < length (eprops); epi := epi + 1)
+                            {
+                              insert_body := concat (insert_body, '  ', esv, ' ',
+                                DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                            }
                         }
                     }
                 }
@@ -659,10 +706,14 @@ create procedure DB.DBA.GQL_GEN_CONSTRUCT_TEMPLATE (in _construct_asts any, inou
                   declare evar, etypes, edir, eprops any;
                   declare etidx integer;
                   declare esrc_var, edst_var varchar;
+                  declare annot_mode integer;
                   evar := aref (elem, 1);
                   etypes := aref (elem, 2);
                   edir := aref (elem, 3);
                   eprops := aref (elem, 5);
+                  annot_mode := 0;
+                  if (length (elem) > 8)
+                    annot_mode := aref (elem, 8);
 
                   esrc_var := null; edst_var := null;
                   if (ei > 0)
@@ -694,24 +745,65 @@ create procedure DB.DBA.GQL_GEN_CONSTRUCT_TEMPLATE (in _construct_asts any, inou
 
                   if (length (eprops) > 0)
                     {
-                      declare esv varchar;
-                      declare epi integer;
-                      if (evar is not null)
-                        esv := DB.DBA.GQL_EDGE_SPARQL_VAR (evar);
+                      if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                        {
+                          if (annot_mode = 1)
+                            {
+                              -- RDF 1.2 annotation syntax: {| prop val . |}
+                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                                {
+                                  declare annot_body varchar;
+                                  annot_body := '';
+                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                    {
+                                      annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
+                                    }
+                                  construct_body := concat (construct_body, '  ', esrc_var, ' ',
+                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                    edst_var, ' {| ', annot_body, '|} .\n');
+                                }
+                            }
+                          else
+                            {
+                              -- RDF 1.2 triple-term: <<(src pred dst)>> prop val .
+                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                                {
+                                  declare tt_subject varchar;
+                                  tt_subject := concat ('<<(', esrc_var, ' ',
+                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                    edst_var, ')>>');
+                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                    {
+                                      construct_body := concat (construct_body, '  ', tt_subject, ' ',
+                                        DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                                    }
+                                }
+                            }
+                        }
                       else
-                        esv := concat ('_:gql_ce_', cast (pi as varchar), '_', cast (ei as varchar));
+                        {
+                          -- Classic reification
+                          declare esv varchar;
+                          declare epi integer;
+                          if (evar is not null)
+                            esv := DB.DBA.GQL_EDGE_SPARQL_VAR (evar);
+                          else
+                            esv := concat ('_:gql_ce_', cast (pi as varchar), '_', cast (ei as varchar));
 
-                      construct_body := concat (construct_body, '  ', esv, ' a rdf:Statement .\n');
-                      construct_body := concat (construct_body, '  ', esv, ' rdf:subject ', esrc_var, ' .\n');
-                      for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
-                        construct_body := concat (construct_body, '  ', esv, ' rdf:predicate ',
-                          DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' .\n');
-                      construct_body := concat (construct_body, '  ', esv, ' rdf:object ', edst_var, ' .\n');
+                          construct_body := concat (construct_body, '  ', esv, ' a rdf:Statement .\n');
+                          construct_body := concat (construct_body, '  ', esv, ' rdf:subject ', esrc_var, ' .\n');
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                            construct_body := concat (construct_body, '  ', esv, ' rdf:predicate ',
+                              DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' .\n');
+                          construct_body := concat (construct_body, '  ', esv, ' rdf:object ', edst_var, ' .\n');
 
-                      for (epi := 0; epi < length (eprops); epi := epi + 1)
-                        construct_body := concat (construct_body, '  ', esv, ' ',
-                          DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                          DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                          for (epi := 0; epi < length (eprops); epi := epi + 1)
+                            construct_body := concat (construct_body, '  ', esv, ' ',
+                              DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                              DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                        }
                     }
                 }
             construct_elem_next:;

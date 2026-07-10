@@ -1716,7 +1716,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR142 FAIL: ROLLUP: ', cast (_sparql as varchar)))); }
 
-  -- TR143: RDF-star TRIPLE() accessor function
+  -- TR143: RDF 1.2 TRIPLE() accessor function
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) RETURN TRIPLE(a, e, b) AS t');
   if (_sparql is not null and strstr (_sparql, 'TRIPLE(') is not null)
@@ -1724,7 +1724,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR143 FAIL: TRIPLE(): ', cast (_sparql as varchar)))); }
 
-  -- TR144: RDF-star SUBJECT() accessor function
+  -- TR144: RDF 1.2 SUBJECT() accessor function
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) RETURN SUBJECT(e) AS s');
   if (_sparql is not null and strstr (_sparql, 'SUBJECT(') is not null)
@@ -1732,7 +1732,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR144 FAIL: SUBJECT(): ', cast (_sparql as varchar)))); }
 
-  -- TR145: RDF-star isTRIPLE() function
+  -- TR145: RDF 1.2 isTRIPLE() function
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[e]->(b) WHERE isTRIPLE(e) RETURN e');
   if (_sparql is not null and strstr (_sparql, 'isTRIPLE(') is not null)
@@ -1740,14 +1740,14 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR145 FAIL: isTRIPLE(): ', cast (_sparql as varchar)))); }
 
-  -- TR146: RDF-star emission mode via DEFINE input:rdf-star
+  -- TR146: RDF 1.2 emission mode via DEFINE input:rdf-star (backward compat)
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('DEFINE input:rdf-star "yes" MATCH (a)-[e]->(b) RETURN e');
   if (_sparql is not null and strstr (_sparql, 'DEFINE input:rdf-star') is not null
       and strstr (_sparql, 'TRIPLE(') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR146 PASS: RDF-star emission mode')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR146 PASS: RDF 1.2 emission mode (backward compat)')); }
   else
-    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR146 FAIL: RDF-star mode: ', cast (_sparql as varchar)))); }
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR146 FAIL: RDF 1.2 mode (backward compat): ', cast (_sparql as varchar)))); }
 
   -- TR147: UNNEST with list literal
   _total := _total + 1;
@@ -1836,6 +1836,98 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR157 PASS: Property-path negation !(iri1|iri2)')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR157 FAIL: Property-path negation !(iri1|iri2): ', cast (_sparql as varchar)))); }
+
+  -- TR158: SERVICE before MATCH preserves source order in generated SPARQL
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> SERVICE <http://remote.example.org/sparql> { MATCH (a)-[:ex:p]->(b) } MATCH (a)-[:ex:q]->(c) RETURN a, b, c');
+  if (_sparql is not null
+      and strstr (_sparql, 'SERVICE') is not null
+      and strstr (_sparql, 'ex:p') is not null
+      and strstr (_sparql, 'ex:q') is not null)
+    {
+      declare _svc_pos, _q_pos integer;
+      _svc_pos := strstr (_sparql, 'SERVICE');
+      _q_pos := strstr (_sparql, 'ex:q');
+      if (_svc_pos is not null and _q_pos is not null and _svc_pos < _q_pos)
+        { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR158 PASS: SERVICE before MATCH source order')); }
+      else
+        { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR158 FAIL: SERVICE before MATCH order (SERVICE should precede local triples): ', cast (_sparql as varchar)))); }
+    }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR158 FAIL: SERVICE before MATCH missing expected content: ', cast (_sparql as varchar)))); }
+
+  -- TR159: MATCH before SERVICE preserves source order in generated SPARQL
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> MATCH (a)-[:ex:q]->(c) SERVICE <http://remote.example.org/sparql> { MATCH (a)-[:ex:p]->(b) } RETURN a, b, c');
+  if (_sparql is not null
+      and strstr (_sparql, 'SERVICE') is not null
+      and strstr (_sparql, 'ex:p') is not null
+      and strstr (_sparql, 'ex:q') is not null)
+    {
+      declare _svc_pos2, _q_pos2 integer;
+      _q_pos2 := strstr (_sparql, 'ex:q');
+      _svc_pos2 := strstr (_sparql, 'SERVICE');
+      if (_svc_pos2 is not null and _q_pos2 is not null and _q_pos2 < _svc_pos2)
+        { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR159 PASS: MATCH before SERVICE source order')); }
+      else
+        { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR159 FAIL: MATCH before SERVICE order (local triples should precede SERVICE): ', cast (_sparql as varchar)))); }
+    }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR159 FAIL: MATCH before SERVICE missing expected content: ', cast (_sparql as varchar)))); }
+
+  -- TR160: VERSION clause enables RDF 1.2 mode
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> VERSION "rdf 1.2" MATCH (a)-[e:ex:knows]->(b) RETURN e');
+  if (_sparql is not null and strstr (_sparql, 'TRIPLE(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR160 PASS: VERSION clause enables RDF 1.2 mode')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR160 FAIL: VERSION clause: ', cast (_sparql as varchar)))); }
+
+  -- TR161: DEFINE input:rdf12 enables RDF 1.2 mode
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> DEFINE input:rdf12 "yes" MATCH (a)-[e:ex:knows]->(b) RETURN e');
+  if (_sparql is not null and strstr (_sparql, 'TRIPLE(') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR161 PASS: DEFINE input:rdf12 enables RDF 1.2 mode')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR161 FAIL: DEFINE input:rdf12: ', cast (_sparql as varchar)))); }
+
+  -- TR162: RDF 1.2 {| |} annotation syntax for edge properties
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX ex: <http://example.org/> VERSION "rdf 1.2" MATCH (p:foaf:Person)-[e:foaf:knows {| ex:weight: 5 |}]->(m:foaf:Person) RETURN p, m');
+  if (_sparql is not null and strstr (_sparql, '{|') is not null
+      and strstr (_sparql, '|}') is not null
+      and strstr (_sparql, 'ex:weight') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR162 PASS: RDF 1.2 {| |} annotation syntax')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR162 FAIL: {| |} annotation: ', cast (_sparql as varchar)))); }
+
+  -- TR163: RDF 1.2 {| |} annotation with variable in property value
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX ex: <http://example.org/> VERSION "rdf 1.2" MATCH (p:foaf:Person)-[e:foaf:knows {| ex:weight: w |}]->(m:foaf:Person) RETURN p, w, m');
+  if (_sparql is not null and strstr (_sparql, '{|') is not null
+      and strstr (_sparql, '|}') is not null
+      and strstr (_sparql, '?') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR163 PASS: {| |} annotation with variable')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR163 FAIL: {| |} with variable: ', cast (_sparql as varchar)))); }
+
+  -- TR164: RDF 1.2 triple-term syntax with VERSION (standard braces)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX ex: <http://example.org/> VERSION "rdf 1.2" MATCH (p:foaf:Person)-[e:foaf:knows {ex:weight: 5}]->(m:foaf:Person) RETURN p, m');
+  if (_sparql is not null and strstr (_sparql, '<<') is not null
+      and strstr (_sparql, '>>') is not null
+      and strstr (_sparql, 'ex:weight') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR164 PASS: RDF 1.2 triple-term with VERSION')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR164 FAIL: triple-term with VERSION: ', cast (_sparql as varchar)))); }
+
+  -- TR165: Default reification (no VERSION, no DEFINE input:rdf12)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX ex: <http://example.org/> MATCH (p:foaf:Person)-[e:foaf:knows {ex:weight: 5}]->(m:foaf:Person) RETURN p, m');
+  if (_sparql is not null and strstr (_sparql, 'rdf:Statement') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR165 PASS: Default reification without RDF 1.2 mode')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR165 FAIL: default reification: ', cast (_sparql as varchar)))); }
 
   -- Summary
   _results := vector_concat (_results, vector (''));
