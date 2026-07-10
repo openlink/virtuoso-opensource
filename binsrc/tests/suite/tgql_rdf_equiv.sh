@@ -73,9 +73,17 @@ cp $VIRTUOSO_TEST/tst2.nq .
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-# Load GQL modules
+# Load GQL modules (must run from build root so relative paths in gql_load.sql resolve)
 LOG "Loading GQL modules"
+_save_dir=`pwd`
+_save_logfile="$LOGFILE"
+cd $VIRTUOSO_BUILD
+LOGFILE="$_save_dir/$_save_logfile"
+export LOGFILE
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_BUILD/binsrc/gql/gql_load.sql
+cd $_save_dir
+LOGFILE="$_save_logfile"
+export LOGFILE
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: gql_load.sql: loading GQL modules"
