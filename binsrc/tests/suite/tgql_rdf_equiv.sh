@@ -76,7 +76,7 @@ START_SERVER $PORT 1000
 # GQL modules are compiled into the binary (sql_code_sparql.c) and loaded on startup.
 # Verify they are available.
 LOG "Verifying GQL modules"
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT 'EXEC=DB.DBA.GQL_VERSION()'
+RUN $ISQL $DSN '"EXEC=DB.DBA.GQL_VERSION()"' ERRORS=STDOUT
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: GQL modules not loaded"
