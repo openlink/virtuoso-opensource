@@ -2746,13 +2746,13 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'atan') return concat ('bif:atan(', fargs, ')');
       if (fname = 'degrees') return concat ('bif:degrees(', fargs, ')');
       if (fname = 'radians') return concat ('bif:radians(', fargs, ')');
-      -- Hyperbolic functions via PL procedures
-      if (fname = 'sinh') return concat ('bif:GQL_SINH(', fargs, ')');
-      if (fname = 'cosh') return concat ('bif:GQL_COSH(', fargs, ')');
-      if (fname = 'tanh') return concat ('bif:GQL_TANH(', fargs, ')');
-      -- Duration functions via PL procedures
-      if (fname = 'duration') return concat ('bif:GQL_DURATION(', fargs, ')');
-      if (fname = 'duration_between') return concat ('bif:GQL_DURATION_BETWEEN(', fargs, ')');
+      -- Hyperbolic functions via PL procedures (must use sql: not bif:)
+      if (fname = 'sinh') return concat ('sql:GQL_SINH(', fargs, ')');
+      if (fname = 'cosh') return concat ('sql:GQL_COSH(', fargs, ')');
+      if (fname = 'tanh') return concat ('sql:GQL_TANH(', fargs, ')');
+      -- Duration functions via PL procedures (must use sql: not bif:)
+      if (fname = 'duration') return concat ('sql:GQL_DURATION(', fargs, ')');
+      if (fname = 'duration_between') return concat ('sql:GQL_DURATION_BETWEEN(', fargs, ')');
       -- Geospatial functions via bif: pass-through
       if (fname = 'st_intersects') return concat ('bif:st_intersects(', fargs, ')');
       if (fname = 'st_contains') return concat ('bif:st_contains(', fargs, ')');
@@ -2845,7 +2845,7 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       declare cast_type varchar;
       cast_val := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
       cast_type := aref (_expr, 2);
-      return concat ('bif:GQL_CAST(', cast_val, ', ', DB.DBA.GQL_GEN_LITERAL (cast_type), ')');
+      return concat ('sql:GQL_CAST(', cast_val, ', ', DB.DBA.GQL_GEN_LITERAL (cast_type), ')');
     }
 
   -- IS NULL / IS NOT NULL

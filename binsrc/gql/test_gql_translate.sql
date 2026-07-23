@@ -2239,3 +2239,79 @@ create procedure DB.DBA.GQL_GQLC_TESTS ()
 ;
 
 SELECT DB.DBA.GQL_GQLC_TESTS ();
+
+----------------------------------------------------------------------
+-- P2-8: PL-call prefix correctness (bif: vs sql:)
+--
+-- GQL_CAST, GQL_SINH, GQL_COSH, GQL_TANH, GQL_DURATION, and
+-- GQL_DURATION_BETWEEN are Virtuoso/PL procedures, not C-plugin BIFs.
+-- They must be emitted with the `sql:` prefix so the SPARQL compiler
+-- resolves them as PL calls.  Using `bif:` for PL procedures causes
+-- "function not found" errors at execution time.
+-- Conversely, GQL_NORMALIZE and GQL_PERCENTILE_CONT are C-plugin BIFs
+-- and must keep `bif:`.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PLPREFIX_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- PL procedures: must use sql: prefix (not bif:)
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP1 CAST -> sql:GQL_CAST',
+    'MATCH (n) RETURN CAST(n.age AS INTEGER) AS age',
+    'sql:GQL_CAST(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP2 sinh -> sql:GQL_SINH',
+    'MATCH (n) RETURN sinh(n.x) AS s',
+    'sql:GQL_SINH(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP3 cosh -> sql:GQL_COSH',
+    'MATCH (n) RETURN cosh(n.x) AS c',
+    'sql:GQL_COSH(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP4 tanh -> sql:GQL_TANH',
+    'MATCH (n) RETURN tanh(n.x) AS t',
+    'sql:GQL_TANH(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP5 duration -> sql:GQL_DURATION',
+    'MATCH (n) RETURN duration(n.t) AS d',
+    'sql:GQL_DURATION(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PP6 duration_between -> sql:GQL_DURATION_BETWEEN',
+    'MATCH (n) RETURN duration_between(n.t1, n.t2) AS db',
+    'sql:GQL_DURATION_BETWEEN(', _pass, _fail, _results);
+
+  -- Negative checks: the PL-procedure names must NOT appear with bif:
+  -- We verify by checking the generated SPARQL directly.
+  declare _sparql varchar;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) RETURN sinh(n.x) AS s, cosh(n.x) AS c, tanh(n.x) AS t, CAST(n.age AS INTEGER) AS a');
+  if (_sparql is not null
+      and strstr (_sparql, 'bif:GQL_SINH') is null
+      and strstr (_sparql, 'bif:GQL_COSH') is null
+      and strstr (_sparql, 'bif:GQL_TANH') is null
+      and strstr (_sparql, 'bif:GQL_CAST') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PP7 PASS: no bif: prefix for PL procedures')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('PP7 FAIL: bif: prefix found: ', cast (_sparql as varchar)))); }
+
+  -- C-plugin BIFs: must keep bif: prefix (regression check)
+  connection_set ('__gql_has_gqlc', '1');
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n) RETURN normalize(n.name) AS nm, percentile_cont(n.age, 0.5) AS p');
+  if (_sparql is not null
+      and strstr (_sparql, 'bif:GQL_NORMALIZE') is not null
+      and strstr (_sparql, 'bif:GQL_PERCENTILE_CONT') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('PP8 PASS: C-plugin BIFs keep bif: prefix')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('PP8 FAIL: C-plugin BIF prefix wrong: ', cast (_sparql as varchar)))); }
+  connection_set ('__gql_has_gqlc', null);  -- reset the probe cache
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('PLPREFIX PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('PLPREFIX FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' pl-prefix test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_PLPREFIX_TESTS ();
