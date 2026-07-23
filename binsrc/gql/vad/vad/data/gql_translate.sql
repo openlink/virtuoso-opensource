@@ -2658,7 +2658,17 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'length') return concat ('STRLEN(', fargs, ')');
       if (fname = 'replace') return concat ('REPLACE(', fargs, ')');
       if (fname = 'concat') return concat ('CONCAT(', fargs, ')');
-      if (fname = 'trim') return concat ('TRIM(', fargs, ')');
+      if (fname = 'trim')
+        {
+          -- SPARQL TRIM takes a single string argument. GQL TRIM(list, n)
+          -- (trim n elements from a list) has no scalar-list representation
+          -- over RDF (GQL lists are RDF collections), so reject it clearly
+          -- instead of emitting invalid SPARQL. See gql-limitations.md.
+          if (length (args_vec) <> 1)
+            signal ('GQ005',
+              'TRIM(list, n) is not supported: a GQL list has no scalar value form over RDF. TRIM(str) trims a string.');
+          return concat ('TRIM(', fargs, ')');
+        }
       -- String functions via bif: pass-through
       if (fname = 'left') return concat ('bif:left(', fargs, ')');
       if (fname = 'right') return concat ('bif:right(', fargs, ')');

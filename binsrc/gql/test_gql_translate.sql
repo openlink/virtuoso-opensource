@@ -2115,3 +2115,49 @@ create procedure DB.DBA.GQL_VARBIND_TESTS ()
 ;
 
 SELECT DB.DBA.GQL_VARBIND_TESTS ();
+
+----------------------------------------------------------------------
+-- P2-4: Path & list value functions (unsupported — must fail cleanly)
+--
+-- Path values and list values have no scalar representation over RDF (paths
+-- are materialized relationally per step; lists are RDF collections), so
+-- PATH_LENGTH / ELEMENTS / PATH[...] and TRIM(list, n) are not supported.
+-- They must fail cleanly rather than translate to invalid SPARQL.
+-- TRIM(str) (1-arg string trim) still works.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PATHLIST_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- TRIM(list, n): the one former silent mis-mapping -> now a clean GQ005.
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL1 trim(list,n) -> GQ005',
+    'MATCH (n) RETURN trim([1,2,3], 1)', 'GQ005', _pass, _fail, _results);
+
+  -- PATH_LENGTH / ELEMENTS / PATH[...] are reserved and rejected at parse.
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL2 path_length -> error',
+    'MATCH (n) RETURN path_length(n)', null, _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL3 elements -> error',
+    'MATCH (n) RETURN elements(n)', null, _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL4 PATH[...] -> error',
+    'MATCH (n) RETURN PATH[a, b]', null, _pass, _fail, _results);
+
+  -- TRIM(str) (1-arg string trim) is unaffected.
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PL5 trim(str) ok',
+    'MATCH (n) RETURN trim(n.name)', 'TRIM(', _pass, _fail, _results);
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('PATHLIST PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('PATHLIST FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' path/list test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_PATHLIST_TESTS ();
