@@ -3822,24 +3822,12 @@ execute_query:
         }
 
       {
+        -- Any lexer/parser/translator error becomes a 400 with the GQ*
+        -- code and message. (GQL is translated to SPARQL and then executed
+        -- on the normal SPARQL path below, so it inherits the endpoint's
+        -- content negotiation, result serialization, and authorization.)
         declare exit handler for sqlstate '*'
           {
-            if ((__SQL_STATE = 'GQ092')
-                and not (opengql_dryrun = '1' or opengql_dryrun = 'true')
-                and __proc_exists ('DB.DBA.GQL_RUN', 1) is not null)
-              {
-                declare gql_exec_result any;
-                declare exit handler for sqlstate '*'
-                  {
-                    DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-                      '400', 'openGQL Execution Failed',
-                      opengql_body, __SQL_STATE, __SQL_MESSAGE, format);
-                    return;
-                  };
-                gql_exec_result := DB.DBA.GQL_RUN (opengql_body, opengql_graph);
-                opengql_translated := DB.DBA.GQL_TO_SPARQL (opengql_body, opengql_graph);
-                goto opengql_translate_ok;
-              }
             DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
               '400', 'openGQL Translation Failed',
               opengql_body, __SQL_STATE, __SQL_MESSAGE, format);
@@ -3852,9 +3840,18 @@ execute_query:
       query := ltrim (coalesce (opengql_translated, ''));
       if (strcasestr (query, 'SPARQL ') = 0)
         query := subseq (query, 7);
-      http_header (concat (coalesce (http_header_get (), ''),
-          'X-Generated-SPARQL: ', sprintf ('%U', query), '\r\n'));
+      -- The full translated SPARQL is always available to the in-process HTML
+      -- result panel (via this connection variable) and to clients via
+      -- dryrun=1. It is ALSO echoed in an X-Generated-SPARQL response header
+      -- for transparency/debugging, but that header is gated so operators can
+      -- turn it off in production (registry '__opengql_generated_sparql_header'
+      -- = 'off') and capped in size so a very large translation cannot emit an
+      -- oversized header that some proxies/clients reject.
       connection_set ('opengql_generated_sparql', query);
+      if (coalesce (registry_get ('__opengql_generated_sparql_header'), 'on') <> 'off'
+          and length (query) <= 8000)
+        http_header (concat (coalesce (http_header_get (), ''),
+            'X-Generated-SPARQL: ', sprintf ('%U', query), '\r\n'));
       if (opengql_dryrun = '1' or opengql_dryrun = 'true')
         {
           http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
