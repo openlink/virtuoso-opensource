@@ -176,3 +176,45 @@ create procedure DB.DBA.GQL_RESET (in _graph varchar := null)
   exec (sprintf ('SPARQL CLEAR GRAPH <%s>', _graph));
 }
 ;
+
+----------------------------------------------------------------------
+-- gqlc C plugin capability probe.
+--
+-- The gqlc plugin (loaded via "Load8 = plain, gqlc" in virtuoso.ini)
+-- registers the Unicode-normalization and percentile BIFs used by
+-- NORMALIZE / IS NORMALIZED / PERCENTILE_CONT / PERCENTILE_DISC. It can be
+-- absent (built with --disable-gqlc, ICU not found, or the Load8 line
+-- missing). GQL_HAS_GQLC probes for it once per connection (via exec, so the
+-- BIF name is not resolved at this procedure's compile time — the probe
+-- itself loads fine on a plugin-less server) and caches the answer on the
+-- connection. GQL_REQUIRE_GQLC raises a clear GQ103 when the feature is used
+-- but the plugin is missing, instead of a raw "unknown function" error.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_HAS_GQLC ()
+{
+  declare cached any;
+  declare st, msg varchar;
+  declare m, d any;
+  cached := connection_get ('__gql_has_gqlc');
+  if (cached = '1') return 1;
+  if (cached = '0') return 0;
+  st := '00000'; msg := '';
+  exec ('sparql select (bif:GQL_IS_NORMALIZED(''a'') as ?x) where { filter (1=1) }',
+    st, msg, vector (), 0, m, d);
+  if (st = '00000')
+    { connection_set ('__gql_has_gqlc', '1'); return 1; }
+  connection_set ('__gql_has_gqlc', '0');
+  return 0;
+}
+;
+
+create procedure DB.DBA.GQL_REQUIRE_GQLC (in _feature varchar)
+{
+  if (not DB.DBA.GQL_HAS_GQLC ())
+    signal ('GQ103',
+      concat (_feature, ' requires the gqlc plugin, which is not loaded. ',
+        'Build with --enable-gqlc (requires ICU) and add a "Load = plain, gqlc" ',
+        'entry to the [Plugins] section of virtuoso.ini.'));
+}
+;

@@ -2165,3 +2165,53 @@ create procedure DB.DBA.GQL_PATHLIST_TESTS ()
 ;
 
 SELECT DB.DBA.GQL_PATHLIST_TESTS ();
+
+----------------------------------------------------------------------
+-- P2-5: gqlc plugin degraded mode
+--
+-- NORMALIZE / IS NORMALIZED / PERCENTILE_CONT / PERCENTILE_DISC are provided
+-- by the gqlc C plugin. When it is absent they must fail with a clear GQ103
+-- (not a raw "unknown function"); when present they translate to the plugin
+-- BIFs. The tests force the capability cache both ways so they are
+-- deterministic regardless of whether gqlc is actually loaded.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_GQLC_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- Force "absent": the four plugin functions raise GQ103.
+  connection_set ('__gql_has_gqlc', '0');
+  DB.DBA.GQL_T_ASSERT_FAIL ('GC1 normalize -> GQ103',
+    'MATCH (n) RETURN normalize(n.name)', 'GQ103', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('GC2 IS NORMALIZED -> GQ103',
+    'MATCH (n) WHERE n.name IS NORMALIZED RETURN n', 'GQ103', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('GC3 percentile_cont -> GQ103',
+    'MATCH (n) RETURN percentile_cont(n.age, 0.5)', 'GQ103', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('GC4 percentile_disc -> GQ103',
+    'MATCH (n) RETURN percentile_disc(n.age, 0.5)', 'GQ103', _pass, _fail, _results);
+
+  -- Force "present": they translate to the plugin BIFs (no regression).
+  connection_set ('__gql_has_gqlc', '1');
+  DB.DBA.GQL_T_ASSERT_SPARQL ('GC5 normalize present -> bif',
+    'MATCH (n) RETURN normalize(n.name)', 'bif:GQL_NORMALIZE', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('GC6 percentile present -> bif',
+    'MATCH (n) RETURN percentile_cont(n.age, 0.5)', 'bif:GQL_PERCENTILE_CONT', _pass, _fail, _results);
+
+  connection_set ('__gql_has_gqlc', null);  -- reset the probe cache
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('GQLC PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('GQLC FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' gqlc degraded-mode test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_GQLC_TESTS ();

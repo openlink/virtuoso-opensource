@@ -2715,7 +2715,11 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'octet_length') return concat ('bif:length(', fargs, ')');
       if (fname = 'byte_length') return concat ('bif:length(', fargs, ')');
       -- Unicode normalization via gqlc C plugin BIFs
-      if (fname = 'normalize') return concat ('bif:GQL_NORMALIZE(', fargs, ')');
+      if (fname = 'normalize')
+        {
+          DB.DBA.GQL_REQUIRE_GQLC ('NORMALIZE');
+          return concat ('bif:GQL_NORMALIZE(', fargs, ')');
+        }
       -- List/cardinality functions via bif: pass-through
       if (fname = 'cardinality') return concat ('bif:length(', fargs, ')');
       if (fname = 'size') return concat ('bif:length(', fargs, ')');
@@ -2763,8 +2767,16 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'stddev_samp') return concat ('sql:STDDEV_SAMP(', distinct_kw, fargs, ')');
       if (fname = 'stddev_pop') return concat ('sql:STDDEV_POP(', distinct_kw, fargs, ')');
       -- Aggregate functions via gqlc C plugin BIFs
-      if (fname = 'percentile_cont') return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
-      if (fname = 'percentile_disc') return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
+      if (fname = 'percentile_cont')
+        {
+          DB.DBA.GQL_REQUIRE_GQLC ('PERCENTILE_CONT');
+          return concat ('bif:GQL_PERCENTILE_CONT(', fargs, ')');
+        }
+      if (fname = 'percentile_disc')
+        {
+          DB.DBA.GQL_REQUIRE_GQLC ('PERCENTILE_DISC');
+          return concat ('bif:GQL_PERCENTILE_DISC(', fargs, ')');
+        }
       if (fname = 'collect_list') return concat ('sql:VECTOR_AGG(', fargs, ')');
       -- Temporal functions (same name in SPARQL)
       if (fname = 'year') return concat ('YEAR(', fargs, ')');
@@ -2857,6 +2869,7 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
   if (etype = 'IS_NORMALIZED')
     {
       declare in_lhs, in_form varchar;
+      DB.DBA.GQL_REQUIRE_GQLC ('IS NORMALIZED');
       in_lhs := DB.DBA.GQL_GEN_EXPR (aref (_expr, 1), _ctx);
       in_form := aref (_expr, 2);
       if (in_form is null or in_form = '')
