@@ -891,6 +891,32 @@ ts_advance (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
       ts->ts_new = NULL;
       return;
     }
+  /* GQL SHORTEST k GROUPS (k > 1): stop exploring once results span at
+     least k distinct path lengths.  This is the generalization of
+     tn_shortest_only (which is the k=1 case).  The search is breadth-first
+     by depth, so once k distinct result depths are accumulated, any further
+     expansion would only yield paths at longer lengths.  Results are
+     appended in BFS order (non-decreasing depth), so a single pass with a
+     running prev_depth suffices to count distinct lengths. */
+  if (tn->tn_shortest_k_groups > 0 && ts->ts_result)
+    {
+      int distinct_depths = 0;
+      int prev_depth = -1;
+      DO_SET (trans_state_t *, tst, &ts->ts_result)
+	{
+	  if (tst->tst_depth != prev_depth)
+	    {
+	      distinct_depths++;
+	      prev_depth = tst->tst_depth;
+	    }
+	}
+      END_DO_SET ();
+      if (distinct_depths >= tn->tn_shortest_k_groups)
+	{
+	  ts->ts_new = NULL;
+	  return;
+	}
+    }
   if (card_co && ts->ts_traversed && ts->ts_traversed->ht_count >= card_co)
     {
       ts->ts_new = NULL;

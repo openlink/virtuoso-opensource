@@ -654,7 +654,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %token <box> TRANSACTION_L ISOLATION_L LEVEL_L READ_L COMMITTED_L UNCOMMITTED_L REPEATABLE_L SERIALIZABLE_L
 
  /* transitive subquery options */
-%token T_FINAL_AS T_MIN T_MAX T_IN T_OUT T_SHORTEST_ONLY T_DISTINCT T_EXISTS T_NO_ORDER T_NO_CYCLES T_CYCLES_ONLY T_END_FLAG T_DIRECTION T_TRAIL
+%token T_FINAL_AS T_MIN T_MAX T_IN T_OUT T_SHORTEST_ONLY T_DISTINCT T_EXISTS T_NO_ORDER T_NO_CYCLES T_CYCLES_ONLY T_END_FLAG T_DIRECTION T_TRAIL T_SHORTEST_K_GROUPS
 
 
 
@@ -1892,6 +1892,7 @@ trans_opt
 	| T_TRAIL { global_trans->_.trans.trail = 1; }
 	| T_NO_ORDER { global_trans->_.trans.no_order = 1; }
 	| T_SHORTEST_ONLY { global_trans->_.trans.shortest_only = 1; }
+	| T_SHORTEST_K_GROUPS INTNUM { global_trans->_.trans.shortest_k_groups = unbox ($2); }
 	| T_IN colnum_commalist { global_trans->_.trans.in = (ptrlong*) $2; }
  	| T_OUT colnum_commalist { global_trans->_.trans.out = (ptrlong*) $2; }
 	| T_END_FLAG  INTNUM { global_trans->_.trans.end_flag = (ptrlong)sqlp_col_num ($2); }

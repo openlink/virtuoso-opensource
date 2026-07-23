@@ -960,6 +960,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token T_SHORTEST_ONLY_L	/*:: PUNCT_SPAR_LAST("T_SHORTEST_ONLY") ::*/
 %token T_STEP_L		/*:: PUNCT_SPAR_LAST("T_STEP") ::*/
 %token T_TRAIL_L	/*:: PUNCT_SPAR_LAST("T_TRAIL") ::*/
+%token T_SHORTEST_K_GROUPS_L	/*:: PUNCT_SPAR_LAST("T_SHORTEST_K_GROUPS") ::*/
 %token true_L		/*:: PUNCT_SPAR_LAST("true") ::*/
 %token UNBOUND_L	/*:: PUNCT_SPAR_LAST("UNBOUND") ::*/
 %token UNDEF_L		/*:: PUNCT_SPAR_LAST("UNDEF") ::*/
@@ -3117,6 +3118,8 @@ spar_triple_transit_option
 		$$ = (SPART **)t_list (2, (ptrlong)T_OUT_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
 	| T_SHORTEST_ONLY_L		{	/*... | 'T_SHORTEST_ONLY'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
+	| T_SHORTEST_K_GROUPS_L SPARQL_INTEGER	{	/*... | 'T_SHORTEST_K_GROUPS' SPARQL_INTEGER	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_K_GROUPS_L, $2); }
 	| T_TRAIL_L			{	/*... | 'T_TRAIL'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)T_TRAIL_L, (ptrlong)1); }
 	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{	/*... | 'T_STEP' '(' ( Var | SPARQL_STRING ) ')' 'AS' Var	*/

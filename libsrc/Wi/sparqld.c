@@ -270,6 +270,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case T_NO_ORDER_L: return "T_NO_ORDER";
     case T_OUT_L: return "T_OUT";
     case T_SHORTEST_ONLY_L: return "T_SHORTEST_ONLY";
+    case T_SHORTEST_K_GROUPS_L: return "T_SHORTEST_K_GROUPS";
     case T_STEP_L: return "T_STEP";
     case T_TRAIL_L: return "T_TRAIL";
     case TRANSITIVE_L: return "TRANSITIVE";

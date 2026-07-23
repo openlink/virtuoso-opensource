@@ -760,6 +760,7 @@ typedef struct sql_tree_s
 	  ptrlong	exists;
 	  ptrlong	no_order;
 	  ptrlong	shortest_only;
+	  ptrlong	shortest_k_groups;
 	  ptrlong	direction;
 	} trans;
 	struct {

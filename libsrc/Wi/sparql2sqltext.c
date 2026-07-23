@@ -10628,6 +10628,10 @@ ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
           sprintf (buf, " T_DIRECTION %ld", (long)((ptrlong)val));
           ssg_puts (buf);
           break;
+        case T_SHORTEST_K_GROUPS_L:
+          sprintf (buf, " T_SHORTEST_K_GROUPS %ld", (long)((ptrlong)val));
+          ssg_puts (buf);
+          break;
         case T_END_FLAG_L:
           sprintf (buf, " T_END_FLAG %ld", (long)((ptrlong)val));
           ssg_puts (buf);
