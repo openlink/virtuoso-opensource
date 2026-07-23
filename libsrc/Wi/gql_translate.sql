@@ -3773,7 +3773,12 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
       sc_kind := aref (sc, 0);
       sc_count := aref (sc, 1);
       sc_groups := aref (sc, 2);
-	      topt := 'T_DISTINCT, T_SHORTEST_ONLY';
+      -- SHORTEST k GROUPS with k > 1: use T_SHORTEST_K_GROUPS (exact k
+      -- distinct length-groups) instead of T_SHORTEST_ONLY (k=1 case).
+      if (sc_groups = 1 and sc_count > 1)
+        topt := concat ('T_DISTINCT, T_SHORTEST_K_GROUPS ', cast (sc_count as varchar));
+      else
+        topt := 'T_DISTINCT, T_SHORTEST_ONLY';
       -- ANY SHORTEST → limit to 1 result
       if (sc_kind = 'ANY')
         {
@@ -3784,9 +3789,6 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
         {
           topt := concat (topt, ', T_MAX ', cast (sc_count as varchar));
         }
-      -- SHORTEST k GROUPS with k > 1 → generous T_MAX for multi-length results
-      if (sc_groups = 1 and sc_count > 1)
-        topt := concat (topt, ', T_MAX ', cast (sc_count * 100 as varchar));
       if (DB.DBA.GQL_CTX_GET (_ctx, 'has_where_filters') = 0)
         {
           declare anchor_ok integer;
