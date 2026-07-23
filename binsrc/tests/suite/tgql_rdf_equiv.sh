@@ -119,5 +119,14 @@ then
     exit 3
 fi
 
+# Run the SHORTEST k GROUPS execution tests (P2-2)
+LOG "Running GQL SHORTEST k GROUPS execution tests"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_gql_shortest_groups.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: test_gql_shortest_groups.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 BANNER "COMPLETED: $TEST_NAME TESTS"

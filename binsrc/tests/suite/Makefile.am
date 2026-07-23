@@ -161,6 +161,7 @@ EXTRA_DIST= \
 	$(srcdir)/test_gql_rdf_load.sql \
 	$(srcdir)/test_gql_rdf_acid.sql \
 	$(srcdir)/test_gql_golden.sql \
+	$(srcdir)/test_gql_shortest_groups.sql \
 	$(srcdir)/test_gql_rdf_runner.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \

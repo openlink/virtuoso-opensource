@@ -1805,13 +1805,37 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR153 FAIL: SHORTEST 1 GROUPS: ', cast (_sparql as varchar)))); }
 
-  -- TR154: SHORTEST 3 GROUPS PATH (should use T_MAX, not signal G3005)
+  -- TR154: SHORTEST 3 GROUPS PATH (should use T_SHORTEST_K_GROUPS 3, not T_MAX heuristic)
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 3 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
-  if (_sparql is not null and strstr (_sparql, 'T_MAX') is not null)
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS 3') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154 PASS: SHORTEST 3 GROUPS PATH')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154 FAIL: SHORTEST 3 GROUPS: ', cast (_sparql as varchar)))); }
+
+  -- TR154a: SHORTEST 2 GROUPS PATH (should use T_SHORTEST_K_GROUPS 2)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 2 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS 2') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154a PASS: SHORTEST 2 GROUPS PATH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154a FAIL: SHORTEST 2 GROUPS: ', cast (_sparql as varchar)))); }
+
+  -- TR154b: SHORTEST k GROUPS must NOT emit T_SHORTEST_ONLY for k > 1
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 2 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS 2') is not null and strstr (_sparql, 'T_SHORTEST_ONLY') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154b PASS: SHORTEST 2 GROUPS no T_SHORTEST_ONLY')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154b FAIL: SHORTEST 2 GROUPS should not have T_SHORTEST_ONLY: ', cast (_sparql as varchar)))); }
+
+  -- TR154c: SHORTEST 1 GROUPS PATH still uses T_SHORTEST_ONLY (k=1 unchanged)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 1 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_ONLY') is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154c PASS: SHORTEST 1 GROUPS still T_SHORTEST_ONLY')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154c FAIL: SHORTEST 1 GROUPS should use T_SHORTEST_ONLY only: ', cast (_sparql as varchar)))); }
 
   -- TR155: Undirected quantified edge (should emit (iri|^iri)* not signal G3006)
   _total := _total + 1;
