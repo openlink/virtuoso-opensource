@@ -83,10 +83,20 @@ create procedure DB.DBA.GQL_SCHEMA_RESOLVE (in _name varchar)
 ;
 
 ----------------------------------------------------------------------
--- Graph type enforcement feature flag
--- Set to 0 (disabled) by default. Type checking on INSERT/SET is
--- out of scope for the current phase — graph type specs are recorded
--- in the catalog but not enforced at runtime.
+-- Graph type enforcement feature flag.
+--
+-- Returns 0 by design: graph types declared via CREATE GRAPH TYPE are
+-- recorded in the catalog as DESCRIPTIVE metadata and are intentionally
+-- NOT enforced on write. No code path partially enforces them (this flag
+-- is the single gate, and it is off).
+--
+-- Enforcement is a constraint-validation problem and is planned via SHACL:
+-- translate a graph type to a SHACL shapes graph and validate the affected
+-- nodes on INSERT/SET. It is deliberately NOT done via OWL/RDFS, which are
+-- open-world inference (they enrich/coerce data and cannot reject a write
+-- or express required/closed constraints), nor via a bespoke validator.
+-- This flag will become configurable (default off) once the SHACL engine
+-- is available. See binsrc/gql/gql-limitations.md ("Graph type enforcement").
 ----------------------------------------------------------------------
 
 create procedure DB.DBA.GQL_ENFORCE_TYPES ()
