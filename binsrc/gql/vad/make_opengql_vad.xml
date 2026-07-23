@@ -55,6 +55,7 @@
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_translate.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_sparql_gen.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_main.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_stats.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_endpoint.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_bootstrap.sql', 0, 'report', 1);
     ]]></sql>
@@ -82,6 +83,8 @@
     <file type="dav" source="code" source_uri="vad/data/gql_sparql_gen.sql" target_uri="opengql/gql_sparql_gen.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
     <file type="dav" source="code" source_uri="vad/data/gql_main.sql" target_uri="opengql/gql_main.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_stats.sql" target_uri="opengql/gql_stats.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
     <file type="dav" source="code" source_uri="vad/data/gql_endpoint.sql" target_uri="opengql/gql_endpoint.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />

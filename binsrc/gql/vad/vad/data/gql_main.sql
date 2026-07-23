@@ -232,9 +232,28 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
   declare tokens, ast any;
   declare proc_body any;
   declare sparql_str varchar;
+  declare _t0 integer;
+  declare _stats_on, _log_on integer;
 
   if (_graph is null)
     _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+
+  _stats_on := DB.DBA.GQL_STATS_ENABLED ();
+  _log_on := DB.DBA.GQL_LOG_ENABLED ();
+  if (_stats_on or _log_on)
+    _t0 := msec_time ();
+
+  declare exit handler for sqlstate '*'
+    {
+      declare _elapsed integer;
+      if (_stats_on or _log_on)
+        _elapsed := msec_time () - _t0;
+      if (_stats_on)
+        DB.DBA.GQL_STATS_RECORD ('error', __SQL_STATE, _elapsed, 0);
+      if (_log_on)
+        DB.DBA.GQL_LOG_REQUEST (_query, null, 'error', __SQL_STATE, __SQL_MESSAGE, _elapsed, 0);
+      signal (__SQL_STATE, __SQL_MESSAGE);
+    };
 
   tokens := DB.DBA.GQL_TOKENIZE (_query);
   ast := DB.DBA.GQL_PARSE (tokens);
@@ -285,6 +304,17 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
     }
 
   sparql_str := DB.DBA.GQL_TO_SPARQL_IMPL (ast, _graph);
+
+  {
+    declare _elapsed integer;
+    if (_stats_on or _log_on)
+      _elapsed := msec_time () - _t0;
+    if (_stats_on)
+      DB.DBA.GQL_STATS_RECORD ('ok', null, _elapsed, 0);
+    if (_log_on)
+      DB.DBA.GQL_LOG_REQUEST (_query, sparql_str, 'ok', null, null, _elapsed, 0);
+  }
+
   return sparql_str;
 }
 ;
@@ -328,21 +358,87 @@ create procedure DB.DBA.GQL_RUN (in _query varchar, in _graph varchar := null)
 create procedure DB.DBA.GQL_PARAMS (in _query varchar, in _graph varchar := null, in _params any := null)
 {
   declare sparql_str varchar;
+  declare _stats_on, _log_on integer;
+  declare _t0_translate, _t0_execute integer;
+  declare _translate_ms integer;
 
   if (_graph is null)
     _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
 
+  _stats_on := DB.DBA.GQL_STATS_ENABLED ();
+  _log_on := DB.DBA.GQL_LOG_ENABLED ();
+  if (_stats_on or _log_on)
+    _t0_translate := msec_time ();
+
+  declare exit handler for sqlstate '*'
+    {
+      declare _exec_ms integer;
+      if (_stats_on or _log_on)
+        _exec_ms := msec_time () - _t0_translate;
+      if (_stats_on)
+        DB.DBA.GQL_STATS_RECORD ('error', __SQL_STATE, _exec_ms, 0);
+      if (_log_on)
+        DB.DBA.GQL_LOG_REQUEST (_query, null, 'error', __SQL_STATE, __SQL_MESSAGE, _exec_ms, 0);
+      signal (__SQL_STATE, __SQL_MESSAGE);
+    };
+
   sparql_str := DB.DBA.GQL_TO_SPARQL_PARAMS (_query, _graph, _params);
+
+  if (_stats_on or _log_on)
+    _translate_ms := msec_time () - _t0_translate;
+  else
+    _translate_ms := 0;
 
   -- Empty SPARQL means DML-only query
   if (sparql_str is null or trim (sparql_str) = '')
-    return vector ();
+    {
+      if (_stats_on)
+        DB.DBA.GQL_STATS_RECORD ('ok', null, _translate_ms, 0);
+      if (_log_on)
+        DB.DBA.GQL_LOG_REQUEST (_query, sparql_str, 'ok', null, null, _translate_ms, 0);
+      return vector ();
+    }
+
+  if (_stats_on or _log_on)
+    _t0_execute := msec_time ();
 
   if (strchr (sparql_str, ';') is not null and
       (strstr (sparql_str, 'DELETE') is not null
        or strstr (sparql_str, 'INSERT') is not null))
-    return DB.DBA.GQL_EXEC_DML_ATOMIC (sparql_str);
+    {
+      declare _result any;
+      _result := DB.DBA.GQL_EXEC_DML_ATOMIC (sparql_str);
+      if (_stats_on)
+        {
+          declare _exec_ms integer;
+          _exec_ms := msec_time () - _t0_execute;
+          DB.DBA.GQL_STATS_RECORD ('ok', null, _translate_ms, _exec_ms);
+        }
+      if (_log_on)
+        {
+          declare _exec_ms integer;
+          _exec_ms := msec_time () - _t0_execute;
+          DB.DBA.GQL_LOG_REQUEST (_query, sparql_str, 'ok', null, null, _translate_ms, _exec_ms);
+        }
+      return _result;
+    }
 
-  return DB.DBA.GQL_EXEC_SPARQL (sparql_str);
+  {
+    declare _result any;
+    _result := DB.DBA.GQL_EXEC_SPARQL (sparql_str);
+    if (_stats_on)
+      {
+        declare _exec_ms integer;
+        _exec_ms := msec_time () - _t0_execute;
+        DB.DBA.GQL_STATS_RECORD ('ok', null, _translate_ms, _exec_ms);
+      }
+    if (_log_on)
+      {
+        declare _exec_ms integer;
+        _exec_ms := msec_time () - _t0_execute;
+        DB.DBA.GQL_LOG_REQUEST (_query, sparql_str, 'ok', null, null, _translate_ms, _exec_ms);
+      }
+    return _result;
+  }
 }
 ;

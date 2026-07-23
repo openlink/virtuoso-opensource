@@ -725,6 +725,7 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/gql_translate.sql \
 	$(srcdir)/gql_sparql_gen.sql \
 	$(srcdir)/gql_main.sql \
+	$(srcdir)/gql_stats.sql \
 	$(srcdir)/gql_endpoint.sql \
 	$(srcdir)/gql_bootstrap.sql
 
