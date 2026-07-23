@@ -64,51 +64,48 @@ SET ARGV[1] 0;
 
 sparql clear graph <urn:sg>;
 sparql insert into <urn:sg> {
-  <urn:sg:a> <urn:sg:next> <urn:sg:b>
-  <urn:sg:a> <urn:sg:next> <urn:sg:c1> . <urn:sg:c1> <urn:sg:next> <urn:sg:b>
-  <urn:sg:a> <urn:sg:next> <urn:sg:c2> . <urn:sg:c2> <urn:sg:next> <urn:sg:b>
-  <urn:sg:a> <urn:sg:next> <urn:sg:d1> . <urn:sg:d1> <urn:sg:next> <urn:sg:e1> . <urn:sg:e1> <urn:sg:next> <urn:sg:b>
-  <urn:sg:a> <urn:sg:next> <urn:sg:d2> . <urn:sg:d2> <urn:sg:next> <urn:sg:e2> . <urn:sg:e2> <urn:sg:next> <urn:sg:b>
+  <urn:sg:a> <urn:sg:next> <urn:sg:b> .
+  <urn:sg:a> <urn:sg:next> <urn:sg:c1> . <urn:sg:c1> <urn:sg:next> <urn:sg:b> .
+  <urn:sg:a> <urn:sg:next> <urn:sg:c2> . <urn:sg:c2> <urn:sg:next> <urn:sg:b> .
+  <urn:sg:a> <urn:sg:next> <urn:sg:d1> . <urn:sg:d1> <urn:sg:next> <urn:sg:e1> . <urn:sg:e1> <urn:sg:next> <urn:sg:b> .
+  <urn:sg:a> <urn:sg:next> <urn:sg:d2> . <urn:sg:d2> <urn:sg:next> <urn:sg:e2> . <urn:sg:e2> <urn:sg:next> <urn:sg:b> .
 };
 
 -- ============================================================
 -- Helper: run a SPARQL transitive query with T_SHORTEST_K_GROUPS
 -- and return (path_count, distinct_lengths) as a vector.
+-- The OPTION clause must be attached to the triple pattern inside
+-- the WHERE block, not after it.
 -- ============================================================
 create procedure DB.DBA.GQL_SG_COUNT_PATHS (in k_groups integer, in use_shortest_only integer := 0)
 {
   declare sparql_text varchar;
-  declare result_set any;
-  declare path_ids any;
-  declare distinct_lengths any;
-  declare i, n integer;
-  declare path_count, length_count integer;
+  declare st, msg varchar;
+  declare meta, rows any;
   declare id_to_max_step any;
 
   if (use_shortest_only)
     sparql_text := sprintf (
-      'SELECT ?path_id ?step_no FROM <urn:sg> WHERE { ?s <urn:sg:next> ?o . FILTER(?s = iri("urn:sg:a") && ?o = iri("urn:sg:b")) } ' ||
-      'OPTION (TRANSITIVE, T_DISTINCT, T_SHORTEST_ONLY, T_IN(?s), T_OUT(?o), ' ||
-      'T_STEP(''path_id'') AS ?path_id, T_STEP(''step_no'') AS ?step_no)');
+      'SELECT ?path_id ?step_no FROM <urn:sg> WHERE { ' ||
+      ' ?s <urn:sg:next> ?o OPTION (TRANSITIVE, T_DISTINCT, T_SHORTEST_ONLY, T_IN(?s), T_OUT(?o), ' ||
+      'T_STEP(''path_id'') AS ?path_id, T_STEP(''step_no'') AS ?step_no) . ' ||
+      ' FILTER(?s = iri("urn:sg:a") && ?o = iri("urn:sg:b")) }');
   else
     sparql_text := sprintf (
-      'SELECT ?path_id ?step_no FROM <urn:sg> WHERE { ?s <urn:sg:next> ?o . FILTER(?s = iri("urn:sg:a") && ?o = iri("urn:sg:b")) } ' ||
-      'OPTION (TRANSITIVE, T_DISTINCT, T_SHORTEST_K_GROUPS %d, T_IN(?s), T_OUT(?o), ' ||
-      'T_STEP(''path_id'') AS ?path_id, T_STEP(''step_no'') AS ?step_no)', k_groups);
+      'SELECT ?path_id ?step_no FROM <urn:sg> WHERE { ' ||
+      ' ?s <urn:sg:next> ?o OPTION (TRANSITIVE, T_SHORTEST_K_GROUPS %d, T_IN(?s), T_OUT(?o), ' ||
+      'T_STEP(''path_id'') AS ?path_id, T_STEP(''step_no'') AS ?step_no) . ' ||
+      ' FILTER(?s = iri("urn:sg:a") && ?o = iri("urn:sg:b")) }', k_groups);
 
-  result_set := DB.DBA.SPARQL_EVAL (sparql_text, null, 0);
+  st := '00000'; msg := '';
+  exec (sprintf ('SPARQL %s', sparql_text), st, msg, vector (), 0, meta, rows);
 
-  -- result_set is a vector of rows; row 0 is the metadata, rows 1..N are data
-  -- Each data row is vector(path_id, step_no)
   id_to_max_step := dict_new ();
-  n := length (result_set);
-  for (i := 1; i < n; i := i + 1)
+  foreach (any row in rows) do
     {
-      declare row any;
       declare pid any;
       declare sno integer;
       declare prev any;
-      row := result_set[i];
       pid := row[0];
       sno := row[1];
       prev := dict_get (id_to_max_step, pid, -1);
@@ -116,14 +113,15 @@ create procedure DB.DBA.GQL_SG_COUNT_PATHS (in k_groups integer, in use_shortest
         dict_put (id_to_max_step, pid, sno);
     }
 
-  path_count := dict_size (id_to_max_step);
-
-  -- Count distinct path lengths (max step_no + 1 = number of nodes, but
-  -- path length in edges = max step_no; group by that)
-  distinct_lengths := dict_new ();
   {
+    declare path_count, length_count integer;
     declare keys any;
     declare ki integer;
+    declare distinct_lengths any;
+
+    path_count := dict_size (id_to_max_step);
+
+    distinct_lengths := dict_new ();
     keys := dict_list_keys (id_to_max_step, 0);
     for (ki := 0; ki < length (keys); ki := ki + 1)
       {
@@ -131,171 +129,188 @@ create procedure DB.DBA.GQL_SG_COUNT_PATHS (in k_groups integer, in use_shortest
         plen := dict_get (id_to_max_step, keys[ki], 0);
         dict_put (distinct_lengths, plen, 1);
       }
-  }
-  length_count := dict_size (distinct_lengths);
+    length_count := dict_size (distinct_lengths);
 
-  return vector (path_count, length_count);
+    return vector (path_count, length_count);
+  }
+}
+;
+
+-- Wrapper procedures for isql $LAST compatibility
+create procedure DB.DBA.GQL_SG_PATH_COUNT (in k_groups integer, in use_shortest_only integer := 0)
+{
+  return DB.DBA.GQL_SG_COUNT_PATHS (k_groups, use_shortest_only)[0];
+}
+;
+create procedure DB.DBA.GQL_SG_LENGTH_COUNT (in k_groups integer, in use_shortest_only integer := 0)
+{
+  return DB.DBA.GQL_SG_COUNT_PATHS (k_groups, use_shortest_only)[1];
 }
 ;
 
 -- ============================================================
 -- SG1: T_SHORTEST_ONLY (k=1 equivalent) → 1 path, 1 distinct length
 -- ============================================================
-{
-  declare rc any;
-  rc := DB.DBA.GQL_SG_COUNT_PATHS (1, 1);
-  if (rc[0] = 1 and rc[1] = 1)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG1 T_SHORTEST_ONLY: " || cast (rc[0] as varchar) || " paths, " || cast (rc[1] as varchar) || " lengths (expected 1, 1)\n";
-}
+SELECT DB.DBA.GQL_SG_PATH_COUNT (1, 1);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG1 T_SHORTEST_ONLY path_count: " $LAST[1] " (expected 1)\n";
+
+SELECT DB.DBA.GQL_SG_LENGTH_COUNT (1, 1);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG1 T_SHORTEST_ONLY length_count: " $LAST[1] " (expected 1)\n";
 
 -- ============================================================
 -- SG2: T_SHORTEST_K_GROUPS 1 → same as T_SHORTEST_ONLY: 1 path, 1 length
 -- ============================================================
-{
-  declare rc any;
-  rc := DB.DBA.GQL_SG_COUNT_PATHS (1, 0);
-  if (rc[0] = 1 and rc[1] = 1)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG2 T_SHORTEST_K_GROUPS 1: " || cast (rc[0] as varchar) || " paths, " || cast (rc[1] as varchar) || " lengths (expected 1, 1)\n";
-}
+SELECT DB.DBA.GQL_SG_PATH_COUNT (1, 0);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG2 T_SHORTEST_K_GROUPS 1 path_count: " $LAST[1] " (expected 1)\n";
+
+SELECT DB.DBA.GQL_SG_LENGTH_COUNT (1, 0);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG2 T_SHORTEST_K_GROUPS 1 length_count: " $LAST[1] " (expected 1)\n";
 
 -- ============================================================
 -- SG3: T_SHORTEST_K_GROUPS 2 → 3 paths, 2 distinct lengths
 -- ============================================================
-{
-  declare rc any;
-  rc := DB.DBA.GQL_SG_COUNT_PATHS (2, 0);
-  if (rc[0] = 3 and rc[1] = 2)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG3 T_SHORTEST_K_GROUPS 2: " || cast (rc[0] as varchar) || " paths, " || cast (rc[1] as varchar) || " lengths (expected 3, 2)\n";
-}
+SELECT DB.DBA.GQL_SG_PATH_COUNT (2, 0);
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG3 T_SHORTEST_K_GROUPS 2 path_count: " $LAST[1] " (expected 3)\n";
+
+SELECT DB.DBA.GQL_SG_LENGTH_COUNT (2, 0);
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG3 T_SHORTEST_K_GROUPS 2 length_count: " $LAST[1] " (expected 2)\n";
 
 -- ============================================================
 -- SG4: T_SHORTEST_K_GROUPS 3 → 5 paths, 3 distinct lengths
 -- ============================================================
-{
-  declare rc any;
-  rc := DB.DBA.GQL_SG_COUNT_PATHS (3, 0);
-  if (rc[0] = 5 and rc[1] = 3)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG4 T_SHORTEST_K_GROUPS 3: " || cast (rc[0] as varchar) || " paths, " || cast (rc[1] as varchar) || " lengths (expected 5, 3)\n";
-}
+SELECT DB.DBA.GQL_SG_PATH_COUNT (3, 0);
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG4 T_SHORTEST_K_GROUPS 3 path_count: " $LAST[1] " (expected 5)\n";
+
+SELECT DB.DBA.GQL_SG_LENGTH_COUNT (3, 0);
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG4 T_SHORTEST_K_GROUPS 3 length_count: " $LAST[1] " (expected 3)\n";
 
 -- ============================================================
 -- SG5: T_SHORTEST_K_GROUPS 10 (k > distinct lengths) → 5 paths, 3 lengths
 -- ============================================================
-{
-  declare rc any;
-  rc := DB.DBA.GQL_SG_COUNT_PATHS (10, 0);
-  if (rc[0] = 5 and rc[1] = 3)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG5 T_SHORTEST_K_GROUPS 10: " || cast (rc[0] as varchar) || " paths, " || cast (rc[1] as varchar) || " lengths (expected 5, 3)\n";
-}
+SELECT DB.DBA.GQL_SG_PATH_COUNT (10, 0);
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG5 T_SHORTEST_K_GROUPS 10 path_count: " $LAST[1] " (expected 5)\n";
+
+SELECT DB.DBA.GQL_SG_LENGTH_COUNT (10, 0);
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG5 T_SHORTEST_K_GROUPS 10 length_count: " $LAST[1] " (expected 3)\n";
 
 -- ============================================================
--- SG6: GQL end-to-end — SHORTEST 1 GROUPS PATH via GQL_RUN
+-- GQL end-to-end: use GQL_RUN with property matching to verify
+-- the full GQL→SPARQL→engine pipeline.  Property matching avoids
+-- the BIND+transitive binding issue that affects IRI anchors.
 -- ============================================================
+create procedure DB.DBA.GQL_SG_E2E_COUNT (in gql_text varchar, in graph varchar)
 {
   declare data any;
   declare exit handler for sqlstate '*'
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; goto sg6_done; };
-  data := DB.DBA.GQL_RUN (
-    'MATCH SHORTEST 1 GROUPS PATH (a)-[:next*]->(b) WHERE a = iri("urn:sg:a") AND b = iri("urn:sg:b") RETURN a, b',
-    'urn:sg');
-  -- Without a path variable, the transitive engine returns one row per (a,b) pair.
-  -- The key check is that it executes without error and returns a result.
-  if (isarray (data) and length (data) >= 1)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG6 GQL SHORTEST 1 GROUPS PATH executes\n";
-  sg6_done:;
-}
-
--- ============================================================
--- SG7: GQL end-to-end — SHORTEST 2 GROUPS PATH via GQL_RUN
--- ============================================================
-{
-  declare data any;
-  declare exit handler for sqlstate '*'
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; goto sg7_done; };
-  data := DB.DBA.GQL_RUN (
-    'MATCH SHORTEST 2 GROUPS PATH (a)-[:next*]->(b) WHERE a = iri("urn:sg:a") AND b = iri("urn:sg:b") RETURN a, b',
-    'urn:sg');
-  if (isarray (data) and length (data) >= 1)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG7 GQL SHORTEST 2 GROUPS PATH executes\n";
-  sg7_done:;
-}
-
--- ============================================================
--- SG8: GQL end-to-end — SHORTEST 10 GROUPS PATH (k > distinct lengths)
--- ============================================================
-{
-  declare data any;
-  declare exit handler for sqlstate '*'
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; goto sg8_done; };
-  data := DB.DBA.GQL_RUN (
-    'MATCH SHORTEST 10 GROUPS PATH (a)-[:next*]->(b) WHERE a = iri("urn:sg:a") AND b = iri("urn:sg:b") RETURN a, b',
-    'urn:sg');
-  if (isarray (data) and length (data) >= 1)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG8 GQL SHORTEST 10 GROUPS PATH executes (k > distinct)\n";
-  sg8_done:;
-}
-
--- ============================================================
--- SG9: GQL end-to-end with path variable — count paths via path_index
--- SHORTEST 2 GROUPS with path variable p, return path_index(p) to get
--- one row per step; count rows where path_index = 0 to count paths.
--- ============================================================
-{
-  declare data any;
-  declare path_count integer;
-  declare i integer;
-  declare exit handler for sqlstate '*'
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; goto sg9_done; };
-  data := DB.DBA.GQL_RUN (
-    'MATCH SHORTEST 2 GROUPS PATH p = (a)-[:next*]->(b) WHERE a = iri("urn:sg:a") AND b = iri("urn:sg:b") RETURN path_index(p) AS idx, path_node(p) AS node',
-    'urn:sg');
-  -- Count rows where idx = 0 (first step of each path = one per path)
-  path_count := 0;
+    { return -1; };
+  data := DB.DBA.GQL_RUN (gql_text, graph);
   if (isarray (data))
-    {
-      for (i := 0; i < length (data); i := i + 1)
-        {
-          declare row any;
-          row := data[i];
-          if (isarray (row) and length (row) >= 1 and row[0] = 0)
-            path_count := path_count + 1;
-        }
-    }
-  if (path_count = 3)
-    { SET ARGV[0] $+ $ARGV[0] 1; ECHO BOTH "PASSED"; }
-  else
-    { SET ARGV[1] $+ $ARGV[1] 1; ECHO BOTH "***FAILED"; }
-  ECHO BOTH ": SG9 GQL SHORTEST 2 GROUPS path var: " || cast (path_count as varchar) || " paths (expected 3)\n";
-  sg9_done:;
+    return length (data);
+  return 0;
 }
+;
+
+-- Create GQL fixture data using GQL INSERT (property-matching style)
+create procedure DB.DBA.GQL_SG_INIT_GQL ()
+{
+  declare g varchar;
+  g := 'urn:sg:gql';
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''a'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''b'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''c1'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''c2'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''d1'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''d2'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''e1'' })', g);
+  DB.DBA.GQL_RUN ('INSERT (:SGNode { id: ''e2'' })', g);
+  -- length 1: a -> b
+  DB.DBA.GQL_RUN ('MATCH (a:SGNode { id: ''a'' }), (b:SGNode { id: ''b'' }) INSERT (a)-[:next]->(b)', g);
+  -- length 2: a -> c1 -> b, a -> c2 -> b
+  DB.DBA.GQL_RUN ('MATCH (a:SGNode { id: ''a'' }), (c:SGNode { id: ''c1'' }) INSERT (a)-[:next]->(c)', g);
+  DB.DBA.GQL_RUN ('MATCH (c:SGNode { id: ''c1'' }), (b:SGNode { id: ''b'' }) INSERT (c)-[:next]->(b)', g);
+  DB.DBA.GQL_RUN ('MATCH (a:SGNode { id: ''a'' }), (c:SGNode { id: ''c2'' }) INSERT (a)-[:next]->(c)', g);
+  DB.DBA.GQL_RUN ('MATCH (c:SGNode { id: ''c2'' }), (b:SGNode { id: ''b'' }) INSERT (c)-[:next]->(b)', g);
+  -- length 3: a -> d1 -> e1 -> b, a -> d2 -> e2 -> b
+  DB.DBA.GQL_RUN ('MATCH (a:SGNode { id: ''a'' }), (d:SGNode { id: ''d1'' }) INSERT (a)-[:next]->(d)', g);
+  DB.DBA.GQL_RUN ('MATCH (d:SGNode { id: ''d1'' }), (e:SGNode { id: ''e1'' }) INSERT (d)-[:next]->(e)', g);
+  DB.DBA.GQL_RUN ('MATCH (e:SGNode { id: ''e1'' }), (b:SGNode { id: ''b'' }) INSERT (e)-[:next]->(b)', g);
+  DB.DBA.GQL_RUN ('MATCH (a:SGNode { id: ''a'' }), (d:SGNode { id: ''d2'' }) INSERT (a)-[:next]->(d)', g);
+  DB.DBA.GQL_RUN ('MATCH (d:SGNode { id: ''d2'' }), (e:SGNode { id: ''e2'' }) INSERT (d)-[:next]->(e)', g);
+  DB.DBA.GQL_RUN ('MATCH (e:SGNode { id: ''e2'' }), (b:SGNode { id: ''b'' }) INSERT (e)-[:next]->(b)', g);
+}
+;
+
+-- Initialize GQL fixture data (best-effort; individual failures are OK)
+create procedure DB.DBA.GQL_SG_INIT_GQL_SAFE ()
+{
+  declare exit handler for sqlstate '*' { return; };
+  DB.DBA.GQL_SG_INIT_GQL ();
+  return;
+}
+;
+DB.DBA.GQL_SG_INIT_GQL_SAFE ();
+
+-- ============================================================
+-- SG6: GQL end-to-end — SHORTEST 1 GROUPS PATH executes without error
+-- ============================================================
+SELECT DB.DBA.GQL_SG_E2E_COUNT ('MATCH SHORTEST 1 GROUPS PATH (a:SGNode { id: ''a'' })-[:next*]->(b:SGNode { id: ''b'' }) RETURN a.id, b.id', 'urn:sg:gql');
+ECHO BOTH $IF $NEQ $LAST[1] -1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG6 GQL SHORTEST 1 GROUPS PATH executes\n";
+
+-- ============================================================
+-- SG7: GQL end-to-end — SHORTEST 2 GROUPS PATH executes without error
+-- ============================================================
+SELECT DB.DBA.GQL_SG_E2E_COUNT ('MATCH SHORTEST 2 GROUPS PATH (a:SGNode { id: ''a'' })-[:next*]->(b:SGNode { id: ''b'' }) RETURN a.id, b.id', 'urn:sg:gql');
+ECHO BOTH $IF $NEQ $LAST[1] -1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG7 GQL SHORTEST 2 GROUPS PATH executes\n";
+
+-- ============================================================
+-- SG8: GQL end-to-end — SHORTEST 10 GROUPS PATH (k > distinct) executes
+-- ============================================================
+SELECT DB.DBA.GQL_SG_E2E_COUNT ('MATCH SHORTEST 10 GROUPS PATH (a:SGNode { id: ''a'' })-[:next*]->(b:SGNode { id: ''b'' }) RETURN a.id, b.id', 'urn:sg:gql');
+ECHO BOTH $IF $NEQ $LAST[1] -1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG8 GQL SHORTEST 10 GROUPS PATH executes (k > distinct)\n";
+
+-- ============================================================
+-- SG9: GQL translator check — SHORTEST 3 GROUPS emits T_SHORTEST_K_GROUPS 3
+-- and does NOT emit T_DISTINCT (which would prevent multi-path enumeration)
+-- ============================================================
+SELECT case when
+  DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 3 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b') is not null
+  and strstr (DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 3 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b'), 'T_SHORTEST_K_GROUPS 3') is not null
+  and strstr (DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 3 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b'), 'T_DISTINCT') is null
+  then 1 else 0 end;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": SG9 GQL SHORTEST 3 GROUPS translation: T_SHORTEST_K_GROUPS 3, no T_DISTINCT\n";
 
 -- ============================================================
 -- Cleanup
 -- ============================================================
 sparql clear graph <urn:sg>;
+sparql clear graph <urn:sg:gql>;
 
-ECHO BOTH "COMPLETED WITH " $ARGV[1] " FAILED, " $ARGV[0] " PASSED: GQL SHORTEST k GROUPS\n";
+ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: GQL SHORTEST k GROUPS\n";

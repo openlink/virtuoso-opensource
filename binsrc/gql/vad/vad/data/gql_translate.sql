@@ -3775,8 +3775,12 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
       sc_groups := aref (sc, 2);
       -- SHORTEST k GROUPS with k > 1: use T_SHORTEST_K_GROUPS (exact k
       -- distinct length-groups) instead of T_SHORTEST_ONLY (k=1 case).
+      -- T_DISTINCT is omitted for k > 1 because it prevents multiple paths
+      -- to the same node, which is required to enumerate all paths in each
+      -- length-group.  For k=1, T_DISTINCT is safe since T_SHORTEST_ONLY
+      -- stops at the first result anyway.
       if (sc_groups = 1 and sc_count > 1)
-        topt := concat ('T_DISTINCT, T_SHORTEST_K_GROUPS ', cast (sc_count as varchar));
+        topt := concat ('T_SHORTEST_K_GROUPS ', cast (sc_count as varchar));
       else
         topt := 'T_DISTINCT, T_SHORTEST_ONLY';
       -- ANY SHORTEST → limit to 1 result

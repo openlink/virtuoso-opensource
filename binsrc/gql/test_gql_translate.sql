@@ -1821,13 +1821,13 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154a FAIL: SHORTEST 2 GROUPS: ', cast (_sparql as varchar)))); }
 
-  -- TR154b: SHORTEST k GROUPS must NOT emit T_SHORTEST_ONLY for k > 1
+  -- TR154b: SHORTEST k GROUPS must NOT emit T_SHORTEST_ONLY or T_DISTINCT for k > 1
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST 2 GROUPS PATH (a)-[:KNOWS*]->(b) WHERE a = iri("urn:a") AND b = iri("urn:b") RETURN a, b');
-  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS 2') is not null and strstr (_sparql, 'T_SHORTEST_ONLY') is null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154b PASS: SHORTEST 2 GROUPS no T_SHORTEST_ONLY')); }
+  if (_sparql is not null and strstr (_sparql, 'T_SHORTEST_K_GROUPS 2') is not null and strstr (_sparql, 'T_SHORTEST_ONLY') is null and strstr (_sparql, 'T_DISTINCT') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR154b PASS: SHORTEST 2 GROUPS no T_SHORTEST_ONLY/T_DISTINCT')); }
   else
-    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154b FAIL: SHORTEST 2 GROUPS should not have T_SHORTEST_ONLY: ', cast (_sparql as varchar)))); }
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR154b FAIL: SHORTEST 2 GROUPS should not have T_SHORTEST_ONLY/T_DISTINCT: ', cast (_sparql as varchar)))); }
 
   -- TR154c: SHORTEST 1 GROUPS PATH still uses T_SHORTEST_ONLY (k=1 unchanged)
   _total := _total + 1;

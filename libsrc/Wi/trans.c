@@ -1321,9 +1321,20 @@ tn_results (trans_node_t * tn, caddr_t * inst)
   if (-1 == QST_INT (inst, tn->clb.clb_nth_set))
     {
       SET_THR_TMP_POOL (itcl->itcl_pool);
-      if (tn->tn_complement)
-	tn_init_pair (tn, inst);
-      while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+      /* T_SHORTEST_K_GROUPS requires unidirectional BFS so that results
+	 are produced in non-decreasing depth order.  The bidirectional
+	 (complement) optimization produces results at multiple depths in
+	 a single expansion step, which makes depth-group counting
+	 unreliable.  Fall through to plain tn_advance which processes
+	 only the primary trans_node's sets. */
+      if (tn->tn_shortest_k_groups > 0)
+	while (tn_advance (tn, inst));
+      else
+	{
+	  if (tn->tn_complement)
+	    tn_init_pair (tn, inst);
+	  while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+	}
       SET_THR_TMP_POOL (NULL);
       QST_INT (inst, tn->clb.clb_nth_set) = 0;
     }
