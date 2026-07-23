@@ -1945,3 +1945,173 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
 ;
 
 SELECT DB.DBA.GQL_TRANSLATE_TESTS ();
+
+----------------------------------------------------------------------
+-- P0-2: Safe parameter binding (translation)
+--
+-- Parameters are bound as typed SPARQL terms at translation time, not by
+-- string substitution. These assert that values are escaped/typed and that
+-- there is no substring-collision corruption of unrelated variables.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_T_ASSERT_PARAM (
+  in _name varchar, in _gql varchar, in _params any,
+  in _expect varchar, in _forbid varchar,
+  inout _pass integer, inout _fail integer, inout _results any)
+{
+  declare _sparql varchar;
+  {
+    declare exit handler for sqlstate '*'
+      {
+        _fail := _fail + 1;
+        _results := vector_concat (_results, vector (concat (_name, ' FAIL: signal caught')));
+        return;
+      };
+    _sparql := DB.DBA.GQL_TO_SPARQL_PARAMS (_gql, null, _params);
+    if (_sparql is not null
+        and (_expect is null or strstr (_sparql, _expect) is not null)
+        and (_forbid is null or strstr (_sparql, _forbid) is null))
+      { _pass := _pass + 1; _results := vector_concat (_results, vector (concat (_name, ' PASS'))); }
+    else
+      { _fail := _fail + 1; _results := vector_concat (_results, vector (concat (_name, ' FAIL: got ', cast (_sparql as varchar)))); }
+  }
+}
+;
+
+create procedure DB.DBA.GQL_PARAM_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- PB1: a string value carrying SPARQL syntax is emitted as an escaped
+  -- literal (contains a backslash-escaped double quote), never as raw tokens.
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB1',
+    'MATCH (n) WHERE n.name = $$p RETURN n',
+    vector (vector ('p', 'a" } INSERT DATA { <urn:evil> <urn:p> 1 } #')),
+    '\\"', null, _pass, _fail, _results);
+
+  -- PB2: name-collision safety — binding a parameter named "n" must NOT
+  -- corrupt the RETURN projection alias ?n (the old string-replace would).
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB2',
+    'MATCH (n) WHERE n.age = $$n RETURN n',
+    vector (vector ('n', 42)),
+    'AS ?n)', null, _pass, _fail, _results);
+
+  -- PB3: integer binds as a numeric SPARQL term.
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB3',
+    'MATCH (n) WHERE n.age = $$v RETURN n',
+    vector (vector ('v', 42)),
+    '42', null, _pass, _fail, _results);
+
+  -- PB4: an IRI-shaped string binds as an IRI term.
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB4',
+    'MATCH (n) WHERE n.homepage = $$u RETURN n',
+    vector (vector ('u', 'http://example.org/x')),
+    '<http://example.org/x>', null, _pass, _fail, _results);
+
+  -- PB5: a string that merely looks IRI-ish but has breakout characters
+  -- (space, '>') is a literal, NOT an <...> IRI.
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB5',
+    'MATCH (n) WHERE n.name = $$s RETURN n',
+    vector (vector ('s', 'http://x y> evil')),
+    '"http://x y> evil"', '<http://x', _pass, _fail, _results);
+
+  -- PB6: an unbound parameter stays a SPARQL variable.
+  DB.DBA.GQL_T_ASSERT_PARAM ('PB6',
+    'MATCH (n) WHERE n.age = $$q RETURN n',
+    null,
+    '?q', null, _pass, _fail, _results);
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('PARAM PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('PARAM FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' param test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_PARAM_TESTS ();
+
+----------------------------------------------------------------------
+-- P1-2: Variable binding & scoping
+--
+-- Locks in the variable-resolution behavior: unbound variables are a hard
+-- error (G3001, from GQL_PLAN_VALIDATE_SCOPE), while shadowing and RETURN
+-- aliasing are legitimate and must NOT fail. SPARQL variable naming is
+-- deterministic (?gql_n_<name> etc.), so the same GQL variable maps to the
+-- same SPARQL variable across an OPTIONAL boundary.
+----------------------------------------------------------------------
+
+-- Returns the SQLSTATE if translating _gql fails, else '00000'.
+create procedure DB.DBA.GQL_T_TRANSLATE_CODE (in _gql varchar)
+{
+  declare exit handler for sqlstate '*' { return __SQL_STATE; };
+  DB.DBA.GQL_TO_SPARQL (_gql);
+  return '00000';
+}
+;
+
+create procedure DB.DBA.GQL_T_ASSERT_FAIL (
+  in _name varchar, in _gql varchar, in _expect_code varchar,
+  inout _pass integer, inout _fail integer, inout _results any)
+{
+  declare _code varchar;
+  _code := DB.DBA.GQL_T_TRANSLATE_CODE (_gql);
+  if (_code <> '00000' and (_expect_code is null or strstr (_code, _expect_code) is not null))
+    { _pass := _pass + 1; _results := vector_concat (_results, vector (concat (_name, ' PASS'))); }
+  else if (_code <> '00000')
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat (_name, ' FAIL: expected ', _expect_code, ' got ', _code))); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat (_name, ' FAIL: expected failure ', coalesce (_expect_code, '(any)'), ' but translated'))); }
+}
+;
+
+create procedure DB.DBA.GQL_VARBIND_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- VB1/VB2: an unbound variable is a hard error (G3001), not a silent warning.
+  DB.DBA.GQL_T_ASSERT_FAIL ('VB1 undef in RETURN',
+    'MATCH (n) RETURN m', 'G3001', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_FAIL ('VB2 undef in WHERE',
+    'MATCH (n) WHERE m.x > 1 RETURN n', 'G3001', _pass, _fail, _results);
+
+  -- VB3: nested OPTIONAL — the same GQL var maps to the same SPARQL var on
+  -- both sides of the OPTIONAL boundary (deterministic naming), and OPTIONAL
+  -- is emitted.
+  DB.DBA.GQL_T_ASSERT_SPARQL ('VB3 optional naming n',
+    'MATCH (n) OPTIONAL MATCH (n)-[:KNOWS]->(m) RETURN n, m', '?gql_n_n', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('VB4 optional naming m',
+    'MATCH (n) OPTIONAL MATCH (n)-[:KNOWS]->(m) RETURN n, m', '?gql_n_m', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('VB5 optional keyword',
+    'MATCH (n) OPTIONAL MATCH (n)-[:KNOWS]->(m) RETURN n, m', 'OPTIONAL', _pass, _fail, _results);
+
+  -- VB6: RETURN n AS n reuses the name as an alias — legitimate, must NOT fail
+  -- (the var pass emits a benign GW001 warning only).
+  DB.DBA.GQL_T_ASSERT_SPARQL ('VB6 return alias reuse',
+    'MATCH (n) RETURN n AS n', 'SELECT', _pass, _fail, _results);
+
+  -- VB7: shadowing a var inside OPTIONAL is legitimate, must NOT fail.
+  DB.DBA.GQL_T_ASSERT_SPARQL ('VB7 optional shadow non-fatal',
+    'MATCH (n) OPTIONAL MATCH (n) RETURN n', 'SELECT', _pass, _fail, _results);
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('VARBIND PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('VARBIND FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' variable-binding test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_VARBIND_TESTS ();

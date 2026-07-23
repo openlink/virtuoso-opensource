@@ -407,8 +407,209 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": GQL ASK returns result after DML operations\n";
 
 -- ============================================================
+-- P0-1: Multi-statement DML atomicity (all-or-nothing groups)
+--
+-- A GQL statement that translates to several ';\n'-separated SPARQL
+-- statements (MODIFY, SET-as-delete+insert, multi-clause DML) is routed
+-- through DB.DBA.GQL_EXEC_DML_ATOMIC. If any statement in the group fails,
+-- the whole group must roll back — no partial write may survive. These
+-- tests drive GQL_EXEC_DML_ATOMIC directly with realistic per-statement
+-- 'SPARQL ...' text (the exact shape the translator emits), forcing a
+-- deterministic failure via a malformed middle/second statement.
+-- ============================================================
+
+-- Helper: run a DML group through the atomic executor and report whether
+-- it signaled an error (1) or completed (0). Uses a procedure-level exit
+-- handler — the same pattern as binsrc/gql/tck/test_tck_full.sql — so the
+-- rollback performed inside GQL_EXEC_DML_ATOMIC has already taken effect by
+-- the time the caller inspects the graph.
+create procedure DB.DBA.GQL_ACID_ATOMIC_TRY (in _sparql varchar)
+{
+  declare exit handler for sqlstate '*' { return 1; };
+  DB.DBA.GQL_EXEC_DML_ATOMIC (_sparql);
+  return 0;
+}
+;
+
+-- AC-ATOMIC-1: MODIFY-shaped 2-statement group; the SECOND statement fails.
+-- The first statement's write must NOT survive.
+create procedure DB.DBA.GQL_ACID_ATOMIC_1 ()
+{
+  declare _err, _cnt integer;
+  declare _sparql varchar;
+  set isolation='serializable';
+
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  -- Statement 2 is a valid INSERT DATA followed by a garbage token, which the
+  -- SPARQL compiler rejects with a syntax error (a bare subject with no
+  -- predicate/object is, by contrast, tolerated by Virtuoso as a no-op).
+  _sparql := concat (
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#a1> <urn:gql:atomic#m> 1 } };\n',
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#a2> <urn:gql:atomic#m> 2 } } zzgarbage');
+
+  _err := DB.DBA.GQL_ACID_ATOMIC_TRY (_sparql);
+
+  _cnt := coalesce ((sparql select count(*) from <urn:gql:atomic> where { ?s ?p ?o }), 0);
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  -- must have signaled an error AND left the graph empty (a1 rolled back)
+  if (_err = 1 and _cnt = 0)
+    return 1;
+  return 0;
+}
+;
+
+SELECT DB.DBA.GQL_ACID_ATOMIC_1 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GQL multi-statement DML rolls back fully when a later statement fails\n";
+
+-- AC-ATOMIC-2: 3-statement group; the MIDDLE statement fails.
+-- Neither the first nor the third statement's write may survive.
+create procedure DB.DBA.GQL_ACID_ATOMIC_2 ()
+{
+  declare _err, _cnt integer;
+  declare _sparql varchar;
+  set isolation='serializable';
+
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  -- Middle statement is a valid INSERT DATA + garbage token -> syntax error.
+  _sparql := concat (
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#a1> <urn:gql:atomic#m> 1 } };\n',
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#a2> <urn:gql:atomic#m> 2 } } zzgarbage;\n',
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#a3> <urn:gql:atomic#m> 3 } }');
+
+  _err := DB.DBA.GQL_ACID_ATOMIC_TRY (_sparql);
+
+  _cnt := coalesce ((sparql select count(*) from <urn:gql:atomic> where { ?s ?p ?o }), 0);
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  if (_err = 1 and _cnt = 0)
+    return 1;
+  return 0;
+}
+;
+
+SELECT DB.DBA.GQL_ACID_ATOMIC_2 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GQL 3-statement DML with mid-group failure applies nothing\n";
+
+-- AC-ATOMIC-3: single-statement fast path still works (regression).
+-- A lone INSERT DATA (no ';\n') must persist through the fast path.
+create procedure DB.DBA.GQL_ACID_ATOMIC_3 ()
+{
+  declare _cnt integer;
+  set isolation='serializable';
+
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  DB.DBA.GQL_EXEC_DML_ATOMIC (
+    'SPARQL INSERT DATA { GRAPH <urn:gql:atomic> { <urn:gql:atomic#single> <urn:gql:atomic#m> 42 } }');
+  commit work;
+
+  _cnt := coalesce ((sparql select count(*) from <urn:gql:atomic> where { ?s ?p ?o }), 0);
+  sparql clear graph <urn:gql:atomic>;
+  commit work;
+
+  if (_cnt = 1)
+    return 1;
+  return 0;
+}
+;
+
+SELECT DB.DBA.GQL_ACID_ATOMIC_3 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GQL single-statement DML fast path still persists\n";
+
+-- ============================================================
+-- P0-2: Safe parameter binding (end-to-end execution)
+-- ============================================================
+
+-- AC-PARAM-1: parameterized INSERT then parameterized read bind correctly.
+create procedure DB.DBA.GQL_ACID_PARAM_1 ()
+{
+  declare _data any;
+  set isolation='serializable';
+  sparql clear graph <urn:gql:param>;
+  commit work;
+
+  DB.DBA.GQL_PARAMS ('INSERT (:Person { name: $$nm, age: $$ag })', 'urn:gql:param',
+    vector (vector ('nm', 'Alice'), vector ('ag', 30)));
+  commit work;
+
+  -- bind a string parameter in the read; expect exactly one matching row
+  _data := DB.DBA.GQL_PARAMS ('MATCH (p:Person) WHERE p.name = $$q RETURN p.age', 'urn:gql:param',
+    vector (vector ('q', 'Alice')));
+
+  sparql clear graph <urn:gql:param>;
+  commit work;
+
+  if (_data is not null and length (_data) = 1)
+    return 1;
+  return 0;
+}
+;
+
+SELECT DB.DBA.GQL_ACID_PARAM_1 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GQL parameterized INSERT + read bind correctly\n";
+
+-- AC-PARAM-2: a malicious string parameter is bound as a literal and cannot
+-- inject SPARQL — the read matches nothing and the graph is unchanged.
+create procedure DB.DBA.GQL_ACID_PARAM_2 ()
+{
+  declare _data any;
+  declare _cnt_before, _cnt_after, _evil integer;
+  set isolation='serializable';
+  sparql clear graph <urn:gql:param>;
+  commit work;
+
+  DB.DBA.GQL_PARAMS ('INSERT (:Person { name: $$nm })', 'urn:gql:param',
+    vector (vector ('nm', 'Alice')));
+  commit work;
+
+  _cnt_before := coalesce ((sparql select count(*) from <urn:gql:param> where { ?s ?p ?o }), 0);
+
+  -- If this value were spliced into the SPARQL text unescaped it would inject
+  -- an INSERT of <urn:evil>. Bound as a literal, it simply matches nothing.
+  _data := DB.DBA.GQL_PARAMS (
+    'MATCH (p:Person) WHERE p.name = $$x RETURN p', 'urn:gql:param',
+    vector (vector ('x', 'zzz" } ; INSERT DATA { GRAPH <urn:gql:param> { <urn:evil> <urn:evil> 1 } } #')));
+
+  _cnt_after := coalesce ((sparql select count(*) from <urn:gql:param> where { ?s ?p ?o }), 0);
+  _evil := coalesce ((sparql select count(*) from <urn:gql:param> where { <urn:evil> ?p ?o }), 0);
+
+  sparql clear graph <urn:gql:param>;
+  commit work;
+
+  -- no rows returned, graph unchanged, and no injected triple present
+  if ((_data is null or length (_data) = 0)
+      and _cnt_after = _cnt_before and _evil = 0)
+    return 1;
+  return 0;
+}
+;
+
+SELECT DB.DBA.GQL_ACID_PARAM_2 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GQL parameter injection attempt is neutralized\n";
+
+-- ============================================================
 -- Cleanup
 -- ============================================================
 sparql clear graph <urn:gql:acid>;
+sparql clear graph <urn:gql:atomic>;
+sparql clear graph <urn:gql:param>;
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: GQL ACID transaction equivalence tests\n";
