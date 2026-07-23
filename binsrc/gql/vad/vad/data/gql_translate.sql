@@ -2372,6 +2372,29 @@ create procedure DB.DBA.GQL_PARAM_TO_SPARQL (in _val any)
 }
 ;
 
+----------------------------------------------------------------------
+-- Emit a GQL list literal ('LIST' AST node) as a Virtuoso vector scalar:
+-- bif:vector(e1, e2, ...). Used for list VALUE functions (CARDINALITY/SIZE/
+-- TRIM) where the list must be a single value, as opposed to the RDF
+-- collection / VALUES forms used for list membership and expansion.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_GEN_LIST_VECTOR (in _list_ast any, inout _ctx any)
+{
+  declare items any;
+  declare i integer;
+  declare parts varchar;
+  items := aref (_list_ast, 1);
+  parts := '';
+  for (i := 0; i < length (items); i := i + 1)
+    {
+      if (i > 0) parts := concat (parts, ', ');
+      parts := concat (parts, DB.DBA.GQL_GEN_EXPR (aref (items, i), _ctx));
+    }
+  return concat ('bif:vector(', parts, ')');
+}
+;
+
 create procedure DB.DBA.GQL_LIKE_PATTERN_TO_REGEX (in _pattern varchar)
 {
   declare i, ch_code integer;
@@ -2609,6 +2632,26 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
         return DB.DBA.GQL_GEN_GRAPH_CENTRALITY_EXPR (args_vec, _ctx, 'closeness');
       if (lower (fname) = 'betweenness_centrality')
         return DB.DBA.GQL_GEN_GRAPH_CENTRALITY_EXPR (args_vec, _ctx, 'betweenness');
+      -- List value functions over the Virtuoso vector form. A list LITERAL is
+      -- emitted as bif:vector(...) — a scalar value — rather than the RDF
+      -- collection form used for membership/expansion (UNNEST/IN/FOR), so
+      -- length/trim work. Handled BEFORE the generic argument loop below so a
+      -- list argument is not also materialized as rdf:first/rdf:rest triples.
+      if ((fname = 'cardinality' or fname = 'size')
+          and length (args_vec) = 1
+          and isarray (aref (args_vec, 0)) and aref (aref (args_vec, 0), 0) = 'LIST')
+        return concat ('bif:length(',
+          DB.DBA.GQL_GEN_LIST_VECTOR (aref (args_vec, 0), _ctx), ')');
+      if (fname = 'trim' and length (args_vec) = 2)
+        {
+          declare _lst_sparql varchar;
+          if (isarray (aref (args_vec, 0)) and aref (aref (args_vec, 0), 0) = 'LIST')
+            _lst_sparql := DB.DBA.GQL_GEN_LIST_VECTOR (aref (args_vec, 0), _ctx);
+          else
+            _lst_sparql := DB.DBA.GQL_GEN_EXPR (aref (args_vec, 0), _ctx);
+          return concat ('sql:GQL_LIST_TRIM(', _lst_sparql, ', ',
+            DB.DBA.GQL_GEN_EXPR (aref (args_vec, 1), _ctx), ')');
+        }
       for (fi := 0; fi < length (args_vec); fi := fi + 1)
         {
           if (fargs <> '') fargs := concat (fargs, ', ');
@@ -2658,17 +2701,9 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       if (fname = 'length') return concat ('STRLEN(', fargs, ')');
       if (fname = 'replace') return concat ('REPLACE(', fargs, ')');
       if (fname = 'concat') return concat ('CONCAT(', fargs, ')');
-      if (fname = 'trim')
-        {
-          -- SPARQL TRIM takes a single string argument. GQL TRIM(list, n)
-          -- (trim n elements from a list) has no scalar-list representation
-          -- over RDF (GQL lists are RDF collections), so reject it clearly
-          -- instead of emitting invalid SPARQL. See gql-limitations.md.
-          if (length (args_vec) <> 1)
-            signal ('GQ005',
-              'TRIM(list, n) is not supported: a GQL list has no scalar value form over RDF. TRIM(str) trims a string.');
-          return concat ('TRIM(', fargs, ')');
-        }
+      -- Single-argument string trim. TRIM(list, n) (two args) is a list
+      -- function handled earlier via the Virtuoso vector form.
+      if (fname = 'trim') return concat ('TRIM(', fargs, ')');
       -- String functions via bif: pass-through
       if (fname = 'left') return concat ('bif:left(', fargs, ')');
       if (fname = 'right') return concat ('bif:right(', fargs, ')');

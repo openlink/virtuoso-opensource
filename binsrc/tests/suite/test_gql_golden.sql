@@ -167,6 +167,18 @@ create procedure DB.DBA.GQL_GOLDEN_TESTS ()
     'RETURN 5 > 3 AS a, 2 <= 2 AS b', null, '[1|1]', 0, _pass, _fail);
   DB.DBA.GQL_GOLD_ASSERT ('G06 coalesce+abs',
     'RETURN coalesce(null, 7) AS c, abs(-5) AS a', null, '[7|5]', 0, _pass, _fail);
+
+  -- List value functions over the Virtuoso vector form (P2-4)
+  DB.DBA.GQL_GOLD_ASSERT ('GL1 cardinality',
+    'RETURN cardinality([1,2,3]) AS c', null, '[3]', 0, _pass, _fail);
+  DB.DBA.GQL_GOLD_ASSERT ('GL2 size',
+    'RETURN size([1,2,3,4]) AS c', null, '[4]', 0, _pass, _fail);
+  DB.DBA.GQL_GOLD_ASSERT ('GL3 trim first n',
+    'RETURN cardinality(trim([1,2,3,4], 2)) AS c', null, '[2]', 0, _pass, _fail);
+  DB.DBA.GQL_GOLD_ASSERT ('GL4 trim n<=0 empty',
+    'RETURN cardinality(trim([1,2,3], 0)) AS c', null, '[0]', 0, _pass, _fail);
+  DB.DBA.GQL_GOLD_ASSERT ('GL5 trim n>=len whole',
+    'RETURN cardinality(trim([1,2,3], 9)) AS c', null, '[3]', 0, _pass, _fail);
   DB.DBA.GQL_GOLD_ASSERT ('G07 string funcs',
     'RETURN upper("ab") AS u, "a" || "b" AS c', null, '[AB|ab]', 0, _pass, _fail);
   DB.DBA.GQL_GOLD_ASSERT ('G08 case',

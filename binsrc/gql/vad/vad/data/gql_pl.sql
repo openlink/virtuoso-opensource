@@ -226,3 +226,30 @@ create procedure DB.DBA.GQL_UNNEST_PL (in _arr any)
     }
 }
 ;
+
+----------------------------------------------------------------------
+-- GQL list TRIM: TRIM(list, n) returns the first n elements of the list
+-- (i.e. the list truncated to length n). n <= 0 yields an empty list;
+-- n >= length(list) yields the whole list. The list is a Virtuoso vector
+-- (see GQL_GEN_LIST_VECTOR); the result is a vector, so it composes with
+-- CARDINALITY/SIZE. A PL procedure, so it is called via the sql: prefix
+-- from generated SPARQL (bif: is only for built-in/C functions).
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_LIST_TRIM (in _list any, in _n integer)
+{
+  declare _len, i integer;
+  declare _out any;
+  if (not isarray (_list))
+    return vector ();
+  _len := length (_list);
+  if (_n <= 0)
+    return vector ();
+  if (_n >= _len)
+    return _list;
+  _out := vector ();
+  for (i := 0; i < _n; i := i + 1)
+    _out := vector_concat (_out, vector (aref (_list, i)));
+  return _out;
+}
+;

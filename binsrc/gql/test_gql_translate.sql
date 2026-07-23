@@ -2117,13 +2117,13 @@ create procedure DB.DBA.GQL_VARBIND_TESTS ()
 SELECT DB.DBA.GQL_VARBIND_TESTS ();
 
 ----------------------------------------------------------------------
--- P2-4: Path & list value functions (unsupported — must fail cleanly)
+-- P2-4: Path & list value functions
 --
--- Path values and list values have no scalar representation over RDF (paths
--- are materialized relationally per step; lists are RDF collections), so
--- PATH_LENGTH / ELEMENTS / PATH[...] and TRIM(list, n) are not supported.
--- They must fail cleanly rather than translate to invalid SPARQL.
--- TRIM(str) (1-arg string trim) still works.
+-- LIST value functions are supported over the Virtuoso vector form:
+-- CARDINALITY/SIZE -> bif:length(bif:vector(...)), TRIM(list, n) ->
+-- sql:GQL_LIST_TRIM(bif:vector(...), n). PATH value functions
+-- (PATH_LENGTH / ELEMENTS / PATH[...]) have no scalar path value and are
+-- rejected. TRIM(str) (1-arg) is ordinary string trim.
 ----------------------------------------------------------------------
 
 create procedure DB.DBA.GQL_PATHLIST_TESTS ()
@@ -2133,20 +2133,24 @@ create procedure DB.DBA.GQL_PATHLIST_TESTS ()
   declare i integer;
   _pass := 0; _fail := 0; _results := vector ();
 
-  -- TRIM(list, n): the one former silent mis-mapping -> now a clean GQ005.
-  DB.DBA.GQL_T_ASSERT_FAIL ('PL1 trim(list,n) -> GQ005',
-    'MATCH (n) RETURN trim([1,2,3], 1)', 'GQ005', _pass, _fail, _results);
+  -- List functions translate to the vector form (no RDF-collection triples).
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PL1 cardinality(list) -> bif:vector',
+    'MATCH (n) RETURN cardinality([1,2,3])', 'bif:length(bif:vector(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PL2 size(list) -> bif:vector',
+    'MATCH (n) RETURN size([1,2,3])', 'bif:length(bif:vector(', _pass, _fail, _results);
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PL3 trim(list,n) -> GQL_LIST_TRIM',
+    'MATCH (n) RETURN trim([1,2,3], 1)', 'sql:GQL_LIST_TRIM(bif:vector(', _pass, _fail, _results);
 
-  -- PATH_LENGTH / ELEMENTS / PATH[...] are reserved and rejected at parse.
-  DB.DBA.GQL_T_ASSERT_FAIL ('PL2 path_length -> error',
+  -- PATH_LENGTH / ELEMENTS / PATH[...] are reserved and rejected.
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL4 path_length -> error',
     'MATCH (n) RETURN path_length(n)', null, _pass, _fail, _results);
-  DB.DBA.GQL_T_ASSERT_FAIL ('PL3 elements -> error',
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL5 elements -> error',
     'MATCH (n) RETURN elements(n)', null, _pass, _fail, _results);
-  DB.DBA.GQL_T_ASSERT_FAIL ('PL4 PATH[...] -> error',
+  DB.DBA.GQL_T_ASSERT_FAIL ('PL6 PATH[...] -> error',
     'MATCH (n) RETURN PATH[a, b]', null, _pass, _fail, _results);
 
   -- TRIM(str) (1-arg string trim) is unaffected.
-  DB.DBA.GQL_T_ASSERT_SPARQL ('PL5 trim(str) ok',
+  DB.DBA.GQL_T_ASSERT_SPARQL ('PL7 trim(str) ok',
     'MATCH (n) RETURN trim(n.name)', 'TRIM(', _pass, _fail, _results);
 
   _results := vector_concat (_results, vector (''));
