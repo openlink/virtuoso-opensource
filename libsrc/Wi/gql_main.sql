@@ -102,49 +102,85 @@ create procedure DB.DBA.GQL_EXEC_SPARQL (in _sparql varchar)
 }
 ;
 
+----------------------------------------------------------------------
+-- Split a generated SPARQL string into its top-level statements.
+--
+-- The translator separates distinct SPARQL update statements with ';\n'
+-- (a semicolon immediately followed by a newline). Triples *within* a
+-- single statement are separated by ' .\n', and the literal formatter
+-- (DB.DBA.GQL_GEN_LITERAL) escapes newlines inside string literals to the
+-- two characters '\' 'n'. A raw ';' + newline therefore only appears at a
+-- true statement boundary, which makes splitting on that sequence safe.
+-- Empty fragments (e.g. a trailing separator) are dropped.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_SPLIT_SPARQL_STATEMENTS (in _sparql_str varchar)
+{
+  declare statements any;
+  declare i, pos, slen integer;
+  declare frag varchar;
+
+  statements := vector ();
+  if (_sparql_str is null)
+    return statements;
+  slen := length (_sparql_str);
+  pos := 0;
+  for (i := 0; i < slen; i := i + 1)
+    {
+      if (aref (_sparql_str, i) = 59  -- ';'
+          and i + 1 < slen and aref (_sparql_str, i + 1) = 10)  -- '\n'
+        {
+          frag := trim (subseq (_sparql_str, pos, i));
+          if (length (frag) > 0)
+            statements := vector_concat (statements, vector (frag));
+          pos := i + 2;  -- skip both ';' and '\n'
+        }
+    }
+  if (pos < slen)
+    {
+      frag := trim (subseq (_sparql_str, pos, slen));
+      if (length (frag) > 0)
+        statements := vector_concat (statements, vector (frag));
+    }
+  return statements;
+}
+;
+
 create procedure DB.DBA.GQL_EXEC_MULTI_SPARQL (in _sparql_str varchar)
 {
   declare statements any;
   declare i integer;
   declare state, msg varchar;
   declare meta, data any;
-  declare pos, slen, next_pos integer;
 
-  -- Split on ';\n' boundaries between SPARQL statements
-  statements := vector ();
-  slen := length (_sparql_str);
-  pos := 0;
-  for (i := 0; i < slen; i := i + 1)
-    {
-      if (aref (_sparql_str, i) = 59  -- ';'
-          and i + 1 < slen and aref (_sparql_str, i + 1) = 10)  -- newline
-        {
-          statements := vector_concat (statements, vector (trim (subseq (_sparql_str, pos, i))));
-          pos := i + 2;  -- skip both ';' and '\n'
-        }
-    }
-  if (pos < slen)
-    statements := vector_concat (statements, vector (trim (subseq (_sparql_str, pos, slen))));
-
+  statements := DB.DBA.GQL_SPLIT_SPARQL_STATEMENTS (_sparql_str);
   for (i := 0; i < length (statements); i := i + 1)
     {
-      declare stmt varchar;
-      stmt := aref (statements, i);
-      if (length (trim (stmt)) > 0)
-        {
-          state := '00000';
-          exec (stmt, state, msg, vector (), 0, meta, data);
-          if (state <> '00000')
-            signal (state, msg);
-        }
+      state := '00000';
+      msg := '';
+      exec (aref (statements, i), state, msg, vector (), 0, meta, data);
+      if (state <> '00000')
+        signal (state, msg);
     }
   return data;
 }
 ;
 
 ----------------------------------------------------------------------
--- Atomic DML execution: executes multi-statement DML, failing fast
--- on the first error with a clear error code.
+-- Atomic DML execution: executes a multi-statement DML group as an
+-- all-or-nothing unit.
+--
+-- Transaction model: GQL DML participates in the caller's transaction
+-- and does NOT auto-commit (see binsrc/tests/suite/test_gql_rdf_acid.sql
+-- AC6, where an outer ROLLBACK WORK undoes a GQL INSERT). Therefore, when
+-- any statement in a multi-statement group fails, we ROLL BACK the whole
+-- group and re-signal, so no partial write survives. We deliberately do
+-- NOT COMMIT on success: commit/rollback stays with the caller's
+-- transaction (the /sparql endpoint auto-commits at end-of-request as
+-- usual, and callers managing their own transaction keep control). An
+-- internal COMMIT here would defeat outer-rollback semantics.
+--
+-- Single-statement groups take the fast path with no added overhead.
 ----------------------------------------------------------------------
 
 create procedure DB.DBA.GQL_EXEC_DML_ATOMIC (in _sparql_str varchar)
@@ -153,48 +189,34 @@ create procedure DB.DBA.GQL_EXEC_DML_ATOMIC (in _sparql_str varchar)
   declare i integer;
   declare state, msg varchar;
   declare meta, data any;
-  declare pos, slen integer;
-  declare has_error integer;
 
-  has_error := 0;
-
-  -- Split on ';\n' boundaries between SPARQL statements
-  statements := vector ();
-  slen := length (_sparql_str);
-  pos := 0;
-  for (i := 0; i < slen; i := i + 1)
-    {
-      if (aref (_sparql_str, i) = 59  -- ';'
-          and i + 1 < slen and aref (_sparql_str, i + 1) = 10)  -- newline
-        {
-          statements := vector_concat (statements, vector (trim (subseq (_sparql_str, pos, i))));
-          pos := i + 1;
-        }
-    }
-  if (pos < slen)
-    statements := vector_concat (statements, vector (trim (subseq (_sparql_str, pos, slen))));
+  statements := DB.DBA.GQL_SPLIT_SPARQL_STATEMENTS (_sparql_str);
 
   if (length (statements) <= 1)
     {
-      -- Single statement: execute directly without transaction overhead
+      -- Single statement: execute directly without transaction overhead.
+      -- Virtuoso already runs one SPARQL update atomically.
       return DB.DBA.GQL_EXEC_MULTI_SPARQL (_sparql_str);
     }
 
-  -- Multi-statement DML: execute sequentially within a single procedure
-  -- context. Each exec() runs in its own implicit transaction in Virtuoso.
-  -- We execute all statements in order; if any fails, the remaining are
-  -- skipped and the error is propagated.
+  -- Multi-statement group: roll back everything on the first failure.
+  -- The handler also catches errors raised (rather than returned in
+  -- `state`) by exec(), guaranteeing the rollback fires either way.
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      signal (__SQL_STATE, __SQL_MESSAGE);
+    };
+
   for (i := 0; i < length (statements); i := i + 1)
     {
-      declare stmt varchar;
-      stmt := aref (statements, i);
-      if (length (trim (stmt)) > 0)
-        {
-          state := '00000';
-          exec (stmt, state, msg, vector (), 0, meta, data);
-          if (state <> '00000')
-            signal ('G4001', concat ('DML statement failed: ', msg));
-        }
+      state := '00000';
+      msg := '';
+      exec (aref (statements, i), state, msg, vector (), 0, meta, data);
+      if (state <> '00000')
+        signal ('G4001',
+          sprintf ('GQL DML statement %d of %d failed [%s]: %s',
+            i + 1, length (statements), state, msg));
     }
 
   return data;
@@ -229,26 +251,38 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
     }
   ast := DB.DBA.GQL_PLAN_VALIDATE_SCOPE (ast);
 
-  -- Pre-resolve all GQL variables: populates ctx.var_map, detects
-  -- shadowing in nested OPTIONAL, and warns on kind mismatches.
-  -- NOTE (Phase 0): var_pass is diagnostics-only — the translator
-  -- still builds its own variable bindings via GQL_NODE_SPARQL_VAR /
-  -- GQL_EDGE_SPARQL_VAR. Phase 1+ should feed var_map into the
-  -- translation ctx so emission helpers use pre-computed mappings.
-  {
-    declare var_ctx any;
-    declare i integer;
-    var_ctx := DB.DBA.GQL_CTX_NEW (_graph);
-    DB.DBA.GQL_VAR_RESOLVE_AST (ast, var_ctx);
-    if (DB.DBA.GQL_CTX_HAS_ERRORS (var_ctx))
-      {
-        declare var_errors any;
-        var_errors := DB.DBA.GQL_CTX_GET_ERRORS (var_ctx);
-        for (i := 0; i < length (var_errors); i := i + 1)
-          dbg_obj_print (concat ('[', aref (aref (var_errors, i), 0), '] ',
-            aref (aref (var_errors, i), 1)));
-      }
-  }
+  -- Optional variable-resolution diagnostics pass.
+  --
+  -- This pass walks the AST and reports non-fatal WARNINGS only — variable
+  -- shadowing inside nested OPTIONAL (GW002) and re-use of a name across
+  -- kinds (GW001, which is legitimate for e.g. `RETURN n AS n`). It is NOT
+  -- the authority on variable naming: SPARQL variable names are a
+  -- deterministic function of (name, kind) — ?gql_n_<name> / ?gql_e_<name> /
+  -- ?gql_v_<name> — produced identically by the pass and by the translator's
+  -- GQL_NODE_SPARQL_VAR / GQL_EDGE_SPARQL_VAR helpers, so there is no naming
+  -- to "feed in". The real binding error — a variable used without being
+  -- bound by MATCH/LET/FOR — is already enforced earlier by
+  -- GQL_PLAN_VALIDATE_SCOPE (signals G3001).
+  --
+  -- Because these are only warnings, the pass is off by default (no per-query
+  -- overhead, no log noise). A DBA can enable it for debugging with
+  -- registry_set('__opengql_var_diagnostics', 'on'); warnings are then logged.
+  if (coalesce (registry_get ('__opengql_var_diagnostics'), 'off') = 'on')
+    {
+      declare var_ctx any;
+      declare i integer;
+      var_ctx := DB.DBA.GQL_CTX_NEW (_graph);
+      DB.DBA.GQL_VAR_RESOLVE_AST (ast, var_ctx);
+      if (DB.DBA.GQL_CTX_HAS_ERRORS (var_ctx))
+        {
+          declare var_errors any;
+          var_errors := DB.DBA.GQL_CTX_GET_ERRORS (var_ctx);
+          for (i := 0; i < length (var_errors); i := i + 1)
+            dbg_obj_print (concat ('openGQL var-diagnostic [',
+              aref (aref (var_errors, i), 0), '] ',
+              aref (aref (var_errors, i), 1)));
+        }
+    }
 
   sparql_str := DB.DBA.GQL_TO_SPARQL_IMPL (ast, _graph);
   return sparql_str;
@@ -257,21 +291,26 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
 
 create procedure DB.DBA.GQL_TO_SPARQL_PARAMS (in _query varchar, in _graph varchar := null, in _params any := null)
 {
-  -- For now, param substitution is basic: replace ?paramName in SPARQL
+  -- Parameters ($name) are bound as typed SPARQL terms DURING translation
+  -- (see the 'PARAM' case in GQL_GEN_EXPR), never by string substitution.
+  -- We publish the normalized name/value pairs on a connection-scoped
+  -- variable that the translator reads for every (sub-)context, then clear
+  -- it immediately — on success and on error — so a supplied value can
+  -- neither be injected into the query text nor leak into an unrelated
+  -- GQL_TO_SPARQL call on the same connection.
   declare sparql_str varchar;
   declare param_vector any;
-  declare i integer;
 
-  sparql_str := DB.DBA.GQL_TO_SPARQL (_query, _graph);
-  param_vector := DB.DBA.GQL_NORMALIZE_PARAMS (_params);
-
-  for (i := 0; i < length (param_vector); i := i + 1)
+  declare exit handler for sqlstate '*'
     {
-      declare pname, pval any;
-      pname := aref (aref (param_vector, i), 0);
-      pval := aref (aref (param_vector, i), 1);
-      sparql_str := replace (sparql_str, concat ('?', pname), cast (pval as varchar));
-    }
+      connection_set ('gql_bound_params', null);
+      signal (__SQL_STATE, __SQL_MESSAGE);
+    };
+
+  param_vector := DB.DBA.GQL_NORMALIZE_PARAMS (_params);
+  connection_set ('gql_bound_params', param_vector);
+  sparql_str := DB.DBA.GQL_TO_SPARQL (_query, _graph);
+  connection_set ('gql_bound_params', null);
   return sparql_str;
 }
 ;

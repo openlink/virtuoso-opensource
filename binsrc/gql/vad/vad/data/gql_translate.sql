@@ -2323,6 +2323,55 @@ create procedure DB.DBA.GQL_GEN_LITERAL (in _val any)
 }
 ;
 
+----------------------------------------------------------------------
+-- Parameter value binding for SPARQL
+--
+-- Used to bind GQL $parameters ($name) to supplied values as typed SPARQL
+-- terms at translation time (see the 'PARAM' case in GQL_GEN_EXPR). Values
+-- are always emitted through GQL_GEN_LITERAL (which escapes strings and
+-- types numbers/booleans) — a string value can therefore never break out
+-- of its literal and alter the query. The only exception is a string that
+-- is a strict, well-formed absolute IRI with no characters that could
+-- escape a <...> term, which is emitted as an IRI so that IRI-valued
+-- parameters bind with the correct RDF type.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_PARAM_IS_IRI (in _val any)
+{
+  declare i, n, ci integer;
+  if (not isstring (_val)) return 0;
+  n := length (_val);
+  if (n < 4) return 0;
+  -- scheme must begin with an ASCII letter and contain '://'
+  ci := aref (_val, 0);
+  if (not ((ci >= 65 and ci <= 90) or (ci >= 97 and ci <= 122)))
+    return 0;
+  if (strstr (_val, '://') is null)
+    return 0;
+  -- reject any character not permitted raw in a SPARQL IRIREF, so the value
+  -- can never break out of the surrounding <...>
+  for (i := 0; i < n; i := i + 1)
+    {
+      ci := aref (_val, i);
+      if (ci <= 32) return 0;               -- controls and space
+      if (ci = 34) return 0;                -- "
+      if (ci = 60 or ci = 62) return 0;     -- < >
+      if (ci = 92) return 0;                -- backslash
+      if (ci = 94 or ci = 96) return 0;     -- ^ `
+      if (ci = 123 or ci = 124 or ci = 125) return 0;  -- { | }
+    }
+  return 1;
+}
+;
+
+create procedure DB.DBA.GQL_PARAM_TO_SPARQL (in _val any)
+{
+  if (DB.DBA.GQL_PARAM_IS_IRI (_val))
+    return concat ('<', _val, '>');
+  return DB.DBA.GQL_GEN_LITERAL (_val);
+}
+;
+
 create procedure DB.DBA.GQL_LIKE_PATTERN_TO_REGEX (in _pattern varchar)
 {
   declare i, ch_code integer;
@@ -2433,7 +2482,41 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       return concat ('<', iri_uri, '>');
     }
   if (etype = 'PARAM')
-    return concat ('?', aref (_expr, 1));  -- SPARQL parameter
+    {
+      -- If a value was supplied for this $parameter (published on the
+      -- connection-scoped 'gql_bound_params' by GQL_TO_SPARQL_PARAMS), bind
+      -- it as a typed SPARQL term. Values are formatted through
+      -- GQL_PARAM_TO_SPARQL / GQL_GEN_LITERAL, so they are always escaped and
+      -- can never alter the query structure (no string substitution, no
+      -- substring collisions). An unbound parameter stays a SPARQL variable.
+      declare pname, pkey, cand varchar;
+      declare pbound, ppair any;
+      declare pi integer;
+      pname := aref (_expr, 1);
+      -- The parser keeps the leading '$' in the parameter name ('$v'); strip
+      -- it so callers may supply names with or without the '$', and so an
+      -- unbound parameter yields a valid SPARQL variable (?v, not ?$v).
+      pkey := pname;
+      if (isstring (pkey) and length (pkey) > 0 and aref (pkey, 0) = 36)  -- '$'
+        pkey := subseq (pkey, 1);
+      pbound := connection_get ('gql_bound_params');
+      if (pbound is not null and isarray (pbound))
+        {
+          for (pi := 0; pi < length (pbound); pi := pi + 1)
+            {
+              ppair := aref (pbound, pi);
+              if (isarray (ppair) and length (ppair) >= 2)
+                {
+                  cand := aref (ppair, 0);
+                  if (isstring (cand) and length (cand) > 0 and aref (cand, 0) = 36)
+                    cand := subseq (cand, 1);
+                  if (cand = pkey)
+                    return DB.DBA.GQL_PARAM_TO_SPARQL (aref (ppair, 1));
+                }
+            }
+        }
+      return concat ('?', pkey);  -- unbound parameter -> SPARQL variable
+    }
 
   if (etype = 'CONTAINS')
     {
