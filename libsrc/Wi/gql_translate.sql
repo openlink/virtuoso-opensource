@@ -1732,7 +1732,7 @@ create procedure DB.DBA.GQL_TERM_URI (inout _ctx any, in _name varchar, in _kind
     {
       rel_uri := DB.DBA.GQL_CTX_RELATIVE_TERM_URI (_ctx, subseq (_name, 2));
       if (rel_uri is null)
-        signal ('G3010', sprintf ('Base-relative name %s requires BASE, PREFIX :, or USE GRAPH', _name));
+        signal ('G3011', sprintf ('Base-relative name %s requires BASE, PREFIX :, or USE GRAPH', _name));
       return rel_uri;
     }
   expanded := DB.DBA.GQL_EXPAND_PREFIXED_NAME (_ctx, _name);
