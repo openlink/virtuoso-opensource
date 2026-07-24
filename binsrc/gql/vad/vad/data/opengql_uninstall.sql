@@ -49,3 +49,7 @@ create procedure DB.DBA.OPENGQL_VAD_DROP_ROUTINES ()
 ;
 
 DB.DBA.OPENGQL_VAD_DROP_ROUTINES ();
+
+-- Drop the stats counters table if present
+if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.GQL_STATS_COUNTERS'))
+  drop table DB.DBA.GQL_STATS_COUNTERS;

@@ -46,14 +46,20 @@
 -- The table is small (one row per error-code family + aggregate rows).
 ----------------------------------------------------------------------
 
-create table DB.DBA.GQL_STATS_COUNTERS (
-    GS_COUNTER varchar not null primary key,
-    GS_VALUE integer not null,
-    GS_TOTAL_TIME bigint not null,   -- cumulative msec for timing counters
-    GS_MIN_TIME integer not null,    -- min msec (0 = not yet set)
-    GS_MAX_TIME integer not null     -- max msec
-)
+create procedure DB.DBA.GQL_STATS_ENSURE_TABLE ()
+{
+  if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.GQL_STATS_COUNTERS'))
+    exec ('create table DB.DBA.GQL_STATS_COUNTERS (
+        GS_COUNTER varchar not null primary key,
+        GS_VALUE integer not null,
+        GS_TOTAL_TIME bigint not null,
+        GS_MIN_TIME integer not null,
+        GS_MAX_TIME integer not null
+      )');
+}
 ;
+DB.DBA.GQL_STATS_ENSURE_TABLE ();
+drop procedure DB.DBA.GQL_STATS_ENSURE_TABLE;
 
 -- Bootstrap: the counters table starts empty.  Counter rows are created
 -- on demand by GQL_STATS_INCREMENT and GQL_STATS_RECORD_TIMING (which
