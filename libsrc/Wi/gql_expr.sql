@@ -32,7 +32,7 @@
 --    BINOP, UNOP, LIT, LIT_BOOL, VAR, PROP, FUNC, FUNC_DISTINCT,
 --    COUNTSTAR, ISNULL, INEXPR, STROP, CASEEXPR, PARAM, LIST,
 --    MAP, RECORD, IRI, TYPEDLIT, PATTERNPRED, SLICE, MAPPROJ,
---    LISTCOMP, EXISTS_SUBQUERY, LANGLIT, FLOAT
+--    LISTCOMP, EXISTS_SUBQUERY, LANGLIT, FLOAT, TYPEDLIT_IRI
 --
 
 ----------------------------------------------------------------------
@@ -613,6 +613,21 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
       -- Language tag?
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 73)  -- LANGTAG
         { declare lang varchar; lang := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('LANGLIT', val, lang); }
+      -- RDF typed literal: "value"^^<datatype>  (SPARQL/Turtle syntax)
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 23   -- CARET
+          and _pos + 1 < length (_tokens)
+          and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 23)  -- second CARET
+        {
+          declare dt_iri varchar;
+          _pos := _pos + 2;  -- consume both carets
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS (e.g. xsd:dateTime)
+            { dt_iri := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+          else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 70)  -- IRIREF (e.g. <http://...>)
+            { dt_iri := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+          else
+            signal ('GQ004', sprintf ('Expected datatype IRI after ^^ at position %d', _pos));
+          return vector ('TYPEDLIT_IRI', val, dt_iri);
+        }
       return vector ('LIT', val);
     }
 

@@ -404,7 +404,7 @@ create procedure DB.DBA.GQL_PLAN_COLLECT_EXPR_VARS (in _expr any, in _vars any)
         _vars := DB.DBA.GQL_PLAN_COLLECT_EXPR_VARS (aref (_expr, 3), _vars);
       return _vars;
     }
-  if (etype = 'TYPEDLIT' or etype = 'PATTERNPRED' or etype = 'EXISTS_SUBQUERY')
+  if (etype = 'TYPEDLIT' or etype = 'TYPEDLIT_IRI' or etype = 'PATTERNPRED' or etype = 'EXISTS_SUBQUERY')
     return _vars;
 
   return _vars;
