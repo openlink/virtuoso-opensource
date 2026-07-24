@@ -1071,7 +1071,8 @@ create procedure DB.DBA.GQL_PARSE_PREFIX (in _tokens any, inout _pos integer)
 
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- default prefix
     { prefix_name := ''; _pos := _pos + 1; }
-  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 64)  -- IDENT
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 64
+          or DB.DBA.GQL_PEEK (_tokens, _pos) >= 200)  -- IDENT or keyword-as-name (e.g. schema)
     {
       prefix_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
       _pos := _pos + 1;
@@ -2125,11 +2126,28 @@ create procedure DB.DBA.GQL_PARSE_PROPERTIES (in _tokens any, inout _pos integer
         {
           _pos := _pos + 1;
           key_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS (e.g. schem:dateCreated)
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) >= 200  -- keyword-as-prefix (e.g. schema)
+               and _pos + 1 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 7  -- COLON
+               and _pos + 2 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 2) >= 64)  -- IDENT or keyword as local name
+        {
+          key_name := concat (DB.DBA.GQL_PEEK_VAL (_tokens, _pos), ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 2));
+          _pos := _pos + 3;
         }
       else
-        key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
-      _pos := _pos + 1;  -- consume key (IDENT, STRING, or default-prefixed local)
-      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON (GQL uses : not :)... actually GQL uses `:`)
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;  -- consume key (IDENT, STRING, or keyword-as-name)
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON (key-value separator)
       val := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
       props := vector_concat (props, vector (vector (key_name, val)));
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
@@ -2168,10 +2186,27 @@ create procedure DB.DBA.GQL_PARSE_ANNOTATION_PROPERTIES (in _tokens any, inout _
         {
           _pos := _pos + 1;
           key_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) >= 200  -- keyword-as-prefix
+               and _pos + 1 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 7  -- COLON
+               and _pos + 2 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 2) >= 64)
+        {
+          key_name := concat (DB.DBA.GQL_PEEK_VAL (_tokens, _pos), ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 2));
+          _pos := _pos + 3;
         }
       else
-        key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
-      _pos := _pos + 1;  -- consume key
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;  -- consume key
+        }
       DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON
       val := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
       props := vector_concat (props, vector (vector (key_name, val)));
