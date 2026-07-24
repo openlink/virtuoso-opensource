@@ -3110,6 +3110,20 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       return concat ('"', tlit_val, '"^^', xsd_type);
     }
 
+  -- TYPEDLIT_IRI: "value"^^prefixed:name  or  "value"^^<absolute-iri>
+  if (etype = 'TYPEDLIT_IRI')
+    {
+      declare tli_val, tli_dt varchar;
+      declare tli_expanded varchar;
+      tli_val := aref (_expr, 1);
+      tli_dt := aref (_expr, 2);
+      -- If it's a PNAME_NS, expand via prefix table; if IRIREF, use as-is
+      tli_expanded := DB.DBA.GQL_EXPAND_PREFIXED_NAME (_ctx, tli_dt);
+      if (tli_expanded is null or tli_expanded = '')
+        tli_expanded := tli_dt;  -- already an absolute IRI or unresolvable
+      return concat ('"', tli_val, '"^^<', tli_expanded, '>');
+    }
+
   -- LIST literal: encode as RDF collection (rdf:first/rdf:rest)
   if (etype = 'LIST')
     {
@@ -3257,7 +3271,7 @@ create procedure DB.DBA.GQL_EXPR_IS_PREBIND_VALUE (in _expr any)
     return 0;
   etype := aref (_expr, 0);
   if (etype = 'IRI' or etype = 'LIT' or etype = 'LIT_BOOL'
-      or etype = 'FLOAT' or etype = 'TYPEDLIT' or etype = 'PARAM')
+      or etype = 'FLOAT' or etype = 'TYPEDLIT' or etype = 'TYPEDLIT_IRI' or etype = 'PARAM')
     return 1;
   if (etype = 'FUNC' and lower (cast (aref (_expr, 1) as varchar)) = 'iri')
     return 1;
@@ -3272,7 +3286,7 @@ create procedure DB.DBA.GQL_EXPR_IS_PREVALUE_VALUE (in _expr any)
     return 0;
   etype := aref (_expr, 0);
   if (etype = 'IRI' or etype = 'LIT' or etype = 'LIT_BOOL'
-      or etype = 'FLOAT' or etype = 'TYPEDLIT' or etype = 'PARAM')
+      or etype = 'FLOAT' or etype = 'TYPEDLIT' or etype = 'TYPEDLIT_IRI' or etype = 'PARAM')
     return 1;
   return 0;
 }

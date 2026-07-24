@@ -121,11 +121,11 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
   exec (sparql_str, state, msg, vector (), 0, meta, data);
   if (state <> '00000')
     signal (state, msg);
-  if (meta is not null and length (meta) > 0)
+  if (isarray (meta) and length (meta) > 0)
     {
       declare j, nrows integer;
       exec_result_names (meta[0]);
-      if (data is not null)
+      if (isarray (data))
         {
           nrows := length (data);
           for (j := 0; j < nrows; j := j + 1)

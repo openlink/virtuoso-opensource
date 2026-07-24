@@ -32,7 +32,7 @@
 --    BINOP, UNOP, LIT, LIT_BOOL, VAR, PROP, FUNC, FUNC_DISTINCT,
 --    COUNTSTAR, ISNULL, INEXPR, STROP, CASEEXPR, PARAM, LIST,
 --    MAP, RECORD, IRI, TYPEDLIT, PATTERNPRED, SLICE, MAPPROJ,
---    LISTCOMP, EXISTS_SUBQUERY, LANGLIT, FLOAT
+--    LISTCOMP, EXISTS_SUBQUERY, LANGLIT, FLOAT, TYPEDLIT_IRI
 --
 
 ----------------------------------------------------------------------
@@ -500,17 +500,26 @@ create procedure DB.DBA.GQL_PARSE_POSTFIX_EXPR (in _tokens any, inout _pos integ
           if (tt = 7)  -- COLON — default-prefix property
             {
               _pos := _pos + 1;
-              if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 64)
+              if (DB.DBA.GQL_PEEK (_tokens, _pos) < 64)  -- not IDENT, PNAME_NS, IRIREF, or keyword
                 signal ('GQ004', 'Expected property name after default prefix');
               prop_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
               _pos := _pos + 1;
               expr := vector ('PROP', expr, prop_name);
               goto postfix_next;
             }
-          if (tt <> 64 and tt <> 69 and tt <> 70)  -- IDENT, PNAME_NS, IRIREF
+          if (tt <> 64 and tt <> 69 and tt <> 70 and tt < 200)  -- IDENT, PNAME_NS, IRIREF, or keyword-as-name
             signal ('GQ004', sprintf ('Expected property name after dot at position %d', _pos));
           prop_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
           _pos := _pos + 1;
+          -- Prefixed property name: keyword:local (e.g. schema:dateCreated)
+          if (tt >= 200 and DB.DBA.GQL_PEEK (_tokens, _pos) = 7
+              and _pos + 1 < length (_tokens)
+              and DB.DBA.GQL_PEEK (_tokens, _pos + 1) >= 64)  -- COLON + IDENT/keyword
+            {
+              _pos := _pos + 1;  -- consume COLON
+              prop_name := concat (prop_name, ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+              _pos := _pos + 1;  -- consume local name
+            }
           -- Function call via dotted name? (rare in GQL but supported)
           if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
             {
@@ -613,6 +622,21 @@ create procedure DB.DBA.GQL_PARSE_PRIMARY (in _tokens any, inout _pos integer)
       -- Language tag?
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 73)  -- LANGTAG
         { declare lang varchar; lang := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; return vector ('LANGLIT', val, lang); }
+      -- RDF typed literal: "value"^^<datatype>  (SPARQL/Turtle syntax)
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 23   -- CARET
+          and _pos + 1 < length (_tokens)
+          and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 23)  -- second CARET
+        {
+          declare dt_iri varchar;
+          _pos := _pos + 2;  -- consume both carets
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS (e.g. xsd:dateTime)
+            { dt_iri := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+          else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 70)  -- IRIREF (e.g. <http://...>)
+            { dt_iri := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+          else
+            signal ('GQ004', sprintf ('Expected datatype IRI after ^^ at position %d', _pos));
+          return vector ('TYPEDLIT_IRI', val, dt_iri);
+        }
       return vector ('LIT', val);
     }
 
