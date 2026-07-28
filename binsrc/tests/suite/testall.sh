@@ -138,7 +138,8 @@ trepl_rdf \
 tsoap12 \
 tvspxex \
 tgraphql \
-tgql_rdf_equiv "
+tgql_rdf_equiv \
+tgql_unit "
 
 QUICKTEST=1
 TPCDMODE=local

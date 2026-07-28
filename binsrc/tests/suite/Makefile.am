@@ -61,6 +61,7 @@ check_SCRIPTS = \
 	testlib.sh \
 	tgraphql.sh \
 	tgql_rdf_equiv.sh \
+	tgql_unit.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \

@@ -58,8 +58,10 @@ create procedure DB.DBA.GQL_STATS_ENSURE_TABLE ()
       )');
 }
 ;
-DB.DBA.GQL_STATS_ENSURE_TABLE ();
-drop procedure DB.DBA.GQL_STATS_ENSURE_TABLE;
+DB.DBA.GQL_STATS_ENSURE_TABLE ()
+;
+drop procedure DB.DBA.GQL_STATS_ENSURE_TABLE
+;
 
 -- Bootstrap: the counters table starts empty.  Counter rows are created
 -- on demand by GQL_STATS_INCREMENT and GQL_STATS_RECORD_TIMING (which
