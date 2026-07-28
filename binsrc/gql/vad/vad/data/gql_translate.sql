@@ -1561,12 +1561,13 @@ create procedure DB.DBA.GQL_EMIT_EDGE_LABEL_EXPR (in _label_expr any, in _src va
       not_child := aref (_label_expr, 1);
       if (isvector (not_child) and aref (not_child, 0) = 'LABEL_WILDCARD')
         {
-          -- !% on edge: no edge at all — emit triple with fresh var + NOT EXISTS
-          declare pred_var varchar;
-          pred_var := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_type_');
-          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, _src, pred_var, _dst);
+          -- !% on edge: "no edge at all" between src and dst.  Emit ONLY a
+          -- NOT EXISTS filter and return no edge IRI, so the caller adds no
+          -- positive triple.  (Asserting a positive edge triple here would
+          -- both contradict the filter -- yielding zero rows always -- and be
+          -- duplicated by the caller's edge-triple emission.)
           DB.DBA.GQL_CTX_ADD_FILTER (_ctx, concat ('NOT EXISTS { ', _src, ' ?any_p ', _dst, ' }'));
-          return vector (vector (pred_var, 1));
+          return vector ();
         }
       else if (isvector (not_child) and aref (not_child, 0) = 'LABEL_OR')
         {
@@ -3552,6 +3553,20 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
               all_edge_iris := vector_concat (all_edge_iris, edge_iris);
             }
 
+          -- Untyped edge -[e]-> or -[]->: no explicit type, so connect the
+          -- endpoints with a predicate variable (bound to the edge variable
+          -- when one is named), matching an edge of any type.  Without this the
+          -- pattern would emit no triple and leave the endpoints unconstrained.
+          if (length (all_edge_iris) = 0)
+            {
+              declare any_edge_pred varchar;
+              if (evar is not null)
+                any_edge_pred := DB.DBA.GQL_EDGE_SPARQL_VAR (evar);
+              else
+                any_edge_pred := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'edge_p_');
+              all_edge_iris := vector (vector (any_edge_pred, 1));
+            }
+
           -- Emit edge type triples (with property path suffix if quantified)
           for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
             {
@@ -3769,6 +3784,22 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
             }
         pm_next:;
         }
+    }
+
+  -- MATCH-level path mode (MATCH ACYCLIC (a)-[:knows*]->(b)): applies to this
+  -- MATCH's transitive edges, the same way an in-bracket edge mode does.  Only
+  -- add a flag not already contributed by an in-bracket mode.
+  if (length (_match_ast) > 6 and aref (_match_ast, 6) is not null)
+    {
+      declare mmode varchar;
+      mmode := aref (_match_ast, 6);
+      if (mmode = 'ACYCLIC' and strstr (path_mode_flags, 't_no_cycles') is null)
+        path_mode_flags := concat (path_mode_flags, ', t_no_cycles');
+      else if (mmode = 'SIMPLE' and strstr (path_mode_flags, 't_distinct') is null)
+        path_mode_flags := concat (path_mode_flags, ', t_distinct');
+      else if (mmode = 'TRAIL' and strstr (path_mode_flags, 't_trail') is null)
+        path_mode_flags := concat (path_mode_flags, ', t_trail');
+      -- WALK is the default (no flag)
     }
 
   -- SHORTEST PATH: collect TRANSITIVE option for Virtuoso SPARQL extension

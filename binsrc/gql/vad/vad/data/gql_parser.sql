@@ -539,11 +539,19 @@ create procedure DB.DBA.GQL_PARSE_MATCH (in _tokens any, inout _pos integer, in 
 
   is_all := 0;
   shortest_config := null;
+  declare any_prefix integer;
+  any_prefix := 0;
 
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 221)  -- ALL
     {
       _pos := _pos + 1;
       is_all := 1;
+    }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255            -- ANY SHORTEST
+           and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 271)   -- (ISO order: ANY before SHORTEST)
+    {
+      _pos := _pos + 1;
+      any_prefix := 1;
     }
 
   -- SHORTEST [k | ALL | ANY] [GROUPS] PATH
@@ -551,6 +559,8 @@ create procedure DB.DBA.GQL_PARSE_MATCH (in _tokens any, inout _pos integer, in 
     {
       _pos := _pos + 1;
       s_kind := 'ALL';  -- default
+      if (any_prefix)   -- MATCH ANY SHORTEST ...
+        s_kind := 'ANY';
       s_count := 1;     -- default
       declare s_groups integer;
       s_groups := 0;
@@ -579,6 +589,20 @@ create procedure DB.DBA.GQL_PARSE_MATCH (in _tokens any, inout _pos integer, in 
       shortest_config := vector (s_kind, s_count, s_groups);
     }
 
+  -- Optional path mode prefix: MATCH [WALK|TRAIL|SIMPLE|ACYCLIC] (pattern).
+  -- ISO GQL places the mode before the path pattern (see gql-path-patterns.md);
+  -- it applies to the quantified/transitive edges of this MATCH.
+  declare match_path_mode varchar;
+  match_path_mode := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 272)       -- WALK
+    { _pos := _pos + 1; match_path_mode := 'WALK'; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 440)  -- TRAIL
+    { _pos := _pos + 1; match_path_mode := 'TRAIL'; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 360)  -- SIMPLE
+    { _pos := _pos + 1; match_path_mode := 'SIMPLE'; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 343)  -- ACYCLIC
+    { _pos := _pos + 1; match_path_mode := 'ACYCLIC'; }
+
   patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
 
   -- Optional ON/FROM <graph> clause
@@ -589,7 +613,7 @@ create procedure DB.DBA.GQL_PARSE_MATCH (in _tokens any, inout _pos integer, in 
       from_graphs := vector_concat (from_graphs, vector (vector ('FROM', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos))));
     }
 
-  return vector ('MATCH', _is_optional, patterns, from_graphs, is_all, shortest_config);
+  return vector ('MATCH', _is_optional, patterns, from_graphs, is_all, shortest_config, match_path_mode);
 }
 ;
 
@@ -926,6 +950,23 @@ create procedure DB.DBA.GQL_PARSE_REMOVE (in _tokens any, inout _pos integer)
           else
             signal ('GQ003', 'Expected variable before :Label in REMOVE');
         }
+      else if (isarray (expr) and aref (expr, 0) = 'IRI'
+               and not DB.DBA.GQL_IS_ABSOLUTE_IRI_NAME (aref (expr, 1))
+               and strchr (aref (expr, 1), ':') is not null)
+        {
+          -- REMOVE n:Label lexes "n:Label" as a single prefixed-name token, so
+          -- the COLON branch above never fires.  In REMOVE position a bare
+          -- prefixed name means label removal (node n, label Label), not a
+          -- property, so split it into an RMLABEL item.  (A property target is
+          -- n.prop, which parses as a PROP node and keeps the RMPROP branch.)
+          declare rraw, rvar, rlbl varchar;
+          declare rcolon integer;
+          rraw := aref (expr, 1);
+          rcolon := strchr (rraw, ':');
+          rvar := subseq (rraw, 0, rcolon);
+          rlbl := subseq (rraw, rcolon + 1);
+          items := vector_concat (items, vector (vector ('RMLABEL', rvar, vector (rlbl))));
+        }
       else
         items := vector_concat (items, vector (vector ('RMPROP', expr)));
 
@@ -951,6 +992,8 @@ create procedure DB.DBA.GQL_PARSE_DELETE (in _tokens any, inout _pos integer, in
   _pos := _pos + 1;  -- consume DELETE (DETACH was already consumed by caller)
 
   del_mode := 'NORMAL';
+  items := vector ();   -- keep index 2 a well-formed array for DATA/WHERE modes too
+                        -- (those return before the NORMAL item loop below)
 
   -- DELETE DATA (pattern) — ground-triple bulk delete
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 417)  -- DATA
@@ -1170,7 +1213,7 @@ create procedure DB.DBA.GQL_PARSE_FOR (in _tokens any, inout _pos integer)
 
   -- Optional WITH ORDINALITY / WITH OFFSET
   ordinality_offset := null;
-  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 253)  -- WITH
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 264)  -- WITH
     {
       _pos := _pos + 1;
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 412)  -- ORDINALITY
@@ -1196,7 +1239,7 @@ create procedure DB.DBA.GQL_PARSE_UNNEST (in _tokens any, inout _pos integer)
   _pos := _pos + 1;  -- consume UNNEST
   DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
   expr := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
-  DB.DBA.GQL_EXPECT (_tokens, _pos, 236);  -- AS
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 241);  -- AS
   var_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
   DB.DBA.GQL_EXPECT (_tokens, _pos, 64);  -- IDENT
   DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
@@ -1925,6 +1968,24 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
 
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
+      -- Advanced transitive options may also follow the quantifier
+      -- (e.g. [:KNOWS* T_CYCLES_ONLY]); collect them the same way.
+      trans_extra := '';
+      while (tt = 534 or tt = 535 or tt = 536 or tt = 537 or tt = 538)
+        {
+          if (tt = 534) trans_extra := concat (trans_extra, ', t_cycles_only');
+          else if (tt = 535) trans_extra := concat (trans_extra, ', t_end_flag');
+          else if (tt = 536) trans_extra := concat (trans_extra, ', t_final_as');
+          else if (tt = 537) trans_extra := concat (trans_extra, ', t_no_order');
+          else if (tt = 538) trans_extra := concat (trans_extra, ', bijection');
+          _pos := _pos + 1;
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+      if (trans_extra <> '' and path_mode is null)
+        path_mode := concat ('WALK', trans_extra);
+      else if (trans_extra <> '')
+        path_mode := concat (path_mode, trans_extra);
+
       if (cost_expr is null)
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
@@ -2532,6 +2593,7 @@ create procedure DB.DBA.GQL_PARSE_CALL (in _tokens any, inout _pos integer)
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5)  -- LBRACE
     {
       declare subquery any;
+      _pos := _pos + 1;  -- consume '{' before parsing the inline subquery
       subquery := DB.DBA.GQL_PARSE_COMPOSITE_QUERY (_tokens, _pos);
       DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
       yield_vars := DB.DBA.GQL_PARSE_YIELD (_tokens, _pos);

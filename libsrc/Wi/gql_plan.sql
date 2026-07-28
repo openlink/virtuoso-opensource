@@ -63,6 +63,29 @@ create procedure DB.DBA.GQL_PLAN_VEC_MERGE (in _a any, in _b any)
 -- Variable collectors from AST
 ----------------------------------------------------------------------
 
+-- Collect variables that appear as NODE/EDGE property (or {| annotation |})
+-- *values*, e.g. (n {name: x}) or -[e {| w: v |}]->.  These occupy a triple
+-- object position in the generated SPARQL, so SPARQL binds them; the scope
+-- validator must treat them as bound (not raise G3001 when they are returned).
+create procedure DB.DBA.GQL_PLAN_COLLECT_PROP_VALUE_VARS (in _props any, in _vars any)
+{
+  declare i, j integer;
+  declare pair, pvars any;
+  if (not isarray (_props))
+    return _vars;
+  for (i := 0; i < length (_props); i := i + 1)
+    {
+      pair := aref (_props, i);
+      if (not isarray (pair) or length (pair) < 2) goto next_prop;
+      pvars := DB.DBA.GQL_PLAN_COLLECT_EXPR_VARS (aref (pair, 1), vector ());
+      for (j := 0; j < length (pvars); j := j + 1)
+        _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (pvars, j));
+    next_prop:;
+    }
+  return _vars;
+}
+;
+
 create procedure DB.DBA.GQL_PLAN_COLLECT_PATTERN_VARS (in _pattern any, in _vars any)
 {
   declare ptype varchar;
@@ -90,9 +113,17 @@ create procedure DB.DBA.GQL_PLAN_COLLECT_PATTERN_VARS (in _pattern any, in _vars
       if (not isarray (elem)) goto next_elem;
       etype := aref (elem, 0);
       if (etype = 'NODE')
-        _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (elem, 1));
+        {
+          _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (elem, 1));
+          if (length (elem) > 3)  -- property-value variables
+            _vars := DB.DBA.GQL_PLAN_COLLECT_PROP_VALUE_VARS (aref (elem, 3), _vars);
+        }
       else if (etype = 'EDGE')
-        _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (elem, 1));
+        {
+          _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (elem, 1));
+          if (length (elem) > 5)  -- property / {| annotation |} value variables
+            _vars := DB.DBA.GQL_PLAN_COLLECT_PROP_VALUE_VARS (aref (elem, 5), _vars);
+        }
     next_elem:;
     }
   return _vars;
@@ -136,6 +167,8 @@ create procedure DB.DBA.GQL_PLAN_COLLECT_CLAUSE_VARS (in _clause any, in _vars a
   else if (ctype = 'LET_TABLE')
     _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
   else if (ctype = 'FOR')
+    _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
+  else if (ctype = 'UNNEST')
     _vars := DB.DBA.GQL_PLAN_VEC_ADD (_vars, aref (_clause, 1));
   else if (ctype = 'SERVICE')
     {
@@ -456,7 +489,7 @@ create procedure DB.DBA.GQL_PLAN_VALIDATE_SCOPE (in _ast any)
       if (not isarray (clause)) goto next_clause;
       ctype := aref (clause, 0);
       if (ctype = 'MATCH' or ctype = 'INSERT' or ctype = 'LET' or ctype = 'LET_GRAPH'
-          or ctype = 'LET_TABLE' or ctype = 'FOR'
+          or ctype = 'LET_TABLE' or ctype = 'FOR' or ctype = 'UNNEST'
           or ctype = 'SERVICE')
         bound_vars := DB.DBA.GQL_PLAN_COLLECT_CLAUSE_VARS (clause, bound_vars);
       else if (ctype = 'WHERE' or ctype = 'FILTER')

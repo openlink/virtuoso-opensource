@@ -29,9 +29,12 @@
 #
 #  The answer is about SCALING (the slope across dataset sizes), not one number,
 #  so this runs a size SWEEP and compares three queries at each size:
-#    NEGWILD  MATCH (a)-[!%]->(b)         -> FILTER NOT EXISTS (the case under test)
-#    NEGIRI   MATCH (a)-[!bench:knows]->(b) -> native negated property path (yardstick)
-#    BASE     MATCH (a)-[bench:knows]->(b)  -> positive join (isolates negation cost)
+#    NEGWILD  MATCH (a)-[:!%]->(b)          -> FILTER NOT EXISTS (the case under test)
+#    NEGIRI   MATCH (a)-[:!bench:knows]->(b) -> native negated property path (yardstick)
+#    BASE     MATCH (a)-[:bench:knows]->(b)  -> positive join (isolates negation cost)
+#  NOTE the leading colon: in GQL an edge pattern is [var:type], so the type
+#  MUST be introduced by ':'.  Without it, [bench:knows] parses as edge-variable
+#  "bench" of type "knows" (and [!...] fails to parse entirely).
 #  It prints the generated SPARQL for each (so you see exactly what is timed) and
 #  writes the full explain() plans to $OUTDIR — the plan is the real story; watch
 #  for a plan flip (hash anti-join -> per-row subquery) as size grows.
@@ -171,9 +174,9 @@ dump_plan () { # $1 gql  $2 outfile
 }
 
 # The three queries (count form: measures the anti-join, not row transport).
-Q_NEGWILD="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[!%]->(b) RETURN count(a) AS c"
-Q_NEGIRI="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[!bench:knows]->(b) RETURN count(a) AS c"
-Q_BASE="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[bench:knows]->(b) RETURN count(a) AS c"
+Q_NEGWILD="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[:!%]->(b) RETURN count(a) AS c"
+Q_NEGIRI="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[:!bench:knows]->(b) RETURN count(a) AS c"
+Q_BASE="PREFIX bench: <urn:gqlbench:> MATCH (a:bench:Node)-[:bench:knows]->(b) RETURN count(a) AS c"
 
 echo "=== GQL !% wildcard-negation benchmark ==="
 echo "isql=$ISQL port=$PORT  degree=$DEGREE props=$PROPS empty_pct=$EMPTY_PCT  runs=$RUNS warmup=$WARMUP"

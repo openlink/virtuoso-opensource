@@ -35,6 +35,7 @@ DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_var_pass.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_translate.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_sparql_gen.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_main.sql', 0, 'report', 1);
+DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_stats.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_endpoint.sql', 0, 'report', 1);
 DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_bootstrap.sql', 0, 'report', 1);
 

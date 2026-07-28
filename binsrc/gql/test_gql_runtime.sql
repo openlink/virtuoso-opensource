@@ -125,11 +125,14 @@ create procedure DB.DBA.GQL_RUNTIME_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('RT11 FAIL: GQL_PROP_URI = ', _val))); }
 
-  -- RT12: GQL_EDGE_TYPE_URI('KNOWS') produces knows
+  -- RT12: GQL_EDGE_TYPE_URI maps an edge type verbatim under the ontology NS.
+  -- (camelCasing KNOWS->knows is an opt-in mode via GQL_CTX_FORCE_CAMELCASE,
+  -- not the default; the bare resolver concatenates NS + type unchanged, the
+  -- same as GQL_LABEL_URI / GQL_PROP_URI.)
   _total := _total + 1;
   _val := DB.DBA.GQL_EDGE_TYPE_URI ('KNOWS');
-  if (strstr (_val, 'knows') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('RT12 PASS: GQL_EDGE_TYPE_URI camelCase correct')); }
+  if (subseq (_val, 0, length (DB.DBA.GQL_NS ())) = DB.DBA.GQL_NS () and strstr (_val, 'KNOWS') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('RT12 PASS: GQL_EDGE_TYPE_URI verbatim mapping')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('RT12 FAIL: GQL_EDGE_TYPE_URI = ', _val))); }
 
