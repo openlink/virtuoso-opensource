@@ -1285,6 +1285,13 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
 
       ritems := aref (_remove_ast, 1);
       rdel := '';
+      -- Property removals delete a triple whose object is a variable (?rvN).
+      -- That variable must be bound in the WHERE clause, or SPARQL instantiates
+      -- nothing for it and the delete silently no-ops.  Bind it with an OPTIONAL
+      -- (one per removed property, so removing an absent property does not block
+      -- removing the others).
+      declare rwhere_extra varchar;
+      rwhere_extra := '';
       for (rii := 0; rii < length (ritems); rii := rii + 1)
         {
           ri := aref (ritems, rii);
@@ -1292,9 +1299,13 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           if (aref (ri, 0) = 'RMPROP')
             {
               declare rprop_expr any;
+              declare rsubj, rprop, rvv varchar;
               rprop_expr := aref (ri, 1);
-              rdel := concat (rdel, '  ', DB.DBA.GQL_GEN_EXPR (aref (rprop_expr, 1), _ctx), ' ',
-                DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (rprop_expr, 2), _ctx), ' ?rv', cast (rii as varchar), ' .\n');
+              rsubj := DB.DBA.GQL_GEN_EXPR (aref (rprop_expr, 1), _ctx);
+              rprop := DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (rprop_expr, 2), _ctx);
+              rvv := concat ('?rv', cast (rii as varchar));
+              rdel := concat (rdel, '  ', rsubj, ' ', rprop, ' ', rvv, ' .\n');
+              rwhere_extra := concat (rwhere_extra, '  OPTIONAL {\n    ', rsubj, ' ', rprop, ' ', rvv, ' .\n  }\n');
             }
           else if (aref (ri, 0) = 'RMLABEL')
             {
@@ -1316,6 +1327,7 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           rwhere_body := concat (rwhere_body, DB.DBA.GQL_CTX_GET (_ctx, 'triples'));
           rwhere_body := concat (rwhere_body, DB.DBA.GQL_CTX_GET (_ctx, 'binds'));
           rwhere_body := concat (rwhere_body, DB.DBA.GQL_CTX_GET (_ctx, 'optionals'));
+          rwhere_body := concat (rwhere_body, rwhere_extra);
 
           sparql_text := concat (sparql_text, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (graph, rdel), '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (graph));
           sparql_text := concat (sparql_text, rwhere_body);

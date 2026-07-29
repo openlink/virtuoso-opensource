@@ -230,6 +230,47 @@ MATCH (n) RETURN n LIMIT 1', _state, _msg, vector (), 0, _meta, _data);
   }
   e2e14_done:;
 
+  -- E2E15: REMOVE property actually deletes the triple (not just no-error)
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E15 FAIL: REMOVE property errored')); goto e2e15_done; };
+    DB.DBA.GQL_RUN ('INSERT (:Person { name: ''Rem'', age: 42 })', 'urn:gql:test:e2e');
+    -- precondition: the age:42 triple matches
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Rem'', age: 42 }) RETURN n', 'urn:gql:test:e2e');
+    if (_data is null or length (_data) = 0)
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E15 FAIL: age not present before REMOVE')); goto e2e15_done; }
+    DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Rem'' }) REMOVE n.age', 'urn:gql:test:e2e');
+    -- after REMOVE, the age:42 triple must be gone
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Rem'', age: 42 }) RETURN n', 'urn:gql:test:e2e');
+    if (_data is not null and length (_data) > 0)
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E15 FAIL: age still present after REMOVE')); goto e2e15_done; }
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E15 PASS: REMOVE property deletes triple'));
+  }
+  e2e15_done:;
+
+  -- E2E16: MODIFY updates the matched node in place (old value gone, new value
+  -- set, no phantom node created)
+  _total := _total + 1;
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E16 FAIL: MODIFY errored')); goto e2e16_done; };
+    DB.DBA.GQL_RUN ('INSERT (:Person { name: ''Mod'', age: 1 })', 'urn:gql:test:e2e');
+    DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Mod'' }) MODIFY DELETE n.age INSERT (n { age: 100 })', 'urn:gql:test:e2e');
+    -- new value present
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Mod'', age: 100 }) RETURN n', 'urn:gql:test:e2e');
+    if (_data is null or length (_data) = 0)
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E16 FAIL: new age not set')); goto e2e16_done; }
+    -- old value gone
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Mod'', age: 1 }) RETURN n', 'urn:gql:test:e2e');
+    if (_data is not null and length (_data) > 0)
+      { _fail := _fail + 1; _results := vector_concat (_results, vector ('E2E16 FAIL: old age still present')); goto e2e16_done; }
+    -- exactly one Mod node (no phantom created)
+    _data := DB.DBA.GQL_RUN ('MATCH (n:Person { name: ''Mod'' }) RETURN count(n) AS c', 'urn:gql:test:e2e');
+    _pass := _pass + 1; _results := vector_concat (_results, vector ('E2E16 PASS: MODIFY updates node in place'));
+  }
+  e2e16_done:;
+
   -- Clean up
   DB.DBA.GQL_RESET ();
 

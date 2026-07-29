@@ -4839,18 +4839,41 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         signal ('G2004', 'MODIFY with RETURN is not yet supported — use separate statements');
       mod_del_items := aref (modify_ast, 1);
       mod_ins_patterns := aref (modify_ast, 2);
-      -- Build DELETE body from delete items (same logic as GQL_GEN_DML)
+      -- Build DELETE body + WHERE bindings from the delete items.  Each item is
+      -- an expression: a bare node variable `n` (delete the whole node) or a
+      -- property reference `n.prop` (delete that property).  The object being
+      -- deleted is a variable, which must be bound in the WHERE clause or SPARQL
+      -- instantiates nothing and the delete silently no-ops.  Bind it with an
+      -- OPTIONAL so a paired INSERT still fires when the old value was absent.
+      declare mod_opt_extra varchar;
       mod_del_body := '';
+      mod_opt_extra := '';
       for (mdi := 0; mdi < length (mod_del_items); mdi := mdi + 1)
         {
           declare mditem any;
           mditem := aref (mod_del_items, mdi);
-          if (isarray (mditem) and aref (mditem, 0) = 'VAR')
+          if (not isarray (mditem)) goto mod_del_next;
+          if (aref (mditem, 0) = 'VAR')
             {
-              declare mdvar varchar;
+              declare mdvar, mdp, mdo varchar;
               mdvar := DB.DBA.GQL_NODE_SPARQL_VAR (aref (mditem, 1));
-              mod_del_body := concat (mod_del_body, '  ', mdvar, ' ?p', cast (mdi as varchar), ' ?o', cast (mdi as varchar), ' .\n');
+              mdp := concat ('?mp', cast (mdi as varchar));
+              mdo := concat ('?mo', cast (mdi as varchar));
+              mod_del_body := concat (mod_del_body, '  ', mdvar, ' ', mdp, ' ', mdo, ' .\n');
+              mod_opt_extra := concat (mod_opt_extra, '  OPTIONAL {\n    ', mdvar, ' ', mdp, ' ', mdo, ' .\n  }\n');
             }
+          else if (aref (mditem, 0) = 'PROP')
+            {
+              declare mdsubj, mdprop, mdrv varchar;
+              mdsubj := DB.DBA.GQL_GEN_EXPR (aref (mditem, 1), ctx);
+              mdprop := DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (mditem, 2), ctx);
+              mdrv := concat ('?mdel', cast (mdi as varchar));
+              mod_del_body := concat (mod_del_body, '  ', mdsubj, ' ', mdprop, ' ', mdrv, ' .\n');
+              mod_opt_extra := concat (mod_opt_extra, '  OPTIONAL {\n    ', mdsubj, ' ', mdprop, ' ', mdrv, ' .\n  }\n');
+            }
+          else
+            signal ('G2007', 'MODIFY DELETE supports a node variable (n) or a property reference (n.prop)');
+        mod_del_next:;
         }
       -- Build INSERT body from insert patterns (reuse INSERT WHERE body builder)
       mod_ins_body := '';
@@ -4859,19 +4882,27 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           declare mod_ins_asts, mod_ins_sparql any;
           declare mod_prefix_len integer;
           mod_ins_asts := vector (vector ('INSERT', mod_ins_patterns));
-          -- Use GQL_GEN_INSERT_WHERE with empty match to get INSERT DATA body,
-          -- then extract the body between 'GRAPH <g> {\n' and '  }\n'
-          mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, vector (), ctx);
-          -- Extract the insert body from the INSERT DATA output.  When a graph
-          -- was named the triples sit inside a GRAPH <g> { ... } block; when no
-          -- graph was named GQL_GEN_INSERT_WHERE emits them bare directly under
-          -- INSERT DATA { ... }, so the delimiters differ.
+          -- Reuse GQL_GEN_INSERT_WHERE to build the INSERT triple body, then
+          -- extract just that body (its WHERE, if any, is discarded — MODIFY
+          -- supplies its own).  Pass the real MATCH so insert node variables
+          -- reference the matched nodes (?gql_n_x) instead of being treated as
+          -- fresh nodes with newly minted URIs.
+          mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, match_asts, ctx);
+          -- The body sits inside a GRAPH <g> { ... } block when a graph was
+          -- named.  With no graph it is emitted bare: directly under INSERT { ...
+          -- } WHERE when there is a MATCH, or under INSERT DATA { ... } when there
+          -- is not.  Pick the matching delimiters.
           declare mod_graph_str, mod_close_str varchar;
           declare mod_body_start, mod_body_end integer;
           if (DB.DBA.GQL_DML_HAS_GRAPH (DB.DBA.GQL_CTX_GET (ctx, 'graph')) = 1)
             {
               mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
               mod_close_str := '  }\n';
+            }
+          else if (length (match_asts) > 0)
+            {
+              mod_graph_str := 'INSERT {\n';
+              mod_close_str := '} WHERE';
             }
           else
             {
@@ -4894,15 +4925,20 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'binds'));
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'filters'));
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'optionals'));
-      -- Compose SPARQL
+      mod_where_body := concat (mod_where_body, mod_opt_extra);
+      -- Compose SPARQL.  Emit the DELETE and INSERT clauses only when non-empty
+      -- so an insert-only or delete-only MODIFY does not produce an empty
+      -- template block (which Virtuoso rejects as a syntax error).
       mod_sparql := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       mod_sparql := concat (mod_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
       mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
       declare mod_g varchar;
       mod_g := DB.DBA.GQL_CTX_GET (ctx, 'graph');
-      mod_sparql := concat (mod_sparql, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_del_body));
-      mod_sparql := concat (mod_sparql, '} INSERT {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_ins_body));
-      mod_sparql := concat (mod_sparql, '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (mod_g));
+      if (mod_del_body <> '')
+        mod_sparql := concat (mod_sparql, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_del_body), '} ');
+      if (mod_ins_body <> '')
+        mod_sparql := concat (mod_sparql, 'INSERT {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_ins_body), '} ');
+      mod_sparql := concat (mod_sparql, 'WHERE {\n', DB.DBA.GQL_DML_G_OPEN (mod_g));
       mod_sparql := concat (mod_sparql, mod_where_body);
       mod_sparql := concat (mod_sparql, DB.DBA.GQL_DML_G_CLOSE (mod_g), '}\n');
       return mod_sparql;
