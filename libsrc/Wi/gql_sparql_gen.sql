@@ -484,11 +484,15 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                   if (nvar_name is not null)
                     {
                       -- If this node variable is bound by MATCH, skip
-                      -- generating Node/label/property triples — the node
-                      -- already exists; only edge triples should be inserted.
+                      -- generating label/property triples — the node already
+                      -- exists; only edge triples should be inserted.
                       if (length (_match_asts) > 0 and length (labels) = 0 and length (props) = 0)
                         goto elem_next;
-                      insert_body := concat (insert_body, '  ', nsv, ' a ', DB.DBA.GQL_GEN_LABEL_IRI_CTX ('Node', _ctx), ' .\n');
+                      -- Note: we deliberately do NOT assert an implicit
+                      -- <...>#Node type here.  A node's triples are exactly the
+                      -- labels and properties the query states; GQL matching
+                      -- never relies on a synthetic Node type, so emitting one
+                      -- would silently add a type the user did not ask for.
                       DB.DBA.GQL_CTX_ADD_VAR (_ctx, nvar_name);
                     }
 
