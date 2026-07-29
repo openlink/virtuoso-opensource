@@ -4862,15 +4862,27 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           -- Use GQL_GEN_INSERT_WHERE with empty match to get INSERT DATA body,
           -- then extract the body between 'GRAPH <g> {\n' and '  }\n'
           mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, vector (), ctx);
-          -- Extract the insert body from the INSERT DATA { GRAPH <g> { ... } } output
-          declare mod_graph_str varchar;
+          -- Extract the insert body from the INSERT DATA output.  When a graph
+          -- was named the triples sit inside a GRAPH <g> { ... } block; when no
+          -- graph was named GQL_GEN_INSERT_WHERE emits them bare directly under
+          -- INSERT DATA { ... }, so the delimiters differ.
+          declare mod_graph_str, mod_close_str varchar;
           declare mod_body_start, mod_body_end integer;
-          mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+          if (DB.DBA.GQL_DML_HAS_GRAPH (DB.DBA.GQL_CTX_GET (ctx, 'graph')) = 1)
+            {
+              mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+              mod_close_str := '  }\n';
+            }
+          else
+            {
+              mod_graph_str := 'INSERT DATA {\n';
+              mod_close_str := '}\n';
+            }
           mod_body_start := strstr (mod_ins_sparql, mod_graph_str);
           if (mod_body_start is not null)
             {
               mod_body_start := mod_body_start + length (mod_graph_str);
-              mod_body_end := strstr (subseq (mod_ins_sparql, mod_body_start), '  }\n');
+              mod_body_end := strstr (subseq (mod_ins_sparql, mod_body_start), mod_close_str);
               if (mod_body_end is not null)
                 mod_ins_body := subseq (mod_ins_sparql, mod_body_start, mod_body_start + mod_body_end);
             }
@@ -4886,11 +4898,13 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       mod_sparql := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       mod_sparql := concat (mod_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
       mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
-      mod_sparql := concat (mod_sparql, 'DELETE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_del_body, '  }\n');
-      mod_sparql := concat (mod_sparql, '} INSERT {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_ins_body, '  }\n');
-      mod_sparql := concat (mod_sparql, '} WHERE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+      declare mod_g varchar;
+      mod_g := DB.DBA.GQL_CTX_GET (ctx, 'graph');
+      mod_sparql := concat (mod_sparql, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_del_body));
+      mod_sparql := concat (mod_sparql, '} INSERT {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_ins_body));
+      mod_sparql := concat (mod_sparql, '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (mod_g));
       mod_sparql := concat (mod_sparql, mod_where_body);
-      mod_sparql := concat (mod_sparql, '  }\n}\n');
+      mod_sparql := concat (mod_sparql, DB.DBA.GQL_DML_G_CLOSE (mod_g), '}\n');
       return mod_sparql;
     }
 

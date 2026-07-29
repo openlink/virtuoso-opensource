@@ -300,6 +300,64 @@ create procedure DB.DBA.GQL_EMIT_GRAPH_BLOCK (inout _ctx any, in _graph_uri varc
 ;
 
 ----------------------------------------------------------------------
+-- DML GRAPH-block helpers.
+--
+-- A SPARQL-Update statement (INSERT/DELETE) must name a concrete target
+-- graph: Virtuoso rejects every graph-less update form (INSERT DATA,
+-- DELETE DATA, INSERT/DELETE ... WHERE, DELETE WHERE) with SP031 ("No
+-- plain default graph specified in the preamble").  Only reads have a
+-- graph-less form (the union default dataset).
+--
+-- GQL mirrors that: when the query named a graph (USE GRAPH / graph
+-- parameter / session default) the DML triple blocks are wrapped in
+-- GRAPH <g> { ... }; when no graph was named -- the active graph is the
+-- internal default sentinel, or NULL for USE ANY GRAPH -- the block is
+-- emitted bare, so the generated SPARQL is exactly the graph-less update
+-- a hand-written SPARQL statement would be, and Virtuoso raises the same
+-- SP031 error.  A GQL write therefore requires a named graph, just as a
+-- SPARQL write does.
+--
+--   GQL_DML_HAS_GRAPH  - true when a concrete target graph was named
+--   GQL_DML_G_OPEN     - "  GRAPH <g> {\n"  (or "" when un-graphed)
+--   GQL_DML_G_CLOSE    - "  }\n"            (or "" when un-graphed)
+--   GQL_DML_G_WRAP     - open + body + close for a single block
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_DML_HAS_GRAPH (in _graph varchar)
+{
+  if (_graph is null or _graph = DB.DBA.GQL_DEFAULT_GRAPH ())
+    return 0;
+  return 1;
+}
+;
+
+create procedure DB.DBA.GQL_DML_G_OPEN (in _graph varchar)
+{
+  if (DB.DBA.GQL_DML_HAS_GRAPH (_graph) = 0)
+    return '';
+  return concat ('  GRAPH <', _graph, '> {\n');
+}
+;
+
+create procedure DB.DBA.GQL_DML_G_CLOSE (in _graph varchar)
+{
+  if (DB.DBA.GQL_DML_HAS_GRAPH (_graph) = 0)
+    return '';
+  return '  }\n';
+}
+;
+
+create procedure DB.DBA.GQL_DML_G_WRAP (in _graph varchar, in _body varchar)
+{
+  if (DB.DBA.GQL_DML_HAS_GRAPH (_graph) = 0)
+    return _body;
+  if (_body = '')
+    return concat ('  GRAPH <', _graph, '> { }\n');
+  return concat ('  GRAPH <', _graph, '> {\n', _body, '  }\n');
+}
+;
+
+----------------------------------------------------------------------
 -- gql_gen_update_dataset: emit WITH / USING / USING NAMED for SPARQL-Update
 ----------------------------------------------------------------------
 
@@ -592,23 +650,18 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
   sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_UPDATE_DATASET (_ctx));
 
   -- Standalone INSERT (no MATCH): emit INSERT DATA { GRAPH <g> { ... } }
+  -- (bare INSERT DATA { ... } when no graph was named).
   if (length (_match_asts) = 0)
     {
       sparql_text := concat (sparql_text, 'INSERT DATA {\n');
-      if (insert_body = '')
-        sparql_text := concat (sparql_text, '  GRAPH <', graph, '> { }\n');
-      else
-        sparql_text := concat (sparql_text, '  GRAPH <', graph, '> {\n', insert_body, '  }\n');
+      sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_WRAP (graph, insert_body));
       sparql_text := concat (sparql_text, '}\n');
       return sparql_text;
     }
 
   -- INSERT with MATCH: INSERT { ... } WHERE { match BGP }
   sparql_text := concat (sparql_text, 'INSERT {\n');
-  if (insert_body = '')
-    sparql_text := concat (sparql_text, '  GRAPH <', graph, '> { }\n');
-  else
-    sparql_text := concat (sparql_text, '  GRAPH <', graph, '> {\n', insert_body, '  }\n');
+  sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_WRAP (graph, insert_body));
   sparql_text := concat (sparql_text, '} WHERE {\n');
   sparql_text := concat (sparql_text, where_body);
   sparql_text := concat (sparql_text, '}\n');
@@ -992,7 +1045,7 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           for (dd_pi := 0; dd_pi < length (del_patterns); dd_pi := dd_pi + 1)
             DB.DBA.GQL_GEN_MATCH (vector ('MATCH', 0, vector (aref (del_patterns, dd_pi)), vector (), 0, null), dd_ctx);
           dd_body := DB.DBA.GQL_CTX_GET (dd_ctx, 'triples');
-          sparql_text := concat (sparql_text, 'DELETE DATA {\n  GRAPH <', graph, '> {\n', dd_body, '  }\n}\n');
+          sparql_text := concat (sparql_text, 'DELETE DATA {\n', DB.DBA.GQL_DML_G_WRAP (graph, dd_body), '}\n');
           goto dml_set_section;
         }
 
@@ -1012,7 +1065,7 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           dw_body := DB.DBA.GQL_CTX_GET (dw_ctx, 'triples');
           dw_body := concat (dw_body, DB.DBA.GQL_CTX_GET (dw_ctx, 'binds'));
           dw_body := concat (dw_body, DB.DBA.GQL_CTX_GET (dw_ctx, 'filters'));
-          sparql_text := concat (sparql_text, 'DELETE WHERE {\n  GRAPH <', graph, '> {\n', dw_body, '  }\n}\n');
+          sparql_text := concat (sparql_text, 'DELETE WHERE {\n', DB.DBA.GQL_DML_G_WRAP (graph, dw_body), '}\n');
           goto dml_set_section;
         }
 
@@ -1072,16 +1125,16 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
       where_body := concat (where_body, DB.DBA.GQL_CTX_GET (_ctx, 'filters'));
       where_body := concat (where_body, DB.DBA.GQL_CTX_GET (_ctx, 'optionals'));
 
-      sparql_text := concat (sparql_text, 'DELETE {\n  GRAPH <', graph, '> {\n', del_body, '  }\n');
+      sparql_text := concat (sparql_text, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (graph, del_body));
       sparql_text := concat (sparql_text, '} WHERE {\n');
-      sparql_text := concat (sparql_text, '  GRAPH <', graph, '> {\n');
+      sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_OPEN (graph));
       sparql_text := concat (sparql_text, where_body);
       -- Add outgoing edge patterns as required in WHERE
       sparql_text := concat (sparql_text, del_body_out);
       -- Add incoming edge patterns as OPTIONAL in WHERE (node may have no incoming edges)
       if (del_body_in <> '')
         sparql_text := concat (sparql_text, '  OPTIONAL {\n', del_body_in, '  }\n');
-      sparql_text := concat (sparql_text, '  }\n}\n');
+      sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '}\n');
     }
 
   dml_set_section:
@@ -1205,22 +1258,26 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
 
           if (set_del <> '')
             {
-              sparql_text := concat (sparql_text, 'DELETE {\n  GRAPH <', graph, '> {\n');
+              sparql_text := concat (sparql_text, 'DELETE {\n', DB.DBA.GQL_DML_G_OPEN (graph));
               sparql_text := concat (sparql_text, set_del);
-              sparql_text := concat (sparql_text, '  }\n} ');
+              sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '} ');
             }
-          sparql_text := concat (sparql_text, 'INSERT {\n  GRAPH <', graph, '> {\n');
+          sparql_text := concat (sparql_text, 'INSERT {\n', DB.DBA.GQL_DML_G_OPEN (graph));
           sparql_text := concat (sparql_text, set_ins);
-          sparql_text := concat (sparql_text, '  }\n} WHERE {\n  GRAPH <', graph, '> {\n');
+          sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (graph));
           sparql_text := concat (sparql_text, swhere_body);
-          sparql_text := concat (sparql_text, '  }\n}\n');
+          sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '}\n');
         }
     }
 
   -- REMOVE section (separated by ;\n for multi-statement execution)
   if (_remove_ast is not null)
     {
-      if (sparql_text <> '')
+      -- Only insert a statement separator when a DELETE or SET statement was
+      -- actually emitted before this one.  sparql_text is never empty here (it
+      -- always holds the SPARQL preamble), so testing it directly wrongly split
+      -- a standalone REMOVE into a prefix-only statement + a broken second one.
+      if (_delete_ast is not null or _set_ast is not null)
         sparql_text := concat (sparql_text, ';\n');
       declare ritems, ri any;
       declare rii integer;
@@ -1260,9 +1317,9 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           rwhere_body := concat (rwhere_body, DB.DBA.GQL_CTX_GET (_ctx, 'binds'));
           rwhere_body := concat (rwhere_body, DB.DBA.GQL_CTX_GET (_ctx, 'optionals'));
 
-          sparql_text := concat (sparql_text, 'DELETE {\n  GRAPH <', graph, '> {\n', rdel, '  }\n} WHERE {\n  GRAPH <', graph, '> {\n');
+          sparql_text := concat (sparql_text, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (graph, rdel), '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (graph));
           sparql_text := concat (sparql_text, rwhere_body);
-          sparql_text := concat (sparql_text, '  }\n}\n');
+          sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '}\n');
         }
     }
 
