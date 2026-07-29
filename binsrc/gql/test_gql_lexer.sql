@@ -285,7 +285,7 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
   -- ===================================================================
 
   _total := _total + 1;
-  _tokens := DB.DBA.GQL_TOKENIZE ('''hello\nworld''');
+  _tokens := DB.DBA.GQL_TOKENIZE ('''hello\\nworld''');
   if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 65
       and DB.DBA.GQL_TOK_VAL (aref (_tokens, 0)) = concat ('hello', chr(10), 'world'))
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT31 PASS: \\n escape')); }
@@ -293,7 +293,7 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT31 FAIL: \\n escape')); }
 
   _total := _total + 1;
-  _tokens := DB.DBA.GQL_TOKENIZE ('''tab\there''');
+  _tokens := DB.DBA.GQL_TOKENIZE ('''tab\\there''');
   if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 65
       and DB.DBA.GQL_TOK_VAL (aref (_tokens, 0)) = concat ('tab', chr(9), 'here'))
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT32 PASS: \\t escape')); }
@@ -301,7 +301,7 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT32 FAIL: \\t escape')); }
 
   _total := _total + 1;
-  _tokens := DB.DBA.GQL_TOKENIZE ('''slash\\back''');
+  _tokens := DB.DBA.GQL_TOKENIZE ('''slash\\\\back''');
   if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 65
       and DB.DBA.GQL_TOK_VAL (aref (_tokens, 0)) = 'slash\\back')
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT33 PASS: \\\\ escape')); }
@@ -309,7 +309,7 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT33 FAIL: \\\\ escape')); }
 
   _total := _total + 1;
-  _tokens := DB.DBA.GQL_TOKENIZE ('''quote\''s''');
+  _tokens := DB.DBA.GQL_TOKENIZE ('''quote\\''s''');
   if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 65
       and DB.DBA.GQL_TOK_VAL (aref (_tokens, 0)) = 'quote''s')
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT34 PASS: \\'' escape')); }
@@ -325,7 +325,7 @@ create procedure DB.DBA.GQL_LEXER_TESTS ()
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('LT35 FAIL: \\u0041 -> A')); }
 
   _total := _total + 1;
-  _tokens := DB.DBA.GQL_TOKENIZE ('''emoji\U0001F600''');
+  _tokens := DB.DBA.GQL_TOKENIZE ('''emoji\\U0001F600''');
   if (DB.DBA.GQL_TOK_TYPE (aref (_tokens, 0)) = 65)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('LT36 PASS: \\U0001F600 emoji')); }
   else

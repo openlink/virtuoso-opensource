@@ -115,16 +115,13 @@ RUN_GQL_UNIT()
     fi
 }
 
+RUN_GQL_UNIT test_gql_lexer.sql
+RUN_GQL_UNIT test_gql_expr.sql
+RUN_GQL_UNIT test_gql_parser.sql
 RUN_GQL_UNIT test_gql_translate.sql
 RUN_GQL_UNIT test_gql_runtime.sql
 RUN_GQL_UNIT test_gql_stats.sql
 RUN_GQL_UNIT test_gql_e2e.sql
-
-# NOTE: test_gql_expr.sql, test_gql_lexer.sql and test_gql_parser.sql are not
-# run here yet -- they have pre-existing failures unrelated to the scripts above
-# (expr passes a literal to an inout _pos parameter -> SR181; lexer has a SQL
-# string-escaping issue -> SQ074; parser PT27 "CREATE GRAPH ... ANY" -> GQ003).
-# Add them to the list once those are addressed.
 
 SHUTDOWN_SERVER
 BANNER "COMPLETED: $TEST_NAME TESTS"

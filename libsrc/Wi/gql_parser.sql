@@ -2404,6 +2404,13 @@ create procedure DB.DBA.GQL_PARSE_CREATE_GRAPH (in _tokens any, inout _pos integ
   copy_of := null;
   like_graph := null;
 
+  -- Optional open/any graph type spec (no schema constraint):
+  --   CREATE GRAPH g ANY  |  CREATE GRAPH g OPEN
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255)       -- ANY
+    { _pos := _pos + 1; graph_type_ref := 'ANY'; }
+  else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 327)  -- OPEN
+    { _pos := _pos + 1; graph_type_ref := 'OPEN'; }
+
   -- Optional typed graph initializer: { ... }
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 5)  -- LBRACE
     {
@@ -2493,6 +2500,8 @@ create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
   if (tt = 228)  -- SCHEMA
     {
       _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF EXISTS (ISO order: after the object)
+        { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
       return vector ('DROP_SCHEMA', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
     }
   else if (tt = 225)  -- GRAPH
@@ -2501,8 +2510,12 @@ create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 226)  -- TYPE
         {
           _pos := _pos + 1;
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF EXISTS
+            { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
           return vector ('DROP_GRAPH_TYPE', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
         }
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF EXISTS
+        { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
       return vector ('DROP_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
     }
 

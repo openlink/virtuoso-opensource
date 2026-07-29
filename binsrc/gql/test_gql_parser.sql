@@ -247,8 +247,8 @@ create procedure DB.DBA.GQL_PARSER_TESTS ()
   _tokens := DB.DBA.GQL_TOKENIZE ('MATCH ALL (n) RETURN n');
   _ast := DB.DBA.GQL_PARSE (_tokens);
   if (aref (_ast, 0) = 'PROG'
-      and aref (aref (aref (aref (_ast, 1), 3), 1), 0) = 'MATCH'
-      and aref (aref (aref (aref (_ast, 1), 3), 1), 4) = 1)
+      and aref (aref (aref (aref (aref (_ast, 1), 3), 1), 0), 0) = 'MATCH'
+      and aref (aref (aref (aref (aref (_ast, 1), 3), 1), 0), 4) = 1)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('PT25 PASS: MATCH ALL flag')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('PT25 FAIL: MATCH ALL flag')); }
