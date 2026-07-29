@@ -1875,9 +1875,17 @@ create procedure DB.DBA.GQL_GEN_FROM_CLAUSES (inout _ctx any)
   declare i integer;
   declare out_s varchar;
   declare any_default integer;
+  declare _graph varchar;
 
   out_s := '';
   any_default := 0;
+  -- When no graph was named, the active graph is the internal default sentinel.
+  -- Emit no FROM in that case so the query runs against Virtuoso's default SPARQL
+  -- dataset, returning the same result set a bare SPARQL query would -- rather
+  -- than restricting to the GQL-only urn:opengql:default graph.
+  _graph := DB.DBA.GQL_CTX_GET (_ctx, 'graph');
+  if (_graph = DB.DBA.GQL_DEFAULT_GRAPH ())
+    DB.DBA.GQL_CTX_SET (_ctx, 'suppress_default_from', 1);
   if (DB.DBA.GQL_CTX_GET (_ctx, 'suppress_default_from') = 1)
     {
       extras := DB.DBA.GQL_CTX_GET (_ctx, 'extra_from_graphs');
