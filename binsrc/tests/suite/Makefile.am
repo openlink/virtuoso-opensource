@@ -164,6 +164,13 @@ EXTRA_DIST= \
 	$(srcdir)/test_gql_golden.sql \
 	$(srcdir)/test_gql_shortest_groups.sql \
 	$(srcdir)/test_gql_rdf_runner.sql \
+	$(srcdir)/test_gql_lexer.sql \
+	$(srcdir)/test_gql_expr.sql \
+	$(srcdir)/test_gql_parser.sql \
+	$(srcdir)/test_gql_translate.sql \
+	$(srcdir)/test_gql_runtime.sql \
+	$(srcdir)/test_gql_stats.sql \
+	$(srcdir)/test_gql_e2e.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \
 	$(srcdir)/treplh-dsn-odbc.cfg \

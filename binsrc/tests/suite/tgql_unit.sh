@@ -4,11 +4,11 @@
 #
 #  openGQL: GQL for Virtuoso - unit test harness
 #
-#  Runs the standalone GQL unit-test SQL scripts that live in binsrc/gql/
-#  (translation, runtime, observability and end-to-end tests) against a fresh
-#  server.  The GQL modules are compiled into the binary (sql_code_sparql.c)
-#  and bootstrapped on database creation, so no VAD install or load step is
-#  needed here.
+#  Runs the standalone GQL unit-test SQL scripts distributed with this suite
+#  (test_gql_*.sql: lexer, expression, parser, translation, runtime,
+#  observability and end-to-end tests) against a fresh server.  The GQL modules
+#  are compiled into the binary (sql_code_sparql.c) and bootstrapped on database
+#  creation, so no VAD install or load step is needed here.
 #
 #  Each script prints its per-assertion results via dbg_obj_print (server
 #  console) and, if anything fails, signals SQLSTATE 23000 with a failure
@@ -53,8 +53,11 @@ BANNER "STARTED: $TEST_NAME TESTS"
 
 NOLITE
 
-# The canonical GQL unit-test scripts live in binsrc/gql/, not in this suite dir.
-GQLDIR=$VIRTDEV_HOME/binsrc/gql
+# The GQL unit-test scripts (test_gql_*.sql) are distributed with this suite so
+# it is self-contained under `make test` / `make dist`.  They are copies of the
+# canonical scripts kept beside the GQL sources in binsrc/gql/ — keep the two in
+# sync when either is changed.
+GQLDIR=$VIRTUOSO_TEST
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
