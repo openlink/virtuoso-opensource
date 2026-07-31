@@ -4043,6 +4043,18 @@ setp_set_part_opt (setp_node_t * setp, df_elt_t * tb_dfe)
     }
 }
 
+int
+gby_spec_dependent (df_elt_t * gby, ST * spec)
+{
+  DO_SET (df_elt_t *, dep, &gby->_.setp.gb_dependent)
+    {
+      if (box_equal ((cbox_t) spec->_.o_spec.col, (cbox_t) dep->dfe_tree))
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
 sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
@@ -4159,6 +4171,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
   DO_BOX (ST *, spec, inx, order_by)
     {
       state_slot_t *ssl;
+      if (is_gb && !is_grouping_sets && gby_spec_dependent (oby, spec))
+	continue;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
       if (is_grouping_sets && SSL_CONSTANT == ssl->ssl_type && !IS_NUM_DTP(DV_TYPE_OF(ssl->ssl_constant)))
         sqlc_new_error (so->so_sc->sc_cc, "37001", "SQXXX", "Non-numeric constants are not allowed in CUBE/ROLLUP");
@@ -5117,7 +5131,6 @@ sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk
       return ext;
     }
 }
-
 
 void
 sqlg_add_fail_stub (sqlo_t * so, data_source_t ** head)

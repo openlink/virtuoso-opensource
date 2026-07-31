@@ -1165,12 +1165,28 @@ ot_placed_check (op_table_t * ot)
 #endif
 }
 
+int
+dfe_is_setp_key (df_elt_t * setp, df_elt_t * dfe)
+{
+  int inx;
+  DO_BOX (ST *, spec, inx, setp->_.setp.specs)
+    {
+      if (ST_P (spec, ORDER_BY))
+	spec = spec->_.o_spec.col;
+      if (box_equal ((caddr_t) spec, (caddr_t) dfe->dfe_tree))
+	return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
+
+
 int enable_gb_dep = 1;
 
 void
-sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
+sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe, df_elt_t * exp_dfe)
 {
-  /* if an exp is placed before a group by but is used after the group by then add it to the dependent of the gby */
+  /* if an exp is placed before a group by but is used after the group by then add it to the dependent of the gby.  The exp can be defd in a pred body of a ts or such.  If so, the dfe is the defining top level dfe and the exp_dfe is the exp.  If the exp is top level these are the same.  */
   df_elt_t * next, *next2;
   int next_ctr = 0;
   so->so_mark_gb_dep = 0;
@@ -1179,7 +1195,8 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
   switch (dfe->dfe_type)
     {
     case DFE_GROUP: case DFE_ORDER: case DFE_TABLE: case DFE_DT:
-      return;
+	if (dfe == exp_dfe)
+	  return;
     }
   
   for (next = dfe->dfe_next, next2 = dfe; next; next = next->dfe_next)
@@ -1188,14 +1205,14 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
         next2 = next2->dfe_next;
       if (next2 == next)
         sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: loop in dfe_next");
-      if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed)
-	t_set_pushnew (&next->_.setp.gb_dependent, (void*)dfe);
+      if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed && !dfe_is_setp_key (next, exp_dfe))
+	t_set_pushnew (&next->_.setp.gb_dependent, (void*)exp_dfe);
     }
   /* it can be that a dt being placed has a having that has an invariant.  If so, the invariant goes a level above and the grup by is not directly after it.  So then start from the ghen pt and goup to the placed and get all the setps on the way and add the dfe as dep to them */
   dfe_latest (so, 1, &dfe, 1);
   DO_SET (df_elt_t *, setp, &so->so_crossed_setps)
     {
-      if (!setp->_.setp.is_being_placed)
+      if (!setp->_.setp.is_being_placed && !dfe_is_setp_key (setp, dfe))
 	t_set_pushnew (&setp->_.setp.gb_dependent, (void*)dfe);
     }
   END_DO_SET();
@@ -1242,7 +1259,7 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
     so->so_gen_pt = dfe;
   sqlo_dfe_type (so, dfe);
   if (so->so_mark_gb_dep)
-    sqlo_mark_gb_dep (so, dfe);
+    sqlo_mark_gb_dep (so, dfe, dfe);
   sqlo_check_outside_dt (so, dfe);
 }
 
@@ -2141,7 +2158,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 		{
 		  dfe_loc_result (placed->dfe_locus, super, dfe);
 		}
-	      sqlo_mark_gb_dep (so, placed);
+	      sqlo_mark_gb_dep (so, placed, dfe);
 	      return placed;
 	    }
 	}
@@ -6099,6 +6116,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
       {
 	ptrlong top_cnt = dfe->_.setp.top_cnt;
 	ST ** specs = dfe->_.setp.specs;
+	dk_set_t dep = dfe->_.setp.gb_dependent;
 	/*sqlo_dfe_unplace (so, (df_elt_t *) dfe->_.setp.after_test);*/
 	DO_SET (df_elt_t *, pred, &dfe->_.setp.having_preds)
 	  {
@@ -6108,6 +6126,7 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	memset (&dfe->_, 0, sizeof (dfe->_.setp));
 	dfe->_.setp.specs = specs;
 	dfe->_.setp.top_cnt = top_cnt;
+	dfe->_.setp.gb_dependent = dep;
 	break;
       }
     case DFE_TEXT_PRED:
@@ -8450,5 +8469,3 @@ sqlo_co_place (sql_comp_t * sc)
     }
   return ret;
 }
-
-
