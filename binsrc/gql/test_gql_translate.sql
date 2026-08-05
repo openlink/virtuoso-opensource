@@ -1959,6 +1959,26 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR165 FAIL: default reification: ', cast (_sparql as varchar)))); }
 
+  -- TR166: INSERT INTO GRAPH <g> names the target graph inline (GRAPH block)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> INSERT INTO GRAPH <urn:my:graph> (p:foaf:Person {firstName: ''Alice''})');
+  if (_sparql is not null
+      and strstr (_sparql, 'INSERT DATA') is not null
+      and strstr (_sparql, 'GRAPH <urn:my:graph>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR166 PASS: INSERT INTO GRAPH names target graph inline')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR166 FAIL: INSERT INTO GRAPH inline target: ', cast (_sparql as varchar)))); }
+
+  -- TR167: INSERT INTO GRAPH honours an explicit iri property as the subject
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> INSERT INTO GRAPH <urn:my:graph> (p:foaf:Person {iri: ''http://example.org/people/alice'', firstName: ''Alice''})');
+  if (_sparql is not null
+      and strstr (_sparql, '<http://example.org/people/alice> a') is not null
+      and strstr (_sparql, 'GRAPH <urn:my:graph>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR167 PASS: INSERT INTO GRAPH with explicit iri subject')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR167 FAIL: INSERT INTO GRAPH explicit iri: ', cast (_sparql as varchar)))); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

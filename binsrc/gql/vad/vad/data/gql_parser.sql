@@ -35,7 +35,7 @@
 --    Where:        vector('WHERE', expr)
 --    Filter:       vector('FILTER', expr)
 --    Return:       vector('RETURN', is_distinct, items, order_by, skip, limit)
---    Insert:       vector('INSERT', patterns)
+--    Insert:       vector('INSERT', patterns [, graph_ref])  -- graph_ref present for INSERT INTO GRAPH <g>
 --    Set:          vector('SET', items)                     -- sub-items: SETPROP, SETALL, SETLABEL
 --    Remove:       vector('REMOVE', items)                  -- sub-items: RMPROP, RMLABEL
 --    Delete:       vector('DELETE', is_detach, items)
@@ -786,9 +786,19 @@ create procedure DB.DBA.GQL_PARSE_FILTER (in _tokens any, inout _pos integer)
 
 create procedure DB.DBA.GQL_PARSE_INSERT (in _tokens any, inout _pos integer)
 {
-  declare patterns any;
+  declare patterns, graph_ref any;
   _pos := _pos + 1;  -- consume INSERT
+  -- Optional inline target graph: INSERT INTO GRAPH <g> (...)
+  graph_ref := null;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 287)  -- INTO
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+    }
   patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
+  if (graph_ref is not null)
+    return vector ('INSERT', patterns, graph_ref);
   return vector ('INSERT', patterns);
 }
 ;

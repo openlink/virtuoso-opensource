@@ -4427,7 +4427,17 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       else if (ctype = 'RETURN')
         { has_return := 1; return_ast := clause; }
       else if (ctype = 'INSERT')
-        { has_insert := 1; insert_asts := vector_concat (insert_asts, vector (clause)); }
+        {
+          has_insert := 1; insert_asts := vector_concat (insert_asts, vector (clause));
+          -- Inline target graph: INSERT INTO GRAPH <g> (...)
+          if (length (clause) > 2 and aref (clause, 2) is not null)
+            {
+              declare ins_graph_val varchar;
+              ins_graph_val := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 2), ctx);
+              DB.DBA.GQL_CTX_SET (ctx, 'graph', ins_graph_val);
+              DB.DBA.GQL_CTX_SET (ctx, 'active_graph', ins_graph_val);
+            }
+        }
       else if (ctype = 'CONSTRUCT')
         { has_construct := 1; construct_asts := vector_concat (construct_asts, vector (clause)); }
       else if (ctype = 'DESCRIBE')
