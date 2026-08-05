@@ -918,7 +918,7 @@ cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
 	goto skip_warning;
       if ((DV_UNAME == r->ssl_dtp) && (DV_STRING == l->ssl_dtp))
         goto skip_warning;
-      if (l->ssl_dtp != DV_TIMESTAMP && r->ssl_dtp != DV_TIMESTAMP)
+      if ((l->ssl_dtp != DV_TIMESTAMP && r->ssl_dtp != DV_TIMESTAMP) || SSL_CONSTANT == l->ssl_type || SSL_CONSTANT == r->ssl_type)
 	{
 	  sqlc_warning ("01V01", "QW004",
 	      "Incompatible types %.*s%s%s%s (%d) and %.*s%s%s%s (%d) in %s for %.*s and %.*s",
