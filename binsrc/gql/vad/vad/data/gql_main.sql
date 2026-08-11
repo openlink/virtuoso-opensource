@@ -236,7 +236,7 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
   declare _stats_on, _log_on integer;
 
   if (_graph is null)
-    _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+    _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
 
   _stats_on := DB.DBA.GQL_STATS_ENABLED ();
   _log_on := DB.DBA.GQL_LOG_ENABLED ();
@@ -265,6 +265,8 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
     {
       if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'ANY_GRAPH')
         _graph := null;
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'HOME_GRAPH')
+        _graph := DB.DBA.GQL_HOME_GRAPH ();
       else
         _graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
     }
@@ -363,7 +365,7 @@ create procedure DB.DBA.GQL_PARAMS (in _query varchar, in _graph varchar := null
   declare _translate_ms integer;
 
   if (_graph is null)
-    _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+    _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
 
   _stats_on := DB.DBA.GQL_STATS_ENABLED ();
   _log_on := DB.DBA.GQL_LOG_ENABLED ();

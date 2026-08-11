@@ -56,7 +56,7 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
   declare i, n integer;
 
   if (_default_graph is null)
-    _default_graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+    _default_graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
 
   -- Tokenize
   tokens := DB.DBA.GQL_TOKENIZE (_query);
@@ -71,6 +71,8 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
     {
       if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'ANY_GRAPH')
         _default_graph := null;
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'HOME_GRAPH')
+        _default_graph := DB.DBA.GQL_HOME_GRAPH ();
       else
         _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
     }

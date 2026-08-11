@@ -1707,16 +1707,18 @@ create procedure DB.DBA.GQL_NS_JOIN_LOCAL (in _ns varchar, in _local varchar)
 
 create procedure DB.DBA.GQL_CTX_RELATIVE_TERM_URI (inout _ctx any, in _local varchar)
 {
-  declare base_uri, default_uri, graph_uri varchar;
+  declare base_uri, default_uri varchar;
   base_uri := DB.DBA.GQL_CTX_GET (_ctx, 'base_uri');
   if (base_uri is not null and base_uri <> '')
     return DB.DBA.GQL_NS_JOIN_LOCAL (base_uri, _local);
   default_uri := DB.DBA.GQL_CTX_DEFAULT_PREFIX_URI (_ctx);
   if (default_uri is not null and default_uri <> '')
     return DB.DBA.GQL_NS_JOIN_LOCAL (default_uri, _local);
-  graph_uri := DB.DBA.GQL_CTX_GET (_ctx, 'active_graph');
-  if (graph_uri is not null and graph_uri <> '' and graph_uri <> DB.DBA.GQL_DEFAULT_GRAPH ())
-    return DB.DBA.GQL_NS_JOIN_LOCAL (graph_uri, _local);
+  -- The active graph is a data container, not a vocabulary namespace: labels,
+  -- properties and edge types always resolve to the ontology (GQL_NS), never
+  -- to the graph IRI, so a query behaves the same whichever graph it targets
+  -- (home graph, USE GRAPH <g>, or the default). Only an explicit BASE or a
+  -- default ':' prefix overrides the ontology for relative terms.
   return null;
 }
 ;
@@ -1733,7 +1735,7 @@ create procedure DB.DBA.GQL_TERM_URI (inout _ctx any, in _name varchar, in _kind
     {
       rel_uri := DB.DBA.GQL_CTX_RELATIVE_TERM_URI (_ctx, subseq (_name, 2));
       if (rel_uri is null)
-        signal ('G3011', sprintf ('Base-relative name %s requires BASE, PREFIX :, or USE GRAPH', _name));
+        signal ('G3011', sprintf ('Base-relative name %s requires BASE or PREFIX :', _name));
       return rel_uri;
     }
   expanded := DB.DBA.GQL_EXPAND_PREFIXED_NAME (_ctx, _name);
@@ -1875,9 +1877,17 @@ create procedure DB.DBA.GQL_GEN_FROM_CLAUSES (inout _ctx any)
   declare i integer;
   declare out_s varchar;
   declare any_default integer;
+  declare _graph varchar;
 
   out_s := '';
   any_default := 0;
+  -- When no graph was named, the active graph is the internal default sentinel.
+  -- Emit no FROM in that case so the query runs against Virtuoso's default SPARQL
+  -- dataset, returning the same result set a bare SPARQL query would -- rather
+  -- than restricting to the GQL-only urn:opengql:default graph.
+  _graph := DB.DBA.GQL_CTX_GET (_ctx, 'graph');
+  if (_graph = DB.DBA.GQL_DEFAULT_GRAPH ())
+    DB.DBA.GQL_CTX_SET (_ctx, 'suppress_default_from', 1);
   if (DB.DBA.GQL_CTX_GET (_ctx, 'suppress_default_from') = 1)
     {
       extras := DB.DBA.GQL_CTX_GET (_ctx, 'extra_from_graphs');
@@ -2020,6 +2030,8 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
         DB.DBA.GQL_CTX_SET (svc_ctx, 'graph', DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 1), svc_ctx));
       else if (ctype = 'USE_ANY_GRAPH')
         DB.DBA.GQL_CTX_SET (svc_ctx, 'suppress_default_from', 1);
+      else if (ctype = 'USE_HOME_GRAPH')
+        DB.DBA.GQL_CTX_SET (svc_ctx, 'graph', DB.DBA.GQL_HOME_GRAPH ());
       else if (ctype = 'FROM_CLAUSE')
         {
           declare extra_from any;
@@ -4241,6 +4253,8 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
             {
               if (isarray (at_schema) and aref (at_schema, 0) = 'ANY_GRAPH')
                 _graph := null;
+              else if (isarray (at_schema) and aref (at_schema, 0) = 'HOME_GRAPH')
+                _graph := DB.DBA.GQL_HOME_GRAPH ();
               else
                 {
                   declare graph_ctx any;
@@ -4356,7 +4370,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
     }
 
   -- Initialize
-  if (_graph is null) _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+  if (_graph is null) _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
   ctx := DB.DBA.GQL_CTX_NEW (_graph);
   n := length (clauses);
 
@@ -4456,6 +4470,16 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         }
       else if (ctype = 'USE_ANY_GRAPH')
         { use_ast := clause; DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1); }
+      else if (ctype = 'USE_HOME_GRAPH')
+        {
+          -- USE HOME_PROPERTY_GRAPH: bind the configured home graph as a
+          -- concrete named graph, regardless of the [GQL] mode flag.
+          declare home_graph_val varchar;
+          home_graph_val := DB.DBA.GQL_HOME_GRAPH ();
+          use_ast := clause;
+          DB.DBA.GQL_CTX_SET (ctx, 'graph', home_graph_val);
+          DB.DBA.GQL_CTX_SET (ctx, 'active_graph', home_graph_val);
+        }
       else if (ctype = 'FROM_CLAUSE')
         {
           declare extra_from any;
@@ -4841,18 +4865,41 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         signal ('G2004', 'MODIFY with RETURN is not yet supported — use separate statements');
       mod_del_items := aref (modify_ast, 1);
       mod_ins_patterns := aref (modify_ast, 2);
-      -- Build DELETE body from delete items (same logic as GQL_GEN_DML)
+      -- Build DELETE body + WHERE bindings from the delete items.  Each item is
+      -- an expression: a bare node variable `n` (delete the whole node) or a
+      -- property reference `n.prop` (delete that property).  The object being
+      -- deleted is a variable, which must be bound in the WHERE clause or SPARQL
+      -- instantiates nothing and the delete silently no-ops.  Bind it with an
+      -- OPTIONAL so a paired INSERT still fires when the old value was absent.
+      declare mod_opt_extra varchar;
       mod_del_body := '';
+      mod_opt_extra := '';
       for (mdi := 0; mdi < length (mod_del_items); mdi := mdi + 1)
         {
           declare mditem any;
           mditem := aref (mod_del_items, mdi);
-          if (isarray (mditem) and aref (mditem, 0) = 'VAR')
+          if (not isarray (mditem)) goto mod_del_next;
+          if (aref (mditem, 0) = 'VAR')
             {
-              declare mdvar varchar;
+              declare mdvar, mdp, mdo varchar;
               mdvar := DB.DBA.GQL_NODE_SPARQL_VAR (aref (mditem, 1));
-              mod_del_body := concat (mod_del_body, '  ', mdvar, ' ?p', cast (mdi as varchar), ' ?o', cast (mdi as varchar), ' .\n');
+              mdp := concat ('?mp', cast (mdi as varchar));
+              mdo := concat ('?mo', cast (mdi as varchar));
+              mod_del_body := concat (mod_del_body, '  ', mdvar, ' ', mdp, ' ', mdo, ' .\n');
+              mod_opt_extra := concat (mod_opt_extra, '  OPTIONAL {\n    ', mdvar, ' ', mdp, ' ', mdo, ' .\n  }\n');
             }
+          else if (aref (mditem, 0) = 'PROP')
+            {
+              declare mdsubj, mdprop, mdrv varchar;
+              mdsubj := DB.DBA.GQL_GEN_EXPR (aref (mditem, 1), ctx);
+              mdprop := DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (mditem, 2), ctx);
+              mdrv := concat ('?mdel', cast (mdi as varchar));
+              mod_del_body := concat (mod_del_body, '  ', mdsubj, ' ', mdprop, ' ', mdrv, ' .\n');
+              mod_opt_extra := concat (mod_opt_extra, '  OPTIONAL {\n    ', mdsubj, ' ', mdprop, ' ', mdrv, ' .\n  }\n');
+            }
+          else
+            signal ('G2007', 'MODIFY DELETE supports a node variable (n) or a property reference (n.prop)');
+        mod_del_next:;
         }
       -- Build INSERT body from insert patterns (reuse INSERT WHERE body builder)
       mod_ins_body := '';
@@ -4861,18 +4908,38 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           declare mod_ins_asts, mod_ins_sparql any;
           declare mod_prefix_len integer;
           mod_ins_asts := vector (vector ('INSERT', mod_ins_patterns));
-          -- Use GQL_GEN_INSERT_WHERE with empty match to get INSERT DATA body,
-          -- then extract the body between 'GRAPH <g> {\n' and '  }\n'
-          mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, vector (), ctx);
-          -- Extract the insert body from the INSERT DATA { GRAPH <g> { ... } } output
-          declare mod_graph_str varchar;
+          -- Reuse GQL_GEN_INSERT_WHERE to build the INSERT triple body, then
+          -- extract just that body (its WHERE, if any, is discarded — MODIFY
+          -- supplies its own).  Pass the real MATCH so insert node variables
+          -- reference the matched nodes (?gql_n_x) instead of being treated as
+          -- fresh nodes with newly minted URIs.
+          mod_ins_sparql := DB.DBA.GQL_GEN_INSERT_WHERE (mod_ins_asts, match_asts, ctx);
+          -- The body sits inside a GRAPH <g> { ... } block when a graph was
+          -- named.  With no graph it is emitted bare: directly under INSERT { ...
+          -- } WHERE when there is a MATCH, or under INSERT DATA { ... } when there
+          -- is not.  Pick the matching delimiters.
+          declare mod_graph_str, mod_close_str varchar;
           declare mod_body_start, mod_body_end integer;
-          mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+          if (DB.DBA.GQL_DML_HAS_GRAPH (DB.DBA.GQL_CTX_GET (ctx, 'graph')) = 1)
+            {
+              mod_graph_str := concat ('GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+              mod_close_str := '  }\n';
+            }
+          else if (length (match_asts) > 0)
+            {
+              mod_graph_str := 'INSERT {\n';
+              mod_close_str := '} WHERE';
+            }
+          else
+            {
+              mod_graph_str := 'INSERT DATA {\n';
+              mod_close_str := '}\n';
+            }
           mod_body_start := strstr (mod_ins_sparql, mod_graph_str);
           if (mod_body_start is not null)
             {
               mod_body_start := mod_body_start + length (mod_graph_str);
-              mod_body_end := strstr (subseq (mod_ins_sparql, mod_body_start), '  }\n');
+              mod_body_end := strstr (subseq (mod_ins_sparql, mod_body_start), mod_close_str);
               if (mod_body_end is not null)
                 mod_ins_body := subseq (mod_ins_sparql, mod_body_start, mod_body_start + mod_body_end);
             }
@@ -4884,15 +4951,22 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'binds'));
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'filters'));
       mod_where_body := concat (mod_where_body, DB.DBA.GQL_CTX_GET (ctx, 'optionals'));
-      -- Compose SPARQL
+      mod_where_body := concat (mod_where_body, mod_opt_extra);
+      -- Compose SPARQL.  Emit the DELETE and INSERT clauses only when non-empty
+      -- so an insert-only or delete-only MODIFY does not produce an empty
+      -- template block (which Virtuoso rejects as a syntax error).
       mod_sparql := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       mod_sparql := concat (mod_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
       mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
-      mod_sparql := concat (mod_sparql, 'DELETE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_del_body, '  }\n');
-      mod_sparql := concat (mod_sparql, '} INSERT {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n', mod_ins_body, '  }\n');
-      mod_sparql := concat (mod_sparql, '} WHERE {\n  GRAPH <', DB.DBA.GQL_CTX_GET (ctx, 'graph'), '> {\n');
+      declare mod_g varchar;
+      mod_g := DB.DBA.GQL_CTX_GET (ctx, 'graph');
+      if (mod_del_body <> '')
+        mod_sparql := concat (mod_sparql, 'DELETE {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_del_body), '} ');
+      if (mod_ins_body <> '')
+        mod_sparql := concat (mod_sparql, 'INSERT {\n', DB.DBA.GQL_DML_G_WRAP (mod_g, mod_ins_body), '} ');
+      mod_sparql := concat (mod_sparql, 'WHERE {\n', DB.DBA.GQL_DML_G_OPEN (mod_g));
       mod_sparql := concat (mod_sparql, mod_where_body);
-      mod_sparql := concat (mod_sparql, '  }\n}\n');
+      mod_sparql := concat (mod_sparql, DB.DBA.GQL_DML_G_CLOSE (mod_g), '}\n');
       return mod_sparql;
     }
 

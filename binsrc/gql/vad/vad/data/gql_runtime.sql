@@ -37,17 +37,104 @@ create procedure DB.DBA.GQL_URIQA_HOST ()
 }
 ;
 
--- Ontology namespace: predicates, labels, types, classes
+----------------------------------------------------------------------
+-- [GQL] virtuoso.ini section readers.
+--
+-- Three items, read on demand (no C recompile -- same mechanism the
+-- [SPARQL] section uses via virtuoso_ini_item_value):
+--
+--   GQLHomeGraph            - IRI of the "home" property graph. When home
+--                             mode is active and a query names no graph, its
+--                             data lands here. Default: http://<host>/gql/graph
+--   GQLHomeOntology         - base IRI of the property-graph vocabulary
+--                             (labels, properties, edge types). Terms are
+--                             joined to it with '/'. Default:
+--                             http://<host>/gql/ontology
+--   USEGQLHOMEPROPERTYGRAPH - 1/yes/on/true activates home-property-graph
+--                             mode: a query with no FROM / USE GRAPH /
+--                             USE ANY GRAPH clause implicitly binds the home
+--                             graph (and the home ontology vocabulary),
+--                             instead of the union default dataset. Default 0
+--                             (off) -- absent config preserves prior behavior.
+--
+-- USE HOME_PROPERTY_GRAPH is the per-query modifier that binds the home
+-- graph regardless of the flag.
+----------------------------------------------------------------------
+
+-- Read a single [GQL] ini item; empty/absent -> NULL.
+create procedure DB.DBA.GQL_INI_ITEM (in _name varchar)
+{
+  declare v varchar;
+  v := virtuoso_ini_item_value ('GQL', _name);
+  if (v is null or v = '')
+    return null;
+  return v;
+}
+;
+
+-- Home property graph IRI: [GQL] GQLHomeGraph, else host-derived.
+create procedure DB.DBA.GQL_HOME_GRAPH ()
+{
+  declare v varchar;
+  v := DB.DBA.GQL_INI_ITEM ('GQLHomeGraph');
+  if (v is not null)
+    return v;
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/gql/graph');
+}
+;
+
+-- Home ontology base IRI: [GQL] GQLHomeOntology, else host-derived.
+create procedure DB.DBA.GQL_HOME_ONTOLOGY ()
+{
+  declare v varchar;
+  v := DB.DBA.GQL_INI_ITEM ('GQLHomeOntology');
+  if (v is not null)
+    return v;
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/gql/ontology');
+}
+;
+
+-- Home-property-graph mode flag: [GQL] USEGQLHOMEPROPERTYGRAPH. Default off.
+create procedure DB.DBA.GQL_HOME_MODE_ENABLED ()
+{
+  declare v varchar;
+  v := DB.DBA.GQL_INI_ITEM ('USEGQLHOMEPROPERTYGRAPH');
+  if (v is null)
+    return 0;
+  v := lower (v);
+  if (v = '1' or v = 'yes' or v = 'on' or v = 'true')
+    return 1;
+  return 0;
+}
+;
+
+-- Session default graph used when a query names no graph.
+-- Home mode on  -> the real home graph (data lands there; writes succeed).
+-- Home mode off -> the internal sentinel (union default dataset for reads,
+--                  SP031 for un-graphed writes) -- the prior behavior.
+create procedure DB.DBA.GQL_SESSION_DEFAULT_GRAPH ()
+{
+  if (DB.DBA.GQL_HOME_MODE_ENABLED ())
+    return DB.DBA.GQL_HOME_GRAPH ();
+  return DB.DBA.GQL_DEFAULT_GRAPH ();
+}
+;
+
+-- Ontology namespace: predicates, labels, types, classes.
+-- The home ontology (from [GQL] GQLHomeOntology, else host-derived) is the
+-- single vocabulary namespace; terms are joined to it with '/'. The [GQL]
+-- mode flag and USE HOME_PROPERTY_GRAPH govern only graph binding, not the
+-- vocabulary.
 create procedure DB.DBA.GQL_NS ()
 {
-  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/opengql/ontology#');
+  return concat (DB.DBA.GQL_HOME_ONTOLOGY (), '/');
 }
 ;
 
 -- Entity/data namespace: nodes, edges, reification statements
 create procedure DB.DBA.GQL_DATA_NS ()
 {
-  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/opengql/data#');
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/gql/data/');
 }
 ;
 
@@ -163,8 +250,8 @@ create procedure DB.DBA.GQL_VERSION ()
 -- Register namespace prefixes for SPARQL integration
 create procedure DB.DBA.GQL_REGISTER_NS ()
 {
-  DB.DBA.XML_SET_NS_DECL ('opengql', DB.DBA.GQL_NS (), 2);
-  DB.DBA.XML_SET_NS_DECL ('opengqld', DB.DBA.GQL_DATA_NS (), 2);
+  DB.DBA.XML_SET_NS_DECL ('gql', DB.DBA.GQL_NS (), 2);
+  DB.DBA.XML_SET_NS_DECL ('gqld', DB.DBA.GQL_DATA_NS (), 2);
 }
 ;
 
@@ -172,7 +259,7 @@ create procedure DB.DBA.GQL_REGISTER_NS ()
 create procedure DB.DBA.GQL_RESET (in _graph varchar := null)
 {
   if (_graph is null)
-    _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+    _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
   exec (sprintf ('SPARQL CLEAR GRAPH <%s>', _graph));
 }
 ;
