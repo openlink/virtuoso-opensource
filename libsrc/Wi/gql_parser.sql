@@ -207,6 +207,11 @@ create procedure DB.DBA.GQL_PARSE_PROCEDURE_BODY (in _tokens any, inout _pos int
           DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
           at_schema := vector ('ANY_GRAPH');
         }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 330)  -- HOME_PROPERTY_GRAPH
+        {
+          _pos := _pos + 1;
+          at_schema := vector ('HOME_GRAPH');
+        }
       else
         at_schema := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
     }
@@ -1052,6 +1057,11 @@ create procedure DB.DBA.GQL_PARSE_USE_GRAPH (in _tokens any, inout _pos integer)
       _pos := _pos + 1;
       DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
       return vector ('USE_ANY_GRAPH');
+    }
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 330)  -- HOME_PROPERTY_GRAPH
+    {
+      _pos := _pos + 1;
+      return vector ('USE_HOME_GRAPH');
     }
   graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
   return vector ('USE', graph_expr);

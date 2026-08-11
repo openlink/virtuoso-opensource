@@ -1714,9 +1714,17 @@ create procedure DB.DBA.GQL_CTX_RELATIVE_TERM_URI (inout _ctx any, in _local var
   default_uri := DB.DBA.GQL_CTX_DEFAULT_PREFIX_URI (_ctx);
   if (default_uri is not null and default_uri <> '')
     return DB.DBA.GQL_NS_JOIN_LOCAL (default_uri, _local);
-  graph_uri := DB.DBA.GQL_CTX_GET (_ctx, 'active_graph');
-  if (graph_uri is not null and graph_uri <> '' and graph_uri <> DB.DBA.GQL_DEFAULT_GRAPH ())
-    return DB.DBA.GQL_NS_JOIN_LOCAL (graph_uri, _local);
+  -- Home-property-graph mode keeps the graph (data container) and the
+  -- ontology (vocabulary) distinct, so the active graph is NOT a term
+  -- namespace: bare labels/properties fall through to the home ontology
+  -- (GQL_NS). Only outside home mode does an explicitly bound graph
+  -- (USE GRAPH) double as the base for relative terms.
+  if (not DB.DBA.GQL_HOME_MODE_ENABLED ())
+    {
+      graph_uri := DB.DBA.GQL_CTX_GET (_ctx, 'active_graph');
+      if (graph_uri is not null and graph_uri <> '' and graph_uri <> DB.DBA.GQL_DEFAULT_GRAPH ())
+        return DB.DBA.GQL_NS_JOIN_LOCAL (graph_uri, _local);
+    }
   return null;
 }
 ;
@@ -2028,6 +2036,8 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
         DB.DBA.GQL_CTX_SET (svc_ctx, 'graph', DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 1), svc_ctx));
       else if (ctype = 'USE_ANY_GRAPH')
         DB.DBA.GQL_CTX_SET (svc_ctx, 'suppress_default_from', 1);
+      else if (ctype = 'USE_HOME_GRAPH')
+        DB.DBA.GQL_CTX_SET (svc_ctx, 'graph', DB.DBA.GQL_HOME_GRAPH ());
       else if (ctype = 'FROM_CLAUSE')
         {
           declare extra_from any;
@@ -4249,6 +4259,8 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
             {
               if (isarray (at_schema) and aref (at_schema, 0) = 'ANY_GRAPH')
                 _graph := null;
+              else if (isarray (at_schema) and aref (at_schema, 0) = 'HOME_GRAPH')
+                _graph := DB.DBA.GQL_HOME_GRAPH ();
               else
                 {
                   declare graph_ctx any;
@@ -4364,7 +4376,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
     }
 
   -- Initialize
-  if (_graph is null) _graph := DB.DBA.GQL_DEFAULT_GRAPH ();
+  if (_graph is null) _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
   ctx := DB.DBA.GQL_CTX_NEW (_graph);
   n := length (clauses);
 
@@ -4464,6 +4476,16 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         }
       else if (ctype = 'USE_ANY_GRAPH')
         { use_ast := clause; DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1); }
+      else if (ctype = 'USE_HOME_GRAPH')
+        {
+          -- USE HOME_PROPERTY_GRAPH: bind the configured home graph as a
+          -- concrete named graph, regardless of the [GQL] mode flag.
+          declare home_graph_val varchar;
+          home_graph_val := DB.DBA.GQL_HOME_GRAPH ();
+          use_ast := clause;
+          DB.DBA.GQL_CTX_SET (ctx, 'graph', home_graph_val);
+          DB.DBA.GQL_CTX_SET (ctx, 'active_graph', home_graph_val);
+        }
       else if (ctype = 'FROM_CLAUSE')
         {
           declare extra_from any;
