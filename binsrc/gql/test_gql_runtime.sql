@@ -51,10 +51,10 @@ create procedure DB.DBA.GQL_RUNTIME_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('RT2 FAIL: GQL_URIQA_HOST missing expected pattern')); }
 
-  -- RT3: GQL_NS starts with http:// and ends with opengql/ontology#
+  -- RT3: GQL_NS starts with http:// and ends with gql/ontology/ (home ontology)
   _total := _total + 1;
   _val := DB.DBA.GQL_NS ();
-  if (subseq (_val, 0, 7) = 'http://' and strstr (_val, 'opengql/ontology#') is not null)
+  if (subseq (_val, 0, 7) = 'http://' and strstr (_val, 'gql/ontology/') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('RT3 PASS: GQL_NS well-formed')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('RT3 FAIL: GQL_NS = ', _val))); }

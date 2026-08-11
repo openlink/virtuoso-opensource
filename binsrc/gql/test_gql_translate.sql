@@ -156,7 +156,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (n:Person) RETURN n, degree_centrality(n, "out", "weight", <urn:analytics:weighted>) AS degree');
   if (_sparql is not null
       and strstr (_sparql, 'GRAPH <urn:analytics:weighted>') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#weight>') is not null
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/weight>') is not null
       and strstr (_sparql, 'COALESCE(SUM(?deg_weight_') is not null
       and strstr (_sparql, 'GROUP BY ?gql_n_n') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR4b2 PASS: degree_centrality direction/weight/graph scope')); }
@@ -179,7 +179,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> MATCH (n:Person) RETURN n, degree_centrality(n, "out", foaf:knows, "weight", <urn:analytics:weighted>) AS degree');
   if (_sparql is not null
       and strstr (_sparql, '<http://xmlns.com/foaf/0.1/knows>') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#weight>') is not null
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/weight>') is not null
       and strstr (_sparql, 'FROM NAMED <urn:analytics:weighted>') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR4b4 PASS: degree_centrality relationship predicate')); }
   else
@@ -210,7 +210,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX foaf: <http://xmlns.com/foaf/0.1/> MATCH (n)-[r:foaf:knows]->(m) RETURN r.weight AS weight');
   if (_sparql is not null
       and strstr (_sparql, '<http://xmlns.com/foaf/0.1/knows>') is not null
-      and strstr (_sparql, '<http://localuriqaserver/opengql/ontology#foaf>') is null)
+      and strstr (_sparql, '<http://localuriqaserver/gql/ontology/foaf>') is null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR4d PASS: prefixed edge type not split')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR4d FAIL: prefixed edge type split: ', cast (_sparql as varchar)))); }
@@ -404,7 +404,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   if (_sparql is not null
       and strstr (_sparql, '<http://www.openlinksw.com/ontology/trucking-ontology#homeTerminal>') is not null
       and strstr (_sparql, '<http://www.openlinksw.com/ontology/trucking-ontology#Terminal>') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#trucking:') is null)
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/trucking:') is null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR20d PASS: unresolved prefixed terms use explicit namespace context')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR20d FAIL: unresolved prefixed terms use explicit namespace context')); }
@@ -1103,7 +1103,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST PATH p = (a)-[:KNOWS+ WEIGHT r.weight]->(b) WHERE a = <urn:a> AND b = <urn:b> RETURN p, path_cost(p) AS cost');
   if (_sparql is not null
       and strstr (_sparql, '?gql_p_p_cost') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#weight>') is not null
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/weight>') is not null
       and strstr (_sparql, 'COALESCE') is not null
       and strstr (_sparql, 'T_STEP(''path_id'') AS ?gql_p_p_id') is not null
       and strstr (_sparql, 'OPTION (TRANSITIVE') is not null)
@@ -1116,7 +1116,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH SHORTEST PATH p = (a)-[:KNOWS COST r.weight]->(b) WHERE a = <urn:a> AND b = <urn:b> RETURN p, path_weight(p) AS cost');
   if (_sparql is not null
       and strstr (_sparql, '?gql_p_p_cost') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#weight>') is not null
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/weight>') is not null
       and strstr (_sparql, 'OPTION (TRANSITIVE') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR80d PASS: COST alias for edge weight')); }
   else
@@ -1428,7 +1428,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (team) RETURN team.rdfs:label AS team_name');
   if (_sparql is not null
       and strstr (_sparql, '<http://www.w3.org/2000/01/rdf-schema#label>') is not null
-      and strstr (_sparql, '<http://localhost:8890/opengql/ontology#rdfs:label>') is null)
+      and strstr (_sparql, '<http://localhost:8890/gql/ontology/rdfs:label>') is null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR110a PASS: registered namespace property access')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR110a FAIL: registered namespace property access')); }
@@ -1447,7 +1447,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   -- TR112: Edge/property names preserve spelling unless FORCE CAMELCASE is requested
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (a)-[:ACTED_IN]->(b) RETURN a,b');
-  if (_sparql is not null and strstr (_sparql, '#ACTED_IN>') is not null)
+  if (_sparql is not null and strstr (_sparql, '/ACTED_IN>') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR112 PASS: edge names preserve spelling by default')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR112 FAIL: edge names should preserve spelling by default')); }
@@ -1455,7 +1455,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   -- TR113: FORCE CAMELCASE keeps the previous compatibility behavior
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('FORCE CAMELCASE MATCH (a)-[:ACTED_IN]->(b) RETURN a,b');
-  if (_sparql is not null and strstr (_sparql, '#actedIn>') is not null)
+  if (_sparql is not null and strstr (_sparql, '/actedIn>') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR113 PASS: FORCE CAMELCASE normalizes edge names')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector ('TR113 FAIL: FORCE CAMELCASE should normalize edge names')); }
@@ -2341,3 +2341,64 @@ create procedure DB.DBA.GQL_PLPREFIX_TESTS ()
 ;
 
 SELECT DB.DBA.GQL_PLPREFIX_TESTS ();
+
+----------------------------------------------------------------------
+-- Home property graph ([GQL] section + USE HOME_PROPERTY_GRAPH)
+--
+-- The [GQL] ini flag can't be toggled from a test script (it needs a
+-- server restart), so these cover the parts that don't depend on it:
+--   * the config readers return their host-derived defaults, and
+--   * the "USE HOME_PROPERTY_GRAPH" modifier binds the home graph as a
+--     concrete named graph (emitting FROM <home> for reads and
+--     GRAPH <home> for writes) regardless of the flag.
+----------------------------------------------------------------------
+
+create procedure DB.DBA.GQL_HOMEGRAPH_TESTS ()
+{
+  declare _pass, _fail integer;
+  declare _results any;
+  declare i integer;
+  declare _home, _sparql varchar;
+  _pass := 0; _fail := 0; _results := vector ();
+
+  -- Config readers: host-derived defaults end in /gql/graph and /gql/ontology
+  _home := DB.DBA.GQL_HOME_GRAPH ();
+  if (_home like '%/gql/graph')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector (concat ('HG1 PASS: home graph ', _home))); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('HG1 FAIL: home graph ', cast (_home as varchar)))); }
+
+  if (DB.DBA.GQL_HOME_ONTOLOGY () like '%/gql/ontology')
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('HG2 PASS: home ontology')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('HG2 FAIL: home ontology ', cast (DB.DBA.GQL_HOME_ONTOLOGY () as varchar)))); }
+
+  -- USE HOME_PROPERTY_GRAPH read -> FROM <home graph>
+  DB.DBA.GQL_T_ASSERT_SPARQL ('HG3 USE HOME_PROPERTY_GRAPH read -> FROM home',
+    'USE HOME_PROPERTY_GRAPH MATCH (n) RETURN n',
+    concat ('FROM <', _home, '>'), _pass, _fail, _results);
+
+  -- USE HOME_PROPERTY_GRAPH write -> GRAPH <home graph> wrapper
+  {
+    declare exit handler for sqlstate '*'
+      { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('HG4 FAIL: signal ', __SQL_MESSAGE))); goto hg_done; };
+    _sparql := DB.DBA.GQL_TO_SPARQL ('USE HOME_PROPERTY_GRAPH INSERT (:Person { name: ''Alice'' })');
+    if (_sparql is not null and strstr (_sparql, concat ('GRAPH <', _home, '>')) is not null)
+      { _pass := _pass + 1; _results := vector_concat (_results, vector ('HG4 PASS: insert wrapped in GRAPH home')); }
+    else
+      { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('HG4 FAIL: got ', cast (_sparql as varchar)))); }
+  hg_done:;
+  }
+
+  _results := vector_concat (_results, vector (''));
+  _results := vector_concat (_results, vector (concat ('HOMEGRAPH PASS: ', cast (_pass as varchar))));
+  _results := vector_concat (_results, vector (concat ('HOMEGRAPH FAIL: ', cast (_fail as varchar))));
+  for (i := 0; i < length (_results); i := i + 1)
+    dbg_obj_print (aref (_results, i));
+
+  if (_fail > 0)
+    signal ('23000', concat (cast (_fail as varchar), ' home-graph test(s) failed'));
+}
+;
+
+SELECT DB.DBA.GQL_HOMEGRAPH_TESTS ();
