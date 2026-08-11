@@ -134,7 +134,7 @@ create procedure DB.DBA.GQL_NS ()
 -- Entity/data namespace: nodes, edges, reification statements
 create procedure DB.DBA.GQL_DATA_NS ()
 {
-  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/opengql/data#');
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/gql/data/');
 }
 ;
 
@@ -250,8 +250,8 @@ create procedure DB.DBA.GQL_VERSION ()
 -- Register namespace prefixes for SPARQL integration
 create procedure DB.DBA.GQL_REGISTER_NS ()
 {
-  DB.DBA.XML_SET_NS_DECL ('opengql', DB.DBA.GQL_NS (), 2);
-  DB.DBA.XML_SET_NS_DECL ('opengqld', DB.DBA.GQL_DATA_NS (), 2);
+  DB.DBA.XML_SET_NS_DECL ('gql', DB.DBA.GQL_NS (), 2);
+  DB.DBA.XML_SET_NS_DECL ('gqld', DB.DBA.GQL_DATA_NS (), 2);
 }
 ;
 

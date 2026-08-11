@@ -59,10 +59,10 @@ create procedure DB.DBA.GQL_RUNTIME_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('RT3 FAIL: GQL_NS = ', _val))); }
 
-  -- RT4: GQL_DATA_NS starts with http:// and ends with opengql/data#
+  -- RT4: GQL_DATA_NS starts with http:// and ends with gql/data/
   _total := _total + 1;
   _val := DB.DBA.GQL_DATA_NS ();
-  if (subseq (_val, 0, 7) = 'http://' and strstr (_val, 'opengql/data#') is not null)
+  if (subseq (_val, 0, 7) = 'http://' and strstr (_val, 'gql/data/') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('RT4 PASS: GQL_DATA_NS well-formed')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('RT4 FAIL: GQL_DATA_NS = ', _val))); }
