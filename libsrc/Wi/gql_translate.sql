@@ -1707,24 +1707,18 @@ create procedure DB.DBA.GQL_NS_JOIN_LOCAL (in _ns varchar, in _local varchar)
 
 create procedure DB.DBA.GQL_CTX_RELATIVE_TERM_URI (inout _ctx any, in _local varchar)
 {
-  declare base_uri, default_uri, graph_uri varchar;
+  declare base_uri, default_uri varchar;
   base_uri := DB.DBA.GQL_CTX_GET (_ctx, 'base_uri');
   if (base_uri is not null and base_uri <> '')
     return DB.DBA.GQL_NS_JOIN_LOCAL (base_uri, _local);
   default_uri := DB.DBA.GQL_CTX_DEFAULT_PREFIX_URI (_ctx);
   if (default_uri is not null and default_uri <> '')
     return DB.DBA.GQL_NS_JOIN_LOCAL (default_uri, _local);
-  -- Home-property-graph mode keeps the graph (data container) and the
-  -- ontology (vocabulary) distinct, so the active graph is NOT a term
-  -- namespace: bare labels/properties fall through to the home ontology
-  -- (GQL_NS). Only outside home mode does an explicitly bound graph
-  -- (USE GRAPH) double as the base for relative terms.
-  if (not DB.DBA.GQL_HOME_MODE_ENABLED ())
-    {
-      graph_uri := DB.DBA.GQL_CTX_GET (_ctx, 'active_graph');
-      if (graph_uri is not null and graph_uri <> '' and graph_uri <> DB.DBA.GQL_DEFAULT_GRAPH ())
-        return DB.DBA.GQL_NS_JOIN_LOCAL (graph_uri, _local);
-    }
+  -- The active graph is a data container, not a vocabulary namespace: labels,
+  -- properties and edge types always resolve to the ontology (GQL_NS), never
+  -- to the graph IRI, so a query behaves the same whichever graph it targets
+  -- (home graph, USE GRAPH <g>, or the default). Only an explicit BASE or a
+  -- default ':' prefix overrides the ontology for relative terms.
   return null;
 }
 ;
@@ -1741,7 +1735,7 @@ create procedure DB.DBA.GQL_TERM_URI (inout _ctx any, in _name varchar, in _kind
     {
       rel_uri := DB.DBA.GQL_CTX_RELATIVE_TERM_URI (_ctx, subseq (_name, 2));
       if (rel_uri is null)
-        signal ('G3011', sprintf ('Base-relative name %s requires BASE, PREFIX :, or USE GRAPH', _name));
+        signal ('G3011', sprintf ('Base-relative name %s requires BASE or PREFIX :', _name));
       return rel_uri;
     }
   expanded := DB.DBA.GQL_EXPAND_PREFIXED_NAME (_ctx, _name);
