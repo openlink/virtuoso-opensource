@@ -69,6 +69,9 @@ typedef struct text_node_s
     state_slot_t *	txs_end_id;
     state_slot_t *	txs_ext_fti;	/*!< String that describes the external free-text index to use */
     state_slot_t *	txs_precision;
+    state_slot_t *	txs_fuzzy_algo;		/*!< Fuzzy algorithm ID (int constant) */
+    state_slot_t *	txs_fuzzy_threshold;	/*!< Fuzzy similarity threshold (double) */
+    state_slot_t *	txs_fuzzy_n;		/*!< N-gram size for ngram_cosine (int) */
     float		txs_card;
     /* if xcontains, properties of xpath node duplicated here */
     char		txs_xn_pred_type;
