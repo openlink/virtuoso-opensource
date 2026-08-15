@@ -9017,6 +9017,9 @@ ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pr
         case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
         case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
         case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
+        case FUZZY_L:		ssg_puts (", FUZZY, ");		goto contains_print_scalar; /* see below */
+        case FUZZY_THRESHOLD_L:	ssg_puts (", FUZZY_THRESHOLD, "); goto contains_print_scalar; /* see below */
+        case FUZZY_N_L:		ssg_puts (", FUZZY_N, ");	goto contains_print_scalar; /* see below */
         default:
           if (SPAR_FT_TYPE_IS_GEO (ft_type))
             {

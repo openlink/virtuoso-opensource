@@ -2007,7 +2007,10 @@ sqlp_contains_opts (ST * tree)
 		  || 0 == stricmp (name, "score")
 		  || 0 == stricmp (name, "score_limit")
 		  || 0 == stricmp (name, "end_id")
-		  || 0 == stricmp (name, "ext_fti") )
+		  || 0 == stricmp (name, "ext_fti")
+		  || 0 == stricmp (name, "fuzzy")
+		  || 0 == stricmp (name, "fuzzy_threshold")
+		  || 0 == stricmp (name, "fuzzy_n") )
 		{
 /*		  dk_free_tree ((caddr_t) arg);*/
 		  tree->_.call.params[inx] = (ST *) t_box_string (name);

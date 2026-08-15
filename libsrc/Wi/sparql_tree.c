@@ -4684,7 +4684,9 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
             spar_error (sparp, "More than one TABID is used for one triple pattern");
           has_tabid = 1; continue;
         case INFERENCE_L: has_inference = 1; continue;
-        case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
+        case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L:
+        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L:
+          has_ft = 1; continue;
         case GEO_L: case PRECISION_L: has_geo = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TABLE_OPTION_L: continue;
@@ -4966,6 +4968,9 @@ spart_dump_opname (ptrlong opname, int is_op)
     case false_L: return "false boolean";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
+    case FUZZY_L: return "FUZZY";
+    case FUZZY_THRESHOLD_L: return "FUZZY_THRESHOLD";
+    case FUZZY_N_L: return "FUZZY_N";
     case GRAPH_L: return "GRAPH gp";
     case IN_L: return "IN";
     case IRI_L: return "IRI builtin";

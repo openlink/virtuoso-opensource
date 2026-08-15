@@ -79,6 +79,9 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "FROM",			FROM_L			, 0
 "FUNCTION",		FUNCTION_L		, 0
 "HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
+"FUZZY",		FUZZY_L			, 0
+"FUZZY_THRESHOLD",	FUZZY_THRESHOLD_L	, 0
+"FUZZY_N",		FUZZY_N_L		, 0
 "GEO",			GEO_L			, 0
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0

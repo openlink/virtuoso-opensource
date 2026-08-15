@@ -865,6 +865,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
+%token FUZZY_L		/*:: PUNCT_SPAR_LAST("FUZZY") ::*/
+%token FUZZY_THRESHOLD_L	/*:: PUNCT_SPAR_LAST("FUZZY_THRESHOLD") ::*/
+%token FUZZY_N_L		/*:: PUNCT_SPAR_LAST("FUZZY_N") ::*/
 %token GEO_L		/*:: PUNCT_SPAR_LAST("GEO") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
@@ -3080,6 +3083,12 @@ spar_triple_freetext_option
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
 	| SCORE_LIMIT_L spar_expn	{	/*... | 'SCORE_LIMIT' Expn	*/
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
+	| FUZZY_L spar_expn		{	/*... | 'FUZZY' Expn (algorithm name)	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_L, $2); }
+	| FUZZY_THRESHOLD_L spar_expn	{	/*... | 'FUZZY_THRESHOLD' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_THRESHOLD_L, $2); }
+	| FUZZY_N_L spar_expn		{	/*... | 'FUZZY_N' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_N_L, $2); }
 	;
 
 spar_triple_geo_option
