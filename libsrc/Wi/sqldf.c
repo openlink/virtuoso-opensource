@@ -3934,6 +3934,9 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	  0 == stricmp ((char *) arg, "SCORE_LIMIT") ||
 	  0 == stricmp ((char *) arg, "EXT_FTI")
 	  || 0 == stricmp ((char *) arg, "PRECISION")
+	  || 0 == stricmp ((char *) arg, "FUZZY")
+	  || 0 == stricmp ((char *) arg, "FUZZY_THRESHOLD")
+	  || 0 == stricmp ((char *) arg, "FUZZY_N")
         )
 	{ /* input parameters : place */
 	  inx ++;
@@ -3941,7 +3944,7 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	}
       else if (inx >= surely_option_idx)
 	SQL_GPF_T1 (sc->sc_cc, "Argument not a keyword from list "
-	    "OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, START_ID, END_ID, SCORE, SCORE_LIMIT, EXT_FTI");
+	    "OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, START_ID, END_ID, SCORE, SCORE_LIMIT, EXT_FTI, FUZZY, FUZZY_THRESHOLD, FUZZY_N");
     }
   if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
     {

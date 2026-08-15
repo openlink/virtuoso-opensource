@@ -775,6 +775,12 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     txs->txs_ext_fti = scalar_exp_generate (sc, ot->ot_ext_fti, &code);
   if (ot->ot_geo_prec)
     txs->txs_precision = scalar_exp_generate (sc, ot->ot_geo_prec, &code);
+  if (ot->ot_text_fuzzy_algo)
+    txs->txs_fuzzy_algo = scalar_exp_generate (sc, ot->ot_text_fuzzy_algo, &code);
+  if (ot->ot_text_fuzzy_threshold)
+    txs->txs_fuzzy_threshold = scalar_exp_generate (sc, ot->ot_text_fuzzy_threshold, &code);
+  if (ot->ot_text_fuzzy_n)
+    txs->txs_fuzzy_n = scalar_exp_generate (sc, ot->ot_text_fuzzy_n, &code);
   if (ot->ot_text_start)
     txs->txs_init_id = scalar_exp_generate (sc, ot->ot_text_start, &code);
   if (ot->ot_text_end)

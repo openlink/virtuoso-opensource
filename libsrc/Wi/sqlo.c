@@ -1625,10 +1625,34 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx++;
 	  continue;
 	}
+      if (0 == stricmp ((char *) arg, "fuzzy"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1)
+	    sqlc_error (sc->sc_cc, "37000", "contains FUZZY option must have an argument");
+	  ot->ot_text_fuzzy_algo = args[inx + 1];
+	  inx++;
+	  continue;
+	}
+      if (0 == stricmp ((char *) arg, "fuzzy_threshold"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1)
+	    sqlc_error (sc->sc_cc, "37000", "contains FUZZY_THRESHOLD option must have an argument");
+	  ot->ot_text_fuzzy_threshold = args[inx + 1];
+	  inx++;
+	  continue;
+	}
+      if (0 == stricmp ((char *) arg, "fuzzy_n"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1)
+	    sqlc_error (sc->sc_cc, "37000", "contains FUZZY_N option must have an argument");
+	  ot->ot_text_fuzzy_n = args[inx + 1];
+	  inx++;
+	  continue;
+	}
       if (inx >= surely_option_idx)
 	{
 	  sqlc_error (sc->sc_cc, "37000",
-	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION",
+	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION, FUZZY, FUZZY_THRESHOLD, FUZZY_N",
 	      inx + 1, sqlo_spec_predicate_name (type), arg);
 	}
     }
