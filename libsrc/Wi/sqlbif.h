@@ -313,6 +313,7 @@ void pldbg_init (void);
 /* sqlbif2 */
 void sqlbif2_init (void);
 void sqlbif_sequence_init (void);
+void sqlbif_fuzzy_init (void);
 int dks_is_localhost (dk_session_t *ses);
 extern int lockdown_mode;
 
