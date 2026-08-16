@@ -44,6 +44,7 @@
 #include "xpathp_impl.h"
 #include "qncache.h"
 #include "fuzzy_algorithms.h"
+#include "aqueue.h"
 
 /*#define TEXT_DEBUG*/
 
@@ -2463,10 +2464,116 @@ wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_
  * above the threshold.  The resulting streams are merged via
  * wst_from_wsts() as an OR of all matching words.
  *
- * This is the single-threaded version.  Parallelisation via async
- * queues is a future enhancement; the structure is already prepared
- * for it (the scan loop can be partitioned by sub-ranges).
+ * When enable_qp >= 2 the prefix range is partitioned into sub-ranges
+ * and scanned in parallel by async-queue workers.  Each worker creates
+ * its own cursor on the word index, iterates its sub-range, and collects
+ * matching (word, similarity) pairs.  The main thread then merges all
+ * pairs and creates word_stream_t entries.  If enable_qp < 2 the
+ * existing single-threaded scan is used.
  */
+
+/* Args passed to each parallel fuzzy scan worker. */
+typedef struct fuzzy_scan_args_s
+{
+  caddr_t fsa_lower;		/* sub-range lower bound (owned) */
+  caddr_t fsa_higher;		/* sub-range higher bound (owned) */
+  const char *fsa_query;	/* query word (not owned) */
+  int fsa_algo;
+  double fsa_threshold;
+  int fsa_ngram_n;
+  dbe_key_t *fsa_key;
+  slice_id_t fsa_slice;
+  /* output – worker fills these */
+  dk_set_t fsa_matches;		/* list of box_string(word) / box_double(sim) pairs */
+  int fsa_n_matches;
+} fuzzy_scan_args_t;
+
+
+/* Worker function: scan one sub-range of the word index and collect
+ * words whose similarity to fsa_query is >= fsa_threshold.
+ * The av argument is a list(1, box_num(ptr_to_args)).
+ * Returns NULL; results are stored in args->fsa_matches. */
+static caddr_t
+fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
+{
+  fuzzy_scan_args_t *args = (fuzzy_scan_args_t *) (ptrlong) unbox (((caddr_t *)av)[0]);
+  caddr_t limit;
+  *err_ret = NULL;
+
+  limit = box_copy (args->fsa_lower);
+
+  for (;;)
+    {
+      caddr_t old_limit = limit;
+      caddr_t hit_word = NULL;
+      buffer_desc_t *buf;
+      int rc;
+      double sim;
+      it_cursor_t *itc;
+      wst_search_specs_t *specs;
+
+      itc = itc_create (NULL, bootstrap_cli->cli_trx);
+      itc->itc_isolation = ISO_UNCOMMITTED;
+      itc->itc_search_mode = SM_READ;
+      itc->itc_lock_mode = PL_SHARED;
+      itc_from (itc, args->fsa_key, args->fsa_slice);
+      specs = wst_get_specs (itc->itc_row_key);
+      itc->itc_key_spec = specs->wst_ks_range;
+      ITC_SEARCH_PARAM (itc, box_copy (limit));
+      ITC_SEARCH_PARAM (itc, box_copy (args->fsa_higher));
+      ITC_FAIL (itc)
+        {
+          buf = itc_reset (itc);
+          rc = itc_search (itc, &buf);
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+          if (DVC_MATCH != rc)
+            {
+              itc_page_leave (itc, buf);
+              itc_free (itc);
+              break;
+            }
+          hit_word = wst_itc_col_word (itc, buf);
+          itc_page_leave (itc, buf);
+        }
+      ITC_FAILED
+        {
+          itc_free (itc);
+          break;
+        }
+      END_FAIL (itc);
+
+      if (!hit_word)
+        {
+          itc_free (itc);
+          break;
+        }
+
+      sim = fuzzy_similarity (args->fsa_query, hit_word,
+                              args->fsa_algo, args->fsa_ngram_n);
+      if (sim >= args->fsa_threshold)
+        {
+          dk_set_push (&args->fsa_matches, (void *) box_double (sim));
+          dk_set_push (&args->fsa_matches, (void *) hit_word);
+          args->fsa_n_matches++;
+          /* hit_word is now owned by the set; use a copy for limit. */
+          limit = box_copy (hit_word);
+        }
+      else
+        {
+          limit = hit_word;		/* advance past this word */
+        }
+
+      dk_free_box (old_limit);
+      itc_free (itc);
+    }
+
+  dk_free_box (limit);
+  dk_free_tree (av);		/* free the args list */
+  return NULL;
+}
+
+
 static search_stream_t *
 wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 {
@@ -2497,6 +2604,142 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
   higher = box_dv_short_nchars (word, prefix_len);
   higher[box_length (higher) - 2]++;  /* increment last char of higher bound */
 
+  /* ---- Parallel path: partition the range across async-queue workers ---- */
+  if (enable_qp >= 2)
+    {
+      int n_parts = enable_qp;
+      if (n_parts > 8) n_parts = 8;	/* cap: diminishing returns past 8 */
+      {
+        fuzzy_scan_args_t *args_arr;
+        async_queue_t *aq;
+        caddr_t err = NULL;
+        int i;
+
+        args_arr = (fuzzy_scan_args_t *) dk_alloc_box_zero (
+            sizeof (fuzzy_scan_args_t) * n_parts, DV_ARRAY_OF_POINTER);
+
+        /* Partition [lower, higher) by the byte after the prefix.
+         * Sub-range i covers words whose (prefix_len+1)-th byte falls in
+         * [256*i/n_parts, 256*(i+1)/n_parts).  The first sub-range also
+         * includes words that are exactly prefix_len chars long. */
+        for (i = 0; i < n_parts; i++)
+          {
+            fuzzy_scan_args_t *a = &args_arr[i];
+            if (i == 0)
+              a->fsa_lower = box_copy (lower);
+            else
+              {
+                a->fsa_lower = dk_alloc_box (prefix_len + 2, DV_SHORT_STRING);
+                memcpy (a->fsa_lower, lower, prefix_len);
+                a->fsa_lower[prefix_len] = (unsigned char) (256 * i / n_parts);
+                a->fsa_lower[prefix_len + 1] = 0;
+              }
+            if (i == n_parts - 1)
+              a->fsa_higher = box_copy (higher);
+            else
+              {
+                a->fsa_higher = dk_alloc_box (prefix_len + 2, DV_SHORT_STRING);
+                memcpy (a->fsa_higher, lower, prefix_len);
+                a->fsa_higher[prefix_len] = (unsigned char) (256 * (i + 1) / n_parts);
+                a->fsa_higher[prefix_len + 1] = 0;
+              }
+            a->fsa_query = word;
+            a->fsa_algo = algo;
+            a->fsa_threshold = threshold;
+            a->fsa_ngram_n = ngram_n;
+            a->fsa_key = tctx->tctx_table->tb_primary_key;
+            a->fsa_slice = tctx->tctx_qi->qi_client->cli_slice;
+            a->fsa_matches = NULL;
+            a->fsa_n_matches = 0;
+          }
+
+        aq = aq_allocate (bootstrap_cli, n_parts);
+        aq->aq_do_self_if_would_wait = 1;
+        aq->aq_no_lt_enter = 1;
+
+        for (i = 0; i < n_parts; i++)
+          aq_request (aq, fuzzy_scan_worker,
+              list (1, box_num ((ptrlong) &args_arr[i])));
+
+        aq_wait_all (aq, &err);
+        dk_free_box ((caddr_t) aq);
+
+        if (err)
+          {
+            NEW_SST (search_stream_t, sst);
+            sst->sst_error = err;
+            sst->sst_op = SRC_ERROR;
+            for (i = 0; i < n_parts; i++)
+              {
+                dk_free_tree ((caddr_t) list_to_array (args_arr[i].fsa_matches));
+                dk_free_box (args_arr[i].fsa_lower);
+                dk_free_box (args_arr[i].fsa_higher);
+              }
+            dk_free_box ((caddr_t) args_arr);
+            dk_free_box (lower);
+            dk_free_box (higher);
+            return sst;
+          }
+
+        /* Merge results from all workers */
+        for (i = 0; i < n_parts; i++)
+          {
+            fuzzy_scan_args_t *a = &args_arr[i];
+            while (a->fsa_matches)
+              {
+                caddr_t sim_box, word_box;
+                word_box = (caddr_t) dk_set_pop (&a->fsa_matches);
+                sim_box = (caddr_t) dk_set_pop (&a->fsa_matches);
+                {
+                  double sim = unbox_double (sim_box);
+                  word_stream_t *wst = (word_stream_t *)
+                      wst_from_word (tctx, range_flags, word_box);
+                  if (wst && wst->sst_op != SRC_ERROR)
+                    {
+                      wst->wst_fuzzy_similarity = sim;
+                      dk_set_push (&wsts, (void *) wst);
+                      n_words++;
+                    }
+                  else if (wst)
+                    {
+                      /* SRC_ERROR stream: free its components */
+                      dk_free_tree ((caddr_t) wst);
+                    }
+                }
+                dk_free_box (word_box);
+                dk_free_box (sim_box);
+                if (n_words > WST_WILDCARD_MAX)
+                  {
+                    NEW_SST (search_stream_t, sst);
+                    sst->sst_error = srv_make_new_error ("22015", "FT038",
+                        "fuzzy search has over %d matches", WST_WILDCARD_MAX);
+                    sst->sst_op = SRC_ERROR;
+                    dk_free_tree ((caddr_t) list_to_array (wsts));
+                    /* free remaining matches in all workers */
+                    for (; i < n_parts; i++)
+                      dk_free_tree ((caddr_t) list_to_array (args_arr[i].fsa_matches));
+                    for (i = 0; i < n_parts; i++)
+                      {
+                        dk_free_box (args_arr[i].fsa_lower);
+                        dk_free_box (args_arr[i].fsa_higher);
+                      }
+                    dk_free_box ((caddr_t) args_arr);
+                    dk_free_box (lower);
+                    dk_free_box (higher);
+                    return sst;
+                  }
+              }
+            dk_free_box (a->fsa_lower);
+            dk_free_box (a->fsa_higher);
+          }
+        dk_free_box ((caddr_t) args_arr);
+        dk_free_box (lower);
+        dk_free_box (higher);
+        return wst_from_wsts (tctx, range_flags, wsts);
+      }
+    }
+
+  /* ---- Single-threaded path (enable_qp < 2) ---- */
   limit = box_copy (lower);
 
   for (;;)
