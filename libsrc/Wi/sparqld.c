@@ -236,6 +236,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case FUZZY_L: return "FUZZY";
     case FUZZY_THRESHOLD_L: return "FUZZY_THRESHOLD";
     case FUZZY_N_L: return "FUZZY_N";
+    case FUZZY_PREFIX_L: return "FUZZY_PREFIX";
     case GEO_L: return "GEO";
     /* case GRAPH_L: return "GRAPH"; */
     case IFP_L: return "IFP";

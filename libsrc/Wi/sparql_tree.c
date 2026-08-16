@@ -4685,7 +4685,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
           has_tabid = 1; continue;
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L:
-        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L:
+        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L: case FUZZY_PREFIX_L:
           has_ft = 1; continue;
         case GEO_L: case PRECISION_L: has_geo = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
@@ -4971,6 +4971,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case FUZZY_L: return "FUZZY";
     case FUZZY_THRESHOLD_L: return "FUZZY_THRESHOLD";
     case FUZZY_N_L: return "FUZZY_N";
+    case FUZZY_PREFIX_L: return "FUZZY_PREFIX";
     case GRAPH_L: return "GRAPH gp";
     case IN_L: return "IN";
     case IRI_L: return "IRI builtin";

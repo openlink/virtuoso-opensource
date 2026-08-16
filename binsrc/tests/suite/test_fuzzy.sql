@@ -372,6 +372,191 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": E2 SPARQL invalid algo name errors STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- ============================================================
+-- Group F — Unicode / code-point-aware algorithms (P1-1)
+-- ============================================================
+ECHO BOTH "\n--- Group F: Unicode code-point-aware algorithms ---\n";
+
+-- CJK: 1 character different out of 3
+SELECT levenshtein ('日本語', '日本国');
+ECHO BOTH $IF $EQU $LAST[1] 1  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F1 levenshtein('日本語','日本国') = " $LAST[1] " (expected 1)\n";
+
+SELECT levenshtein_similarity ('日本語', '日本国');
+ECHO BOTH $IF $GT $LAST[1] 0.6  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F2 levenshtein_similarity('日本語','日本国') = " $LAST[1] " (expected ~0.667)\n";
+
+SELECT jaro_winkler ('日本語', '日本国');
+ECHO BOTH $IF $GT $LAST[1] 0.7  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F3 jaro_winkler('日本語','日本国') = " $LAST[1] " (expected ~0.833)\n";
+
+-- Emoji: 1 character different out of 2
+SELECT levenshtein ('😀😁', '😀😂');
+ECHO BOTH $IF $EQU $LAST[1] 1  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F4 levenshtein('😀😁','😀😂') = " $LAST[1] " (expected 1)\n";
+
+-- Mixed ASCII + CJK
+SELECT levenshtein ('abc日本語', 'abc日本国');
+ECHO BOTH $IF $EQU $LAST[1] 1  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F5 levenshtein('abc日本語','abc日本国') = " $LAST[1] " (expected 1)\n";
+
+-- N-gram cosine on CJK (shared bigram: 日本)
+SELECT ngram_cosine ('日本語', '日本国');
+ECHO BOTH $IF $GT $LAST[1] 0.3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F6 ngram_cosine('日本語','日本国') = " $LAST[1] " (expected ~0.5)\n";
+
+-- N-gram cosine on CJK with unigrams (shared: 日, 本)
+SELECT ngram_cosine_n ('日本語', '日本国', 1);
+ECHO BOTH $IF $GT $LAST[1] 0.5  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F7 ngram_cosine_n('日本語','日本国',1) = " $LAST[1] " (expected ~0.667)\n";
+
+-- Pure ASCII regression (must not change)
+SELECT levenshtein ('kitten', 'sitting');
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F8 levenshtein('kitten','sitting') = " $LAST[1] " (expected 3, ASCII regression)\n";
+
+SELECT jaro_winkler ('MARTHA', 'MARHTA');
+ECHO BOTH $IF $GT $LAST[1] 0.95  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": F9 jaro_winkler('MARTHA','MARHTA') = " $LAST[1] " (expected ~0.961, ASCII regression)\n";
+
+-- ============================================================
+-- Group G — Score fusion tie discrimination (P1-3)
+-- ============================================================
+ECHO BOTH "\n--- Group G: Score fusion tie discrimination ---\n";
+
+CREATE TABLE fuzzy_score_test (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR);
+CREATE TEXT INDEX ON fuzzy_score_test (name);
+INSERT INTO fuzzy_score_test (id, name) VALUES (1, 'Johnson');
+INSERT INTO fuzzy_score_test (id, name) VALUES (2, 'Jonson');
+INSERT INTO fuzzy_score_test (id, name) VALUES (3, 'Jonsen');
+INSERT INTO fuzzy_score_test (id, name) VALUES (4, 'Jhnson');
+INSERT INTO fuzzy_score_test (id, name) VALUES (5, 'Johansson');
+INSERT INTO fuzzy_score_test (id, name) VALUES (6, 'Johnsen');
+DB.DBA.vt_batch_update ('DB.DBA.fuzzy_score_test', 'ON', 1);
+
+-- Each row should have a distinct score (no unnecessary ties).
+-- Some words may have identical similarity values, so we check for
+-- at least 4 distinct scores (the old multiplicative fusion with
+-- integer truncation would produce fewer).
+SELECT COUNT (DISTINCT SCORE) FROM fuzzy_score_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5);
+ECHO BOTH $IF $GE $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": G1 distinct scores for 6 rows = " $LAST[1] " (expected >=4, no unnecessary ties)\n";
+
+-- Exact match should rank highest
+SELECT TOP 1 SCORE, name FROM fuzzy_score_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5) ORDER BY SCORE DESC;
+ECHO BOTH $IF $EQU $LAST[2] "Johnson"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": G2 top result by score is '" $LAST[2] "' (expected Johnson)\n";
+
+DROP TABLE fuzzy_score_test;
+
+-- ============================================================
+-- Group H — Configurable prefix length (P1-4)
+-- ============================================================
+ECHO BOTH "\n--- Group H: Configurable prefix length ---\n";
+
+-- Note: "Janson" (id=3) starts with "Ja", not "Jo".
+-- With prefix=2 (default), the scan range is "Jo..." so Janson is NOT scanned.
+-- With prefix=1, the scan range is "J..." so Janson IS scanned and may match.
+
+-- Default prefix (2) — scans "Jo*" range, finds Johnson, Jonsson, Johansson
+SELECT COUNT (*) FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5);
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": H1 default prefix=2 finds " $LAST[1] " rows (expected 3)\n";
+
+-- Prefix 1 — scans "J*" range, also finds Janson
+SELECT COUNT (*) FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5, 'fuzzy_prefix', 1);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": H2 prefix=1 finds " $LAST[1] " rows (expected 4, includes Janson)\n";
+
+-- Prefix 3 — scans "Joh*" range, only Johnson and Johansson
+SELECT COUNT (*) FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5, 'fuzzy_prefix', 3);
+ECHO BOTH $IF $EQU $LAST[1] 2  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": H3 prefix=3 finds " $LAST[1] " rows (expected 2)\n";
+
+-- SPARQL with FUZZY_PREFIX
+SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (FUZZY 'jaro_winkler', FUZZY_THRESHOLD 0.5, FUZZY_PREFIX 1) . };
+ECHO BOTH $IF $NEQ $ROWCNT 0  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": H4 SPARQL FUZZY_PREFIX 1 = " $ROWCNT " rows (expected >0)\n";
+
+-- ============================================================
+-- Group I — SPARQL algorithm validation (P1-5)
+-- ============================================================
+ECHO BOTH "\n--- Group I: SPARQL algorithm validation ---\n";
+
+-- SPARQL: invalid algorithm (should error with valid names listed)
+SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (FUZZY 'bad_algo') . };
+ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": I1 SPARQL invalid algo errors STATE=" $STATE "\n";
+
+-- SPARQL: non-literal algorithm (variable) — should error
+SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (FUZZY ?algo) . };
+ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": I2 SPARQL non-literal algo errors STATE=" $STATE "\n";
+
+-- ============================================================
+-- Group J — Interaction with existing contains() features (P1-2)
+-- ============================================================
+ECHO BOTH "\n--- Group J: Interaction with contains() features ---\n";
+
+-- J1: Fuzzy + SCORE (regression — already tested, verify ordering)
+SELECT SCORE, id, name FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.6) ORDER BY SCORE DESC;
+ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J1 fuzzy + SCORE = " $ROWCNT " rows (expected 3)\n";
+
+-- J2: Fuzzy + SCORE_LIMIT
+SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.6, 'score_limit', 1);
+ECHO BOTH $IF $NEQ $ROWCNT 0  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J2 fuzzy + SCORE_LIMIT = " $ROWCNT " rows (expected >0)\n";
+
+-- J3: Fuzzy + DESCENDING (flag, no value)
+SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.6, 'descending');
+ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J3 fuzzy + DESCENDING = " $ROWCNT " rows (expected 3)\n";
+
+-- J4: Fuzzy + START_ID / END_ID
+SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5, 'start_id', 2, 'end_id', 5);
+ECHO BOTH $IF $NEQ $ROWCNT 0  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J4 fuzzy + START_ID/END_ID = " $ROWCNT " rows (expected >0)\n";
+
+-- J5: Fuzzy + encoding prefix (SPARQL path)
+SELECT id, name FROM fuzzy_test WHERE contains (name, '[__enc "UTF-8"] Johnson', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.6);
+ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J5 fuzzy + encoding prefix = " $ROWCNT " rows (expected 3)\n";
+
+-- J6: Fuzzy + boolean AND — both words treated as fuzzy
+SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson AND Smith', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5);
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J6 fuzzy + boolean AND STATE=" $STATE " rows=" $ROWCNT "\n";
+
+-- J7: Fuzzy + boolean OR — both words treated as fuzzy
+SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson OR Smith', 'fuzzy', 'jaro_winkler', 'fuzzy_threshold', 0.5);
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": J7 fuzzy + boolean OR STATE=" $STATE " rows=" $ROWCNT "\n";
+
+-- ============================================================
 -- Cleanup
 -- ============================================================
 drop table fuzzy_test;

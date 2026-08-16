@@ -116,6 +116,7 @@ struct sst_tctx_s
   int			tctx_fuzzy_algo;	/* 0=none, 1=JW, 2=Lev, 3=NGram */
   double			tctx_fuzzy_threshold;	/* similarity threshold 0.0..1.0 */
   int			tctx_fuzzy_n;		/* n-gram size, default 2 */
+  int			tctx_fuzzy_prefix;	/* prefix length, default 2, range 1-4 */
 };
 
 typedef struct sst_tctx_s sst_tctx_t;

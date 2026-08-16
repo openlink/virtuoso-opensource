@@ -1945,22 +1945,19 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
       sst_ranges (sst, d_id, sst->sst_view_from, sst->sst_view_to, 1);
       sst->sst_raw_score = sst->sst_all_ranges_fill;
       sst_freq_factor (sst);
-      /* Fuzzy score fusion: scale relevance by similarity ratio */
-      if (((word_stream_t *) sst)->wst_fuzzy_similarity > 0.0
-          && ((word_stream_t *) sst)->wst_fuzzy_similarity < 1.0)
+      /* Fuzzy score fusion: add similarity as a bonus to the FT score.
+       * Non-fuzzy streams (similarity == 0.0) are unaffected.
+       * Exact matches (similarity == 1.0) get the full 100 bonus so
+       * they always rank highest.  Fuzzy matches get score + (similarity * 100),
+       * preserving discrimination between different similarity levels
+       * without compressing the original FT score. */
+      if (((word_stream_t *) sst)->wst_fuzzy_similarity > 0.0)
         {
+          int sim_bonus = (int) (((word_stream_t *) sst)->wst_fuzzy_similarity * 100);
           if (sst->sst_score)
-            {
-              int fused = (int) (sst->sst_score * ((word_stream_t *) sst)->wst_fuzzy_similarity);
-              if (!fused) fused = 1;  /* keep visible if above threshold */
-              sst->sst_score = fused;
-            }
+            sst->sst_score += sim_bonus;
           if (sst->sst_raw_score)
-            {
-              int fused_raw = (int) (sst->sst_raw_score * ((word_stream_t *) sst)->wst_fuzzy_similarity);
-              if (!fused_raw) fused_raw = 1;
-              sst->sst_raw_score = fused_raw;
-            }
+            sst->sst_raw_score += sim_bonus;
         }
       return;
     case BOP_OR:
@@ -2595,11 +2592,16 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
   word_len = (int) strlen (word);
 
   /* Compute prefix range bounds.
-   * Use first min(2, word_len-1) characters as the prefix.
+   * Use first min(tctx_fuzzy_prefix, word_len-1) characters as the prefix.
    * A shorter prefix means more candidates but better recall.
    * If the word is too short (<=1 char), fall back to exact match. */
-  prefix_len = word_len - 1;
-  if (prefix_len > 2) prefix_len = 2;
+  {
+    int max_prefix = tctx->tctx_fuzzy_prefix;
+    if (max_prefix <= 0) max_prefix = 2;  /* default */
+    if (max_prefix > 4) max_prefix = 4;   /* clamp */
+    prefix_len = word_len - 1;
+    if (prefix_len > max_prefix) prefix_len = max_prefix;
+  }
   if (prefix_len < 1)
     return wst_from_word (tctx, range_flags, word);
 
@@ -3514,7 +3516,9 @@ skip_parsing_of_new_tree:
       context.tctx_fuzzy_algo = fuzzy_algo_id_from_name (algo_name);
       if (context.tctx_fuzzy_algo == FUZZY_NONE)
         sqlr_new_error ("22023", "FT380",
-            "Unknown fuzzy algorithm '%.200s'", algo_name ? algo_name : "(null)");
+            "Unknown fuzzy algorithm '%.200s'. Valid algorithms: "
+            "'jaro_winkler', 'levenshtein', 'ngram_cosine'",
+            algo_name ? algo_name : "(null)");
     }
   else
     context.tctx_fuzzy_algo = FUZZY_NONE;
@@ -3524,6 +3528,9 @@ skip_parsing_of_new_tree:
   context.tctx_fuzzy_n = (txs->txs_fuzzy_n
       ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n))
       : FUZZY_DEFAULT_N);
+  context.tctx_fuzzy_prefix = (txs->txs_fuzzy_prefix
+      ? (int) unbox (qst_get (qst, txs->txs_fuzzy_prefix))
+      : 2);
   sst = sst_from_tree (&context, (caddr_t*)tree);
   if (tree_is_temporary)
     dk_free_tree ((caddr_t)tree);

@@ -1087,7 +1087,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
         case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
         case GEO_L: case PRECISION_L:
         case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
-        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L:
+        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L: case FUZZY_PREFIX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))

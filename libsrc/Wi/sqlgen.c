@@ -781,6 +781,8 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     txs->txs_fuzzy_threshold = scalar_exp_generate (sc, ot->ot_text_fuzzy_threshold, &code);
   if (ot->ot_text_fuzzy_n)
     txs->txs_fuzzy_n = scalar_exp_generate (sc, ot->ot_text_fuzzy_n, &code);
+  if (ot->ot_text_fuzzy_prefix)
+    txs->txs_fuzzy_prefix = scalar_exp_generate (sc, ot->ot_text_fuzzy_prefix, &code);
   if (ot->ot_text_start)
     txs->txs_init_id = scalar_exp_generate (sc, ot->ot_text_start, &code);
   if (ot->ot_text_end)

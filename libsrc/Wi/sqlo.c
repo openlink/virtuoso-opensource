@@ -1649,6 +1649,14 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx++;
 	  continue;
 	}
+      if (0 == stricmp ((char *) arg, "fuzzy_prefix"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1)
+	    sqlc_error (sc->sc_cc, "37000", "contains FUZZY_PREFIX option must have an argument");
+	  ot->ot_text_fuzzy_prefix = args[inx + 1];
+	  inx++;
+	  continue;
+	}
       if (inx >= surely_option_idx)
 	{
 	  sqlc_error (sc->sc_cc, "37000",

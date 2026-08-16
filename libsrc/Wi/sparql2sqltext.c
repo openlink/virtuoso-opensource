@@ -9017,9 +9017,44 @@ ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pr
         case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
         case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
         case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
-        case FUZZY_L:		ssg_puts (", FUZZY, ");		goto contains_print_scalar; /* see below */
-        case FUZZY_THRESHOLD_L:	ssg_puts (", FUZZY_THRESHOLD, "); goto contains_print_scalar; /* see below */
-        case FUZZY_N_L:		ssg_puts (", FUZZY_N, ");	goto contains_print_scalar; /* see below */
+        case FUZZY_L:
+          {
+            SPART *fuzzy_val = args[argctr+1];
+            if (SPAR_LIT == SPART_TYPE (fuzzy_val) && DV_STRING == DV_TYPE_OF (fuzzy_val->_.lit.val))
+              {
+                caddr_t algo = fuzzy_val->_.lit.val;
+                if (stricmp (algo, "jaro_winkler") != 0
+                    && stricmp (algo, "levenshtein") != 0
+                    && stricmp (algo, "ngram_cosine") != 0)
+                  spar_error (ssg->ssg_sparp, "Invalid FUZZY algorithm '%s'. "
+                      "Valid algorithms: 'jaro_winkler', 'levenshtein', 'ngram_cosine'", algo);
+              }
+            else if (!SPAR_IS_LIT (fuzzy_val))
+              spar_error (ssg->ssg_sparp, "FUZZY option requires a string literal "
+                  "algorithm name ('jaro_winkler', 'levenshtein', or 'ngram_cosine')");
+          }
+          ssg_puts (", FUZZY, ");	goto contains_print_scalar; /* see below */
+        case FUZZY_THRESHOLD_L:
+          {
+            SPART *thr_val = args[argctr+1];
+            if (!SPAR_IS_LIT (thr_val))
+              spar_error (ssg->ssg_sparp, "FUZZY_THRESHOLD option requires a numeric literal");
+          }
+          ssg_puts (", FUZZY_THRESHOLD, "); goto contains_print_scalar; /* see below */
+        case FUZZY_N_L:
+          {
+            SPART *n_val = args[argctr+1];
+            if (!SPAR_IS_LIT (n_val))
+              spar_error (ssg->ssg_sparp, "FUZZY_N option requires an integer literal");
+          }
+          ssg_puts (", FUZZY_N, ");	goto contains_print_scalar; /* see below */
+        case FUZZY_PREFIX_L:
+          {
+            SPART *pf_val = args[argctr+1];
+            if (!SPAR_IS_LIT (pf_val))
+              spar_error (ssg->ssg_sparp, "FUZZY_PREFIX option requires an integer literal (1-4)");
+          }
+          ssg_puts (", FUZZY_PREFIX, "); goto contains_print_scalar; /* see below */
         default:
           if (SPAR_FT_TYPE_IS_GEO (ft_type))
             {
