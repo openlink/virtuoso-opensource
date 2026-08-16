@@ -335,11 +335,13 @@ ngram_map_add (ngram_map_t *map, const char *ngram)
   /* Grow if needed */
   if (map->count >= map->capacity)
     {
-      map->capacity *= 2;
-      map->entries = (ngram_entry_t *) realloc (map->entries,
-          sizeof (ngram_entry_t) * map->capacity);
-      if (!map->entries)
-        return;  /* out of memory — skip */
+      int new_capacity = map->capacity * 2;
+      ngram_entry_t *new_entries = (ngram_entry_t *) realloc (map->entries,
+          sizeof (ngram_entry_t) * new_capacity);
+      if (!new_entries)
+        return;  /* out of memory — skip, keep old entries intact */
+      map->entries = new_entries;
+      map->capacity = new_capacity;
     }
 
   /* Shift entries to make room at insertion point */

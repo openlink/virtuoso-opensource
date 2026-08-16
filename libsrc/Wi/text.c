@@ -2538,6 +2538,9 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
         }
       ITC_FAILED
         {
+          /* Free search-param copies that ITC_FAIL block would have freed */
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
           itc_free (itc);
           break;
         }
@@ -2777,6 +2780,9 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
         }
       ITC_FAILED
         {
+          /* Free search-param copies that ITC_FAIL block would have freed */
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
+          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
           itc_free (itc);
           break;
         }
@@ -2800,6 +2806,11 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
               wst->wst_fuzzy_similarity = sim;
               dk_set_push (&wsts, (void *) wst);
               n_words++;
+            }
+          else if (wst)
+            {
+              /* SRC_ERROR stream: free to avoid leak */
+              dk_free_tree ((caddr_t) wst);
             }
         }
 
