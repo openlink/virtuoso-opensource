@@ -72,6 +72,7 @@ typedef struct text_node_s
     state_slot_t *	txs_fuzzy_algo;		/*!< Fuzzy algorithm ID (int constant) */
     state_slot_t *	txs_fuzzy_threshold;	/*!< Fuzzy similarity threshold (double) */
     state_slot_t *	txs_fuzzy_n;		/*!< N-gram size for ngram_cosine (int) */
+    state_slot_t *	txs_fuzzy_prefix;	/*!< Prefix length for candidate scan (int, default 2) */
     float		txs_card;
     /* if xcontains, properties of xpath node duplicated here */
     char		txs_xn_pred_type;

@@ -2450,6 +2450,7 @@ xp_text_contains (xp_instance_t * xqi, XT * tree,  xml_entity_t * ctx_xe, xml_en
       context.tctx_fuzzy_algo = FUZZY_NONE;
       context.tctx_fuzzy_threshold = FUZZY_DEFAULT_THRESHOLD;
       context.tctx_fuzzy_n = FUZZY_DEFAULT_N;
+      context.tctx_fuzzy_prefix = 2;
       sst = sst_from_tree (&context, text_tree);
       XQI_SET (xqi, (ptrlong) args[3], (caddr_t) sst);
     }

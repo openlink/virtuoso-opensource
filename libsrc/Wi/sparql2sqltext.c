@@ -9111,6 +9111,13 @@ ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pr
               spar_error (ssg->ssg_sparp, "FUZZY_N option requires an integer literal");
           }
           ssg_puts (", FUZZY_N, ");	goto contains_print_scalar; /* see below */
+        case FUZZY_PREFIX_L:
+          {
+            SPART *pf_val = args[argctr+1];
+            if (!SPAR_IS_LIT (pf_val))
+              spar_error (ssg->ssg_sparp, "FUZZY_PREFIX option requires an integer literal (1-4)");
+          }
+          ssg_puts (", FUZZY_PREFIX, "); goto contains_print_scalar; /* see below */
         default:
           if (SPAR_FT_TYPE_IS_GEO (ft_type))
             {
