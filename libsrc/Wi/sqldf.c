@@ -2527,6 +2527,23 @@ dfe_nth_selection (df_elt_t * tb_dfe, int inx)
 }
 
 
+ST * sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe);
+
+static ST **
+sqlo_import_exp_array (ST ** exps, df_elt_t * tb_dfe, df_elt_t * target_dfe)
+{
+  ST ** copy;
+  int inx;
+
+  copy = (ST **) t_box_copy ((caddr_t) exps);
+  DO_BOX (ST *, elt, inx, copy)
+    {
+      copy[inx] = sqlo_import (elt, tb_dfe, target_dfe);
+    }
+  END_DO_BOX;
+  return copy;
+}
+
 ST *
 sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe)
 {
@@ -2554,6 +2571,21 @@ sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe)
 	}
       else
 	return ((ST*) t_box_copy_tree ((caddr_t) tree));
+    }
+
+  /* A CASE/COALESCE expression owns an array of expressions.  Do not pass
+   * that array itself to sqlo_import(): its first member can be an integer
+   * literal which happens to be a BOP code.  The generic BOP handling below
+   * would then overwrite the array's fifth member as bin_exp.serial.  For
+   * NULLIF(14, 0), that fifth member is the ELSE value 14. */
+  if ((SIMPLE_CASE == tree->type || SEARCHED_CASE == tree->type ||
+       COALESCE_EXP == tree->type || COMMA_EXP == tree->type) &&
+      2 == BOX_ELEMENTS (tree) && ARRAYP (tree->_.comma_exp.exps))
+    {
+      copy = (ST **) t_box_copy ((caddr_t) tree);
+      ((ST *)copy)->_.comma_exp.exps =
+	sqlo_import_exp_array (tree->_.comma_exp.exps, tb_dfe, target_dfe);
+      return (ST *) copy;
     }
   copy = (ST **) t_box_copy ((caddr_t) tree);
   /* touch the serial for the imported preds as well */
