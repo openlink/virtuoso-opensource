@@ -3219,7 +3219,7 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
       {
 	int old_fun_refs_allowed = so->so_scope ? so->so_scope->sco_fun_refs_allowed : 0;
 
-	if (so->so_scope && !so->so_scope->sco_fun_refs_allowed)
+	if (so->so_scope && !so->so_scope->sco_fun_refs_allowed && !so->so_is_rescope)
 	  sqlc_error (so->so_sc->sc_cc, "37000", "Aggregate function not allowed in context");
 
 	if (AMMSC_AVG == tree->_.fn_ref.fn_code)

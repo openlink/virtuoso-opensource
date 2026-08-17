@@ -2655,6 +2655,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
   op_table_t * prev_dt = so->so_this_dt;
   dk_set_t res = NULL;
   sql_scope_t sco, *old_sco;
+  char old_rescope = so->so_is_rescope;
 
   memset (&sco, 0, sizeof (sql_scope_t));
   sco.sco_so = so;
@@ -2680,6 +2681,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
       sqlo_scope (so, &all_new_tree);
       so->so_is_top_and = 0;
       so->so_scope = old_sco;
+      so->so_is_rescope = old_rescope;
 
       sqlc_make_and_list (all_new_tree, &and_set);
       DO_SET (predicate_t *, new_tree_pred, &and_set)
