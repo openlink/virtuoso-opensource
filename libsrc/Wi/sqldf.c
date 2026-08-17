@@ -2225,6 +2225,15 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	op_table_t ** deps = (op_table_t **) t_list_to_array (dfe->dfe_tables);
 	placed = dfe_latest_by_ot (so, n_deps, deps, 1);
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
+	/* An IN-list argument can pre-place an uncorrelated value subquery at
+	 * this exact point.  Reuse it instead of inserting the same DFE again. */
+	if (DFE_PLACED == dfe->dfe_is_placed && dfe->_.sub.generated_dfe &&
+	    placed->dfe_next == dfe && dfe->dfe_prev == placed)
+	  {
+	    sqlo_check_outside_dt (so, dfe);
+	    sqlo_mark_gb_dep (so, dfe, dfe);
+	    return dfe;
+	  }
 	so->so_mark_gb_dep = 1;
 	sqlo_place_dfe_after (so, pref_loc, placed, dfe);
         if (!dfe->_.sub.ot)
