@@ -71,6 +71,12 @@ ECHO BOTH $IF $EQU $LAST[1] "0"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": A3 levenshtein('abc','abc') = " $LAST[1] " (expected 0)\n";
 
+-- Optional mode returns normalized similarity while preserving the two-argument distance form.
+SELECT levenshtein ('kitten', 'sitting', 'similarity');
+ECHO BOTH $IF $EQU $LAST[1] "0.5714285714285714"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": A3a levenshtein('kitten','sitting','similarity') = " $LAST[1] "\n";
+
 -- Levenshtein similarity
 SELECT levenshtein_similarity ('kitten', 'sitting');
 ECHO BOTH $IF $EQU $LAST[1] "0.5714285714285714"  "PASSED" "***FAILED";
@@ -280,6 +286,7 @@ DB.DBA.TTLP ('
 <http://example.com/p5> <http://example.com/name> "Smith" .
 <http://example.com/p6> <http://example.com/name> "Smythe" .
 <http://example.com/p7> <http://example.com/name> "Fuzzy Wuzziee" .
+<http://example.com/p8> <http://example.com/name> "Fuzzy Wuzzy" .
 ', '', 'http://example.com/', 0);
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -360,6 +367,12 @@ SPARQL SELECT (bif:ngram_cosine ("johnson", "jonsson") AS ?sim) WHERE { } LIMIT 
 ECHO BOTH $IF $EQU $LAST[1] "0.7826237921249264"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": D15 SPARQL bif:ngram_cosine('johnson','jonsson') = " $LAST[1] "\n";
+
+-- SIMILARITY must be populated without requiring SCORE.
+SPARQL SELECT ?s ?name ?sim WHERE { ?s <http://example.com/name> ?name . FILTER (?s = <http://example.com/p8>) . ?name bif:contains "'Fuzzle'" OPTION (SIMILARITY ?sim, FUZZY 'jaro_winkler', FUZZY_THRESHOLD 0.6) . };
+ECHO BOTH $IF $GT $LAST[3] 0.6  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": D16 SPARQL SIMILARITY without SCORE = " $LAST[3] " (expected > 0.6)\n";
 
 -- ============================================================
 -- Group E — Error handling

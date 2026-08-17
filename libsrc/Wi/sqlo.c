@@ -1584,6 +1584,24 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx++;
 	  continue;
 	}
+      if (0 == stricmp ((char *)arg, "distance"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1 || !ST_COLUMN (args[inx + 1], COL_DOTTED))
+	    sqlc_error (sc->sc_cc, "37000",
+		"The DISTANCE argument of %s must reference a column", (char *)arg, sqlo_spec_predicate_name (type));
+	  ot->ot_text_distance = sqlo_virtual_col_crr (so, ot, args[inx + 1]->_.col_ref.name, DV_LONG_INT, 1);
+	  inx++;
+	  continue;
+	}
+      if (0 == stricmp ((char *)arg, "similarity"))
+	{
+	  if (BOX_ELEMENTS (args) <= inx + 1 || !ST_COLUMN (args[inx + 1], COL_DOTTED))
+	    sqlc_error (sc->sc_cc, "37000",
+		"The SIMILARITY argument of %s must reference a column", (char *)arg, sqlo_spec_predicate_name (type));
+	  ot->ot_text_similarity = sqlo_virtual_col_crr (so, ot, args[inx + 1]->_.col_ref.name, DV_DOUBLE_FLOAT, 1);
+	  inx++;
+	  continue;
+	}
       if (0 == stricmp ((char *)arg, "attr_ranges"))
 	{
 	  if (BOX_ELEMENTS (args) <= inx + 1 || !ST_COLUMN (args[inx + 1], COL_DOTTED))
@@ -1660,10 +1678,30 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
       if (inx >= surely_option_idx)
 	{
 	  sqlc_error (sc->sc_cc, "37000",
-	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION, FUZZY, FUZZY_THRESHOLD, FUZZY_N",
+	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, DISTANCE, SIMILARITY, EXT_FTI, GEO, GEO_RDF, PRECISION, FUZZY, FUZZY_THRESHOLD, FUZZY_N, FUZZY_PREFIX",
 	      inx + 1, sqlo_spec_predicate_name (type), arg);
 	}
     }
+  /* Post-parse validation: DISTANCE is only valid with FUZZY 'levenshtein'. */
+  if (ot->ot_text_distance && ot->ot_text_fuzzy_algo)
+    {
+      caddr_t algo = NULL;
+      ST *algo_st = ot->ot_text_fuzzy_algo;
+      if (ST_P (algo_st, QUOTE) && DV_STRING == DV_TYPE_OF (algo_st->_.op.arg_1))
+	algo = algo_st->_.op.arg_1;
+      else if (DV_STRING == DV_TYPE_OF (algo_st))
+	algo = (caddr_t) algo_st;
+      if (algo && 0 != stricmp (algo, "levenshtein"))
+	sqlc_error (sc->sc_cc, "37000",
+	    "DISTANCE option is only valid with FUZZY 'levenshtein'; "
+	    "use SIMILARITY for '%.100s'", algo);
+    }
+  if (ot->ot_text_distance && !ot->ot_text_fuzzy_algo)
+    sqlc_error (sc->sc_cc, "37000",
+	"DISTANCE option requires a FUZZY 'levenshtein' option");
+  if (ot->ot_text_similarity && !ot->ot_text_fuzzy_algo)
+    sqlc_error (sc->sc_cc, "37000",
+	"SIMILARITY option requires a FUZZY option");
   if (off)
     ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);
 }
@@ -1709,7 +1747,10 @@ sqlo_select_ref_score (ST *tree)
     return 0;
   if (ST_COLUMN ((tree), COL_DOTTED))
     {
-      if (tree->_.col_ref.name != STAR && !CASEMODESTRCMP ("SCORE", (tree)->_.col_ref.name))
+      if (tree->_.col_ref.name != STAR &&
+	  (!CASEMODESTRCMP ("SCORE", (tree)->_.col_ref.name) ||
+	   !CASEMODESTRCMP ("DISTANCE", (tree)->_.col_ref.name) ||
+	   !CASEMODESTRCMP ("SIMILARITY", (tree)->_.col_ref.name)))
 	return 1;
     }
   else
@@ -1718,6 +1759,56 @@ sqlo_select_ref_score (ST *tree)
       _DO_BOX (inx, (ST **) (tree))
 	{
 	  if (sqlo_select_ref_score (((ST **)tree)[inx]))
+	    return 1;
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
+
+/* Check whether the SELECT list references the DISTANCE virtual column. */
+static int
+sqlo_select_ref_distance (ST *tree)
+{
+  if (!tree || DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (ST_COLUMN ((tree), COL_DOTTED))
+    {
+      if (tree->_.col_ref.name != STAR &&
+	  !CASEMODESTRCMP ("DISTANCE", (tree)->_.col_ref.name))
+	return 1;
+    }
+  else
+    {
+      int inx;
+      _DO_BOX (inx, (ST **) (tree))
+	{
+	  if (sqlo_select_ref_distance (((ST **)tree)[inx]))
+	    return 1;
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
+
+/* Check whether the SELECT list references the SIMILARITY virtual column. */
+static int
+sqlo_select_ref_similarity (ST *tree)
+{
+  if (!tree || DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (ST_COLUMN ((tree), COL_DOTTED))
+    {
+      if (tree->_.col_ref.name != STAR &&
+	  !CASEMODESTRCMP ("SIMILARITY", (tree)->_.col_ref.name))
+	return 1;
+    }
+  else
+    {
+      int inx;
+      _DO_BOX (inx, (ST **) (tree))
+	{
+	  if (sqlo_select_ref_similarity (((ST **)tree)[inx]))
 	    return 1;
 	}
       END_DO_BOX;
@@ -2781,6 +2872,49 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	}
       END_DO_BOX;
       sqlo_implied_columns_of_contains (so, texp->_.table_exp.where, sqlo_select_ref_score ((ST*) tree));
+      /* Auto-create DISTANCE/SIMILARITY virtual columns if referenced in SELECT */
+      {
+	int has_dist = sqlo_select_ref_distance ((ST*) tree);
+	int has_sim = sqlo_select_ref_similarity ((ST*) tree);
+	if (has_dist || has_sim)
+	  {
+	    DO_SET (op_table_t *, ot, &so->so_scope->sco_tables)
+	      {
+		if (ot->ot_contains_exp)
+		  {
+		    if (has_dist && NULL == ot->ot_text_distance)
+		      ot->ot_text_distance = sqlo_virtual_col_crr (so, ot, "DISTANCE", DV_LONG_INT, 1);
+		    if (has_sim && NULL == ot->ot_text_similarity)
+		      ot->ot_text_similarity = sqlo_virtual_col_crr (so, ot, "SIMILARITY", DV_DOUBLE_FLOAT, 1);
+		    /* Validate DISTANCE/SIMILARITY compatibility with fuzzy algorithm */
+		    if (ot->ot_text_distance)
+		      {
+			if (!ot->ot_text_fuzzy_algo)
+			  sqlc_error (so->so_sc->sc_cc, "37000",
+			      "DISTANCE option requires a FUZZY 'levenshtein' option");
+			else
+			  {
+			    caddr_t algo = NULL;
+			    ST *algo_st = ot->ot_text_fuzzy_algo;
+			    if (ST_P (algo_st, QUOTE) && DV_STRING == DV_TYPE_OF (algo_st->_.op.arg_1))
+			      algo = algo_st->_.op.arg_1;
+			    else if (DV_STRING == DV_TYPE_OF (algo_st))
+			      algo = (caddr_t) algo_st;
+			    if (algo && stricmp (algo, "levenshtein"))
+			      sqlc_error (so->so_sc->sc_cc, "37000",
+				  "DISTANCE option is only valid with FUZZY 'levenshtein'; "
+				  "use SIMILARITY for '%.100s'", algo);
+			  }
+		      }
+		    if (ot->ot_text_similarity && !ot->ot_text_fuzzy_algo)
+		      sqlc_error (so->so_sc->sc_cc, "37000",
+			  "SIMILARITY option requires a FUZZY option");
+		    break;
+		  }
+	      }
+	    END_DO_SET ();
+	  }
+      }
       sqlo_scope (so, &(texp->_.table_exp.where));
       DO_SET (ST *, jc, &res)
 	{

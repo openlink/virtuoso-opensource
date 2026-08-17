@@ -95,6 +95,8 @@ typedef struct op_table_s
   ST           *ot_text_fuzzy_prefix;     /*!< Prefix length for candidate scan (default 2, range 1-4) */
   op_virt_col_t **ot_text_offband;
   op_virt_col_t *ot_text_score;
+  op_virt_col_t *ot_text_distance;     /*!< Output column for fuzzy edit distance (Levenshtein only) */
+  op_virt_col_t *ot_text_similarity;   /*!< Output column for fuzzy similarity score (0.0..1.0) */
   ST 	       *ot_text;
   ST           *ot_base_uri;
   op_virt_col_t *ot_xpath_value;

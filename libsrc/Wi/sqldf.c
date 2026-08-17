@@ -626,6 +626,8 @@ sqlo_is_contains_out_col (sqlo_t *so, df_elt_t *dfe, op_table_t *ot)
   if (dfe->_.col.vc &&
       (ot->ot_xpath_value == dfe->_.col.vc ||
        ot->ot_text_score == dfe->_.col.vc ||
+       ot->ot_text_distance == dfe->_.col.vc ||
+       ot->ot_text_similarity == dfe->_.col.vc ||
        ot->ot_attr_range_out == dfe->_.col.vc ||
        ot->ot_main_range_out == dfe->_.col.vc))
     return 1;
@@ -3918,6 +3920,8 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	  0 == stricmp ((char *) arg, "MAIN_RANGES") ||
 	  0 == stricmp ((char *) arg, "ATTR_RANGES") ||
 	       0 == stricmp ((char *) arg, "SCORE")
+	       || 0 == stricmp ((char *) arg, "DISTANCE")
+	       || 0 == stricmp ((char *) arg, "SIMILARITY")
 	       || 0 == stricmp ((char *) arg, "GEO")
 	       || 0 == stricmp ((char *) arg, "GEO_RDF"))
 	{ /* output col(s) : do nothing */

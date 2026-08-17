@@ -9015,6 +9015,48 @@ ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pr
         case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
         case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
         case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
+        case DISTANCE_L:
+          {
+            /* DISTANCE is only valid with FUZZY 'levenshtein'.
+             * Scan the args for the FUZZY option and validate. */
+            int fuzzy_argctr;
+            int has_fuzzy = 0;
+            int is_levenshtein = 0;
+            for (fuzzy_argctr = 2; fuzzy_argctr < argcount; fuzzy_argctr += 2)
+              {
+                if ((ptrlong)args[fuzzy_argctr] == FUZZY_L)
+                  {
+                    SPART *fuzzy_val = args[fuzzy_argctr+1];
+                    has_fuzzy = 1;
+                    if (SPAR_LIT == SPART_TYPE (fuzzy_val) && DV_STRING == DV_TYPE_OF (fuzzy_val->_.lit.val))
+                      {
+                        if (0 == stricmp (fuzzy_val->_.lit.val, "levenshtein"))
+                          is_levenshtein = 1;
+                      }
+                    break;
+                  }
+              }
+            if (!has_fuzzy)
+              spar_error (ssg->ssg_sparp, "DISTANCE option requires FUZZY 'levenshtein'");
+            if (!is_levenshtein)
+              spar_error (ssg->ssg_sparp, "DISTANCE option is only valid with "
+                  "FUZZY 'levenshtein'; use SIMILARITY for jaro_winkler or ngram_cosine");
+          }
+          ssg_puts (", DISTANCE, ");	goto contains_prin_id; /* see below */
+        case SIMILARITY_L:
+          {
+            /* SIMILARITY requires a FUZZY option to be meaningful. */
+            int fuzzy_argctr;
+            int has_fuzzy = 0;
+            for (fuzzy_argctr = 2; fuzzy_argctr < argcount; fuzzy_argctr += 2)
+              {
+                if ((ptrlong)args[fuzzy_argctr] == FUZZY_L)
+                  { has_fuzzy = 1; break; }
+              }
+            if (!has_fuzzy)
+              spar_error (ssg->ssg_sparp, "SIMILARITY option requires a FUZZY option");
+          }
+          ssg_puts (", SIMILARITY, ");	goto contains_prin_id; /* see below */
         case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
         case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
         case FUZZY_L:
@@ -9142,7 +9184,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
               SPART *val = tree->_.triple.options[optctr+1];
               switch ((ptrlong)(tree->_.triple.options[optctr]))
                 {
-                case OFFBAND_L: case SCORE_L:
+                case OFFBAND_L: case SCORE_L: case DISTANCE_L: case SIMILARITY_L:
                   if (NULL != colcodes)
                     ssg_puts (", ");
                   else

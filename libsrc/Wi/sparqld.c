@@ -230,6 +230,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case DESC_L: return "DESC";
     case DESCRIBE_L: return "DESCRIBE";
     case DISTINCT_L: return "SELECT DISTINCT";
+    case DISTANCE_L: return "DISTANCE";
     case false_L: return "false";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
@@ -260,6 +261,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT";
     case SILENT_L: return "SILENT";
+    case SIMILARITY_L: return "SIMILARITY";
     /* case SUBJECT_L: return "SUBJECT"; */
     case T_CYCLES_ONLY_L: return "T_CYCLES_ONLY";
     case T_DIRECTION_L: return "T_DIRECTORY";

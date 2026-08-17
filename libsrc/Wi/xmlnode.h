@@ -73,6 +73,8 @@ typedef struct text_node_s
     state_slot_t *	txs_fuzzy_threshold;	/*!< Fuzzy similarity threshold (double) */
     state_slot_t *	txs_fuzzy_n;		/*!< N-gram size for ngram_cosine (int) */
     state_slot_t *	txs_fuzzy_prefix;	/*!< Prefix length for candidate scan (int, default 2) */
+    state_slot_t *	txs_distance;		/*!< Output slot for fuzzy edit distance (Levenshtein only) */
+    state_slot_t *	txs_similarity;		/*!< Output slot for fuzzy similarity score (0.0..1.0) */
     float		txs_card;
     /* if xcontains, properties of xpath node duplicated here */
     char		txs_xn_pred_type;

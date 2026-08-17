@@ -59,7 +59,7 @@ sqlo_cr_is_identifiable (sqlo_t * so, ST * tree)
   {
     if (ot->ot_dt)
       return 0;
-    if (ot->ot_text_score || ot->ot_xpath_value)
+    if (ot->ot_text_score || ot->ot_text_distance || ot->ot_text_similarity || ot->ot_xpath_value)
       return 0;
   }
   END_DO_SET ();

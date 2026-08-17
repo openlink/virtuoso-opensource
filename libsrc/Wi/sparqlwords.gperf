@@ -64,6 +64,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DESC",			DESC_L			, 0
 "DESCRIBE",		DESCRIBE_L		, 0
 "DETACH",		DETACH_L		, 0
+"DISTANCE",		DISTANCE_L		, 0
 "DISTINCT",		DISTINCT_L		, 0
 "DROP",			DROP_L			, 0
 "EBV",			SPARQL_BIF		, SPAR_BIF_EBV
@@ -166,6 +167,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SELECT",		SELECT_L		, 0
 "SERVICE",		SERVICE_L		, 0
 "SETS",			SETS_L			, 0
+"SIMILARITY",		SIMILARITY_L		, 0
 "SHA1",			SPARQL_BIF		, SPAR_BIF_SHA1
 "SHA224",		SPARQL_BIF		, SPAR_BIF_SHA224
 "SHA256",		SPARQL_BIF		, SPAR_BIF_SHA256

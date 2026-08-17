@@ -4685,6 +4685,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
           has_tabid = 1; continue;
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L:
+        case DISTANCE_L: case SIMILARITY_L:
         case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L: case FUZZY_PREFIX_L:
           has_ft = 1; continue;
         case GEO_L: case PRECISION_L: has_geo = 1; continue;
@@ -4965,6 +4966,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case DESC_L: return "descending";
     case DESCRIBE_L: return "DESCRIBE result-mode";
     case DISTINCT_L: return "SELECT DISTINCT result-mode";
+    case DISTANCE_L: return "DISTANCE";
     case false_L: return "false boolean";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
@@ -4992,6 +4994,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT result-mode";
     case SERVICE_L: return "SERVICE gp";
+    case SIMILARITY_L: return "SIMILARITY";
     case SUBJECT_L: return "SUBJECT";
     case true_L: return "true boolean";
     case UNION_L: return "UNION gp";

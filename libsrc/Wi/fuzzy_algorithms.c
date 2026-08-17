@@ -848,6 +848,18 @@ fuzzy_similarity (const char *s1, const char *s2, int algo_id, int ngram_size)
 }
 
 int
+fuzzy_distance (const char *s1, const char *s2, int algo_id)
+{
+  switch (algo_id)
+    {
+    case FUZZY_LEVENSHTEIN:
+      return levenshtein_distance (s1, s2);
+    default:
+      return -1;  /* No native distance for Jaro-Winkler or n-gram cosine */
+    }
+}
+
+int
 fuzzy_algo_id_from_name (const char *name)
 {
   if (!name)
