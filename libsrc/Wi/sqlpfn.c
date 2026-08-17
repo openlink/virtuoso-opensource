@@ -2411,6 +2411,21 @@ ST *
 sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
 {
   int inx;
+  /* IN ((SELECT ...)) reaches this function as a one-element expression
+   * list containing SCALAR_SUBQ.  Normalize it to the quantified-subquery
+   * representation used by IN (SELECT ...). */
+  if (right && !right->next && ST_P ((ST *) right->data, SCALAR_SUBQ))
+    {
+      ST *in = SUBQ_PRED (SOME_PRED, left,
+	  ((ST *) right->data)->_.bin_exp.left, BOP_EQ, NULL);
+      if (is_not)
+	{
+	  ST *not_in = NULL;
+	  NEGATE (not_in, in);
+	  return not_in;
+	}
+      return in;
+    }
   if (ST_P (left, COMMA_EXP))
     {
       ST * ors = NULL;
