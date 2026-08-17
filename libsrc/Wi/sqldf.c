@@ -2266,8 +2266,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
         DO_BOX (op_table_t *, ot, inx, deps)
           {
-            if (ot->ot_is_group_dummy && ot->ot_fref_ot && ot->ot_fref_ot->ot_dfe && ot->ot_fref_ot->ot_dfe->dfe_is_placed)
-              placed = ot->ot_fref_ot->ot_dfe;
+            if (ot->ot_is_group_dummy && ot->ot_fref_ot && ot->ot_dfe && ot->ot_dfe->dfe_is_placed)
+              placed = ot->ot_dfe;
           }
         END_DO_BOX;
 	dfe->_.control.terms = (df_elt_t ***) t_box_copy ((caddr_t) dfe->dfe_tree->_.comma_exp.exps);
@@ -2839,18 +2839,22 @@ sqlc_is_all_union_alls (ST * tree)
 void
 sqlo_add_union_reqd_outs (sqlo_t * so, df_elt_t * dt_dfe)
 {
-  int inx;
-  if (! sqlc_is_all_union_alls (dt_dfe->_.sub.ot->ot_dt))
+  op_table_t * ot = dt_dfe->_.sub.ot;
+  int inx, is_all_union_alls = sqlc_is_all_union_alls (ot->ot_dt);
+  ST * sel = ot->ot_left_sel;
+  DO_BOX (ST *, as_exp, inx, sel->_.select_stmt.selection)
     {
-      op_table_t * ot = dt_dfe->_.sub.ot;
-      ST * sel = dt_dfe->_.sub.ot->ot_left_sel;
-      DO_BOX (ST *, as_exp, inx, sel->_.select_stmt.selection)
-	{
-	  sqlo_place_exp (so, dt_dfe->_.sub.generated_dfe,
-			  sqlo_df (so, (ST*) t_list (3, COL_DOTTED, ot->ot_new_prefix, as_exp->_.as_exp.name)));
-	}
-      END_DO_BOX;
+      ST* as = (ST*) t_list (3, COL_DOTTED, ot->ot_new_prefix, as_exp->_.as_exp.name);
+      /* For a pure UNION ALL, a select-list column already placed elsewhere
+       * (found via the CSE cache) must not be placed here again -- doing so
+       * re-links its dfe into this chain too and can leave dfe_prev pointing
+       * back into an earlier segment, forming a cycle (case #1454). */
+      if (!is_all_union_alls || !sqlo_df_elt (so, as))
+        {
+          sqlo_place_exp (so, dt_dfe->_.sub.generated_dfe, sqlo_df (so, as));
+        }
     }
+  END_DO_BOX;
 }
 
 
