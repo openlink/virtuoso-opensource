@@ -44,6 +44,7 @@
 #include "xpathp_impl.h"
 #include "qncache.h"
 #include "fuzzy_algorithms.h"
+#include "blobio.h"
 #include "aqueue.h"
 
 /*#define TEXT_DEBUG*/
@@ -1965,30 +1966,6 @@ sst_freq_factor (search_stream_t * sst)
 }
 
 
-static void
-sst_fuzzy_metrics (search_stream_t *sst, d_id_t *d_id, double *best_similarity, int *best_distance)
-{
-  int inx;
-  if (SRC_WORD == sst->sst_op)
-    {
-      word_stream_t *wst = (word_stream_t *) sst;
-      if (DVC_MATCH != d_id_cmp (&sst->sst_d_id, d_id))
-        return;
-      if (wst->wst_fuzzy_similarity > *best_similarity)
-        *best_similarity = wst->wst_fuzzy_similarity;
-      if (wst->wst_fuzzy_distance >= 0 &&
-          (*best_distance < 0 || wst->wst_fuzzy_distance < *best_distance))
-        *best_distance = wst->wst_fuzzy_distance;
-      return;
-    }
-  if (!sst->sst_terms)
-    return;
-  DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
-    sst_fuzzy_metrics (term, d_id, best_similarity, best_distance);
-  END_DO_BOX;
-}
-
-
 void
 sst_scores (search_stream_t * sst, d_id_t * d_id)
 {
@@ -2098,12 +2075,6 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 	  score += first->sst_score;
 	}
       END_DO_SET();
-      /* A quoted phrase is a word chain.  Its relevance score is calculated
-       * from the chain's leading terms, so propagate the raw fuzzy metrics
-       * from every child word stream separately. */
-      DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
-	sst_fuzzy_metrics (term, d_id, &sst->sst_best_similarity, &sst->sst_best_distance);
-      END_DO_BOX;
       sst->sst_raw_score = raw_score;
       sst->sst_score = score;
       return;
@@ -3858,6 +3829,76 @@ done:
 }
 
 
+/* The text index identifies candidate RDF literals by their words.  The
+ * public fuzzy metric, however, is defined for the complete query and the
+ * complete literal, rather than for the best matching indexed word. */
+static caddr_t
+txs_fuzzy_query_text (caddr_t text_exp)
+{
+  size_t len;
+  const char *text, *end, *enc_end;
+
+  if (DV_STRING != DV_TYPE_OF (text_exp))
+    return NULL;
+  text = (const char *) text_exp;
+  len = box_length (text_exp) - 1;
+  end = text + len;
+  /* SPARQL annotates a non-default query charset as
+   * [ __enc "charset" ] <free-text-expression>.  The annotation belongs to
+   * the parser, not to the string which is compared. */
+  if (0 == strncmp (text, "[ __enc ", 8) &&
+      NULL != (enc_end = strchr (text, ']')) && enc_end < end)
+    {
+      text = enc_end + 1;
+      while (text < end && (*text == ' ' || *text == '\t'))
+        text++;
+      len = end - text;
+    }
+  /* A quoted free-text phrase has delimiter quotes in text_exp.  They guide
+   * the text parser but are not part of the string being compared. */
+  while (len >= 2 && ((text[0] == '\'' && text[len - 1] == '\'') ||
+                      (text[0] == '"' && text[len - 1] == '"')))
+    {
+      text++;
+      len -= 2;
+    }
+  return box_dv_short_nchars (text, len);
+}
+
+
+static void
+txs_rdf_fuzzy_metrics (text_node_t *txs, caddr_t *qst, d_id_t *d_id,
+                       search_stream_t *sst)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t query, literal;
+  rdf_box_t *rb;
+  int algo, ngram_n;
+
+  if (!txs->txs_is_rdf || !txs->txs_fuzzy_algo)
+    return;
+  query = txs_fuzzy_query_text (qst_get (qst, txs->txs_text_exp));
+  if (!query)
+    return;
+  algo = fuzzy_algo_id_from_name (qst_get (qst, txs->txs_fuzzy_algo));
+  ngram_n = txs->txs_fuzzy_n ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n)) : FUZZY_DEFAULT_N;
+  rb = (rdf_box_t *) rbb_from_id (D_ID_NUM_REF (&d_id->id[0]));
+  rb_complete (rb, qi->qi_trx, qi);
+  literal = rb->rb_box;
+  if (DV_STRING == DV_TYPE_OF (literal))
+    {
+      if (txs->txs_similarity)
+        sst->sst_best_similarity = fuzzy_similarity ((const char *) query,
+            (const char *) literal, algo, ngram_n);
+      if (txs->txs_distance)
+        sst->sst_best_distance = fuzzy_distance ((const char *) query,
+            (const char *) literal, algo);
+    }
+  dk_free_tree ((caddr_t) rb);
+  dk_free_tree (query);
+}
+
+
 caddr_t
 txs_next (text_node_t * txs, caddr_t * qst, int first_time)
 {
@@ -3875,6 +3916,8 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
 
       if (score_limit || txs->txs_score || txs->txs_similarity || txs->txs_distance)
 	sst_scores (sst, &d_id);
+      if (txs->txs_similarity || txs->txs_distance)
+	txs_rdf_fuzzy_metrics (txs, qst, &d_id, sst);
       if (txs->txs_score)
 	TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
       if (txs->txs_similarity)
@@ -3904,6 +3947,8 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       if (score_limit || txs->txs_score || txs->txs_similarity || txs->txs_distance)
 	sst_scores (sst, &d_id);
+      if (txs->txs_similarity || txs->txs_distance)
+	txs_rdf_fuzzy_metrics (txs, qst, &d_id, sst);
       if (score_limit && sst->sst_score < score_limit)
 	continue;
       break;
