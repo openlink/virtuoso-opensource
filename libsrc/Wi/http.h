@@ -43,6 +43,8 @@
 #include <openssl/bio.h>
 #include <openssl/asn1.h>
 #include <openssl/md5.h>
+
+#include "util/ssl_compat.h"
 #endif
 
 #ifndef _WI_STRLIKE_H
