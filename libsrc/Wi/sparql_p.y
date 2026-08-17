@@ -946,6 +946,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SERVICE_L	/*:: PUNCT_SPAR_LAST("SERVICE") ::*/
 %token SETS_L		/*:: PUNCT_SPAR_LAST("SETS") ::*/
+%token SIMILARITY_L	/*:: PUNCT_SPAR_LAST("SIMILARITY") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
 %token SQLQUERY_L	/*:: PUNCT("SQLQUERY"), SPAR, LAST1("SQLQUERY {"), LAST1("SQLQUERY ("), LAST1("SQLQUERY #cmt\n{"), LAST1("SQLQUERY\r\n("), ERR("SQLQUERY"), ERR("SQLQUERY bad") ::*/
@@ -3115,6 +3116,8 @@ spar_triple_freetext_option
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
 	| SCORE_LIMIT_L spar_expn	{	/*... | 'SCORE_LIMIT' Expn	*/
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
+	| SIMILARITY_L spar_var		{	/*... | 'SIMILARITY' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)SIMILARITY_L, $2); }
 	| FUZZY_L spar_expn		{	/*... | 'FUZZY' Expn (algorithm name)	*/
 		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_L, $2); }
 	| FUZZY_THRESHOLD_L spar_expn	{	/*... | 'FUZZY_THRESHOLD' Expn	*/
