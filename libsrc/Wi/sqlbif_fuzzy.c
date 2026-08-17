@@ -7,6 +7,9 @@
  *
  *  Registers the following SQL/SPARQL functions:
  *    - levenshtein(str1, str2)              → integer edit distance
+ *    - levenshtein(str1, str2, mode)        → distance or similarity per mode
+ *        mode = 'distance'/'dist'/0  → integer edit distance (default)
+ *        mode = 'similarity'/'sim'/1 → double 0.0..1.0
  *    - levenshtein_similarity(str1, str2)   → double 0.0..1.0
  *    - jaro_winkler(str1, str2)             → double 0.0..1.0
  *    - jaro_winkler_similarity(str1, str2)  → double 0.0..1.0 (alias)
@@ -52,8 +55,33 @@ bif_levenshtein (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t s1 = bif_string_or_null_arg (qst, args, 0, "levenshtein");
   caddr_t s2 = bif_string_or_null_arg (qst, args, 1, "levenshtein");
+  int n_args = BOX_ELEMENTS (args);
+  int return_similarity = 0;
+
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+
+  /* Optional 3rd arg: if 1/'similarity'/'sim', return similarity instead of distance */
+  if (n_args > 2)
+    {
+      caddr_t mode = bif_arg (qst, args, 2, "levenshtein");
+      dtp_t dtp = DV_TYPE_OF (mode);
+      if (DV_STRING == dtp)
+	{
+	  if (0 == stricmp (mode, "similarity") || 0 == stricmp (mode, "sim"))
+	    return_similarity = 1;
+	  else if (0 == stricmp (mode, "distance") || 0 == stricmp (mode, "dist"))
+	    return_similarity = 0;
+	  else
+	    sqlr_new_error ("22023", "SR017",
+		"levenshtein: third argument must be 'similarity' or 'distance', not '%.200s'", mode);
+	}
+      else
+	return_similarity = (unbox (mode) != 0);
+    }
+
+  if (return_similarity)
+    return box_double (levenshtein_similarity (s1, s2));
   return box_num (levenshtein_distance (s1, s2));
 }
 

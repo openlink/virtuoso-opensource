@@ -125,6 +125,19 @@ double
 fuzzy_similarity (const char *s1, const char *s2, int algo_id, int ngram_size);
 
 /*
+ * Dispatch function: compute edit distance by algorithm ID.
+ * Only FUZZY_LEVENSHTEIN has a native edit distance; returns -1 for
+ * other algorithms (caller should check before using the result).
+ *
+ * @param s1        First string
+ * @param s2        Second string
+ * @param algo_id   Algorithm ID
+ * @return          Edit distance (>=0), or -1 if not applicable
+ */
+int
+fuzzy_distance (const char *s1, const char *s2, int algo_id);
+
+/*
  * Parse an algorithm name string into an algorithm ID.
  *
  * @param name  Algorithm name: "jaro_winkler", "levenshtein", "ngram_cosine"

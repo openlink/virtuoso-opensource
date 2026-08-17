@@ -44,6 +44,7 @@
 #include "xpathp_impl.h"
 #include "qncache.h"
 #include "fuzzy_algorithms.h"
+#include "blobio.h"
 #include "aqueue.h"
 
 /*#define TEXT_DEBUG*/
@@ -125,6 +126,8 @@ d_id_cmp (d_id_t * d1, d_id_t * d2)
   else
     return DVC_LESS;
 }
+
+
 
 
 int
@@ -1983,6 +1986,10 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
   int inx;
   if (DVC_MATCH != d_id_cmp (d_id, &sst->sst_d_id))
     return;
+  /* Reset per-document best similarity/distance so each document
+   * gets its own values rather than accumulating across documents. */
+  sst->sst_best_similarity = 0.0;
+  sst->sst_best_distance = -1;
   if (sst->sst_score)
     return; /* sometimes known as side effect of search */
   switch (sst->sst_op)
@@ -1999,11 +2006,22 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
        * without compressing the original FT score. */
       if (((word_stream_t *) sst)->wst_fuzzy_similarity > 0.0)
         {
-          int sim_bonus = (int) (((word_stream_t *) sst)->wst_fuzzy_similarity * 100);
+          double sim = ((word_stream_t *) sst)->wst_fuzzy_similarity;
+          int sim_bonus = (int) (sim * 100);
           if (sst->sst_score)
             sst->sst_score += sim_bonus;
           if (sst->sst_raw_score)
             sst->sst_raw_score += sim_bonus;
+          /* Track best (max) similarity and best (min) distance for
+           * DISTANCE/SIMILARITY output columns. */
+          if (sim > sst->sst_best_similarity)
+            sst->sst_best_similarity = sim;
+          if (((word_stream_t *) sst)->wst_fuzzy_distance >= 0)
+            {
+              if (sst->sst_best_distance < 0 ||
+                  ((word_stream_t *) sst)->wst_fuzzy_distance < sst->sst_best_distance)
+                sst->sst_best_distance = ((word_stream_t *) sst)->wst_fuzzy_distance;
+            }
         }
       return;
     case BOP_OR:
@@ -2017,6 +2035,12 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 	    score = term->sst_score;
 	  if (raw_score < term->sst_raw_score)
 	    raw_score = term->sst_raw_score;
+	  /* Propagate best similarity (max) and best distance (min) */
+	  if (term->sst_best_similarity > sst->sst_best_similarity)
+	    sst->sst_best_similarity = term->sst_best_similarity;
+	  if (term->sst_best_distance >= 0 &&
+	      (sst->sst_best_distance < 0 || term->sst_best_distance < sst->sst_best_distance))
+	    sst->sst_best_distance = term->sst_best_distance;
 	  mult--;
 	}
       END_DO_BOX;
@@ -2039,6 +2063,12 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 		score = term->sst_score;
 	      if (raw_score > term->sst_raw_score)
 		raw_score = term->sst_raw_score;
+	      /* Propagate best similarity (max) and best distance (min) */
+	      if (term->sst_best_similarity > sst->sst_best_similarity)
+		sst->sst_best_similarity = term->sst_best_similarity;
+	      if (term->sst_best_distance >= 0 &&
+		  (sst->sst_best_distance < 0 || term->sst_best_distance < sst->sst_best_distance))
+		sst->sst_best_distance = term->sst_best_distance;
 	      mult++;
 	    }
 	}
@@ -2125,6 +2155,8 @@ sst_check_and_hit (search_stream_t * sst, d_id_t * d_id, int is_fixed)
   END_DO_BOX;
 */
   sst->sst_score = 0;
+  sst->sst_best_similarity = 0.0;
+  sst->sst_best_distance = -1;
   d_id_set (&sst->sst_d_id, d_id);
   if (sst->sst_need_ranges)
     {
@@ -2313,6 +2345,8 @@ d_id_t *
 sst_next (search_stream_t * sst, d_id_t * target, int is_fixed)
 {
   sst->sst_score = 0;
+  sst->sst_best_similarity = 0.0;
+  sst->sst_best_distance = -1;
   switch (sst->sst_op)
     {
     case SRC_WORD:
@@ -2524,10 +2558,11 @@ typedef struct fuzzy_scan_args_s
   int fsa_algo;
   double fsa_threshold;
   int fsa_ngram_n;
+  int fsa_calc_distance;	/* 1 if DISTANCE output requested (Levenshtein only) */
   dbe_key_t *fsa_key;
   slice_id_t fsa_slice;
   /* output – worker fills these */
-  dk_set_t fsa_matches;		/* list of box_string(word) / box_double(sim) pairs */
+  dk_set_t fsa_matches;		/* list of box_string(word) / box_double(sim) / box_num(dist) triples */
   int fsa_n_matches;
 } fuzzy_scan_args_t;
 
@@ -2599,6 +2634,10 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
                               args->fsa_algo, args->fsa_ngram_n);
       if (sim >= args->fsa_threshold)
         {
+          int dist = -1;
+          if (args->fsa_calc_distance)
+            dist = fuzzy_distance (args->fsa_query, hit_word, args->fsa_algo);
+          dk_set_push (&args->fsa_matches, (void *) box_num (dist));
           dk_set_push (&args->fsa_matches, (void *) box_double (sim));
           dk_set_push (&args->fsa_matches, (void *) hit_word);
           args->fsa_n_matches++;
@@ -2698,6 +2737,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
             a->fsa_algo = algo;
             a->fsa_threshold = threshold;
             a->fsa_ngram_n = ngram_n;
+            a->fsa_calc_distance = tctx->tctx_calc_distance;
             a->fsa_key = tctx->tctx_table->tb_primary_key;
             a->fsa_slice = tctx->tctx_qi->qi_client->cli_slice;
             a->fsa_matches = NULL;
@@ -2738,16 +2778,19 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
             fuzzy_scan_args_t *a = &args_arr[i];
             while (a->fsa_matches)
               {
-                caddr_t sim_box, word_box;
+                caddr_t dist_box, sim_box, word_box;
                 word_box = (caddr_t) dk_set_pop (&a->fsa_matches);
                 sim_box = (caddr_t) dk_set_pop (&a->fsa_matches);
+                dist_box = (caddr_t) dk_set_pop (&a->fsa_matches);
                 {
                   double sim = unbox_double (sim_box);
+                  int dist = (int) unbox (dist_box);
                   word_stream_t *wst = (word_stream_t *)
                       wst_from_word (tctx, range_flags, word_box);
                   if (wst && wst->sst_op != SRC_ERROR)
                     {
                       wst->wst_fuzzy_similarity = sim;
+                      wst->wst_fuzzy_distance = dist;
                       dk_set_push (&wsts, (void *) wst);
                       n_words++;
                     }
@@ -2759,6 +2802,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
                 }
                 dk_free_box (word_box);
                 dk_free_box (sim_box);
+                dk_free_box (dist_box);
                 if (n_words > WST_WILDCARD_MAX)
                   {
                     NEW_SST (search_stream_t, sst);
@@ -2851,6 +2895,10 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
           if (wst && wst->sst_op != SRC_ERROR)
             {
               wst->wst_fuzzy_similarity = sim;
+              if (tctx->tctx_calc_distance)
+                wst->wst_fuzzy_distance = fuzzy_distance (word, hit_word, algo);
+              else
+                wst->wst_fuzzy_distance = -1;
               dk_set_push (&wsts, (void *) wst);
               n_words++;
             }
@@ -3257,6 +3305,16 @@ bif_vtb_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   context.tctx_table = NULL;
   context.tctx_calc_score = ((NULL != scores) ? 1 : 0);
   context.tctx_range_flags = SRC_RANGE_MAIN;
+  /* vt_batch_match() handles the legacy text-trigger path, which does not
+   * have fuzzy-search options.  Keep the optional fuzzy context explicit so
+   * sst_from_tree() cannot observe uninitialized stack values and route a
+   * normal text-trigger query through wst_from_fuzzy(). */
+  context.tctx_fuzzy_algo = FUZZY_NONE;
+  context.tctx_fuzzy_threshold = FUZZY_DEFAULT_THRESHOLD;
+  context.tctx_fuzzy_n = FUZZY_DEFAULT_N;
+  context.tctx_fuzzy_prefix = 2;
+  context.tctx_calc_distance = 0;
+  context.tctx_calc_similarity = 0;
   xpt_edit_range_flags (tree, ~SRC_RANGE_DUMMY, SRC_RANGE_MAIN);
   sst = sst_from_tree (&context, (caddr_t*)tree);
   if (IS_STRING_DTP (dtp))
@@ -3553,6 +3611,8 @@ skip_parsing_of_new_tree:
   context.tctx_qi = qi;
   context.tctx_table = txs->txs_table;
   context.tctx_calc_score = ((NULL != txs->txs_score) ? 1 : 0);
+  context.tctx_calc_distance = ((NULL != txs->txs_distance) ? 1 : 0);
+  context.tctx_calc_similarity = ((NULL != txs->txs_similarity) ? 1 : 0);
   context.tctx_range_flags = SRC_RANGE_DUMMY;
   /* Fuzzy search context */
   if (txs->txs_fuzzy_algo)
@@ -3773,6 +3833,76 @@ done:
 }
 
 
+/* The text index identifies candidate RDF literals by their words.  The
+ * public fuzzy metric, however, is defined for the complete query and the
+ * complete literal, rather than for the best matching indexed word. */
+static caddr_t
+txs_fuzzy_query_text (caddr_t text_exp)
+{
+  size_t len;
+  const char *text, *end, *enc_end;
+
+  if (DV_STRING != DV_TYPE_OF (text_exp))
+    return NULL;
+  text = (const char *) text_exp;
+  len = box_length (text_exp) - 1;
+  end = text + len;
+  /* SPARQL annotates a non-default query charset as
+   * [ __enc "charset" ] <free-text-expression>.  The annotation belongs to
+   * the parser, not to the string which is compared. */
+  if (0 == strncmp (text, "[ __enc ", 8) &&
+      NULL != (enc_end = strchr (text, ']')) && enc_end < end)
+    {
+      text = enc_end + 1;
+      while (text < end && (*text == ' ' || *text == '\t'))
+        text++;
+      len = end - text;
+    }
+  /* A quoted free-text phrase has delimiter quotes in text_exp.  They guide
+   * the text parser but are not part of the string being compared. */
+  while (len >= 2 && ((text[0] == '\'' && text[len - 1] == '\'') ||
+                      (text[0] == '"' && text[len - 1] == '"')))
+    {
+      text++;
+      len -= 2;
+    }
+  return box_dv_short_nchars (text, len);
+}
+
+
+static void
+txs_rdf_fuzzy_metrics (text_node_t *txs, caddr_t *qst, d_id_t *d_id,
+                       search_stream_t *sst)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t query, literal;
+  rdf_box_t *rb;
+  int algo, ngram_n;
+
+  if (!txs->txs_is_rdf || !txs->txs_fuzzy_algo)
+    return;
+  query = txs_fuzzy_query_text (qst_get (qst, txs->txs_text_exp));
+  if (!query)
+    return;
+  algo = text_fuzzy_algo_from_value (qst_get (qst, txs->txs_fuzzy_algo));
+  ngram_n = txs->txs_fuzzy_n ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n)) : FUZZY_DEFAULT_N;
+  rb = (rdf_box_t *) rbb_from_id (D_ID_NUM_REF (&d_id->id[0]));
+  rb_complete (rb, qi->qi_trx, qi);
+  literal = rb->rb_box;
+  if (DV_STRING == DV_TYPE_OF (literal))
+    {
+      if (txs->txs_similarity)
+        sst->sst_best_similarity = fuzzy_similarity ((const char *) query,
+            (const char *) literal, algo, ngram_n);
+      if (txs->txs_distance)
+        sst->sst_best_distance = fuzzy_distance ((const char *) query,
+            (const char *) literal, algo);
+    }
+  dk_free_tree ((caddr_t) rb);
+  dk_free_tree (query);
+}
+
+
 caddr_t
 txs_next (text_node_t * txs, caddr_t * qst, int first_time)
 {
@@ -3788,10 +3918,16 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       if (DVC_MATCH != d_id_cmp (&sst->sst_d_id, &d_id))
 	return ((caddr_t) SQL_NO_DATA_FOUND);
 
-      if (score_limit || txs->txs_score)
+      if (score_limit || txs->txs_score || txs->txs_similarity || txs->txs_distance)
 	sst_scores (sst, &d_id);
+      if (txs->txs_similarity || txs->txs_distance)
+	txs_rdf_fuzzy_metrics (txs, qst, &d_id, sst);
       if (txs->txs_score)
 	TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+      if (txs->txs_similarity)
+	TXS_QST_SET (txs, qst, txs->txs_similarity, box_double (sst->sst_best_similarity));
+      if (txs->txs_distance)
+	TXS_QST_SET (txs, qst, txs->txs_distance, box_num (sst->sst_best_distance));
       if (score_limit && sst->sst_score < score_limit)
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       txs_set_ranges (txs, qst, sst);
@@ -3813,14 +3949,20 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       first_time = 0;
       if (D_AT_END (&sst->sst_d_id))
 	return ((caddr_t) SQL_NO_DATA_FOUND);
-      if (score_limit || txs->txs_score)
+      if (score_limit || txs->txs_score || txs->txs_similarity || txs->txs_distance)
 	sst_scores (sst, &d_id);
+      if (txs->txs_similarity || txs->txs_distance)
+	txs_rdf_fuzzy_metrics (txs, qst, &d_id, sst);
       if (score_limit && sst->sst_score < score_limit)
 	continue;
       break;
     }
   if (txs->txs_score)
     TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+  if (txs->txs_similarity)
+    TXS_QST_SET (txs, qst, txs->txs_similarity, box_double (sst->sst_best_similarity));
+  if (txs->txs_distance)
+    TXS_QST_SET (txs, qst, txs->txs_distance, box_num (sst->sst_best_distance));
   if (txs->txs_is_rdf)
     {
       unsigned int64 n = D_ID_NUM_REF (&d_id.id[0]);
@@ -3875,6 +4017,7 @@ txs_qc_accumulate (text_node_t * txs, caddr_t * inst)
 {
   data_col_t * id = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
   data_col_t * score = NULL, * id_cp = NULL, * score_cp = NULL;
+  data_col_t * sim_cp = NULL, * dist_cp = NULL;
   qc_result_t * qcr = (qc_result_t *)QST_GET_V (inst, txs->txs_qcr);
   if (!qcr)
     return;
@@ -3886,8 +4029,22 @@ txs_qc_accumulate (text_node_t * txs, caddr_t * inst)
       score_cp = mp_data_col (qcr->qcr_mp, txs->txs_score, id->dc_n_values);
       dc_copy (score_cp, score);
     }
+  if (txs->txs_similarity)
+    {
+      data_col_t * sim = QST_BOX (data_col_t *, inst, txs->txs_similarity->ssl_index);
+      sim_cp = mp_data_col (qcr->qcr_mp, txs->txs_similarity, id->dc_n_values);
+      dc_copy (sim_cp, sim);
+    }
+  if (txs->txs_distance)
+    {
+      data_col_t * dist = QST_BOX (data_col_t *, inst, txs->txs_distance->ssl_index);
+      dist_cp = mp_data_col (qcr->qcr_mp, txs->txs_distance, id->dc_n_values);
+      dc_copy (dist_cp, dist);
+    }
   mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) id_cp);
   mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) score_cp);
+  mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) sim_cp);
+  mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) dist_cp);
   if (!SRC_IN_STATE (txs, inst))
     {
       mutex_enter (&qcr_ref_mtx);
@@ -3906,20 +4063,28 @@ txs_from_qcr (text_node_t * txs, caddr_t * inst, caddr_t * state)
   int pos_in_dc = QST_INT (inst, txs->txs_pos_in_dc);
   qc_result_t * qcr = (qc_result_t *)QST_GET_V (inst, txs->txs_qcr);
   data_col_t * id_ret = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
-  data_col_t * score_ret = QST_BOX (data_col_t *, inst, txs->txs_score->ssl_index);
+  data_col_t * score_ret = txs->txs_score ? QST_BOX (data_col_t *, inst, txs->txs_score->ssl_index) : NULL;
+  data_col_t * sim_ret = txs->txs_similarity ? QST_BOX (data_col_t *, inst, txs->txs_similarity->ssl_index) : NULL;
+  data_col_t * dist_ret = txs->txs_distance ? QST_BOX (data_col_t *, inst, txs->txs_distance->ssl_index) : NULL;
   int batch_size = QST_INT (inst, txs->src_gen.src_batch_size), dc_inx, pos;
   if (state)
     {
       pos_in_dc = nth_dc = 0;
     }
-  for (dc_inx = nth_dc; dc_inx < qcr->qcr_fill; dc_inx += 2)
+  for (dc_inx = nth_dc; dc_inx < qcr->qcr_fill; dc_inx += 4)
     {
       data_col_t * id = qcr->qcr_result[dc_inx];
       data_col_t * score = qcr->qcr_result[dc_inx + 1];
+      data_col_t * sim = qcr->qcr_result[dc_inx + 2];
+      data_col_t * dist = qcr->qcr_result[dc_inx + 3];
       for (pos = pos_in_dc; pos < id->dc_n_values; pos++)
 	{
-	  if (score)
+	  if (score && score_ret)
 	    dc_append_int64 (score_ret, ((int64*)score->dc_values)[pos]);
+	  if (sim && sim_ret)
+	    dc_append_int64 (sim_ret, ((int64*)sim->dc_values)[pos]);
+	  if (dist && dist_ret)
+	    dc_append_int64 (dist_ret, ((int64*)dist->dc_values)[pos]);
 
 	  dc_append_int64 (id_ret, ((int64*)id->dc_values)[pos]);
 	  qn_result ((data_source_t *)txs, inst, 0);
@@ -3945,22 +4110,38 @@ txs_from_qcr (text_node_t * txs, caddr_t * inst, caddr_t * state)
 
 #define DCINT1(dc)  ((int*)(dc)->dc_values)[0]
 
+/* Value stored in qcr_reverse hash for each d_id.
+ * Carries score, similarity and distance so the hash-join path
+ * (txs_qcr_check) can populate all three output columns. */
+typedef struct txs_qcr_rev_val_s
+{
+  int64	qrv_score;
+  double qrv_sim;
+  int64	qrv_dist;
+} txs_qcr_rev_val_t;
+
 
 void
 txs_qcr_reverse (qc_result_t * qcr)
 {
   int inx, sz = 0, n;
-  for (inx = 0; inx < qcr->qcr_fill; inx += 2)
+  for (inx = 0; inx < qcr->qcr_fill; inx += 4)
     sz += qcr->qcr_result[inx]->dc_n_values;
   SET_THR_TMP_POOL (qcr->qcr_mp);
-  qcr->qcr_reverse = t_id_hash_allocate (sz, sizeof (boxint), sizeof (boxint), boxint_hash, boxint_hashcmp);
-    for (inx =  0; inx < qcr->qcr_fill; inx += 2)
+  qcr->qcr_reverse = t_id_hash_allocate (sz, sizeof (boxint), sizeof (txs_qcr_rev_val_t), boxint_hash, boxint_hashcmp);
+    for (inx =  0; inx < qcr->qcr_fill; inx += 4)
       {
 	data_col_t * id = qcr->qcr_result[inx];
 	data_col_t * score = qcr->qcr_result[inx + 1];
+	data_col_t * sim = qcr->qcr_result[inx + 2];
+	data_col_t * dist = qcr->qcr_result[inx + 3];
 	for (n = 0; n < id->dc_n_values; n++)
 	  {
-	    t_id_hash_set (qcr->qcr_reverse, (caddr_t)& ((int64*)id->dc_values)[n], (caddr_t) &((int64*)score->dc_values)[n]);
+	    txs_qcr_rev_val_t val;
+	    val.qrv_score = score ? ((int64*)score->dc_values)[n] : 0;
+	    val.qrv_sim = sim ? ((double*)sim->dc_values)[n] : 0.0;
+	    val.qrv_dist = dist ? ((int64*)dist->dc_values)[n] : -1;
+	    t_id_hash_set (qcr->qcr_reverse, (caddr_t)& ((int64*)id->dc_values)[n], (caddr_t) &val);
 	  }
       }
     SET_THR_TMP_POOL (NULL);
@@ -3990,16 +4171,21 @@ txs_qcr_check (text_node_t * txs, caddr_t * inst)
       int64 d_id = qst_vec_get_int64 (inst, txs->txs_d_id, set);
       if (qcr->qcr_reverse)
 	{
-	  int64 * place = (int64 *) id_hash_get (qcr->qcr_reverse, (caddr_t)&d_id);
-	  if (place)
+	  txs_qcr_rev_val_t * val = (txs_qcr_rev_val_t *) id_hash_get (qcr->qcr_reverse, (caddr_t)&d_id);
+	  if (val)
 	    {
 	      qi->qi_set = set;
-	      qst_set_long (inst, txs->txs_score, *place);
+	      if (txs->txs_score)
+		qst_set_long (inst, txs->txs_score, val->qrv_score);
+	      if (txs->txs_similarity)
+		qst_set_double (inst, txs->txs_similarity, val->qrv_sim);
+	      if (txs->txs_distance)
+		qst_set_long (inst, txs->txs_distance, val->qrv_dist);
 	      qn_result ((data_source_t *)txs, inst, set);
 	    }
 	}
 #if 0
-      for (inx = 0; inx < qcr->qcr_fill; inx+= 2)
+      for (inx = 0; inx < qcr->qcr_fill; inx+= 4)
 	{
 	  int64 n = DCINT1 (qcr->qcr_result[inx]);
 	  if (n == d_id)
@@ -4008,7 +4194,7 @@ txs_qcr_check (text_node_t * txs, caddr_t * inst)
 	    {
 	      if (0 == inx)
 		goto next_set;
-	      dc = qcr->qcr_result[inx - 2];
+	      dc = qcr->qcr_result[inx - 4];
 	      goto look_in_dc;
 	    }
 	  if (inx == qcr->qcr_fill)
@@ -4017,7 +4203,7 @@ txs_qcr_check (text_node_t * txs, caddr_t * inst)
 	      goto look_in_dc;
 	    }
 	}
-      inx = qcr->qcr_fill - 2;
+      inx = qcr->qcr_fill - 4;
       dc = qcr->qcr_result[inx];
       if (d_id > ((int64*)dc->dc_values)[dc->dc_n_values - 1])
 	goto next_set;
@@ -4049,6 +4235,10 @@ txs_qcr_check (text_node_t * txs, caddr_t * inst)
       qi->qi_set = set;
       if (txs->txs_score)
 	qst_set_long (inst, txs->txs_score, ((int64*)qcr->qcr_result[inx+1]->dc_values)[at_or_above]);
+      if (txs->txs_similarity && qcr->qcr_result[inx+2])
+	qst_set_double (inst, txs->txs_similarity, ((double*)qcr->qcr_result[inx+2]->dc_values)[at_or_above]);
+      if (txs->txs_distance && qcr->qcr_result[inx+3])
+	qst_set_long (inst, txs->txs_distance, ((int64*)qcr->qcr_result[inx+3]->dc_values)[at_or_above]);
       qn_result ((data_source_t*)txs, inst, set);
     next_set: ;
 #endif
@@ -4070,7 +4260,7 @@ txs_vec_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
   int nth_set, first_time = 0, batch_sz;
   QNCAST (data_source_t, qn, txs);
   caddr_t err = NULL;
-  if (enable_qn_cache)
+  if (enable_qn_cache && !txs->txs_fuzzy_algo) /* cache key has no fuzzy options */
     {
       if (state)
 	{
@@ -4377,6 +4567,8 @@ skip_parsing_of_new_tree:
   context.tctx_qi = qi;
   context.tctx_table = txs->txs_table;
   context.tctx_calc_score = ((NULL != txs->txs_score) ? 1 : 0);
+  context.tctx_calc_distance = 0;
+  context.tctx_calc_similarity = 0;
   context.tctx_range_flags = SRC_RANGE_DUMMY;
   slice = qi->qi_client->cli_slice;
   results = txs_ext_fti_get (qi, slice, qst_get (qst, txs->txs_ext_fti), (caddr_t)tree);
@@ -4488,7 +4680,7 @@ txs_ext_fti_vec_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
   int nth_set, first_time = 0, batch_sz;
   QNCAST (data_source_t, qn, txs);
   caddr_t err = NULL;
-  if (enable_qn_cache)
+  if (enable_qn_cache && !txs->txs_fuzzy_algo) /* cache key has no fuzzy options */
     {
       if (state)
 	{
@@ -4730,4 +4922,3 @@ text_init (void)
   txs_qcr_rev_mtx = mutex_allocate ();
   qc_init ();
 }
-
