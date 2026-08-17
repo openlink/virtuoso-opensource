@@ -374,6 +374,12 @@ ECHO BOTH $IF $GT $LAST[3] 0.6  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": D16 SPARQL SIMILARITY without SCORE = " $LAST[3] " (expected > 0.6)\n";
 
+-- Quoted fuzzy phrases use a word chain and must propagate child similarity.
+SPARQL SELECT ?s ?name ?sim WHERE { ?s <http://example.com/name> ?name . FILTER (?s = <http://example.com/p8>) . ?name bif:contains '"Fuzzy Wuzzy"' OPTION (SIMILARITY ?sim, FUZZY 'jaro_winkler', FUZZY_THRESHOLD 0.6) . };
+ECHO BOTH $IF $GT $LAST[3] 0.99  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": D17 SPARQL quoted-phrase SIMILARITY without SCORE = " $LAST[3] " (expected 1)\n";
+
 -- ============================================================
 -- Group E — Error handling
 -- ============================================================

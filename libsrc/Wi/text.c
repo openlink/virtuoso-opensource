@@ -1965,6 +1965,30 @@ sst_freq_factor (search_stream_t * sst)
 }
 
 
+static void
+sst_fuzzy_metrics (search_stream_t *sst, d_id_t *d_id, double *best_similarity, int *best_distance)
+{
+  int inx;
+  if (SRC_WORD == sst->sst_op)
+    {
+      word_stream_t *wst = (word_stream_t *) sst;
+      if (DVC_MATCH != d_id_cmp (&sst->sst_d_id, d_id))
+        return;
+      if (wst->wst_fuzzy_similarity > *best_similarity)
+        *best_similarity = wst->wst_fuzzy_similarity;
+      if (wst->wst_fuzzy_distance >= 0 &&
+          (*best_distance < 0 || wst->wst_fuzzy_distance < *best_distance))
+        *best_distance = wst->wst_fuzzy_distance;
+      return;
+    }
+  if (!sst->sst_terms)
+    return;
+  DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
+    sst_fuzzy_metrics (term, d_id, best_similarity, best_distance);
+  END_DO_BOX;
+}
+
+
 void
 sst_scores (search_stream_t * sst, d_id_t * d_id)
 {
@@ -2074,6 +2098,12 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 	  score += first->sst_score;
 	}
       END_DO_SET();
+      /* A quoted phrase is a word chain.  Its relevance score is calculated
+       * from the chain's leading terms, so propagate the raw fuzzy metrics
+       * from every child word stream separately. */
+      DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
+	sst_fuzzy_metrics (term, d_id, &sst->sst_best_similarity, &sst->sst_best_distance);
+      END_DO_BOX;
       sst->sst_raw_score = raw_score;
       sst->sst_score = score;
       return;
