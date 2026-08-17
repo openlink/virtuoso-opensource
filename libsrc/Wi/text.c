@@ -60,6 +60,39 @@ d_id_t * sst_next (search_stream_t * sst, d_id_t * target, int is_fixed);
 static search_stream_t * wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_t lower, caddr_t higher);
 
 
+static double
+text_fuzzy_threshold_from_value (caddr_t value)
+{
+  dtp_t dtp;
+
+  if (!value)
+    sqlr_new_error ("22023", "FT381",
+        "FUZZY_THRESHOLD must be a numeric value");
+  dtp = DV_TYPE_OF (value);
+  switch (dtp)
+    {
+    case DV_SHORT_INT:
+    case DV_LONG_INT:
+      return (double) unbox (value);
+    case DV_SINGLE_FLOAT:
+      return (double) unbox_float (value);
+    case DV_DOUBLE_FLOAT:
+      return unbox_double (value);
+    case DV_NUMERIC:
+      {
+        double threshold;
+        numeric_to_double ((numeric_t) value, &threshold);
+        return threshold;
+      }
+    default:
+      sqlr_new_error ("22023", "FT381",
+          "FUZZY_THRESHOLD must be a numeric value, not an arg of type %s (%d)",
+          dv_type_title (dtp), dtp);
+    }
+  return 0.0;
+}
+
+
 int
 d_id_cmp (d_id_t * d1, d_id_t * d2)
 {
@@ -3523,7 +3556,7 @@ skip_parsing_of_new_tree:
   else
     context.tctx_fuzzy_algo = FUZZY_NONE;
   context.tctx_fuzzy_threshold = (txs->txs_fuzzy_threshold
-      ? unbox_double (qst_get (qst, txs->txs_fuzzy_threshold))
+      ? text_fuzzy_threshold_from_value (qst_get (qst, txs->txs_fuzzy_threshold))
       : FUZZY_DEFAULT_THRESHOLD);
   context.tctx_fuzzy_n = (txs->txs_fuzzy_n
       ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n))

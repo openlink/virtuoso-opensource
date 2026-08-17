@@ -279,6 +279,7 @@ DB.DBA.TTLP ('
 <http://example.com/p4> <http://example.com/name> "Johansson" .
 <http://example.com/p5> <http://example.com/name> "Smith" .
 <http://example.com/p6> <http://example.com/name> "Smythe" .
+<http://example.com/p7> <http://example.com/name> "Fuzzy Wuzziee" .
 ', '', 'http://example.com/', 0);
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -314,45 +315,51 @@ ECHO BOTH $IF $EQU $LAST[2] "Johnson"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": D7 top SPARQL result is '" $LAST[2] "' (expected Johnson)\n";
 
+-- Integer FUZZY_THRESHOLD must be handled as a numeric value, not a double pointer.
+SPARQL SELECT ?s ?name ?sc WHERE { ?s <http://example.com/name> ?name . ?name bif:contains '"Fuzzy Wuzziee"' OPTION (SCORE ?sc, FUZZY 'jaro_winkler', FUZZY_THRESHOLD 1) . };
+ECHO BOTH $IF $EQU $ROWCNT 1  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": D8 integer fuzzy threshold with phrase and SCORE = " $ROWCNT " rows (expected 1)\n";
+
 -- FUZZY with ngram_cosine and FUZZY_N
 SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (FUZZY 'ngram_cosine', FUZZY_THRESHOLD 0.5, FUZZY_N 2) . };
 ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D8 SPARQL fuzzy ngram_cosine n=2 = " $ROWCNT " rows (expected 3)\n";
+ECHO BOTH ": D9 SPARQL fuzzy ngram_cosine n=2 = " $ROWCNT " rows (expected 3)\n";
 
 -- FUZZY with levenshtein
 SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (FUZZY 'levenshtein', FUZZY_THRESHOLD 0.5) . };
 ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D9 SPARQL fuzzy levenshtein = " $ROWCNT " rows (expected 3)\n";
+ECHO BOTH ": D10 SPARQL fuzzy levenshtein = " $ROWCNT " rows (expected 3)\n";
 
 -- Lowercase keywords (case-insensitivity)
 SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (fuzzy 'jaro_winkler', fuzzy_threshold 0.6) . };
 ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D10 SPARQL lowercase fuzzy keywords = " $ROWCNT " rows (expected 3)\n";
+ECHO BOTH ": D11 SPARQL lowercase fuzzy keywords = " $ROWCNT " rows (expected 3)\n";
 
 -- Mixed case keywords
 SPARQL SELECT ?s ?name WHERE { ?s <http://example.com/name> ?name . ?name bif:contains "'Johnson'" OPTION (Fuzzy 'jaro_winkler', Fuzzy_Threshold 0.6) . };
 ECHO BOTH $IF $EQU $ROWCNT 3  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D11 SPARQL mixed-case fuzzy keywords = " $ROWCNT " rows (expected 3)\n";
+ECHO BOTH ": D12 SPARQL mixed-case fuzzy keywords = " $ROWCNT " rows (expected 3)\n";
 
 -- Standalone BIFs in SPARQL
 SPARQL SELECT (bif:jaro_winkler ("MARTHA", "MARHTA") AS ?sim) WHERE { } LIMIT 1;
 ECHO BOTH $IF $EQU $LAST[1] "0.9611111111111111"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D12 SPARQL bif:jaro_winkler('MARTHA','MARHTA') = " $LAST[1] "\n";
+ECHO BOTH ": D13 SPARQL bif:jaro_winkler('MARTHA','MARHTA') = " $LAST[1] "\n";
 
 SPARQL SELECT (bif:levenshtein ("kitten", "sitting") AS ?dist) WHERE { } LIMIT 1;
 ECHO BOTH $IF $EQU $LAST[1] "3"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D13 SPARQL bif:levenshtein('kitten','sitting') = " $LAST[1] " (expected 3)\n";
+ECHO BOTH ": D14 SPARQL bif:levenshtein('kitten','sitting') = " $LAST[1] " (expected 3)\n";
 
 SPARQL SELECT (bif:ngram_cosine ("johnson", "jonsson") AS ?sim) WHERE { } LIMIT 1;
 ECHO BOTH $IF $EQU $LAST[1] "0.7826237921249264"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": D14 SPARQL bif:ngram_cosine('johnson','jonsson') = " $LAST[1] "\n";
+ECHO BOTH ": D15 SPARQL bif:ngram_cosine('johnson','jonsson') = " $LAST[1] "\n";
 
 -- ============================================================
 -- Group E — Error handling
