@@ -2584,14 +2584,18 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
       itc_from (itc, args->fsa_key, args->fsa_slice);
       specs = wst_get_specs (itc->itc_row_key);
       itc->itc_key_spec = specs->wst_ks_range;
-      ITC_SEARCH_PARAM (itc, box_copy (limit));
-      ITC_SEARCH_PARAM (itc, box_copy (args->fsa_higher));
+      {
+        caddr_t lower_param = box_copy (limit);
+        caddr_t higher_param = box_copy (args->fsa_higher);
+        ITC_SEARCH_PARAM (itc, lower_param);
+        ITC_OWNS_PARAM (itc, lower_param);
+        ITC_SEARCH_PARAM (itc, higher_param);
+        ITC_OWNS_PARAM (itc, higher_param);
+      }
       ITC_FAIL (itc)
         {
           buf = itc_reset (itc);
           rc = itc_search (itc, &buf);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
           if (DVC_MATCH != rc)
             {
               itc_page_leave (itc, buf);
@@ -2603,9 +2607,6 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
         }
       ITC_FAILED
         {
-          /* Free search-param copies that ITC_FAIL block would have freed */
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
           itc_free (itc);
           break;
         }
