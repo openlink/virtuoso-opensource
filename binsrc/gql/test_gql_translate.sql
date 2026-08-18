@@ -350,6 +350,75 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16c FAIL: prefix graph name: ', cast (_sparql as varchar)))); }
 
+  -- TR16d: USE PROPERTY GRAPH derives graph IRI from bare name
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery MATCH (n) RETURN n');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16d PASS: USE PROPERTY GRAPH graph IRI')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16d FAIL: USE PROPERTY GRAPH graph IRI: ', cast (_sparql as varchar)))); }
+
+  -- TR16e: USE PROPERTY GRAPH derives per-graph ontology NS in PREFIX
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery MATCH (n:Customer) RETURN n');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery/ontology#') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16e PASS: USE PROPERTY GRAPH ontology NS')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16e FAIL: USE PROPERTY GRAPH ontology NS: ', cast (_sparql as varchar)))); }
+
+  -- TR16f: USE PROPERTY GRAPH label IRI uses per-graph ontology NS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery MATCH (n:Customer) RETURN n');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery/ontology#Customer') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16f PASS: USE PROPERTY GRAPH label IRI')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16f FAIL: USE PROPERTY GRAPH label IRI: ', cast (_sparql as varchar)))); }
+
+  -- TR16g: INSERT INTO PROPERTY GRAPH derives graph IRI and per-graph NS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('INSERT INTO PROPERTY GRAPH Bakery (:Customer {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery') is not null
+      and strstr (_sparql, '/pgraph/Bakery/ontology#Customer') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16g PASS: INSERT INTO PROPERTY GRAPH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16g FAIL: INSERT INTO PROPERTY GRAPH: ', cast (_sparql as varchar)))); }
+
+  -- TR16h: USE PROPERTY GRAPH node IRI uses per-graph data NS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT (:Customer {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery#node_') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16h PASS: USE PROPERTY GRAPH node IRI')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16h FAIL: USE PROPERTY GRAPH node IRI: ', cast (_sparql as varchar)))); }
+
+  -- TR16i: CREATE PROPERTY GRAPH emits catalog metadata
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('CREATE PROPERTY GRAPH Bakery');
+  if (_sparql is not null and strstr (_sparql, 'CREATE GRAPH') is not null
+      and strstr (_sparql, '/pgraph/Bakery') is not null
+      and strstr (_sparql, 'urn:opengql:PropertyGraph') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16i PASS: CREATE PROPERTY GRAPH metadata')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16i FAIL: CREATE PROPERTY GRAPH metadata: ', cast (_sparql as varchar)))); }
+
+  -- TR16j: DROP PROPERTY GRAPH derives graph IRI from bare name
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('DROP PROPERTY GRAPH Bakery');
+  if (_sparql is not null and strstr (_sparql, 'DROP GRAPH') is not null
+      and strstr (_sparql, '/pgraph/Bakery') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16j PASS: DROP PROPERTY GRAPH')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16j FAIL: DROP PROPERTY GRAPH: ', cast (_sparql as varchar)))); }
+
+  -- TR16k: USE PROPERTY GRAPH with edge properties uses per-graph NS
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT ((:Customer {name: "A"})-[:VISITS {since: "2024"}]->(:Shop {name: "S"}))');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery/ontology#VISITS') is not null
+      and strstr (_sparql, '/pgraph/Bakery/ontology#since') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16k PASS: USE PROPERTY GRAPH edge props')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16k FAIL: USE PROPERTY GRAPH edge props: ', cast (_sparql as varchar)))); }
+
   -- TR17: Phase 0 - gql_t_assert_sparql helper (ORDER BY DESC)
   _total := _total + 1;
   DB.DBA.GQL_T_ASSERT_SPARQL ('TR17', 'MATCH (n) RETURN n ORDER BY n DESC', 'ORDER BY', _pass, _fail, _results);
