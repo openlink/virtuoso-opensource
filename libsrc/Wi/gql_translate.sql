@@ -49,6 +49,10 @@
 --    'var_counter'      - counter for generating unique SPARQL variables
 --    'extra_from_graphs'- additional FROM clauses
 --    'suppress_default_from' - flag to suppress default FROM
+--    'ontology_ns'      - per-graph ontology namespace (set by USE PROPERTY GRAPH)
+--    'data_ns'          - per-graph data namespace (set by USE PROPERTY GRAPH)
+--    'is_property_graph'- 1 when USE PROPERTY GRAPH is active
+--    'pg_name'          - bare property-graph name (for IRI derivation)
 --    'var_map'          - vector of vector(gql_name, sparql_var, kind)
 --                         kind: 'node', 'edge', 'path', 'value', 'alias'
 --    'in_optional_depth'- integer counter for nested OPTIONAL scoping
@@ -92,6 +96,10 @@ create procedure DB.DBA.GQL_CTX_NEW (in _graph varchar)
     'suppress_default_from', 0,
     'force_camelcase', 0,
     'rdf12_mode', 0,
+    'ontology_ns', null,
+    'data_ns', null,
+    'is_property_graph', 0,
+    'pg_name', null,
     'var_map', vector (),
     'in_optional_depth', 0,
     'in_set_op', 0,
@@ -115,6 +123,46 @@ create procedure DB.DBA.GQL_CTX_SET (inout _ctx any, in _key varchar, in _val an
   for (i := 0; i + 1 < length (_ctx); i := i + 2)
     { if (aref (_ctx, i) = _key) { aset (_ctx, i + 1, _val); return; } }
   _ctx := vector_concat (_ctx, vector (_key, _val));
+}
+--;
+
+-- Bind a property graph into ctx: sets graph IRI, ontology_ns, data_ns,
+-- is_property_graph flag, and pg_name from a bare graph name.
+-- Called by USE PROPERTY GRAPH and INSERT INTO PROPERTY GRAPH handlers.
+create procedure DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (inout _ctx any, in _graph_ref any)
+{
+  declare graph_val, pg_name varchar;
+  declare kind varchar;
+
+  -- Resolve the graph reference to a bare name for IRI derivation.
+  -- For BARE names, use the value directly; for PNAME/IRI, resolve normally.
+  if (isarray (_graph_ref) and length (_graph_ref) > 1 and aref (_graph_ref, 0) = 'GRAPH_REF')
+    {
+      pg_name := cast (aref (_graph_ref, 1) as varchar);
+      kind := 'BARE';
+      if (length (_graph_ref) > 2)
+        kind := cast (aref (_graph_ref, 2) as varchar);
+
+      if (kind = 'BARE')
+        {
+          -- Derive graph IRI and namespaces from the bare name
+          graph_val := DB.DBA.GQL_PG_GRAPH_IRI (pg_name);
+          DB.DBA.GQL_CTX_SET (_ctx, 'graph', graph_val);
+          DB.DBA.GQL_CTX_SET (_ctx, 'active_graph', graph_val);
+          DB.DBA.GQL_CTX_SET (_ctx, 'ontology_ns', DB.DBA.GQL_PG_ONTOLOGY_NS (pg_name));
+          DB.DBA.GQL_CTX_SET (_ctx, 'data_ns', DB.DBA.GQL_PG_DATA_NS (pg_name));
+          DB.DBA.GQL_CTX_SET (_ctx, 'is_property_graph', 1);
+          DB.DBA.GQL_CTX_SET (_ctx, 'pg_name', pg_name);
+          return;
+        }
+    }
+
+  -- Non-bare reference (PNAME, IRI): resolve normally, no per-graph NS
+  graph_val := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (_graph_ref, _ctx);
+  DB.DBA.GQL_CTX_SET (_ctx, 'graph', graph_val);
+  DB.DBA.GQL_CTX_SET (_ctx, 'active_graph', graph_val);
+  DB.DBA.GQL_CTX_SET (_ctx, 'is_property_graph', 0);
+  DB.DBA.GQL_CTX_SET (_ctx, 'pg_name', null);
 }
 ;
 
@@ -583,7 +631,7 @@ create procedure DB.DBA.GQL_DEGREE_WEIGHT_PROP (in _expr any, inout _ctx any)
   if (prop_name is null or prop_name = '' or lower (prop_name) = 'none')
     return null;
   if (strchr (prop_name, ':') is null)
-    return concat ('<', DB.DBA.GQL_NS (), prop_name, '>');
+    return concat ('<', DB.DBA.GQL_NS_CTX (_ctx), prop_name, '>');
   return DB.DBA.GQL_GEN_PROP_IRI_CTX (prop_name, _ctx);
 }
 ;
@@ -657,7 +705,7 @@ create procedure DB.DBA.GQL_CENTRALITY_WEIGHT_URI (in _expr any, inout _ctx any)
   if (prop_name is null or prop_name = '' or lower (prop_name) = 'none')
     return null;
   if (strchr (prop_name, ':') is null)
-    return concat (DB.DBA.GQL_NS (), prop_name);
+    return concat (DB.DBA.GQL_NS_CTX (_ctx), prop_name);
   return DB.DBA.GQL_TERM_URI (_ctx, prop_name, 'prop');
 }
 ;
@@ -954,9 +1002,9 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_PATH_STEP (inout _ctx any, in _pvar 
   node_var := DB.DBA.GQL_PATH_FIELD_VAR (_pvar, 'node');
   step_value_var := DB.DBA.GQL_PATH_FIELD_VAR (_pvar, 'step_value');
   DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, path_var,
-    concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS (), 'path_", ENCODE_FOR_URI(STR(', path_id_var, '))))'));
+    concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS_CTX (_ctx), 'path_", ENCODE_FOR_URI(STR(', path_id_var, '))))'));
   DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, step_var,
-    concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS (), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, ')))'));
+    concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS_CTX (_ctx), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, ')))'));
   DB.DBA.GQL_CTX_ADD_BIND_ONCE (_ctx, step_value_var,
     concat ('CONCAT(STR(', index_var, '), ": ", STR(', node_var, '))'));
 }
@@ -978,7 +1026,7 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_EXACT_PATH (inout _ctx any, in _pvar
   value_var := DB.DBA.GQL_PATH_FIELD_VAR (_pvar, 'value');
 
   path_id_expr := concat ('CONCAT("exact|", STR(', _src, '), "|', replace (_pred, '"', '\\"'), '|", STR(', _dst, '))');
-  path_expr := concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS (), 'path_", ENCODE_FOR_URI(STR(', path_id_var, '))))');
+  path_expr := concat ('IRI(CONCAT("', DB.DBA.GQL_DATA_NS_CTX (_ctx), 'path_", ENCODE_FOR_URI(STR(', path_id_var, '))))');
   value_expr := concat ('CONCAT(STR(', _src, '), " -> ", STR(', _dst, '))');
 
   DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx,
@@ -987,7 +1035,7 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_EXACT_PATH (inout _ctx any, in _pvar
             '    BIND (', path_id_expr, ' AS ', path_id_var, ')\n',
             '    BIND (0 AS ', index_var, ')\n',
             '    BIND (', path_expr, ' AS ', path_var, ')\n',
-            '    BIND (IRI(CONCAT("', DB.DBA.GQL_DATA_NS (), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, '))) AS ', step_var, ')\n',
+            '    BIND (IRI(CONCAT("', DB.DBA.GQL_DATA_NS_CTX (_ctx), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, '))) AS ', step_var, ')\n',
             '    BIND (', _src, ' AS ', node_var, ')\n',
             '    BIND (CONCAT(STR(', index_var, '), ": ", STR(', node_var, ')) AS ', step_value_var, ')\n',
             '    BIND (', value_expr, ' AS ', value_var, ')\n',
@@ -996,7 +1044,7 @@ create procedure DB.DBA.GQL_CTX_MATERIALIZE_EXACT_PATH (inout _ctx any, in _pvar
             '    BIND (', path_id_expr, ' AS ', path_id_var, ')\n',
             '    BIND (1 AS ', index_var, ')\n',
             '    BIND (', path_expr, ' AS ', path_var, ')\n',
-            '    BIND (IRI(CONCAT("', DB.DBA.GQL_DATA_NS (), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, '))) AS ', step_var, ')\n',
+            '    BIND (IRI(CONCAT("', DB.DBA.GQL_DATA_NS_CTX (_ctx), 'pathstep_", ENCODE_FOR_URI(STR(', path_id_var, ')), "_", STR(', index_var, '))) AS ', step_var, ')\n',
             '    BIND (', _dst, ' AS ', node_var, ')\n',
             '    BIND (CONCAT(STR(', index_var, '), ": ", STR(', node_var, ')) AS ', step_value_var, ')\n',
             '    BIND (', value_expr, ' AS ', value_var, ')\n',
@@ -1758,16 +1806,16 @@ create procedure DB.DBA.GQL_TERM_URI (inout _ctx any, in _name varchar, in _kind
   if (rel_uri is not null)
     return rel_uri;
   if (_kind = 'label')
-    return DB.DBA.GQL_LABEL_URI (_name);
+    return concat (DB.DBA.GQL_NS_CTX (_ctx), _name);
   if (_kind = 'edge')
     {
       if (DB.DBA.GQL_CTX_FORCE_CAMELCASE (_ctx) = 1)
-        return concat (DB.DBA.GQL_NS (), DB.DBA.GQL_TO_CAMEL_CASE (_name));
-      return DB.DBA.GQL_EDGE_TYPE_URI (_name);
+        return concat (DB.DBA.GQL_NS_CTX (_ctx), DB.DBA.GQL_TO_CAMEL_CASE (_name));
+      return concat (DB.DBA.GQL_NS_CTX (_ctx), _name);
     }
   if (_kind = 'prop' and DB.DBA.GQL_CTX_FORCE_CAMELCASE (_ctx) = 1)
-    return concat (DB.DBA.GQL_NS (), DB.DBA.GQL_TO_CAMEL_CASE (_name));
-  return DB.DBA.GQL_PROP_URI (_name);
+    return concat (DB.DBA.GQL_NS_CTX (_ctx), DB.DBA.GQL_TO_CAMEL_CASE (_name));
+  return concat (DB.DBA.GQL_NS_CTX (_ctx), _name);
 }
 ;
 
@@ -1789,9 +1837,9 @@ create procedure DB.DBA.GQL_GEN_PROP_IRI_CTX (in _prop varchar, inout _ctx any)
 }
 ;
 
-create procedure DB.DBA.GQL_GEN_NS_IRI (in _local varchar)
+create procedure DB.DBA.GQL_GEN_NS_IRI (inout _ctx any, in _local varchar)
 {
-  return concat ('<', DB.DBA.GQL_NS (), _local, '>');
+  return concat ('<', DB.DBA.GQL_NS_CTX (_ctx), _local, '>');
 }
 ;
 
@@ -1992,6 +2040,10 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
   DB.DBA.GQL_CTX_SET (svc_ctx, 'rdf12_mode', DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'var_counter', DB.DBA.GQL_CTX_GET (_ctx, 'var_counter'));
   DB.DBA.GQL_CTX_SET (svc_ctx, 'reif_graph', DB.DBA.GQL_CTX_GET (_ctx, 'reif_graph'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'ontology_ns', DB.DBA.GQL_CTX_GET (_ctx, 'ontology_ns'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'data_ns', DB.DBA.GQL_CTX_GET (_ctx, 'data_ns'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'is_property_graph', DB.DBA.GQL_CTX_GET (_ctx, 'is_property_graph'));
+  DB.DBA.GQL_CTX_SET (svc_ctx, 'pg_name', DB.DBA.GQL_CTX_GET (_ctx, 'pg_name'));
 
   match_asts := vector ();
   where_asts := vector ();
@@ -2028,6 +2080,8 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
         DB.DBA.GQL_CTX_SET (svc_ctx, 'force_camelcase', 1);
       else if (ctype = 'USE')
         DB.DBA.GQL_CTX_SET (svc_ctx, 'graph', DB.DBA.GQL_GRAPH_REF_VALUE_CTX (aref (clause, 1), svc_ctx));
+      else if (ctype = 'USE_PROPERTY')
+        DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (svc_ctx, aref (clause, 1));
       else if (ctype = 'USE_ANY_GRAPH')
         DB.DBA.GQL_CTX_SET (svc_ctx, 'suppress_default_from', 1);
       else if (ctype = 'USE_HOME_GRAPH')
@@ -4255,6 +4309,25 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
                 _graph := null;
               else if (isarray (at_schema) and aref (at_schema, 0) = 'HOME_GRAPH')
                 _graph := DB.DBA.GQL_HOME_GRAPH ();
+              else if (isarray (at_schema) and aref (at_schema, 0) = 'USE_PROPERTY_AT_SCHEMA')
+                {
+                  -- USE PROPERTY GRAPH at schema level: derive graph IRI
+                  -- and per-graph namespaces from the bare graph name.
+                  declare pg_ref any;
+                  declare pg_name varchar;
+                  pg_ref := aref (at_schema, 1);
+                  if (isarray (pg_ref) and length (pg_ref) > 1 and aref (pg_ref, 0) = 'GRAPH_REF')
+                    {
+                      pg_name := cast (aref (pg_ref, 1) as varchar);
+                      _graph := DB.DBA.GQL_PG_GRAPH_IRI (pg_name);
+                      -- Stash per-graph NS for propagation into the query
+                      connection_set ('__gql_pg_ontology_ns', DB.DBA.GQL_PG_ONTOLOGY_NS (pg_name));
+                      connection_set ('__gql_pg_data_ns', DB.DBA.GQL_PG_DATA_NS (pg_name));
+                      connection_set ('__gql_pg_is_property_graph', 1);
+                    }
+                  else
+                    _graph := DB.DBA.GQL_GRAPH_REF_VALUE (pg_ref);
+                }
               else
                 {
                   declare graph_ctx any;
@@ -4372,6 +4445,24 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   -- Initialize
   if (_graph is null) _graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
   ctx := DB.DBA.GQL_CTX_NEW (_graph);
+  -- Propagate per-graph NS from proc body USE PROPERTY GRAPH (if set)
+  {
+    declare pg_ons, pg_dns varchar;
+    declare pg_flag integer;
+    pg_ons := connection_get ('__gql_pg_ontology_ns');
+    pg_dns := connection_get ('__gql_pg_data_ns');
+    pg_flag := connection_get ('__gql_pg_is_property_graph');
+    if (pg_ons is not null)
+      DB.DBA.GQL_CTX_SET (ctx, 'ontology_ns', pg_ons);
+    if (pg_dns is not null)
+      DB.DBA.GQL_CTX_SET (ctx, 'data_ns', pg_dns);
+    if (pg_flag = 1)
+      DB.DBA.GQL_CTX_SET (ctx, 'is_property_graph', 1);
+    -- Clear the stashed values so they don't leak to subsequent queries
+    connection_set ('__gql_pg_ontology_ns', null);
+    connection_set ('__gql_pg_data_ns', null);
+    connection_set ('__gql_pg_is_property_graph', 0);
+  }
   n := length (clauses);
 
   has_return := 0;
@@ -4444,6 +4535,14 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
               DB.DBA.GQL_CTX_SET (ctx, 'active_graph', ins_graph_val);
             }
         }
+      else if (ctype = 'INSERT_PROPERTY')
+        {
+          has_insert := 1; insert_asts := vector_concat (insert_asts, vector (clause));
+          -- Inline target: INSERT INTO PROPERTY GRAPH <g> (...)
+          -- Bind per-graph ontology/data namespaces from the graph name.
+          if (length (clause) > 2 and aref (clause, 2) is not null)
+            DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (ctx, aref (clause, 2));
+        }
       else if (ctype = 'CONSTRUCT')
         { has_construct := 1; construct_asts := vector_concat (construct_asts, vector (clause)); }
       else if (ctype = 'DESCRIBE')
@@ -4467,6 +4566,13 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           use_ast := clause;
           DB.DBA.GQL_CTX_SET (ctx, 'graph', use_graph_val);
           DB.DBA.GQL_CTX_SET (ctx, 'active_graph', use_graph_val);
+        }
+      else if (ctype = 'USE_PROPERTY')
+        {
+          -- USE PROPERTY GRAPH <name>: bind the property graph with
+          -- per-graph ontology and data namespaces derived from the name.
+          use_ast := clause;
+          DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (ctx, aref (clause, 1));
         }
       else if (ctype = 'USE_ANY_GRAPH')
         { use_ast := clause; DB.DBA.GQL_CTX_SET (ctx, 'suppress_default_from', 1); }
@@ -4957,7 +5063,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       -- template block (which Virtuoso rejects as a syntax error).
       mod_sparql := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       mod_sparql := concat (mod_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-      mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+      mod_sparql := concat (mod_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (ctx), '>\n');
       declare mod_g varchar;
       mod_g := DB.DBA.GQL_CTX_GET (ctx, 'graph');
       if (mod_del_body <> '')
@@ -4981,7 +5087,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         DB.DBA.GQL_EMIT_PREFIX_BLOCK (ctx),
         DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       ask_sparql := concat (ask_sparql, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-      ask_sparql := concat (ask_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+      ask_sparql := concat (ask_sparql, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (ctx), '>\n');
       ask_sparql := concat (ask_sparql, 'ASK ');
       ask_sparql := concat (ask_sparql, DB.DBA.GQL_GEN_FROM_CLAUSES (ctx));
       ask_where_body := '';
@@ -5020,7 +5126,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
             DB.DBA.GQL_EMIT_PREFIX_BLOCK (ctx),
             DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
           sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-          sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+          sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (ctx), '>\n');
           sparql_text := concat (sparql_text, DB.DBA.GQL_EMIT_SELECT (ctx, 0, proj_items));
           sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_FROM_CLAUSES (ctx));
 
@@ -5072,7 +5178,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         DB.DBA.GQL_EMIT_PREFIX_BLOCK (ctx),
         DB.DBA.GQL_GEN_DEFINE_CLAUSE (ctx));
       sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-      sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+      sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (ctx), '>\n');
 
       sparql_text := concat (sparql_text,
         DB.DBA.GQL_EMIT_SELECT (ctx, is_distinct, proj_items));
