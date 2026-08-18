@@ -2558,7 +2558,7 @@ create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
       DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF EXISTS
         { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
-      return vector ('DROP_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
+      return vector ('DROP_PROPERTY_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
     }
   else if (tt = 225)  -- GRAPH
     {
