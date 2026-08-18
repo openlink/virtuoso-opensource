@@ -1991,23 +1991,27 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
        * they always rank highest.  Fuzzy matches get score + (similarity * 100),
        * preserving discrimination between different similarity levels
        * without compressing the original FT score. */
-      if (((word_stream_t *) sst)->wst_fuzzy_similarity > 0.0)
+      if (sst->sst_is_fuzzy)
         {
-          double sim = ((word_stream_t *) sst)->wst_fuzzy_similarity;
-          int sim_bonus = (int) (sim * 100);
-          if (sst->sst_score)
-            sst->sst_score += sim_bonus;
-          if (sst->sst_raw_score)
-            sst->sst_raw_score += sim_bonus;
-          /* Track best (max) similarity and best (min) distance for
-           * DISTANCE/SIMILARITY output columns. */
-          if (sim > sst->sst_best_similarity)
-            sst->sst_best_similarity = sim;
-          if (((word_stream_t *) sst)->wst_fuzzy_distance >= 0)
+          word_stream_t *wst = (word_stream_t *) sst;
+          if (wst->wst_fuzzy_similarity > 0.0)
             {
-              if (sst->sst_best_distance < 0 ||
-                  ((word_stream_t *) sst)->wst_fuzzy_distance < sst->sst_best_distance)
-                sst->sst_best_distance = ((word_stream_t *) sst)->wst_fuzzy_distance;
+              double sim = wst->wst_fuzzy_similarity;
+              int sim_bonus = (int) (sim * 100);
+              if (sst->sst_score)
+                sst->sst_score += sim_bonus;
+              if (sst->sst_raw_score)
+                sst->sst_raw_score += sim_bonus;
+              /* Track best (max) similarity and best (min) distance for
+               * DISTANCE/SIMILARITY output columns. */
+              if (sim > sst->sst_best_similarity)
+                sst->sst_best_similarity = sim;
+              if (wst->wst_fuzzy_distance >= 0)
+                {
+                  if (sst->sst_best_distance < 0 ||
+                      wst->wst_fuzzy_distance < sst->sst_best_distance)
+                    sst->sst_best_distance = wst->wst_fuzzy_distance;
+                }
             }
         }
       return;
@@ -2777,6 +2781,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
                       wst_from_word (tctx, range_flags, word_box);
                   if (wst && wst->sst_op != SRC_ERROR)
                     {
+                      wst->sst_is_fuzzy = 1;
                       wst->wst_fuzzy_similarity = sim;
                       wst->wst_fuzzy_distance = dist;
                       dk_set_push (&wsts, (void *) wst);
@@ -2883,6 +2888,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
           word_stream_t *wst = (word_stream_t *) wst_from_word (tctx, range_flags, hit_word);
           if (wst && wst->sst_op != SRC_ERROR)
             {
+              wst->sst_is_fuzzy = 1;
               wst->wst_fuzzy_similarity = sim;
               if (tctx->tctx_calc_distance)
                 wst->wst_fuzzy_distance = fuzzy_distance (word, hit_word, algo);

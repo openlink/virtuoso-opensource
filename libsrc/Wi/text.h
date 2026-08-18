@@ -135,6 +135,7 @@ typedef struct sst_tctx_s sst_tctx_t;
     int			sst_nth_pos; \
     int			sst_raw_score; /* Hit count or the term score before applying a frequency correction and the statistical weight */ \
     int			sst_score;	/* Final corrected score */ \
+    int			sst_is_fuzzy;	/* 1 if this word_stream_t has valid wst_fuzzy_* fields */ \
     double		sst_best_similarity; /* max wst_fuzzy_similarity across all matching word streams */ \
     int			sst_best_distance;	/* min wst_fuzzy_distance across all matching word streams */ \
     wpos_t		sst_view_from; /* do not process word positions smaller than this value */ \
