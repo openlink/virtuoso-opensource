@@ -10,7 +10,7 @@
  *    - Jaro and Jaro-Winkler similarity
  *    - N-gram cosine similarity
  *
- *  These functions have no Virtuoso dependencies and can be
+ *  These functions use Virtuoso's dk_alloc/dk_free allocator and can be
  *  called from both the BIF wrapper layer and the text search
  *  engine (text.c) for contains() integration.
  *

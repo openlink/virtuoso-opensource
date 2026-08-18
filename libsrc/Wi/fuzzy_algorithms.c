@@ -15,8 +15,9 @@
  *  ASCII fast path skips decoding when all bytes are < 0x80, using
  *  the original byte-level implementations directly.
  *
- *  No Virtuoso dependencies — only standard C library.
- *  Callable from BIF wrappers (sqlbif_fuzzy.c) and text.c.
+ *  Uses Virtuoso's dk_alloc/dk_free memory allocator since the file is
+ *  built into the core engine.  Callable from BIF wrappers (sqlbif_fuzzy.c)
+ *  and text.c.
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -41,8 +42,8 @@
 #include "fuzzy_algorithms.h"
 
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
+#include "Dk.h"		/* dk_alloc / dk_free */
 
 /* ============================================================
  * UTF-8 decoder
@@ -163,12 +164,12 @@ levenshtein_distance_bytes (const char *s1, int len1, const char *s2, int len2)
       int tl = len1; len1 = len2; len2 = tl;
     }
 
-  prev = (int *) malloc (sizeof (int) * (len1 + 1));
-  curr = (int *) malloc (sizeof (int) * (len1 + 1));
+  prev = (int *) dk_alloc (sizeof (int) * (len1 + 1));
+  curr = (int *) dk_alloc (sizeof (int) * (len1 + 1));
   if (!prev || !curr)
     {
-      if (prev) free (prev);
-      if (curr) free (curr);
+      if (prev) dk_free (prev, 0);
+      if (curr) dk_free (curr, 0);
       return len2;
     }
 
@@ -195,8 +196,8 @@ levenshtein_distance_bytes (const char *s1, int len1, const char *s2, int len2)
     }
 
   result = prev[len1];
-  free (prev);
-  free (curr);
+  dk_free (prev, 0);
+  dk_free (curr, 0);
   return result;
 }
 
@@ -215,14 +216,16 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
   match_distance = (len1 > len2 ? len1 : len2) / 2 - 1;
   if (match_distance < 0) match_distance = 0;
 
-  s1_matches = (char *) calloc (len1, 1);
-  s2_matches = (char *) calloc (len2, 1);
+  s1_matches = (char *) dk_alloc (len1);
+  s2_matches = (char *) dk_alloc (len2);
   if (!s1_matches || !s2_matches)
     {
-      if (s1_matches) free (s1_matches);
-      if (s2_matches) free (s2_matches);
+      if (s1_matches) dk_free (s1_matches, 0);
+      if (s2_matches) dk_free (s2_matches, 0);
       return 0.0;
     }
+  memset (s1_matches, 0, len1);
+  memset (s2_matches, 0, len2);
 
   matches = 0;
   for (i = 0; i < len1; i++)
@@ -237,7 +240,7 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
         }
     }
 
-  if (matches == 0) { free (s1_matches); free (s2_matches); return 0.0; }
+  if (matches == 0) { dk_free (s1_matches, 0); dk_free (s2_matches, 0); return 0.0; }
 
   transpositions = 0; j = 0;
   for (i = 0; i < len1; i++)
@@ -252,7 +255,7 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
   { double m = (double) matches;
     result = (m / len1 + m / len2 + (m - transpositions) / m) / 3.0; }
 
-  free (s1_matches); free (s2_matches);
+  dk_free (s1_matches, 0); dk_free (s2_matches, 0);
   return result;
 }
 
@@ -282,15 +285,15 @@ static void
 byte_ngram_map_init (byte_ngram_map_t *map, int n)
 {
   map->n = n; map->count = 0; map->capacity = 16;
-  map->entries = (byte_ngram_entry_t *) malloc (sizeof (byte_ngram_entry_t) * map->capacity);
+  map->entries = (byte_ngram_entry_t *) dk_alloc (sizeof (byte_ngram_entry_t) * map->capacity);
 }
 
 static void
 byte_ngram_map_free (byte_ngram_map_t *map)
 {
   int i;
-  for (i = 0; i < map->count; i++) free (map->entries[i].ngram);
-  free (map->entries);
+  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, 0);
+  dk_free (map->entries, 0);
   map->entries = NULL; map->count = 0;
 }
 
@@ -323,9 +326,11 @@ byte_ngram_map_add (byte_ngram_map_t *map, const char *ngram)
   if (map->count >= map->capacity)
     {
       int new_cap = map->capacity * 2;
-      byte_ngram_entry_t *ne = (byte_ngram_entry_t *) realloc (map->entries,
+      byte_ngram_entry_t *ne = (byte_ngram_entry_t *) dk_alloc (
           sizeof (byte_ngram_entry_t) * new_cap);
       if (!ne) return;
+      memcpy (ne, map->entries, sizeof (byte_ngram_entry_t) * map->count);
+      dk_free (map->entries, 0);
       map->entries = ne; map->capacity = new_cap;
     }
 
@@ -333,7 +338,7 @@ byte_ngram_map_add (byte_ngram_map_t *map, const char *ngram)
     memmove (&map->entries[idx + 1], &map->entries[idx],
              sizeof (byte_ngram_entry_t) * (map->count - idx));
 
-  map->entries[idx].ngram = (char *) malloc (map->n + 1);
+  map->entries[idx].ngram = (char *) dk_alloc (map->n + 1);
   if (map->entries[idx].ngram)
     { memcpy (map->entries[idx].ngram, ngram, map->n); map->entries[idx].ngram[map->n] = '\0'; }
   map->entries[idx].count = 1;
@@ -347,14 +352,14 @@ byte_ngram_map_build (byte_ngram_map_t *map, const char *s, int len)
   if (len == 0) return;
   if (len < n)
     {
-      int j; char *padded = (char *) malloc (n + 1);
+      int j; char *padded = (char *) dk_alloc (n + 1);
       int pad_left = (n - len) / 2, pad_right = n - len - pad_left;
       if (!padded) return;
       memset (padded, '$', n);
       memcpy (padded + pad_left, s, len);
       padded[n] = '\0';
       byte_ngram_map_add (map, padded);
-      free (padded);
+      dk_free (padded, 0);
       return;
     }
   for (i = 0; i <= len - n; i++)
@@ -429,12 +434,12 @@ levenshtein_distance_cp (const uint32_t *s1, int len1,
       int tl = len1; len1 = len2; len2 = tl;
     }
 
-  prev = (int *) malloc (sizeof (int) * (len1 + 1));
-  curr = (int *) malloc (sizeof (int) * (len1 + 1));
+  prev = (int *) dk_alloc (sizeof (int) * (len1 + 1));
+  curr = (int *) dk_alloc (sizeof (int) * (len1 + 1));
   if (!prev || !curr)
     {
-      if (prev) free (prev);
-      if (curr) free (curr);
+      if (prev) dk_free (prev, 0);
+      if (curr) dk_free (curr, 0);
       return len2;
     }
 
@@ -460,7 +465,7 @@ levenshtein_distance_cp (const uint32_t *s1, int len1,
     }
 
   result = prev[len1];
-  free (prev); free (curr);
+  dk_free (prev, 0); dk_free (curr, 0);
   return result;
 }
 
@@ -480,14 +485,16 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
   match_distance = (len1 > len2 ? len1 : len2) / 2 - 1;
   if (match_distance < 0) match_distance = 0;
 
-  s1_matches = (char *) calloc (len1, 1);
-  s2_matches = (char *) calloc (len2, 1);
+  s1_matches = (char *) dk_alloc (len1);
+  s2_matches = (char *) dk_alloc (len2);
   if (!s1_matches || !s2_matches)
     {
-      if (s1_matches) free (s1_matches);
-      if (s2_matches) free (s2_matches);
+      if (s1_matches) dk_free (s1_matches, 0);
+      if (s2_matches) dk_free (s2_matches, 0);
       return 0.0;
     }
+  memset (s1_matches, 0, len1);
+  memset (s2_matches, 0, len2);
 
   matches = 0;
   for (i = 0; i < len1; i++)
@@ -502,7 +509,7 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
         }
     }
 
-  if (matches == 0) { free (s1_matches); free (s2_matches); return 0.0; }
+  if (matches == 0) { dk_free (s1_matches, 0); dk_free (s2_matches, 0); return 0.0; }
 
   transpositions = 0; j = 0;
   for (i = 0; i < len1; i++)
@@ -517,7 +524,7 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
   { double m = (double) matches;
     result = (m / len1 + m / len2 + (m - transpositions) / m) / 3.0; }
 
-  free (s1_matches); free (s2_matches);
+  dk_free (s1_matches, 0); dk_free (s2_matches, 0);
   return result;
 }
 
@@ -548,15 +555,15 @@ static void
 cp_ngram_map_init (cp_ngram_map_t *map, int n)
 {
   map->n = n; map->count = 0; map->capacity = 16;
-  map->entries = (cp_ngram_entry_t *) malloc (sizeof (cp_ngram_entry_t) * map->capacity);
+  map->entries = (cp_ngram_entry_t *) dk_alloc (sizeof (cp_ngram_entry_t) * map->capacity);
 }
 
 static void
 cp_ngram_map_free (cp_ngram_map_t *map)
 {
   int i;
-  for (i = 0; i < map->count; i++) free (map->entries[i].ngram);
-  free (map->entries);
+  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, 0);
+  dk_free (map->entries, 0);
   map->entries = NULL; map->count = 0;
 }
 
@@ -598,9 +605,11 @@ cp_ngram_map_add (cp_ngram_map_t *map, const uint32_t *ngram)
   if (map->count >= map->capacity)
     {
       int new_cap = map->capacity * 2;
-      cp_ngram_entry_t *ne = (cp_ngram_entry_t *) realloc (map->entries,
+      cp_ngram_entry_t *ne = (cp_ngram_entry_t *) dk_alloc (
           sizeof (cp_ngram_entry_t) * new_cap);
       if (!ne) return;
+      memcpy (ne, map->entries, sizeof (cp_ngram_entry_t) * map->count);
+      dk_free (map->entries, 0);
       map->entries = ne; map->capacity = new_cap;
     }
 
@@ -608,7 +617,7 @@ cp_ngram_map_add (cp_ngram_map_t *map, const uint32_t *ngram)
     memmove (&map->entries[idx + 1], &map->entries[idx],
              sizeof (cp_ngram_entry_t) * (map->count - idx));
 
-  map->entries[idx].ngram = (uint32_t *) malloc (sizeof (uint32_t) * map->n);
+  map->entries[idx].ngram = (uint32_t *) dk_alloc (sizeof (uint32_t) * map->n);
   if (map->entries[idx].ngram)
     memcpy (map->entries[idx].ngram, ngram, sizeof (uint32_t) * map->n);
   map->entries[idx].count = 1;
@@ -626,13 +635,13 @@ cp_ngram_map_build (cp_ngram_map_t *map, const uint32_t *s, int len)
 
   if (len < n)
     {
-      uint32_t *padded = (uint32_t *) calloc (n, sizeof (uint32_t));
+      uint32_t *padded = (uint32_t *) dk_alloc (n * sizeof (uint32_t));
       int pad_left = (n - len) / 2;
       if (!padded) return;
       for (j = 0; j < n; j++) padded[j] = '$';
       memcpy (padded + pad_left, s, len * sizeof (uint32_t));
       cp_ngram_map_add (map, padded);
-      free (padded);
+      dk_free (padded, 0);
       return;
     }
 
