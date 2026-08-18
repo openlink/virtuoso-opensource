@@ -267,6 +267,16 @@ create procedure DB.DBA.GQL_TO_SPARQL (in _query varchar, in _graph varchar := n
         _graph := null;
       else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'HOME_GRAPH')
         _graph := DB.DBA.GQL_HOME_GRAPH ();
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'USE_PROPERTY_AT_SCHEMA')
+        {
+          -- USE PROPERTY GRAPH at schema: derive graph IRI from bare name
+          declare pg_ref any;
+          pg_ref := aref (aref (proc_body, 1), 1);
+          if (isarray (pg_ref) and length (pg_ref) > 2 and aref (pg_ref, 0) = 'GRAPH_REF')
+            _graph := DB.DBA.GQL_PG_GRAPH_IRI (cast (aref (pg_ref, 1) as varchar));
+          else
+            _graph := DB.DBA.GQL_GRAPH_REF_VALUE (pg_ref);
+        }
       else
         _graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
     }

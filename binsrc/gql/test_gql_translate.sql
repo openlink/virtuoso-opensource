@@ -412,7 +412,7 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
 
   -- TR16k: USE PROPERTY GRAPH with edge properties uses per-graph NS
   _total := _total + 1;
-  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT ((:Customer {name: "A"})-[:VISITS {since: "2024"}]->(:Shop {name: "S"}))');
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT (n {iri:"urn:test#n"})-[r:VISITS {since: "2024"}]->(m {iri:"urn:test#m"})');
   if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery/ontology#VISITS') is not null
       and strstr (_sparql, '/pgraph/Bakery/ontology#since') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16k PASS: USE PROPERTY GRAPH edge props')); }

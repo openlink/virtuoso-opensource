@@ -124,7 +124,7 @@ create procedure DB.DBA.GQL_CTX_SET (inout _ctx any, in _key varchar, in _val an
     { if (aref (_ctx, i) = _key) { aset (_ctx, i + 1, _val); return; } }
   _ctx := vector_concat (_ctx, vector (_key, _val));
 }
---;
+;
 
 -- Bind a property graph into ctx: sets graph IRI, ontology_ns, data_ns,
 -- is_property_graph flag, and pg_name from a bare graph name.
@@ -4657,6 +4657,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
       else if (ctype = 'CALL' or ctype = 'CALL_INLINE')
         call_asts := vector_concat (call_asts, vector (clause));
       else if (ctype = 'CREATE_GRAPH' or ctype = 'DROP_GRAPH'
+               or ctype = 'DROP_PROPERTY_GRAPH'
                or ctype = 'CREATE_SCHEMA' or ctype = 'DROP_SCHEMA'
                or ctype = 'CREATE_GRAPH_TYPE' or ctype = 'DROP_GRAPH_TYPE'
                or ctype = 'LOAD' or ctype = 'CLEAR')

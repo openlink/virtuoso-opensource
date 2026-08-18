@@ -143,21 +143,21 @@ create procedure DB.DBA.GQL_PG_GRAPH_IRI (in _name varchar)
 {
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name);
 }
---;
+;
 
 -- Property-graph ontology namespace from a bare graph name.
 create procedure DB.DBA.GQL_PG_ONTOLOGY_NS (in _name varchar)
 {
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '/ontology#');
 }
---;
+;
 
 -- Property-graph data namespace from a bare graph name.
 create procedure DB.DBA.GQL_PG_DATA_NS (in _name varchar)
 {
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '#');
 }
---;
+;
 
 -- Context-aware ontology namespace: reads 'ontology_ns' from ctx,
 -- falls back to GQL_NS() when absent (plain USE GRAPH).
@@ -169,7 +169,7 @@ create procedure DB.DBA.GQL_NS_CTX (inout _ctx any)
     return ns;
   return DB.DBA.GQL_NS ();
 }
---;
+;
 
 -- Context-aware data namespace: reads 'data_ns' from ctx,
 -- falls back to GQL_DATA_NS() when absent (plain USE GRAPH).
@@ -181,7 +181,7 @@ create procedure DB.DBA.GQL_DATA_NS_CTX (inout _ctx any)
     return ns;
   return DB.DBA.GQL_DATA_NS ();
 }
---;
+;
 
 -- Default graph for GQL data.
 -- In property-graph mode the sentinel is http://<host>/pgraph#default;
@@ -213,7 +213,7 @@ create procedure DB.DBA.GQL_NEW_NODE_URI_CTX (inout _ctx any)
 {
   return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'node_', cast (uuid () as varchar));
 }
---;
+;
 
 -- Generate a unique edge URI (data namespace, for reification)
 create procedure DB.DBA.GQL_NEW_EDGE_URI ()
@@ -227,7 +227,7 @@ create procedure DB.DBA.GQL_NEW_EDGE_URI_CTX (inout _ctx any)
 {
   return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'edge_', cast (uuid () as varchar));
 }
---;
+;
 
 -- Resolve a label name to a class URI
 create procedure DB.DBA.GQL_LABEL_URI (in _name varchar)
