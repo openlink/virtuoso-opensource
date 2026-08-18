@@ -168,8 +168,8 @@ levenshtein_distance_bytes (const char *s1, int len1, const char *s2, int len2)
   curr = (int *) dk_alloc (sizeof (int) * (len1 + 1));
   if (!prev || !curr)
     {
-      if (prev) dk_free (prev, 0);
-      if (curr) dk_free (curr, 0);
+      if (prev) dk_free (prev, sizeof (int) * (len1 + 1));
+      if (curr) dk_free (curr, sizeof (int) * (len1 + 1));
       return len2;
     }
 
@@ -196,8 +196,8 @@ levenshtein_distance_bytes (const char *s1, int len1, const char *s2, int len2)
     }
 
   result = prev[len1];
-  dk_free (prev, 0);
-  dk_free (curr, 0);
+  dk_free (prev, sizeof (int) * (len1 + 1));
+  dk_free (curr, sizeof (int) * (len1 + 1));
   return result;
 }
 
@@ -220,8 +220,8 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
   s2_matches = (char *) dk_alloc (len2);
   if (!s1_matches || !s2_matches)
     {
-      if (s1_matches) dk_free (s1_matches, 0);
-      if (s2_matches) dk_free (s2_matches, 0);
+      if (s1_matches) dk_free (s1_matches, len1);
+      if (s2_matches) dk_free (s2_matches, len2);
       return 0.0;
     }
   memset (s1_matches, 0, len1);
@@ -240,7 +240,7 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
         }
     }
 
-  if (matches == 0) { dk_free (s1_matches, 0); dk_free (s2_matches, 0); return 0.0; }
+  if (matches == 0) { dk_free (s1_matches, len1); dk_free (s2_matches, len2); return 0.0; }
 
   transpositions = 0; j = 0;
   for (i = 0; i < len1; i++)
@@ -255,7 +255,7 @@ jaro_similarity_bytes (const char *s1, int len1, const char *s2, int len2)
   { double m = (double) matches;
     result = (m / len1 + m / len2 + (m - transpositions) / m) / 3.0; }
 
-  dk_free (s1_matches, 0); dk_free (s2_matches, 0);
+  dk_free (s1_matches, len1); dk_free (s2_matches, len2);
   return result;
 }
 
@@ -292,8 +292,8 @@ static void
 byte_ngram_map_free (byte_ngram_map_t *map)
 {
   int i;
-  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, 0);
-  dk_free (map->entries, 0);
+  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, map->n + 1);
+  dk_free (map->entries, sizeof (byte_ngram_entry_t) * map->capacity);
   map->entries = NULL; map->count = 0;
 }
 
@@ -330,7 +330,7 @@ byte_ngram_map_add (byte_ngram_map_t *map, const char *ngram)
           sizeof (byte_ngram_entry_t) * new_cap);
       if (!ne) return;
       memcpy (ne, map->entries, sizeof (byte_ngram_entry_t) * map->count);
-      dk_free (map->entries, 0);
+      dk_free (map->entries, sizeof (byte_ngram_entry_t) * map->capacity);
       map->entries = ne; map->capacity = new_cap;
     }
 
@@ -359,7 +359,7 @@ byte_ngram_map_build (byte_ngram_map_t *map, const char *s, int len)
       memcpy (padded + pad_left, s, len);
       padded[n] = '\0';
       byte_ngram_map_add (map, padded);
-      dk_free (padded, 0);
+      dk_free (padded, n + 1);
       return;
     }
   for (i = 0; i <= len - n; i++)
@@ -438,8 +438,8 @@ levenshtein_distance_cp (const uint32_t *s1, int len1,
   curr = (int *) dk_alloc (sizeof (int) * (len1 + 1));
   if (!prev || !curr)
     {
-      if (prev) dk_free (prev, 0);
-      if (curr) dk_free (curr, 0);
+      if (prev) dk_free (prev, sizeof (int) * (len1 + 1));
+      if (curr) dk_free (curr, sizeof (int) * (len1 + 1));
       return len2;
     }
 
@@ -465,7 +465,7 @@ levenshtein_distance_cp (const uint32_t *s1, int len1,
     }
 
   result = prev[len1];
-  dk_free (prev, 0); dk_free (curr, 0);
+  dk_free (prev, sizeof (int) * (len1 + 1)); dk_free (curr, sizeof (int) * (len1 + 1));
   return result;
 }
 
@@ -489,8 +489,8 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
   s2_matches = (char *) dk_alloc (len2);
   if (!s1_matches || !s2_matches)
     {
-      if (s1_matches) dk_free (s1_matches, 0);
-      if (s2_matches) dk_free (s2_matches, 0);
+      if (s1_matches) dk_free (s1_matches, len1);
+      if (s2_matches) dk_free (s2_matches, len2);
       return 0.0;
     }
   memset (s1_matches, 0, len1);
@@ -509,7 +509,7 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
         }
     }
 
-  if (matches == 0) { dk_free (s1_matches, 0); dk_free (s2_matches, 0); return 0.0; }
+  if (matches == 0) { dk_free (s1_matches, len1); dk_free (s2_matches, len2); return 0.0; }
 
   transpositions = 0; j = 0;
   for (i = 0; i < len1; i++)
@@ -524,7 +524,7 @@ jaro_similarity_cp (const uint32_t *s1, int len1,
   { double m = (double) matches;
     result = (m / len1 + m / len2 + (m - transpositions) / m) / 3.0; }
 
-  dk_free (s1_matches, 0); dk_free (s2_matches, 0);
+  dk_free (s1_matches, len1); dk_free (s2_matches, len2);
   return result;
 }
 
@@ -562,8 +562,8 @@ static void
 cp_ngram_map_free (cp_ngram_map_t *map)
 {
   int i;
-  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, 0);
-  dk_free (map->entries, 0);
+  for (i = 0; i < map->count; i++) dk_free (map->entries[i].ngram, sizeof (uint32_t) * map->n);
+  dk_free (map->entries, sizeof (cp_ngram_entry_t) * map->capacity);
   map->entries = NULL; map->count = 0;
 }
 
@@ -609,7 +609,7 @@ cp_ngram_map_add (cp_ngram_map_t *map, const uint32_t *ngram)
           sizeof (cp_ngram_entry_t) * new_cap);
       if (!ne) return;
       memcpy (ne, map->entries, sizeof (cp_ngram_entry_t) * map->count);
-      dk_free (map->entries, 0);
+      dk_free (map->entries, sizeof (cp_ngram_entry_t) * map->capacity);
       map->entries = ne; map->capacity = new_cap;
     }
 
@@ -641,7 +641,7 @@ cp_ngram_map_build (cp_ngram_map_t *map, const uint32_t *s, int len)
       for (j = 0; j < n; j++) padded[j] = '$';
       memcpy (padded + pad_left, s, len * sizeof (uint32_t));
       cp_ngram_map_add (map, padded);
-      dk_free (padded, 0);
+      dk_free (padded, n * sizeof (uint32_t));
       return;
     }
 
