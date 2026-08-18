@@ -456,7 +456,7 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                     {
                       pre_uri := DB.DBA.GQL_NODE_INSERT_URI (aref (elem, 3), _ctx);
                       if (pre_uri is null)
-                        pre_uri := concat ('<', DB.DBA.GQL_NEW_NODE_URI (), '>');
+                        pre_uri := concat ('<', DB.DBA.GQL_NEW_NODE_URI_CTX (_ctx), '>');
                     }
                   elem_subjects := vector_concat (elem_subjects, vector (pre_uri));
                 }
@@ -609,7 +609,7 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                         {
                           -- Classic reification
                           declare esv varchar;
-                          esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI (), '>');
+                          esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI_CTX (_ctx), '>');
                           if (evar is not null)
                             DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
 
@@ -648,7 +648,7 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
   -- Compose final SPARQL
   sparql_text := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (_ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (_ctx));
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (_ctx), '>\n');
 
   -- WITH / USING / USING NAMED for SPARQL-Update dataset specification
   sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_UPDATE_DATASET (_ctx));
@@ -946,7 +946,7 @@ create procedure DB.DBA.GQL_GEN_CONSTRUCT_WHERE
     DB.DBA.GQL_EMIT_PREFIX_BLOCK (_ctx),
     DB.DBA.GQL_GEN_DEFINE_CLAUSE (_ctx));
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (_ctx), '>\n');
   sparql_text := concat (sparql_text, 'CONSTRUCT {\n', construct_body, '}\n');
   sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_FROM_CLAUSES (_ctx));
   sparql_text := concat (sparql_text, DB.DBA.GQL_EMIT_WHERE (_ctx, where_body));
@@ -993,7 +993,7 @@ create procedure DB.DBA.GQL_GEN_DESCRIBE_WHERE
     DB.DBA.GQL_EMIT_PREFIX_BLOCK (_ctx),
     DB.DBA.GQL_GEN_DEFINE_CLAUSE (_ctx));
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (_ctx), '>\n');
   sparql_text := concat (sparql_text, 'DESCRIBE ', describe_items, '\n');
   sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_FROM_CLAUSES (_ctx));
   if (where_body <> '')
@@ -1018,7 +1018,7 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
   sparql_text := concat ('SPARQL ', DB.DBA.GQL_GEN_BASE_CLAUSE (_ctx), DB.DBA.GQL_GEN_DEFINE_CLAUSE (_ctx));
 
   sparql_text := concat (sparql_text, 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n');
-  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS (), '>\n');
+  sparql_text := concat (sparql_text, 'PREFIX gql: <', DB.DBA.GQL_NS_CTX (_ctx), '>\n');
 
   -- WITH / USING / USING NAMED for SPARQL-Update dataset specification
   sparql_text := concat (sparql_text, DB.DBA.GQL_GEN_UPDATE_DATASET (_ctx));
@@ -1379,17 +1379,40 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
       if (ctype = 'CREATE_GRAPH')
         {
           declare copy_of, like_graph, graph_type_ref any;
+          declare is_property integer;
+          declare pg_name varchar;
           graph_ref := aref (clause, 1);
           graph_type_ref := aref (clause, 2);
           copy_of := aref (clause, 3);
           like_graph := aref (clause, 4);
+          is_property := 0;
+          if (length (clause) > 5)
+            is_property := aref (clause, 5);
           if (graph_type_ref is not null)
             signal ('G4002', 'Typed graph initializer { ... } is not yet supported in CREATE GRAPH');
           if (like_graph is not null)
-            signal ('G4003', 'CREATE GRAPH LIKE is not yet supported — use AS COPY OF instead');
-          graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
+            signal ('G4003', 'CREATE GRAPH LIKE is not yet supported -- use AS COPY OF instead');
+          -- For CREATE PROPERTY GRAPH with a bare name, derive the graph IRI
+          -- and per-graph namespaces from the name.
+          if (is_property and isarray (graph_ref)
+              and length (graph_ref) > 2 and aref (graph_ref, 2) = 'BARE')
+            {
+              pg_name := cast (aref (graph_ref, 1) as varchar);
+              graph_uri := DB.DBA.GQL_PG_GRAPH_IRI (pg_name);
+            }
+          else
+            graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
           if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
           sparql_text := concat (sparql_text, 'SPARQL CREATE GRAPH <', graph_uri, '>\n');
+          -- CREATE PROPERTY GRAPH: insert catalog metadata recording the
+          -- per-graph ontology and data namespace scheme.
+          if (is_property and pg_name is not null)
+            {
+              sparql_text := concat (sparql_text, ';\nSPARQL INSERT DATA { GRAPH <',
+                graph_uri, '> { <', graph_uri, '> a <urn:opengql:PropertyGraph> ; ',
+                '<urn:opengql:ontologyNS> "', DB.DBA.GQL_PG_ONTOLOGY_NS (pg_name), '" ; ',
+                '<urn:opengql:dataNS> "', DB.DBA.GQL_PG_DATA_NS (pg_name), '" . } }\n');
+            }
           -- AS COPY OF: copy triples from source graph
           if (copy_of is not null)
             {
@@ -1404,6 +1427,26 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
           graph_ref := aref (clause, 1);
           if_exists := aref (clause, 2);
           graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
+          if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+          if (if_exists)
+            sparql_text := concat (sparql_text, 'SPARQL DROP SILENT GRAPH <', graph_uri, '>\n');
+          else
+            sparql_text := concat (sparql_text, 'SPARQL DROP GRAPH <', graph_uri, '>\n');
+        }
+      else if (ctype = 'DROP_PROPERTY_GRAPH')
+        {
+          declare if_exists integer;
+          declare drop_pg_name varchar;
+          graph_ref := aref (clause, 1);
+          if_exists := aref (clause, 2);
+          -- For a bare name, derive the property-graph IRI
+          if (isarray (graph_ref) and length (graph_ref) > 2 and aref (graph_ref, 2) = 'BARE')
+            {
+              drop_pg_name := cast (aref (graph_ref, 1) as varchar);
+              graph_uri := DB.DBA.GQL_PG_GRAPH_IRI (drop_pg_name);
+            }
+          else
+            graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
           if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
           if (if_exists)
             sparql_text := concat (sparql_text, 'SPARQL DROP SILENT GRAPH <', graph_uri, '>\n');

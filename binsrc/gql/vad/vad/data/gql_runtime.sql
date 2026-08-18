@@ -138,14 +138,63 @@ create procedure DB.DBA.GQL_DATA_NS ()
 }
 ;
 
--- Default graph for GQL data
+-- Property-graph graph IRI from a bare graph name.
+create procedure DB.DBA.GQL_PG_GRAPH_IRI (in _name varchar)
+{
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name);
+}
+--;
+
+-- Property-graph ontology namespace from a bare graph name.
+create procedure DB.DBA.GQL_PG_ONTOLOGY_NS (in _name varchar)
+{
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '/ontology#');
+}
+--;
+
+-- Property-graph data namespace from a bare graph name.
+create procedure DB.DBA.GQL_PG_DATA_NS (in _name varchar)
+{
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '#');
+}
+--;
+
+-- Context-aware ontology namespace: reads 'ontology_ns' from ctx,
+-- falls back to GQL_NS() when absent (plain USE GRAPH).
+create procedure DB.DBA.GQL_NS_CTX (inout _ctx any)
+{
+  declare ns varchar;
+  ns := DB.DBA.GQL_CTX_GET (_ctx, 'ontology_ns');
+  if (ns is not null and ns <> '')
+    return ns;
+  return DB.DBA.GQL_NS ();
+}
+--;
+
+-- Context-aware data namespace: reads 'data_ns' from ctx,
+-- falls back to GQL_DATA_NS() when absent (plain USE GRAPH).
+create procedure DB.DBA.GQL_DATA_NS_CTX (inout _ctx any)
+{
+  declare ns varchar;
+  ns := DB.DBA.GQL_CTX_GET (_ctx, 'data_ns');
+  if (ns is not null and ns <> '')
+    return ns;
+  return DB.DBA.GQL_DATA_NS ();
+}
+--;
+
+-- Default graph for GQL data.
+-- In property-graph mode the sentinel is http://<host>/pgraph#default;
+-- it still means "no graph named -- use union default dataset for reads,
+-- SP031 for un-graphed writes", exactly as the old urn:opengql:default did.
 create procedure DB.DBA.GQL_DEFAULT_GRAPH ()
 {
-  return 'urn:opengql:default';
+  return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph#default');
 }
 ;
 
--- Reification graph for edge properties
+-- Reification graph for edge properties (DEAD CODE -- reification is inline).
+-- Retained for API compatibility; not called by any code path.
 create procedure DB.DBA.GQL_REIF_GRAPH ()
 {
   return 'urn:opengql:reif';
@@ -159,12 +208,26 @@ create procedure DB.DBA.GQL_NEW_NODE_URI ()
 }
 ;
 
+-- Generate a unique node URI using a ctx-aware data namespace.
+create procedure DB.DBA.GQL_NEW_NODE_URI_CTX (inout _ctx any)
+{
+  return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'node_', cast (uuid () as varchar));
+}
+--;
+
 -- Generate a unique edge URI (data namespace, for reification)
 create procedure DB.DBA.GQL_NEW_EDGE_URI ()
 {
   return concat (DB.DBA.GQL_DATA_NS (), 'edge_', cast (uuid () as varchar));
 }
 ;
+
+-- Generate a unique edge URI using a ctx-aware data namespace.
+create procedure DB.DBA.GQL_NEW_EDGE_URI_CTX (inout _ctx any)
+{
+  return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'edge_', cast (uuid () as varchar));
+}
+--;
 
 -- Resolve a label name to a class URI
 create procedure DB.DBA.GQL_LABEL_URI (in _name varchar)

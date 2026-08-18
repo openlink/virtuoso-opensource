@@ -212,6 +212,13 @@ create procedure DB.DBA.GQL_PARSE_PROCEDURE_BODY (in _tokens any, inout _pos int
           _pos := _pos + 1;
           at_schema := vector ('HOME_GRAPH');
         }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 227)  -- PROPERTY
+        {
+          _pos := _pos + 1;
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+          at_schema := vector ('USE_PROPERTY_AT_SCHEMA',
+            DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos));
+        }
       else
         at_schema := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
     }
@@ -792,18 +799,29 @@ create procedure DB.DBA.GQL_PARSE_FILTER (in _tokens any, inout _pos integer)
 create procedure DB.DBA.GQL_PARSE_INSERT (in _tokens any, inout _pos integer)
 {
   declare patterns, graph_ref any;
+  declare is_property integer;
   _pos := _pos + 1;  -- consume INSERT
-  -- Optional inline target graph: INSERT INTO GRAPH <g> (...)
+  -- Optional inline target graph: INSERT INTO [PROPERTY] GRAPH <g> (...)
   graph_ref := null;
+  is_property := 0;
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 287)  -- INTO
     {
       _pos := _pos + 1;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 227)  -- PROPERTY
+        {
+          _pos := _pos + 1;
+          is_property := 1;
+        }
       DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
       graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
     }
   patterns := DB.DBA.GQL_PARSE_PATTERN_LIST (_tokens, _pos);
   if (graph_ref is not null)
-    return vector ('INSERT', patterns, graph_ref);
+    {
+      if (is_property)
+        return vector ('INSERT_PROPERTY', patterns, graph_ref);
+      return vector ('INSERT', patterns, graph_ref);
+    }
   return vector ('INSERT', patterns);
 }
 ;
@@ -1051,6 +1069,7 @@ create procedure DB.DBA.GQL_PARSE_DELETE (in _tokens any, inout _pos integer, in
 create procedure DB.DBA.GQL_PARSE_USE_GRAPH (in _tokens any, inout _pos integer)
 {
   declare graph_expr any;
+  declare is_property integer;
   _pos := _pos + 1;  -- consume USE
   if (DB.DBA.GQL_PEEK (_tokens, _pos) = 255)  -- ANY
     {
@@ -1063,7 +1082,16 @@ create procedure DB.DBA.GQL_PARSE_USE_GRAPH (in _tokens any, inout _pos integer)
       _pos := _pos + 1;
       return vector ('USE_HOME_GRAPH');
     }
+  is_property := 0;
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 227)  -- PROPERTY
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      is_property := 1;
+    }
   graph_expr := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  if (is_property)
+    return vector ('USE_PROPERTY', graph_expr);
   return vector ('USE', graph_expr);
 }
 ;
@@ -2464,7 +2492,7 @@ create procedure DB.DBA.GQL_PARSE_CREATE_GRAPH (in _tokens any, inout _pos integ
       like_graph := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
     }
 
-  return vector ('CREATE_GRAPH', graph_ref, graph_type_ref, copy_of, like_graph);
+  return vector ('CREATE_GRAPH', graph_ref, graph_type_ref, copy_of, like_graph, _is_property);
 }
 ;
 
@@ -2524,6 +2552,14 @@ create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
         { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
       return vector ('DROP_SCHEMA', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
     }
+  else if (tt = 227)  -- PROPERTY
+    {
+      _pos := _pos + 1;
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 229)  -- IF EXISTS
+        { _pos := _pos + 1; DB.DBA.GQL_EXPECT (_tokens, _pos, 230); if_exists := 1; }
+      return vector ('DROP_PROPERTY_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
+    }
   else if (tt = 225)  -- GRAPH
     {
       _pos := _pos + 1;
@@ -2539,7 +2575,7 @@ create procedure DB.DBA.GQL_PARSE_DROP_STMT (in _tokens any, inout _pos integer)
       return vector ('DROP_GRAPH', DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos), if_exists);
     }
 
-  signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, or GRAPH TYPE after DROP at position %d', _pos));
+  signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, PROPERTY GRAPH, or GRAPH TYPE after DROP at position %d', _pos));
 }
 ;
 
