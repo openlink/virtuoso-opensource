@@ -104,3 +104,82 @@ create procedure DB.DBA.GQL_ENFORCE_TYPES ()
   return 0;
 }
 ;
+
+----------------------------------------------------------------------
+-- Property Graph catalog table.
+--
+-- Stores metadata for both virtual and physical property graphs.
+-- Virtual PGs have DEFINITION populated (node/relationship table mappings);
+-- physical PGs have DEFINITION = NULL (data is inserted via GQL INSERT).
+----------------------------------------------------------------------
+create table DB.DBA.GQL_PROPERTY_GRAPH_DEF (
+    PG_NAME         varchar not null primary key,
+    PG_MODE         varchar not null,        -- 'virtual' or 'physical'
+    GRAPH_IRI       varchar not null,
+    ONTOLOGY_NS     varchar not null,
+    DATA_NS         varchar not null,
+    DEFINITION      any,                     -- serialized metadata (virtual only)
+    CREATED         datetime,
+    IS_MATERIALIZED integer default 0        -- 1=virtual PG synced to physical triples
+)
+;
+
+----------------------------------------------------------------------
+-- Convenience: insert or replace a PG catalog row.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PG_DEF_UPSERT (
+  in _pg_name varchar,
+  in _pg_mode varchar,
+  in _graph_iri varchar,
+  in _ontology_ns varchar,
+  in _data_ns varchar,
+  in _definition any)
+{
+  if (exists (select 1 from DB.DBA.GQL_PROPERTY_GRAPH_DEF where PG_NAME = _pg_name))
+    {
+      update DB.DBA.GQL_PROPERTY_GRAPH_DEF
+         set PG_MODE = _pg_mode,
+             GRAPH_IRI = _graph_iri,
+             ONTOLOGY_NS = _ontology_ns,
+             DATA_NS = _data_ns,
+             DEFINITION = _definition,
+             IS_MATERIALIZED = 0
+       where PG_NAME = _pg_name;
+    }
+  else
+    {
+      insert into DB.DBA.GQL_PROPERTY_GRAPH_DEF
+        (PG_NAME, PG_MODE, GRAPH_IRI, ONTOLOGY_NS, DATA_NS, DEFINITION, CREATED, IS_MATERIALIZED)
+      values
+        (_pg_name, _pg_mode, _graph_iri, _ontology_ns, _data_ns, _definition, now (), 0);
+    }
+}
+;
+
+----------------------------------------------------------------------
+-- Convenience: look up a PG catalog row.  Returns a vector or NULL.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PG_DEF_GET (in _pg_name varchar)
+{
+  declare _pg_mode, _graph_iri, _ontology_ns, _data_ns varchar;
+  declare _definition any;
+  declare _is_materialized integer;
+  whenever not found goto nf;
+  select PG_MODE, GRAPH_IRI, ONTOLOGY_NS, DATA_NS, DEFINITION, IS_MATERIALIZED
+    into _pg_mode, _graph_iri, _ontology_ns, _data_ns, _definition, _is_materialized
+    from DB.DBA.GQL_PROPERTY_GRAPH_DEF
+   where PG_NAME = _pg_name;
+  return vector (_pg_mode, _graph_iri, _ontology_ns, _data_ns, _definition, _is_materialized);
+nf:
+  return null;
+}
+;
+
+----------------------------------------------------------------------
+-- Convenience: delete a PG catalog row (idempotent).
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PG_DEF_DELETE (in _pg_name varchar)
+{
+  delete from DB.DBA.GQL_PROPERTY_GRAPH_DEF where PG_NAME = _pg_name;
+}
+;

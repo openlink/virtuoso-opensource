@@ -2491,8 +2491,9 @@ create procedure DB.DBA.GQL_PARSE_GRAPH_REFERENCE (in _tokens any, inout _pos in
 
 create procedure DB.DBA.GQL_PARSE_CREATE_STMT (in _tokens any, inout _pos integer)
 {
-  _pos := _pos + 1;  -- consume CREATE
   declare tt integer;
+  declare pg_mode integer;
+  _pos := _pos + 1;  -- consume CREATE
   tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
   if (tt = 228)  -- SCHEMA
@@ -2503,12 +2504,414 @@ create procedure DB.DBA.GQL_PARSE_CREATE_STMT (in _tokens any, inout _pos intege
         return DB.DBA.GQL_PARSE_CREATE_GRAPH_TYPE (_tokens, _pos);
       return DB.DBA.GQL_PARSE_CREATE_GRAPH (_tokens, _pos, 0);
     }
-  if (tt = 227)  -- PROPERTY
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'VIRTUAL') or DB.DBA.GQL_KW (_tokens, _pos, 'PHYSICAL'))  -- soft keywords
+    {
+      if (DB.DBA.GQL_KW (_tokens, _pos, 'VIRTUAL'))
+        pg_mode := 545;   -- logical mode code: virtual
+      else
+        pg_mode := 546;   -- logical mode code: physical
+      _pos := _pos + 1;  -- consume VIRTUAL/PHYSICAL
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 227);  -- PROPERTY
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      return DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (_tokens, _pos, pg_mode);
+    }
+  if (tt = 227)  -- PROPERTY (no VIRTUAL/PHYSICAL keyword — defaults to physical)
     {
       _pos := _pos + 1;
       return DB.DBA.GQL_PARSE_CREATE_GRAPH (_tokens, _pos, 1);
     }
   signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, or PROPERTY GRAPH after CREATE at position %d', _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- Is the token at _pos usable as a name (table / column / label)?
+-- Accepts real identifiers (IDENT, ACCENT_IDENT, STRING) and any word
+-- the lexer happens to classify as a keyword (e.g. PRODUCT, ORDER,
+-- CONTAINS) — property-graph DDL names routinely collide with GQL
+-- keywords, so at these grammar positions a keyword-word is a name.
+-- Punctuation, numeric literals, and EOF are rejected.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_TOK_IS_NAME (in _tokens any, in _pos integer)
+{
+  declare _id, _c integer;
+  declare _v any;
+  _id := DB.DBA.GQL_PEEK (_tokens, _pos);
+  if (_id = 64 or _id = 71 or _id = 65)  -- IDENT, ACCENT_IDENT, STRING
+    return 1;
+  if (_id = 999)  -- EOF
+    return 0;
+  _v := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  if (not isstring (_v))
+    return 0;
+  if (length (_v) = 0)
+    return 0;
+  _c := aref (_v, 0);  -- first byte
+  -- A-Z, a-z, or underscore → a keyword-derived word usable as a name
+  if ((_c >= 65 and _c <= 90) or (_c >= 97 and _c <= 122) or _c = 95)
+    return 1;
+  return 0;
+}
+;
+
+----------------------------------------------------------------------
+-- Soft keyword test: the property-graph DDL words (VIRTUAL, PHYSICAL,
+-- NODE/RELATIONSHIP TABLES, KEY, PROPERTIES, REFERENCES, REIFIER,
+-- NAMED, ANONYMOUS, IRI, TEMPLATE) are NOT reserved — they lex as
+-- ordinary identifiers so that names like iri(), key, template stay
+-- usable everywhere else.  In the DDL grammar they are recognised
+-- positionally by matching the identifier's (upper-cased) text.
+-- Only an unquoted identifier (token type 64) can act as a keyword;
+-- a quoted "IRI" or a string is always a literal name.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_KW (in _tokens any, in _pos integer, in _word varchar)
+{
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 64)
+    return 0;
+  if (upper (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)) = _word)
+    return 1;
+  return 0;
+}
+;
+
+----------------------------------------------------------------------
+-- Consume a soft keyword or raise a parse error.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_EXPECT_KW (in _tokens any, inout _pos integer, in _word varchar)
+{
+  if (DB.DBA.GQL_KW (_tokens, _pos, _word))
+    {
+      _pos := _pos + 1;
+      return;
+    }
+  signal ('GQ003', sprintf ('Expected %s at position %d', _word, _pos));
+}
+;
+
+----------------------------------------------------------------------
+-- Parse a qualified table name: identifier (. identifier)*
+-- Returns the dotted name as a string, e.g. "DB.DBA.products".
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_TABLE_NAME (in _tokens any, inout _pos integer)
+{
+  declare name varchar;
+  if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+    signal ('GQ003', sprintf ('Expected table name at position %d', _pos));
+  name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+  _pos := _pos + 1;
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 8)  -- DOT
+    {
+      _pos := _pos + 1;
+      if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+        signal ('GQ003', sprintf ('Expected identifier after dot at position %d', _pos));
+      name := concat (name, '.', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+      _pos := _pos + 1;
+    }
+  return name;
+}
+;
+
+----------------------------------------------------------------------
+-- Parse a column list: ( col [, col]* )
+-- Returns a vector of column-name strings.
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_COLUMN_LIST (in _tokens any, inout _pos integer)
+{
+  declare cols any;
+  declare _first integer;
+  cols := vector ();
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 1);  -- LPAREN
+  _first := 1;
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+    {
+      if (not _first)
+        DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+      _first := 0;
+      if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+        signal ('GQ003', sprintf ('Expected column name at position %d', _pos));
+      cols := vector_concat (cols, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+      _pos := _pos + 1;
+    }
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+  return cols;
+}
+;
+
+----------------------------------------------------------------------
+-- Parse a properties list: PROPERTIES ( col [AS prop] [, col [AS prop]]* )
+-- Returns a vector of pairs: vector (col_name, prop_name_or_null)
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_PROPERTIES_LIST (in _tokens any, inout _pos integer)
+{
+  declare props any;
+  declare col_name, prop_name varchar;
+  declare _first integer;
+  props := vector ();
+  DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'PROPERTIES');  -- PROPERTIES
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
+  _first := 1;
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+    {
+      if (not _first)
+        DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+      _first := 0;
+      if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+        signal ('GQ003', sprintf ('Expected column name in PROPERTIES at position %d', _pos));
+      col_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+      prop_name := null;
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 241)  -- AS
+        {
+          _pos := _pos + 1;
+          if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+            signal ('GQ003', sprintf ('Expected property name after AS at position %d', _pos));
+          prop_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      props := vector_concat (props, vector (vector (col_name, prop_name)));
+    }
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+  return props;
+}
+;
+
+----------------------------------------------------------------------
+-- Parse one node table entry.
+-- Syntax: table_name [KEY ( cols )] [LABEL lbl [LABEL lbl]*] [PROPERTIES (...)]
+-- Returns: vector (table_name, key_cols, labels, properties)
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_NODE_TABLE (in _tokens any, inout _pos integer)
+{
+  declare tbl_name varchar;
+  declare key_cols, labels, props any;
+
+  tbl_name := DB.DBA.GQL_PARSE_TABLE_NAME (_tokens, _pos);
+  key_cols := null;
+  labels := vector ();
+  props := null;
+
+  -- KEY ( cols )
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'KEY'))  -- KEY
+    {
+      _pos := _pos + 1;
+      key_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+    }
+
+  -- LABEL name [LABEL name]*  (multiple labels allowed)
+  while (DB.DBA.GQL_PEEK (_tokens, _pos) = 273)  -- LABEL
+    {
+      _pos := _pos + 1;
+      if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+        signal ('GQ003', sprintf ('Expected label name at position %d', _pos));
+      labels := vector_concat (labels, vector (DB.DBA.GQL_PEEK_VAL (_tokens, _pos)));
+      _pos := _pos + 1;
+    }
+
+  -- PROPERTIES ( ... )
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'PROPERTIES'))  -- PROPERTIES
+    props := DB.DBA.GQL_PARSE_PROPERTIES_LIST (_tokens, _pos);
+
+  return vector (tbl_name, key_cols, labels, props);
+}
+;
+
+----------------------------------------------------------------------
+-- Parse one relationship table entry.
+-- Syntax:
+--   table_name [KEY ( cols )]
+--   SOURCE [KEY ( cols )] [REFERENCES] node_table [( cols )]
+--   DESTINATION [KEY ( cols )] [REFERENCES] node_table [( cols )]
+--   [LABEL label]
+--   [PROPERTIES (...)]
+--   [REIFIER (NAMED|ANONYMOUS)]
+--   [REIFIER IRI TEMPLATE 'string']
+-- Returns: vector (tbl_name, key_cols,
+--                   src_table, src_cols,
+--                   dst_table, dst_cols,
+--                   label, props,
+--                   reifier_named, reifier_iri_template)
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_RELATIONSHIP_TABLE (in _tokens any, inout _pos integer)
+{
+  declare tbl_name, label varchar;
+  declare key_cols, props any;
+  declare src_table, dst_table varchar;
+  declare src_cols, dst_cols any;
+  declare reifier_named integer;
+  declare reifier_iri_template varchar;
+
+  tbl_name := DB.DBA.GQL_PARSE_TABLE_NAME (_tokens, _pos);
+  key_cols := null;
+  src_table := null;  src_cols := null;
+  dst_table := null;  dst_cols := null;
+  label := null;
+  props := null;
+  reifier_named := 0;  -- anonymous by default
+  reifier_iri_template := null;
+
+  -- KEY ( cols )
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'KEY'))  -- KEY
+    {
+      _pos := _pos + 1;
+      key_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+    }
+
+  -- SOURCE [KEY ( cols )] [REFERENCES] node_table [( cols )]
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 347);  -- SOURCE
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'KEY'))  -- KEY
+    {
+      _pos := _pos + 1;
+      src_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+    }
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'REFERENCES'))  -- REFERENCES
+    _pos := _pos + 1;
+  src_table := DB.DBA.GQL_PARSE_TABLE_NAME (_tokens, _pos);
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+    {
+      if (src_cols is null)
+        src_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+      else
+        {  -- skip the reference column list; source key already parsed
+          declare _skip any;
+          _skip := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+        }
+    }
+
+  -- DESTINATION [KEY ( cols )] [REFERENCES] node_table [( cols )]
+  DB.DBA.GQL_EXPECT (_tokens, _pos, 348);  -- DESTINATION
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'KEY'))  -- KEY
+    {
+      _pos := _pos + 1;
+      dst_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+    }
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'REFERENCES'))  -- REFERENCES
+    _pos := _pos + 1;
+  dst_table := DB.DBA.GQL_PARSE_TABLE_NAME (_tokens, _pos);
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- LPAREN
+    {
+      if (dst_cols is null)
+        dst_cols := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+      else
+        {  -- skip
+          declare _skip2 any;
+          _skip2 := DB.DBA.GQL_PARSE_COLUMN_LIST (_tokens, _pos);
+        }
+    }
+
+  -- LABEL label
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 273)  -- LABEL
+    {
+      _pos := _pos + 1;
+      if (not DB.DBA.GQL_TOK_IS_NAME (_tokens, _pos))
+        signal ('GQ003', sprintf ('Expected relationship label at position %d', _pos));
+      label := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+      _pos := _pos + 1;
+    }
+
+  -- PROPERTIES ( ... )
+  if (DB.DBA.GQL_KW (_tokens, _pos, 'PROPERTIES'))  -- PROPERTIES
+    props := DB.DBA.GQL_PARSE_PROPERTIES_LIST (_tokens, _pos);
+
+  -- REIFIER (NAMED | ANONYMOUS)
+  while (DB.DBA.GQL_KW (_tokens, _pos, 'REIFIER'))  -- REIFIER
+    {
+      _pos := _pos + 1;
+      if (DB.DBA.GQL_KW (_tokens, _pos, 'NAMED'))  -- NAMED
+        { _pos := _pos + 1; reifier_named := 1; }
+      else if (DB.DBA.GQL_KW (_tokens, _pos, 'ANONYMOUS'))  -- ANONYMOUS
+        { _pos := _pos + 1; reifier_named := 0; }
+      else if (DB.DBA.GQL_KW (_tokens, _pos, 'IRI'))  -- IRI
+        {
+          _pos := _pos + 1;
+          DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TEMPLATE');  -- TEMPLATE
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) <> 65)  -- STRING
+            signal ('GQ003', sprintf ('Expected string after REIFIER IRI TEMPLATE at position %d', _pos));
+          reifier_iri_template := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      else
+        signal ('GQ003', sprintf ('Expected NAMED, ANONYMOUS, or IRI after REIFIER at position %d', _pos));
+    }
+
+  return vector (tbl_name, key_cols,
+                 src_table, src_cols,
+                 dst_table, dst_cols,
+                 label, props,
+                 reifier_named, reifier_iri_template);
+}
+;
+
+----------------------------------------------------------------------
+-- Parse CREATE [VIRTUAL|PHYSICAL] PROPERTY GRAPH <name> ...
+-- pg_mode: 545=virtual, 546=physical
+-- Returns:
+--   ('CREATE_PROPERTY_GRAPH_V2', pg_name, pg_mode_token,
+--    node_tables_vector, rel_tables_vector)
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (
+  inout _tokens any, inout _pos integer, in _pg_mode integer)
+{
+  declare pg_name varchar;
+  declare node_tables, rel_tables any;
+  declare graph_ref any;
+
+  -- Parse graph name (bare name or IRI)
+  graph_ref := DB.DBA.GQL_PARSE_GRAPH_REFERENCE (_tokens, _pos);
+  if (isarray (graph_ref) and length (graph_ref) > 2 and aref (graph_ref, 2) = 'BARE')
+    pg_name := cast (aref (graph_ref, 1) as varchar);
+  else if (isarray (graph_ref) and length (graph_ref) > 2 and aref (graph_ref, 2) = 'IRI')
+    pg_name := cast (aref (graph_ref, 1) as varchar);
+  else
+    signal ('GQ003', 'Property graph name must be a bare name or IRI');
+
+  node_tables := vector ();
+  rel_tables := vector ();
+
+  -- Virtual PG requires NODE TABLES clause; physical PG rejects it
+  if (_pg_mode = 545)  -- VIRTUAL
+    {
+      declare _nt_first, _rt_first integer;
+      -- NODE TABLES ( ... )
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 266);  -- NODE
+      DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TABLES');  -- TABLES
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
+      _nt_first := 1;
+      while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+        {
+          if (not _nt_first)
+            DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+          _nt_first := 0;
+          node_tables := vector_concat (node_tables,
+            vector (DB.DBA.GQL_PARSE_NODE_TABLE (_tokens, _pos)));
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+
+      -- Optional RELATIONSHIP TABLES ( ... )
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 268)  -- RELATIONSHIP
+        {
+          _pos := _pos + 1;
+          DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TABLES');  -- TABLES
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
+          _rt_first := 1;
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+            {
+              if (not _rt_first)
+                DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+              _rt_first := 0;
+              rel_tables := vector_concat (rel_tables,
+                vector (DB.DBA.GQL_PARSE_RELATIONSHIP_TABLE (_tokens, _pos)));
+            }
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+        }
+    }
+  else  -- PHYSICAL: no NODE/RELATIONSHIP TABLES allowed
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 266  -- NODE
+          or DB.DBA.GQL_PEEK (_tokens, _pos) = 268)  -- RELATIONSHIP
+        signal ('GQ003', 'CREATE PHYSICAL PROPERTY GRAPH does not accept NODE or RELATIONSHIP TABLES');
+    }
+
+  return vector ('CREATE_PROPERTY_GRAPH_V2', pg_name, _pg_mode, node_tables, rel_tables);
 }
 ;
 

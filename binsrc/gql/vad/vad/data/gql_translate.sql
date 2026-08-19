@@ -4594,7 +4594,22 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
           -- Inline target: INSERT INTO PROPERTY GRAPH <g> (...)
           -- Bind per-graph ontology/data namespaces from the graph name.
           if (length (clause) > 2 and aref (clause, 2) is not null)
-            DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (ctx, aref (clause, 2));
+            {
+              DB.DBA.GQL_CTX_BIND_PROPERTY_GRAPH (ctx, aref (clause, 2));
+              -- Reject INSERT into a virtual (read-only) property graph
+              declare ins_pg_name varchar;
+              ins_pg_name := DB.DBA.GQL_CTX_GET (ctx, 'pg_name');
+              if (ins_pg_name is not null
+                  and __proc_exists ('DB.DBA.GQL_PG_DEF_GET') is not null)
+                {
+                  declare ins_meta any;
+                  ins_meta := DB.DBA.GQL_PG_DEF_GET (ins_pg_name);
+                  if (ins_meta is not null and aref (ins_meta, 0) = 'virtual')
+                    signal ('GQ213',
+                      sprintf ('Cannot INSERT into virtual property graph %s; virtual PGs are read-only views. Use CREATE PHYSICAL PROPERTY GRAPH for writable graphs.',
+                        ins_pg_name));
+                }
+            }
         }
       else if (ctype = 'CONSTRUCT')
         { has_construct := 1; construct_asts := vector_concat (construct_asts, vector (clause)); }
@@ -4711,6 +4726,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         call_asts := vector_concat (call_asts, vector (clause));
       else if (ctype = 'CREATE_GRAPH' or ctype = 'DROP_GRAPH'
                or ctype = 'DROP_PROPERTY_GRAPH'
+               or ctype = 'CREATE_PROPERTY_GRAPH_V2'
                or ctype = 'CREATE_SCHEMA' or ctype = 'DROP_SCHEMA'
                or ctype = 'CREATE_GRAPH_TYPE' or ctype = 'DROP_GRAPH_TYPE'
                or ctype = 'LOAD' or ctype = 'CLEAR')

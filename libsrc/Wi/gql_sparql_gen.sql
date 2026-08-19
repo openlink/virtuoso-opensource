@@ -1527,6 +1527,36 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
               sparql_text := concat (sparql_text, ';\nSPARQL INSERT { GRAPH <', graph_uri, '> { ?s ?p ?o } } WHERE { GRAPH <', src_uri, '> { ?s ?p ?o } }\n');
             }
         }
+      else if (ctype = 'CREATE_PROPERTY_GRAPH_V2')
+        {
+          -- CREATE [VIRTUAL|PHYSICAL] PROPERTY GRAPH
+          -- Executed via DB.DBA.GQL_PG_CREATE_VIRTUAL or GQL_PG_CREATE_PHYSICAL
+          declare v2_pg_name varchar;
+          declare v2_pg_mode integer;
+          declare v2_node_tables, v2_rel_tables any;
+          v2_pg_name := aref (clause, 1);
+          v2_pg_mode := aref (clause, 2);  -- 545=virtual, 546=physical
+          v2_node_tables := aref (clause, 3);
+          v2_rel_tables := aref (clause, 4);
+          if (__proc_exists ('DB.DBA.GQL_PG_CREATE_VIRTUAL') is not null)
+            {
+              if (v2_pg_mode = 545)  -- VIRTUAL
+                {
+                  declare v2_result varchar;
+                  v2_result := DB.DBA.GQL_PG_CREATE_VIRTUAL (v2_pg_name, v2_node_tables, v2_rel_tables);
+                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+                  sparql_text := concat (sparql_text, ';\n-- CREATE VIRTUAL PROPERTY GRAPH ', v2_pg_name, ' executed\n');
+                }
+              else  -- PHYSICAL (546)
+                {
+                  DB.DBA.GQL_PG_CREATE_PHYSICAL (v2_pg_name);
+                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+                  sparql_text := concat (sparql_text, ';\n-- CREATE PHYSICAL PROPERTY GRAPH ', v2_pg_name, ' executed\n');
+                }
+            }
+          else
+            signal ('GQ212', 'CREATE VIRTUAL/PHYSICAL PROPERTY GRAPH requires the gql_pg_ddl.sql module to be loaded');
+        }
       else if (ctype = 'DROP_GRAPH')
         {
           declare if_exists integer;
@@ -1549,15 +1579,36 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
           if (isarray (graph_ref) and length (graph_ref) > 2 and aref (graph_ref, 2) = 'BARE')
             {
               drop_pg_name := cast (aref (graph_ref, 1) as varchar);
-              graph_uri := DB.DBA.GQL_PG_GRAPH_IRI (drop_pg_name);
+              -- Use the new GQL_PG_DROP function which handles both
+              -- virtual (quad map) and physical (named graph) PGs.
+              -- DROP PROPERTY GRAPH is idempotent (silent when the graph
+              -- is not defined), so pass if_exists=1 regardless of the
+              -- IF EXISTS clause.
+              if (__proc_exists ('DB.DBA.GQL_PG_DROP') is not null)
+                {
+                  DB.DBA.GQL_PG_DROP (drop_pg_name, 1);
+                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+                  sparql_text := concat (sparql_text, ';\n-- DROP PROPERTY GRAPH ', drop_pg_name, ' executed\n');
+                }
+              else
+                {
+                  graph_uri := DB.DBA.GQL_PG_GRAPH_IRI (drop_pg_name);
+                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+                  if (if_exists)
+                    sparql_text := concat (sparql_text, 'SPARQL DROP SILENT GRAPH <', graph_uri, '>\n');
+                  else
+                    sparql_text := concat (sparql_text, 'SPARQL DROP GRAPH <', graph_uri, '>\n');
+                }
             }
           else
-            graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
-          if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
-          if (if_exists)
-            sparql_text := concat (sparql_text, 'SPARQL DROP SILENT GRAPH <', graph_uri, '>\n');
-          else
-            sparql_text := concat (sparql_text, 'SPARQL DROP GRAPH <', graph_uri, '>\n');
+            {
+              graph_uri := DB.DBA.GQL_GRAPH_REF_VALUE_CTX (graph_ref, _ctx);
+              if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
+              if (if_exists)
+                sparql_text := concat (sparql_text, 'SPARQL DROP SILENT GRAPH <', graph_uri, '>\n');
+              else
+                sparql_text := concat (sparql_text, 'SPARQL DROP GRAPH <', graph_uri, '>\n');
+            }
         }
       else if (ctype = 'CREATE_SCHEMA')
         {

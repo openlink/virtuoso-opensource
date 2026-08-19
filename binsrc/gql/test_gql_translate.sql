@@ -401,11 +401,13 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16i FAIL: CREATE PROPERTY GRAPH metadata: ', cast (_sparql as varchar)))); }
 
-  -- TR16j: DROP PROPERTY GRAPH derives graph IRI from bare name
+  -- TR16j: DROP PROPERTY GRAPH is a catalog operation that executes and
+  -- is idempotent (silent when the graph is not defined).  The translator
+  -- returns an "executed" marker rather than raw DROP GRAPH text.
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('DROP PROPERTY GRAPH Bakery');
-  if (_sparql is not null and strstr (_sparql, 'DROP GRAPH') is not null
-      and strstr (_sparql, '/pgraph/Bakery') is not null)
+  if (_sparql is not null and strstr (_sparql, 'DROP PROPERTY GRAPH') is not null
+      and strstr (_sparql, 'Bakery') is not null)
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16j PASS: DROP PROPERTY GRAPH')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16j FAIL: DROP PROPERTY GRAPH: ', cast (_sparql as varchar)))); }

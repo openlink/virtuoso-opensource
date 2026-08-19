@@ -491,6 +491,13 @@ create procedure DB.DBA.GQL_KEYWORD (in _w varchar)
   -- DURATION_BETWEEN
   if (w = 'DURATION_BETWEEN') return 524;
   if (w = 'VERSION') return 544;
+  -- PROPERTY GRAPH DDL
+  -- NB: the property-graph DDL words (VIRTUAL, PHYSICAL, TABLES,
+  -- PROPERTIES, KEY, REFERENCES, REIFIER, TEMPLATE, NAMED, ANONYMOUS,
+  -- IRI) are intentionally NOT reserved here.  Reserving them would
+  -- shadow ordinary identifiers/functions such as iri(), key, and
+  -- template in normal GQL queries.  They are treated as soft keywords,
+  -- recognised positionally in the DDL grammar via DB.DBA.GQL_KW.
   return 0;
 }
 ;

@@ -139,22 +139,48 @@ create procedure DB.DBA.GQL_DATA_NS ()
 ;
 
 -- Property-graph graph IRI from a bare graph name.
+-- Checks the GQL_PROPERTY_GRAPH_DEF catalog table first; falls back
+-- to the derived IRI scheme for PGs created outside the catalog (or
+-- before the catalog table existed).
 create procedure DB.DBA.GQL_PG_GRAPH_IRI (in _name varchar)
 {
+  declare meta any;
+  if (__proc_exists ('DB.DBA.GQL_PG_DEF_GET') is not null)
+    {
+      meta := DB.DBA.GQL_PG_DEF_GET (_name);
+      if (meta is not null)
+        return aref (meta, 1);
+    }
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name);
 }
 ;
 
 -- Property-graph ontology namespace from a bare graph name.
+-- Checks catalog first, falls back to derived scheme.
 create procedure DB.DBA.GQL_PG_ONTOLOGY_NS (in _name varchar)
 {
+  declare meta any;
+  if (__proc_exists ('DB.DBA.GQL_PG_DEF_GET') is not null)
+    {
+      meta := DB.DBA.GQL_PG_DEF_GET (_name);
+      if (meta is not null)
+        return aref (meta, 2);
+    }
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '/ontology#');
 }
 ;
 
 -- Property-graph data namespace from a bare graph name.
+-- Checks catalog first, falls back to derived scheme.
 create procedure DB.DBA.GQL_PG_DATA_NS (in _name varchar)
 {
+  declare meta any;
+  if (__proc_exists ('DB.DBA.GQL_PG_DEF_GET') is not null)
+    {
+      meta := DB.DBA.GQL_PG_DEF_GET (_name);
+      if (meta is not null)
+        return aref (meta, 3);
+    }
   return concat ('http://', DB.DBA.GQL_URIQA_HOST (), '/pgraph/', _name, '#');
 }
 ;

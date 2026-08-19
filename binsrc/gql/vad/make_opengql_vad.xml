@@ -39,6 +39,11 @@
           result ('ERROR', 'The openGQL package requires Virtuoso 07.20.3200 or greater');
           signal ('FATAL', 'The openGQL package requires Virtuoso 07.20.3200 or greater');
         }
+      if (__proc_exists ('DB.DBA.R2RML_MAKE_QM_FROM_G') is null)
+        {
+          result ('ERROR', 'The openGQL package requires the rdb2rdf VAD to be installed');
+          signal ('FATAL', 'The openGQL package requires the rdb2rdf VAD to be installed');
+        }
     ]]></sql>
     <sql purpose="post-install"></sql>
   </procedures>
@@ -46,6 +51,10 @@
     <sql purpose="pre-install"></sql>
     <sql purpose="post-install"><![CDATA[
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_runtime.sql', 0, 'report', 1);
+      -- gql_bootstrap defines the GQL_PROPERTY_GRAPH_DEF catalog table and
+      -- the GQL_PG_DEF_* helpers that gql_pg_ddl depends on, so it must load
+      -- before gql_pg_ddl (it depends only on gql_runtime, loaded above).
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_bootstrap.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_pl.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_lexer.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_expr.sql', 0, 'report', 1);
@@ -54,10 +63,10 @@
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_var_pass.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_translate.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_sparql_gen.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_pg_ddl.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_main.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_stats.sql', 0, 'report', 1);
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_endpoint.sql', 0, 'report', 1);
-      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/gql_bootstrap.sql', 0, 'report', 1);
     ]]></sql>
     <sql purpose="pre-uninstall"><![CDATA[
       DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/opengql/opengql_uninstall.sql', 0, 'report', 1);
@@ -81,6 +90,8 @@
     <file type="dav" source="code" source_uri="vad/data/gql_translate.sql" target_uri="opengql/gql_translate.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
     <file type="dav" source="code" source_uri="vad/data/gql_sparql_gen.sql" target_uri="opengql/gql_sparql_gen.sql"
+          dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
+    <file type="dav" source="code" source_uri="vad/data/gql_pg_ddl.sql" target_uri="opengql/gql_pg_ddl.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
     <file type="dav" source="code" source_uri="vad/data/gql_main.sql" target_uri="opengql/gql_main.sql"
           dav_owner="dav" dav_grp="administrators" dav_perm="111101101NN" makepath="yes" />
