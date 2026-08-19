@@ -727,7 +727,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/gql_main.sql \
 	$(srcdir)/gql_stats.sql \
 	$(srcdir)/gql_endpoint.sql \
-	$(srcdir)/gql_bootstrap.sql
+	$(srcdir)/gql_bootstrap.sql \
+	$(srcdir)/gql_pg_ddl.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql

@@ -38,6 +38,7 @@ LOAD libsrc/Wi/gql_main.sql;
 LOAD libsrc/Wi/gql_stats.sql;
 LOAD libsrc/Wi/gql_endpoint.sql;
 LOAD libsrc/Wi/gql_bootstrap.sql;
+LOAD libsrc/Wi/gql_pg_ddl.sql;
 
 -- Verify installation
 SELECT DB.DBA.GQL_VERSION();
