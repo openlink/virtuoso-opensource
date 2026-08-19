@@ -80,6 +80,9 @@ create procedure DB.DBA.GQL_PG_TEST_CLEANUP ()
       DB.DBA.GQL_PG_DROP ('pgtest', 1);
       DB.DBA.GQL_PG_DROP ('pgtest2', 1);
       DB.DBA.GQL_PG_DROP ('pgphys', 1);
+      DB.DBA.GQL_PG_DROP ('pgphys2', 1);
+      DB.DBA.GQL_PG_DROP ('pgphys_empty', 1);
+      DB.DBA.GQL_PG_DROP ('pgbare', 1);
     }
   DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_order_items');
   DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customer_orders');
@@ -228,7 +231,7 @@ create procedure DB.DBA.GQL_PG_DDL_TESTS ()
   _ok := 1;
   {
     declare exit handler for sqlstate '*' { _ok := 0; };
-    DB.DBA.GQL_PG_CREATE_PHYSICAL ('pgtest');
+    DB.DBA.GQL_PG_CREATE_PHYSICAL ('pgtest', vector (), vector ());
   }
   _ok := 1 - _ok;  -- invert: 1=was rejected, 0=was not rejected
   DB.DBA.GQL_PG_TEST_ASSERT ('PG12', _ok, 'expected duplicate PG name rejected', _pass, _fail, _results);
@@ -257,6 +260,73 @@ create procedure DB.DBA.GQL_PG_DDL_TESTS ()
   }
   _ok := 1 - _ok;
   DB.DBA.GQL_PG_TEST_ASSERT ('PG14', _ok, 'expected undeclared SOURCE rejected', _pass, _fail, _results);
+
+  -- PG15: CREATE PHYSICAL PROPERTY GRAPH with NODE TABLES — materialized
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE PHYSICAL PROPERTY GRAPH pgphys2
+       NODE TABLES (
+         pg_test_products KEY (product_no) LABEL product PROPERTIES (name, price),
+         pg_test_customers KEY (customer_id) LABEL customer PROPERTIES (name)
+       )');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys2');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')      -- mode is physical
+        if (aref (_meta, 5) = 1)              -- IS_MATERIALIZED = 1
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG15', _ok, 'expected physical mode + IS_MATERIALIZED=1 for from-tables physical graph', _pass, _fail, _results);
+
+  -- PG16: Data from underlying tables appears in the physical graph
+  _graph_iri := DB.DBA.GQL_PG_GRAPH_IRI ('pgphys2');
+  _ont_ns := DB.DBA.GQL_PG_ONTOLOGY_NS ('pgphys2');
+  _q := sprintf ('SPARQL SELECT ?name FROM <%s> WHERE { ?p a <%sproduct> . ?p <%sname> ?name }', _graph_iri, _ont_ns, _ont_ns);
+  _data := DB.DBA.GQL_PG_TEST_QUERY (_q);
+  _ok := 0;
+  if (isarray (_data)) if (length (_data) > 1) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG16', _ok, 'expected product data materialized into physical graph', _pass, _fail, _results);
+
+  -- PG17: INSERT into physical graph succeeds (writable)
+  _ok := DB.DBA.GQL_PG_TEST_EXEC (sprintf (
+    'SPARQL INSERT INTO GRAPH <%s> { <urn:pgtest:manual1> <%sname> "ManualNode" }',
+    _graph_iri, _ont_ns));
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG17', _ok, 'expected INSERT into physical graph to succeed (writable)', _pass, _fail, _results);
+
+  -- PG18: DROP removes triples and catalog for physical-from-tables graph
+  DB.DBA.GQL_PG_DROP ('pgphys2', 1);
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys2');
+  _ok := 0;
+  if (_meta is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG18', _ok, 'expected catalog entry removed after DROP of physical-from-tables graph', _pass, _fail, _results);
+
+  -- PG19: Bare CREATE PROPERTY GRAPH with NODE TABLES defaults to physical
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE PROPERTY GRAPH pgbare
+       NODE TABLES (
+         pg_test_products KEY (product_no) LABEL product PROPERTIES (name)
+       )');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgbare');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')
+        if (aref (_meta, 5) = 1)
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG19', _ok, 'expected bare CREATE PROPERTY GRAPH with NODE TABLES to default to physical + materialized', _pass, _fail, _results);
+
+  -- PG20: CREATE PHYSICAL PROPERTY GRAPH (no tables) creates empty writable graph
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('CREATE PHYSICAL PROPERTY GRAPH pgphys_empty');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys_empty');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')
+        if (aref (_meta, 5) = 0)              -- not materialized (empty)
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG20', _ok, 'expected empty physical graph (no tables, not materialized)', _pass, _fail, _results);
 
   -- Cleanup
   DB.DBA.GQL_PG_TEST_CLEANUP ();
