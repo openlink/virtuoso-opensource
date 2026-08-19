@@ -290,7 +290,6 @@ create procedure DB.DBA.GQL_PG_CREATE_VIRTUAL (
   declare _host varchar;
   declare _def any;
   declare _sparql_text varchar;
-  declare i, j integer;
 
   -- Validate: no duplicate PG name
   if (DB.DBA.GQL_PG_DEF_GET (_pg_name) is not null)
@@ -300,6 +299,38 @@ create procedure DB.DBA.GQL_PG_CREATE_VIRTUAL (
   _graph_iri := concat ('http://', _host, '/pgraph/', _pg_name);
   _ontology_ns := concat ('http://', _host, '/pgraph/', _pg_name, '/ontology#');
   _data_ns := concat ('http://', _host, '/pgraph/', _pg_name, '#');
+
+  -- Build quad maps (shared with GQL_PG_CREATE_PHYSICAL)
+  _sparql_text := DB.DBA.GQL_PG_BUILD_QM (_pg_name, _graph_iri, _ontology_ns, _data_ns,
+                                          _node_tables, _rel_tables);
+
+  -- Record metadata in catalog
+  _def := vector (
+    'node_tables', _node_tables,
+    'relationship_tables', _rel_tables
+  );
+  DB.DBA.GQL_PG_DEF_UPSERT (_pg_name, 'virtual', _graph_iri, _ontology_ns, _data_ns, _def);
+
+  return _sparql_text;
+}
+;
+
+----------------------------------------------------------------------
+-- Internal: shared quad-map builder used by both CREATE VIRTUAL and
+-- CREATE PHYSICAL PROPERTY GRAPH.  Validates all tables/columns, then
+-- generates and executes the IRI classes and quad-map definition.
+-- Returns the generated SPARQL text (for debugging / dry-run output).
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PG_BUILD_QM (
+  in _pg_name varchar,
+  in _graph_iri varchar,
+  in _ontology_ns varchar,
+  in _data_ns varchar,
+  inout _node_tables any,
+  inout _rel_tables any)
+{
+  declare _sparql_text varchar;
+  declare i, j integer;
 
   -- Normalise every table reference to its fully-qualified name so that
   -- validation, quad-map generation, and SOURCE/DESTINATION matching all
@@ -576,13 +607,6 @@ create procedure DB.DBA.GQL_PG_CREATE_VIRTUAL (
                                 _pg_name, _msg));
     }
 
-  -- Record metadata in catalog
-  _def := vector (
-    'node_tables', _node_tables,
-    'relationship_tables', _rel_tables
-  );
-  DB.DBA.GQL_PG_DEF_UPSERT (_pg_name, 'virtual', _graph_iri, _ontology_ns, _data_ns, _def);
-
   return _sparql_text;
 }
 ;
@@ -685,12 +709,19 @@ create procedure DB.DBA.GQL_PG_TMPL_TO_QM_DST (
 
 ----------------------------------------------------------------------
 -- Execute CREATE PHYSICAL PROPERTY GRAPH.
--- Creates an empty named graph and records catalog metadata.
+-- With NODE TABLES: builds quad maps (same as virtual), materializes
+-- the triples into the named graph, then drops the quad maps so the
+-- graph is purely physical (writable).  Without NODE TABLES: creates
+-- an empty writable named graph.
 ----------------------------------------------------------------------
-create procedure DB.DBA.GQL_PG_CREATE_PHYSICAL (in _pg_name varchar)
+create procedure DB.DBA.GQL_PG_CREATE_PHYSICAL (
+  in _pg_name varchar,
+  in _node_tables any,
+  in _rel_tables any)
 {
   declare _graph_iri, _ontology_ns, _data_ns varchar;
   declare _host varchar;
+  declare _def any;
   declare _st, _msg varchar;
   declare _m, _d any;
 
@@ -702,14 +733,120 @@ create procedure DB.DBA.GQL_PG_CREATE_PHYSICAL (in _pg_name varchar)
   _ontology_ns := concat ('http://', _host, '/pgraph/', _pg_name, '/ontology#');
   _data_ns := concat ('http://', _host, '/pgraph/', _pg_name, '#');
 
-  _st := '00000'; _msg := '';
-  exec (sprintf ('SPARQL CREATE GRAPH <%s>', _graph_iri), _st, _msg, vector (), 0, _m, _d);
-  if (_st <> '00000')
-    signal ('GQ205', sprintf ('Failed to create graph for property graph %s: %s', _pg_name, _msg));
+  -- If no node tables, create an empty writable graph (backward compat).
+  if (_node_tables is null or length (_node_tables) = 0)
+    {
+      _st := '00000'; _msg := '';
+      exec (sprintf ('SPARQL CREATE GRAPH <%s>', _graph_iri), _st, _msg, vector (), 0, _m, _d);
+      if (_st <> '00000')
+        signal ('GQ205', sprintf ('Failed to create graph for property graph %s: %s', _pg_name, _msg));
+      DB.DBA.GQL_PG_DEF_UPSERT (_pg_name, 'physical', _graph_iri, _ontology_ns, _data_ns, null);
+      return _graph_iri;
+    }
 
-  DB.DBA.GQL_PG_DEF_UPSERT (_pg_name, 'physical', _graph_iri, _ontology_ns, _data_ns, null);
+  -- --- From-tables path: build quad maps, materialize, drop quad maps ---
+
+  -- Build the quad maps (shared with GQL_PG_CREATE_VIRTUAL).
+  DB.DBA.GQL_PG_BUILD_QM (_pg_name, _graph_iri, _ontology_ns, _data_ns,
+                          _node_tables, _rel_tables);
+
+  -- Materialize: copy triples from the virtual quad-map graph into the
+  -- physical named graph.  Try RDF_VIEW_SYNC_TO_PHYSICAL first; fall
+  -- back to SPARQL INSERT INTO GRAPH if that procedure is unavailable
+  -- or fails.
+  declare _materialized integer;
+  _materialized := 0;
+
+  if (__proc_exists ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL') is not null)
+    {
+      _st := '00000'; _msg := '';
+      exec (sprintf ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL (''%s'', 1, null, 1, 1, 0, 0)',
+                     _graph_iri),
+            _st, _msg, vector (), 0, _m, _d);
+      if (_st = '00000')
+        _materialized := 1;
+    }
+
+  if (_materialized = 0)
+    {
+      -- SPARQL INSERT INTO GRAPH fallback: query the virtual graph
+      -- (backed by quad maps) and copy every triple into the physical
+      -- named graph.
+      _st := '00000'; _msg := '';
+      exec (sprintf (
+              'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
+              _graph_iri, _graph_iri),
+            _st, _msg, vector (), 0, _m, _d);
+      if (_st <> '00000')
+        {
+          -- Both materialization paths failed.  Drop the quad maps and
+          -- signal so the user is left with no partial graph.
+          DB.DBA.GQL_PG_DROP_QM (_pg_name, _node_tables);
+          signal ('GQ208', sprintf (
+            'Failed to materialize property graph %s: %s. Both RDF_VIEW_SYNC_TO_PHYSICAL and SPARQL INSERT fallback failed.',
+            _pg_name, _msg));
+        }
+      _materialized := 1;
+    }
+
+  -- Drop the quad maps and IRI classes so the graph is purely physical
+  -- (writable).  The data now lives in RDF_QUAD.
+  DB.DBA.GQL_PG_DROP_QM (_pg_name, _node_tables);
+
+  -- Record metadata in catalog
+  _def := vector (
+    'node_tables', _node_tables,
+    'relationship_tables', _rel_tables
+  );
+  DB.DBA.GQL_PG_DEF_UPSERT (_pg_name, 'physical', _graph_iri, _ontology_ns, _data_ns, _def);
+
+  -- Mark as materialized
+  update DB.DBA.GQL_PROPERTY_GRAPH_DEF
+     set IS_MATERIALIZED = 1
+   where PG_NAME = _pg_name;
 
   return _graph_iri;
+}
+;
+
+----------------------------------------------------------------------
+-- Internal: drop the quad map and IRI classes for a property graph.
+-- Used by GQL_PG_CREATE_PHYSICAL (after materialization) and by
+-- GQL_PG_DROP (for virtual graphs and materialized physical graphs).
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PG_DROP_QM (
+  in _pg_name varchar,
+  in _node_tables any)
+{
+  declare _pfx, _qm_qname varchar;
+  declare _st, _msg varchar;
+  declare _m, _d any;
+  declare i integer;
+
+  _pfx := DB.DBA.GQL_PG_PFX ();
+  _qm_qname := concat ('pgraph:qm-', DB.DBA.GQL_PG_SANITIZE (_pg_name));
+
+  -- Drop the quad map graph
+  _st := '00000'; _msg := '';
+  exec (DB.DBA.GQL_PG_NL (concat ('SPARQL ', _pfx, 'drop silent quad map ', _qm_qname, ' .')),
+        _st, _msg, vector (), 0, _m, _d);
+
+  -- Drop IRI classes for each node table
+  if (_node_tables is not null and isarray (_node_tables))
+    {
+      for (i := 0; i < length (_node_tables); i := i + 1)
+        {
+          declare nt any;
+          declare tbl, short_name, cls varchar;
+          nt := aref (_node_tables, i);
+          tbl := aref (nt, 0);
+          short_name := DB.DBA.GQL_PG_SHORT_NAME (tbl);
+          cls := DB.DBA.GQL_PG_ICLASS (_pg_name, short_name);
+          _st := '00000'; _msg := '';
+          exec (DB.DBA.GQL_PG_NL (concat ('SPARQL ', _pfx, 'drop silent iri class ', cls, ' .')),
+                _st, _msg, vector (), 0, _m, _d);
+        }
+    }
 }
 ;
 
@@ -783,8 +920,23 @@ create procedure DB.DBA.GQL_PG_DROP (in _pg_name varchar, in _if_exists integer)
     }
   else  -- physical
     {
+      -- Drop the named graph (clears all triples).
       _st := '00000'; _msg := '';
       exec (sprintf ('SPARQL DROP GRAPH <%s>', _graph_iri), _st, _msg, vector (), 0, _m, _d);
+
+      -- If this physical graph was created from tables (DEFINITION is
+      -- non-null), also drop any residual quad maps / IRI classes that
+      -- might remain from the build+materialize process.
+      if (_def is not null and isarray (_def))
+        {
+          declare _node_tables any;
+          declare idx integer;
+          _node_tables := null;
+          for (idx := 0; idx < length (_def); idx := idx + 2)
+            if (aref (_def, idx) = 'node_tables') _node_tables := aref (_def, idx + 1);
+          if (_node_tables is not null)
+            DB.DBA.GQL_PG_DROP_QM (_pg_name, _node_tables);
+        }
     }
 
   DB.DBA.GQL_PG_DEF_DELETE (_pg_name);
@@ -794,11 +946,16 @@ create procedure DB.DBA.GQL_PG_DROP (in _pg_name varchar, in _if_exists integer)
 
 ----------------------------------------------------------------------
 -- Materialize a virtual property graph into physical RDF triples.
+-- Tries RDF_VIEW_SYNC_TO_PHYSICAL first; falls back to SPARQL INSERT
+-- INTO GRAPH if that procedure is unavailable or fails.
 ----------------------------------------------------------------------
 create procedure DB.DBA.GQL_PG_MATERIALIZE (in _pg_name varchar)
 {
   declare meta any;
   declare _pg_mode, _graph_iri varchar;
+  declare _st, _msg varchar;
+  declare _m, _d any;
+  declare _materialized integer;
 
   meta := DB.DBA.GQL_PG_DEF_GET (_pg_name);
   if (meta is null)
@@ -809,10 +966,33 @@ create procedure DB.DBA.GQL_PG_MATERIALIZE (in _pg_name varchar)
   if (_pg_mode <> 'virtual')
     signal ('GQ207', sprintf ('Property graph %s is not virtual; cannot materialize', _pg_name));
 
-  if (__proc_exists ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL') is null)
-    signal ('GQ208', 'RDF_VIEW_SYNC_TO_PHYSICAL is not available; RDF Views support is required');
+  _materialized := 0;
 
-  DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL (_graph_iri, 1, null, 1, 1, 0, 0);
+  -- Try RDF_VIEW_SYNC_TO_PHYSICAL first.
+  if (__proc_exists ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL') is not null)
+    {
+      _st := '00000'; _msg := '';
+      exec (sprintf ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL (''%s'', 1, null, 1, 1, 0, 0)',
+                     _graph_iri),
+            _st, _msg, vector (), 0, _m, _d);
+      if (_st = '00000')
+        _materialized := 1;
+    }
+
+  -- Fallback: SPARQL INSERT INTO GRAPH.
+  if (_materialized = 0)
+    {
+      _st := '00000'; _msg := '';
+      exec (sprintf (
+              'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
+              _graph_iri, _graph_iri),
+            _st, _msg, vector (), 0, _m, _d);
+      if (_st <> '00000')
+        signal ('GQ208', sprintf (
+          'Failed to materialize property graph %s: %s. Both RDF_VIEW_SYNC_TO_PHYSICAL and SPARQL INSERT fallback failed.',
+          _pg_name, _msg));
+      _materialized := 1;
+    }
 
   update DB.DBA.GQL_PROPERTY_GRAPH_DEF
      set IS_MATERIALIZED = 1

@@ -1549,7 +1549,7 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
                 }
               else  -- PHYSICAL (546)
                 {
-                  DB.DBA.GQL_PG_CREATE_PHYSICAL (v2_pg_name);
+                  DB.DBA.GQL_PG_CREATE_PHYSICAL (v2_pg_name, v2_node_tables, v2_rel_tables);
                   if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
                   sparql_text := concat (sparql_text, ';\n-- CREATE PHYSICAL PROPERTY GRAPH ', v2_pg_name, ' executed\n');
                 }

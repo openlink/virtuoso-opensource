@@ -2518,7 +2518,8 @@ create procedure DB.DBA.GQL_PARSE_CREATE_STMT (in _tokens any, inout _pos intege
   if (tt = 227)  -- PROPERTY (no VIRTUAL/PHYSICAL keyword — defaults to physical)
     {
       _pos := _pos + 1;
-      return DB.DBA.GQL_PARSE_CREATE_GRAPH (_tokens, _pos, 1);
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 225);  -- GRAPH
+      return DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (_tokens, _pos, 546);
     }
   signal ('GQ003', sprintf ('Expected SCHEMA, GRAPH, or PROPERTY GRAPH after CREATE at position %d', _pos));
 }
@@ -2844,6 +2845,8 @@ create procedure DB.DBA.GQL_PARSE_RELATIONSHIP_TABLE (in _tokens any, inout _pos
 ----------------------------------------------------------------------
 -- Parse CREATE [VIRTUAL|PHYSICAL] PROPERTY GRAPH <name> ...
 -- pg_mode: 545=virtual, 546=physical
+-- VIRTUAL requires NODE TABLES; PHYSICAL accepts it optionally
+-- (with tables: build + materialize; without: empty writable graph).
 -- Returns:
 --   ('CREATE_PROPERTY_GRAPH_V2', pg_name, pg_mode_token,
 --    node_tables_vector, rel_tables_vector)
@@ -2867,8 +2870,12 @@ create procedure DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (
   node_tables := vector ();
   rel_tables := vector ();
 
-  -- Virtual PG requires NODE TABLES clause; physical PG rejects it
-  if (_pg_mode = 545)  -- VIRTUAL
+  -- Both VIRTUAL and PHYSICAL accept NODE TABLES / RELATIONSHIP TABLES.
+  -- VIRTUAL requires NODE TABLES (a virtual graph with no tables is
+  -- meaningless).  PHYSICAL makes it optional: with tables it builds
+  -- quad maps and materializes; without tables it creates an empty
+  -- writable graph.
+  if (_pg_mode = 545)  -- VIRTUAL: NODE TABLES is required
     {
       declare _nt_first, _rt_first integer;
       -- NODE TABLES ( ... )
@@ -2904,11 +2911,42 @@ create procedure DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (
           DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
         }
     }
-  else  -- PHYSICAL: no NODE/RELATIONSHIP TABLES allowed
+  else  -- PHYSICAL: NODE TABLES is optional
     {
-      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 266  -- NODE
-          or DB.DBA.GQL_PEEK (_tokens, _pos) = 268)  -- RELATIONSHIP
-        signal ('GQ003', 'CREATE PHYSICAL PROPERTY GRAPH does not accept NODE or RELATIONSHIP TABLES');
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 266)  -- NODE
+        {
+          declare _nt_first, _rt_first integer;
+          DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TABLES');  -- TABLES
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
+          _nt_first := 1;
+          while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+            {
+              if (not _nt_first)
+                DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+              _nt_first := 0;
+              node_tables := vector_concat (node_tables,
+                vector (DB.DBA.GQL_PARSE_NODE_TABLE (_tokens, _pos)));
+            }
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+
+          -- Optional RELATIONSHIP TABLES ( ... )
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 268)  -- RELATIONSHIP
+            {
+              _pos := _pos + 1;
+              DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TABLES');  -- TABLES
+              DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
+              _rt_first := 1;
+              while (DB.DBA.GQL_PEEK (_tokens, _pos) <> 2)  -- until RPAREN
+                {
+                  if (not _rt_first)
+                    DB.DBA.GQL_EXPECT (_tokens, _pos, 9);  -- COMMA
+                  _rt_first := 0;
+                  rel_tables := vector_concat (rel_tables,
+                    vector (DB.DBA.GQL_PARSE_RELATIONSHIP_TABLE (_tokens, _pos)));
+                }
+              DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- RPAREN
+            }
+        }
     }
 
   return vector ('CREATE_PROPERTY_GRAPH_V2', pg_name, _pg_mode, node_tables, rel_tables);
