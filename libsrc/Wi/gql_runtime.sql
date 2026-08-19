@@ -201,32 +201,6 @@ create procedure DB.DBA.GQL_REIF_GRAPH ()
 }
 ;
 
-----------------------------------------------------------------------
--- Per-property-graph sequential ID counters.
---
--- In property-graph mode, node and edge IRIs use sequential indices
--- (node_0, node_1, ...) instead of UUIDs.  This produces short,
--- deterministic, human-readable identifiers that match property-graph
--- conventions.
---
--- The counter is stored as a Virtuoso named sequence keyed by the
--- property-graph data namespace, so each graph has its own independent
--- counter.
-----------------------------------------------------------------------
-
--- Atomically get-and-increment a per-graph counter.
--- Returns the value *before* increment (i.e. the ID to use).
-create procedure DB.DBA.GQL_PG_NEXT_ID (in _data_ns varchar, in _prefix varchar)
-{
-  declare _seq_name varchar;
-  declare _cur integer;
-  _seq_name := concat ('gql_pg_counter:', _data_ns, ':', _prefix);
-  _cur := sequence_set (_seq_name, 0, 2);  -- SEQUENCE_GET
-  sequence_set (_seq_name, _cur + 1, 0);   -- set to cur+1
-  return _cur;
-}
-;
-
 -- Generate a unique node URI (data namespace)
 create procedure DB.DBA.GQL_NEW_NODE_URI ()
 {
@@ -235,15 +209,9 @@ create procedure DB.DBA.GQL_NEW_NODE_URI ()
 ;
 
 -- Generate a unique node URI using a ctx-aware data namespace.
--- In property-graph mode, uses sequential indices (node_0, node_1, ...).
--- In classic mode, uses UUIDs.
 create procedure DB.DBA.GQL_NEW_NODE_URI_CTX (inout _ctx any)
 {
-  declare _ns varchar;
-  _ns := DB.DBA.GQL_DATA_NS_CTX (_ctx);
-  if (DB.DBA.GQL_CTX_GET (_ctx, 'is_property_graph') = 1)
-    return concat (_ns, 'node_', cast (DB.DBA.GQL_PG_NEXT_ID (_ns, 'node') as varchar));
-  return concat (_ns, 'node_', cast (uuid () as varchar));
+  return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'node_', cast (uuid () as varchar));
 }
 ;
 
@@ -255,15 +223,9 @@ create procedure DB.DBA.GQL_NEW_EDGE_URI ()
 ;
 
 -- Generate a unique edge URI using a ctx-aware data namespace.
--- In property-graph mode, uses sequential indices (edge_0, edge_1, ...).
--- In classic mode, uses UUIDs.
 create procedure DB.DBA.GQL_NEW_EDGE_URI_CTX (inout _ctx any)
 {
-  declare _ns varchar;
-  _ns := DB.DBA.GQL_DATA_NS_CTX (_ctx);
-  if (DB.DBA.GQL_CTX_GET (_ctx, 'is_property_graph') = 1)
-    return concat (_ns, 'edge_', cast (DB.DBA.GQL_PG_NEXT_ID (_ns, 'edge') as varchar));
-  return concat (_ns, 'edge_', cast (uuid () as varchar));
+  return concat (DB.DBA.GQL_DATA_NS_CTX (_ctx), 'edge_', cast (uuid () as varchar));
 }
 ;
 
