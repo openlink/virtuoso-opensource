@@ -4377,6 +4377,7 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
                       connection_set ('__gql_pg_ontology_ns', DB.DBA.GQL_PG_ONTOLOGY_NS (pg_name));
                       connection_set ('__gql_pg_data_ns', DB.DBA.GQL_PG_DATA_NS (pg_name));
                       connection_set ('__gql_pg_is_property_graph', 1);
+                      connection_set ('__gql_pg_name', pg_name);
                     }
                   else
                     _graph := DB.DBA.GQL_GRAPH_REF_VALUE (pg_ref);
@@ -4500,21 +4501,25 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
   ctx := DB.DBA.GQL_CTX_NEW (_graph);
   -- Propagate per-graph NS from proc body USE PROPERTY GRAPH (if set)
   {
-    declare pg_ons, pg_dns varchar;
+    declare pg_ons, pg_dns, pg_nm varchar;
     declare pg_flag integer;
     pg_ons := connection_get ('__gql_pg_ontology_ns');
     pg_dns := connection_get ('__gql_pg_data_ns');
     pg_flag := connection_get ('__gql_pg_is_property_graph');
+    pg_nm := connection_get ('__gql_pg_name');
     if (pg_ons is not null)
       DB.DBA.GQL_CTX_SET (ctx, 'ontology_ns', pg_ons);
     if (pg_dns is not null)
       DB.DBA.GQL_CTX_SET (ctx, 'data_ns', pg_dns);
     if (pg_flag = 1)
       DB.DBA.GQL_CTX_SET (ctx, 'is_property_graph', 1);
+    if (pg_nm is not null)
+      DB.DBA.GQL_CTX_SET (ctx, 'pg_name', pg_nm);
     -- Clear the stashed values so they don't leak to subsequent queries
     connection_set ('__gql_pg_ontology_ns', null);
     connection_set ('__gql_pg_data_ns', null);
     connection_set ('__gql_pg_is_property_graph', 0);
+    connection_set ('__gql_pg_name', null);
   }
   n := length (clauses);
 
@@ -4733,6 +4738,27 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
         catalog_asts := vector_concat (catalog_asts, vector (clause));
 
     class_next:;
+    }
+
+  -- Reject writes against a virtual (read-only) property graph selected
+  -- via USE PROPERTY GRAPH.  (The inline INSERT INTO PROPERTY GRAPH form
+  -- is checked above; this covers USE PROPERTY GRAPH <v> ... INSERT/SET/
+  -- REMOVE/DELETE.)  Virtual PGs map to relational tables through quad
+  -- maps and are not writable.
+  if (has_insert or has_set or has_remove or has_delete)
+    {
+      declare _wr_pg_name varchar;
+      _wr_pg_name := DB.DBA.GQL_CTX_GET (ctx, 'pg_name');
+      if (_wr_pg_name is not null
+          and __proc_exists ('DB.DBA.GQL_PG_DEF_GET') is not null)
+        {
+          declare _wr_meta any;
+          _wr_meta := DB.DBA.GQL_PG_DEF_GET (_wr_pg_name);
+          if (_wr_meta is not null and aref (_wr_meta, 0) = 'virtual')
+            signal ('GQ213',
+              sprintf ('Cannot write to virtual property graph %s; virtual PGs are read-only views. Use CREATE PHYSICAL PROPERTY GRAPH for writable graphs.',
+                _wr_pg_name));
+        }
     }
 
   -- Pull MATCH-attached FROM <graph> clauses into the dataset list
