@@ -525,13 +525,21 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                   declare etidx integer;
                   declare esrc_var, edst_var varchar;
                   declare annot_mode integer;
+                  declare tt_mode integer;
+                  declare reifier_n varchar;
                   evar := aref (elem, 1);
                   etypes := aref (elem, 2);
                   edir := aref (elem, 3);
                   eprops := aref (elem, 5);
                   annot_mode := 0;
+                  tt_mode := 0;
+                  reifier_n := null;
                   if (length (elem) > 8)
                     annot_mode := aref (elem, 8);
+                  if (length (elem) > 9)
+                    tt_mode := aref (elem, 9);
+                  if (length (elem) > 10)
+                    reifier_n := aref (elem, 10);
 
                   -- Find source and destination from adjacent NODEs
                   esrc_var := null; edst_var := null;
@@ -563,55 +571,103 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                         edst_var, ' .\n');
                     }
 
-                  -- Edge properties: RDF 1.2 or classic reification
+                  -- Edge properties: RDF 1.2 triple-term, annotation, or classic reification
                   if (length (eprops) > 0)
                     {
-                      if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                      -- Determine effective mode:
+                      --   tt_mode=1 → explicit <<( )>> triple-term (standard RDF 1.2)
+                      --   tt_mode=2 → explicit << >> reified-triple shorthand
+                      --   annot_mode=1 → {| |} annotation
+                      --   rdf12_mode → default to triple-term
+                      --   else → classic reification
+                      declare eff_mode integer;
+                      declare reifier_var varchar;
+                      eff_mode := 0;  -- 0=classic, 1=triple-term, 2=annotation, 3=reified-shorthand
+                      if (tt_mode = 1)
+                        { eff_mode := 1; }
+                      else if (tt_mode = 2)
+                        { eff_mode := 3; }
+                      else if (annot_mode = 1)
+                        { eff_mode := 2; }
+                      else if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                        { eff_mode := 1; }
+
+                      -- Determine reifier variable/IRI
+                      reifier_var := null;
+                      if (reifier_n is not null)
+                        { reifier_var := reifier_n; }
+                      else if (evar is not null)
+                        { reifier_var := DB.DBA.GQL_EDGE_SPARQL_VAR (evar); }
+
+                      if (evar is not null)
+                        { DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar); }
+
+                      if (eff_mode = 2)
                         {
-                          if (evar is not null)
-                            DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
-                          if (annot_mode = 1)
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
                             {
-                              -- RDF 1.2 annotation syntax: {| prop val . |}
-                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                              declare annot_body varchar;
+                              annot_body := '';
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
                                 {
-                                  declare annot_body varchar;
-                                  annot_body := '';
-                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
-                                    {
-                                      annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
-                                    }
-                                  insert_body := concat (insert_body, '  ', esrc_var, ' ',
-                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
-                                    edst_var, ' {| ', annot_body, '|} .\n');
+                                  annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
+                                }
+                              insert_body := concat (insert_body, '  ', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ' {| ', annot_body, '|} .\n');
+                            }
+                        }
+                      else if (eff_mode = 1)
+                        {
+                          -- Standard RDF 1.2: reifier rdf:reifies <<(s p o)>> . reifier prop val .
+                          declare rsv varchar;
+                          if (reifier_var is not null)
+                            { rsv := reifier_var; }
+                          else
+                            { rsv := concat ('_:', DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'reif_')); }
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                            {
+                              declare tt_obj varchar;
+                              tt_obj := concat ('<<(', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ')>>');
+                              insert_body := concat (insert_body, '  ', rsv, ' rdf:reifies ', tt_obj, ' .\n');
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                {
+                                  insert_body := concat (insert_body, '  ', rsv, ' ',
+                                    DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
                                 }
                             }
+                        }
+                      else if (eff_mode = 3)
+                        {
+                          declare rsv varchar;
+                          if (reifier_var is not null)
+                            { rsv := reifier_var; }
                           else
+                            { rsv := concat ('_:', DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'reif_')); }
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
                             {
-                              -- RDF 1.2 triple-term: <<(src pred dst)>> prop val .
-                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                              declare rt_str varchar;
+                              rt_str := concat ('<<', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ' ~ ', rsv, '>>');
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
                                 {
-                                  declare tt_subject varchar;
-                                  tt_subject := concat ('<<(', esrc_var, ' ',
-                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
-                                    edst_var, ')>>');
-                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
-                                    {
-                                      insert_body := concat (insert_body, '  ', tt_subject, ' ',
-                                        DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
-                                    }
+                                  insert_body := concat (insert_body, '  ', rt_str, ' ',
+                                    DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
                                 }
                             }
                         }
                       else
                         {
-                          -- Classic reification
                           declare esv varchar;
                           esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI_CTX (_ctx), '>');
-                          if (evar is not null)
-                            DB.DBA.GQL_CTX_ADD_VAR (_ctx, evar);
+                          if (reifier_var is not null)
+                            { esv := reifier_var; }
 
                           insert_body := concat (insert_body, '  ', esv, ' a rdf:Statement .\n');
                           insert_body := concat (insert_body, '  ', esv, ' rdf:subject ', esrc_var, ' .\n');
@@ -774,13 +830,21 @@ create procedure DB.DBA.GQL_GEN_CONSTRUCT_TEMPLATE (in _construct_asts any, inou
                   declare etidx integer;
                   declare esrc_var, edst_var varchar;
                   declare annot_mode integer;
+                  declare tt_mode integer;
+                  declare reifier_n varchar;
                   evar := aref (elem, 1);
                   etypes := aref (elem, 2);
                   edir := aref (elem, 3);
                   eprops := aref (elem, 5);
                   annot_mode := 0;
+                  tt_mode := 0;
+                  reifier_n := null;
                   if (length (elem) > 8)
                     annot_mode := aref (elem, 8);
+                  if (length (elem) > 9)
+                    tt_mode := aref (elem, 9);
+                  if (length (elem) > 10)
+                    reifier_n := aref (elem, 10);
 
                   esrc_var := null; edst_var := null;
                   if (ei > 0)
@@ -812,46 +876,86 @@ create procedure DB.DBA.GQL_GEN_CONSTRUCT_TEMPLATE (in _construct_asts any, inou
 
                   if (length (eprops) > 0)
                     {
-                      if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                      -- Determine effective mode (same logic as INSERT path)
+                      declare eff_mode integer;
+                      declare reifier_var varchar;
+                      eff_mode := 0;
+                      if (tt_mode = 1)
+                        { eff_mode := 1; }
+                      else if (tt_mode = 2)
+                        { eff_mode := 3; }
+                      else if (annot_mode = 1)
+                        { eff_mode := 2; }
+                      else if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                        { eff_mode := 1; }
+
+                      reifier_var := null;
+                      if (reifier_n is not null)
+                        { reifier_var := reifier_n; }
+                      else if (evar is not null)
+                        { reifier_var := DB.DBA.GQL_EDGE_SPARQL_VAR (evar); }
+
+                      if (eff_mode = 2)  -- annotation {| |}
                         {
-                          if (annot_mode = 1)
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
                             {
-                              -- RDF 1.2 annotation syntax: {| prop val . |}
-                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                              declare annot_body varchar;
+                              annot_body := '';
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
                                 {
-                                  declare annot_body varchar;
-                                  annot_body := '';
-                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
-                                    {
-                                      annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
-                                    }
-                                  construct_body := concat (construct_body, '  ', esrc_var, ' ',
-                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
-                                    edst_var, ' {| ', annot_body, '|} .\n');
+                                  annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' . ');
                                 }
+                              construct_body := concat (construct_body, '  ', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ' {| ', annot_body, '|} .\n');
                             }
+                        }
+                      else if (eff_mode = 1)  -- triple-term <<(s p o)>>
+                        {
+                          declare rsv varchar;
+                          if (reifier_var is not null)
+                            rsv := reifier_var;
                           else
+                            rsv := concat ('_:gql_reif_', cast (pi as varchar), '_', cast (ei as varchar));
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
                             {
-                              -- RDF 1.2 triple-term: <<(src pred dst)>> prop val .
-                              for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                              declare tt_obj varchar;
+                              tt_obj := concat ('<<(', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ')>>');
+                              construct_body := concat (construct_body, '  ', rsv, ' rdf:reifies ', tt_obj, ' .\n');
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
                                 {
-                                  declare tt_subject varchar;
-                                  tt_subject := concat ('<<(', esrc_var, ' ',
-                                    DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
-                                    edst_var, ')>>');
-                                  for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
-                                    {
-                                      construct_body := concat (construct_body, '  ', tt_subject, ' ',
-                                        DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
-                                        DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
-                                    }
+                                  construct_body := concat (construct_body, '  ', rsv, ' ',
+                                    DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
                                 }
                             }
                         }
-                      else
+                      else if (eff_mode = 3)  -- reified-triple shorthand << s p o ~ r >>
                         {
-                          -- Classic reification
+                          declare rsv varchar;
+                          if (reifier_var is not null)
+                            rsv := reifier_var;
+                          else
+                            rsv := concat ('_:gql_reif_', cast (pi as varchar), '_', cast (ei as varchar));
+                          for (etidx := 0; etidx < length (etypes); etidx := etidx + 1)
+                            {
+                              declare rt_str varchar;
+                              rt_str := concat ('<<', esrc_var, ' ',
+                                DB.DBA.GQL_GEN_EDGE_TYPE_IRI_CTX (aref (etypes, etidx), _ctx), ' ',
+                                edst_var, ' ~ ', rsv, '>>');
+                              for (declare epi integer, epi := 0; epi < length (eprops); epi := epi + 1)
+                                {
+                                  construct_body := concat (construct_body, '  ', rt_str, ' ',
+                                    DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (aref (eprops, epi), 0), _ctx), ' ',
+                                    DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx), ' .\n');
+                                }
+                            }
+                        }
+                      else  -- classic reification
+                        {
                           declare esv varchar;
                           declare epi integer;
                           if (evar is not null)

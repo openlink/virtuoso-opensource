@@ -2048,6 +2048,70 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR167 FAIL: INSERT INTO GRAPH explicit iri: ', cast (_sparql as varchar)))); }
 
+  -- TR168: RDF 1.2 <<( )>> explicit triple-term syntax for edge properties
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:ACTED_IN <<(ex:role: <urn:role#Neo>)>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, 'rdf:reifies') is not null
+      and strstr (_sparql, '<<(') is not null and strstr (_sparql, ')>>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR168 PASS: <<( )>> explicit triple-term syntax')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR168 FAIL: <<( )>> triple-term: ', cast (_sparql as varchar)))); }
+
+  -- TR169: RDF 1.2 << >> reified-triple shorthand syntax for edge properties
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:KNOWS <<ex:weight: 5>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, '<<') is not null
+      and strstr (_sparql, '~') is not null and strstr (_sparql, '>>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR169 PASS: << >> reified-triple shorthand')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR169 FAIL: << >> shorthand: ', cast (_sparql as varchar)))); }
+
+  -- TR170: <<( )>> with ~ reifier naming
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:ACTED_IN <<(ex:role: <urn:role#Neo> ~ <urn:reifier#r1>)>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, 'rdf:reifies') is not null
+      and strstr (_sparql, '<urn:reifier#r1>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR170 PASS: <<( )>> with ~ reifier naming')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR170 FAIL: ~ reifier: ', cast (_sparql as varchar)))); }
+
+  -- TR171: << >> with ~ reifier (fresh blank node)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:KNOWS <<ex:weight: 5 ~ >>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, '<<') is not null
+      and strstr (_sparql, '~') is not null and strstr (_sparql, '>>') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR171 PASS: << >> with ~ fresh blank node')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR171 FAIL: ~ blank node: ', cast (_sparql as varchar)))); }
+
+  -- TR172: <<( )>> with entity IRI as property value
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:ACTED_IN <<(ex:role: <urn:role#Neo>)>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, '<urn:role#Neo>') is not null
+      and strstr (_sparql, 'rdf:reifies') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR172 PASS: <<( )>> with entity IRI value')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR172 FAIL: entity IRI: ', cast (_sparql as varchar)))); }
+
+  -- TR173: <<( )>> works without rdf12 mode (explicit override)
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <http://example.org/> INSERT (n {iri:"urn:test#n"})-[r:ex:ACTED_IN <<(ex:role: <urn:role#Neo>)>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, 'rdf:reifies') is not null
+      and strstr (_sparql, '#Statement') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR173 PASS: <<( )>> overrides classic reification')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR173 FAIL: override: ', cast (_sparql as varchar)))); }
+
+  -- TR174: USE PROPERTY GRAPH + <<( )>> triple-term
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT (n {iri:"urn:test#n"})-[r:ACTED_IN <<(role: <urn:role#Neo>)>>]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, 'rdf:reifies') is not null
+      and strstr (_sparql, '/pgraph/Bakery/ontology#ACTED_IN') is not null
+      and strstr (_sparql, '/pgraph/Bakery/ontology#role') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR174 PASS: USE PROPERTY GRAPH + <<( )>>')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR174 FAIL: PG + <<( )>>: ', cast (_sparql as varchar)))); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

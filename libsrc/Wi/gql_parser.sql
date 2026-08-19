@@ -1866,6 +1866,8 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
   declare path_mode varchar;
   declare colon_pos integer;
   declare annot_mode integer;
+  declare triple_term_mode integer;
+  declare reifier_name varchar;
 
   var_name := null;
   types := vector ();
@@ -1875,6 +1877,8 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
   path_mode := null;
   start_dir := 0;
   annot_mode := 0;
+  triple_term_mode := 0;
+  reifier_name := null;
 
   tt := DB.DBA.GQL_PEEK (_tokens, _pos);
 
@@ -2065,18 +2069,55 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
             props := DB.DBA.GQL_PARSE_PROPERTIES (_tokens, _pos);
         }
 
+      -- RDF 1.2 triple-term / reified-triple property syntax:
+      --   <<( props )>>   → explicit triple-term mode (standard RDF 1.2)
+      --   << props >>      → reified-triple mode (shorthand)
+      -- Optional ~ :iri or ~ var after props names the reifier.
+      tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+      if (tt = 420)  -- '<<'
+        {
+          _pos := _pos + 1;  -- consume <<
+          -- Optional '(' for triple-term form <<( ... )>>
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 1)  -- '('
+            {
+              _pos := _pos + 1;  -- consume (
+              triple_term_mode := 1;  -- explicit triple-term
+            }
+          else
+            triple_term_mode := 2;  -- reified-triple shorthand
+          -- Parse properties (bare key:value, no enclosing braces)
+          props := DB.DBA.GQL_PARSE_PROPERTIES_BARE (_tokens, _pos);
+          -- Optional ~ reifier
+          if (DB.DBA.GQL_PEEK (_tokens, _pos) = 32)  -- '~'
+            {
+              _pos := _pos + 1;  -- consume ~
+              -- Optional IRI or variable name after ~
+              tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+              if (tt = 70)  -- IRIREF
+                { reifier_name := concat ('<', DB.DBA.GQL_PEEK_VAL (_tokens, _pos), '>'); _pos := _pos + 1; }
+              else if (tt = 2)  -- IDENT (variable or prefixed name)
+                { reifier_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos); _pos := _pos + 1; }
+              -- If nothing follows ~, a fresh blank node is allocated in codegen
+            }
+          -- Close: )>> or >>
+          if (triple_term_mode = 1)
+            DB.DBA.GQL_EXPECT (_tokens, _pos, 2);  -- ')'
+          DB.DBA.GQL_EXPECT (_tokens, _pos, 421);  -- '>>'
+          tt := DB.DBA.GQL_PEEK (_tokens, _pos);
+        }
+
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
       if (cost_expr is null)
         cost_expr := DB.DBA.GQL_PARSE_EDGE_COST (_tokens, _pos);
       tt := DB.DBA.GQL_PEEK (_tokens, _pos);
       if (tt = 44)  -- ]->
-        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode); }
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode, triple_term_mode, reifier_name); }
       if (tt = 45)  -- ]~>
-        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode); }
+        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'RIGHT', quantifier, props, path_mode, cost_expr, annot_mode, triple_term_mode, reifier_name); }
 	      if (tt = 51)  -- ]-
-	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'BOTH', quantifier, props, path_mode, cost_expr, annot_mode); }
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'BOTH', quantifier, props, path_mode, cost_expr, annot_mode, triple_term_mode, reifier_name); }
 	      if (tt = 52)  -- ]~
-	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'UNDIRECTED', quantifier, props, path_mode, cost_expr, annot_mode); }
+	        { _pos := _pos + 1; return vector ('EDGE', var_name, types, 'UNDIRECTED', quantifier, props, path_mode, cost_expr, annot_mode, triple_term_mode, reifier_name); }
 	      DB.DBA.GQL_EXPECT (_tokens, _pos, 4);  -- RBRACKET
 	    }
 
@@ -2126,7 +2167,7 @@ create procedure DB.DBA.GQL_PARSE_EDGE_PATTERN (in _tokens any, inout _pos integ
         signal ('GQ003', 'Expected ~, -, or / after undirected edge bracket');
     }
 
-  return vector ('EDGE', var_name, types, direction, quantifier, props, path_mode, cost_expr, annot_mode);
+  return vector ('EDGE', var_name, types, direction, quantifier, props, path_mode, cost_expr, annot_mode, triple_term_mode, reifier_name);
 }
 ;
 
@@ -2266,6 +2307,63 @@ create procedure DB.DBA.GQL_PARSE_PROPERTIES (in _tokens any, inout _pos integer
     }
   props_done:
   DB.DBA.GQL_EXPECT (_tokens, _pos, 6);  -- RBRACE
+  return props;
+}
+;
+
+----------------------------------------------------------------------
+-- Bare properties (no enclosing braces): key: value, key2: value2, ...
+-- Used inside <<( ... )>> and << ... >> RDF 1.2 syntax
+----------------------------------------------------------------------
+create procedure DB.DBA.GQL_PARSE_PROPERTIES_BARE (in _tokens any, inout _pos integer)
+{
+  declare props any;
+  declare key_name varchar;
+  declare val any;
+
+  props := vector ();
+
+  if (DB.DBA.GQL_PEEK (_tokens, _pos) = 2   -- ')'
+      or DB.DBA.GQL_PEEK (_tokens, _pos) = 421  -- '>>'
+      or DB.DBA.GQL_PEEK (_tokens, _pos) = 32)  -- '~' (reifier, no props)
+    return props;
+
+  while (1)
+    {
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 7)  -- default-prefixed property
+        {
+          _pos := _pos + 1;
+          key_name := concat (':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos));
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) = 69)  -- PNAME_NS
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      else if (DB.DBA.GQL_PEEK (_tokens, _pos) >= 200
+               and _pos + 1 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 1) = 7
+               and _pos + 2 < length (_tokens)
+               and DB.DBA.GQL_PEEK (_tokens, _pos + 2) >= 64)
+        {
+          key_name := concat (DB.DBA.GQL_PEEK_VAL (_tokens, _pos), ':', DB.DBA.GQL_PEEK_VAL (_tokens, _pos + 2));
+          _pos := _pos + 3;
+        }
+      else
+        {
+          key_name := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _pos := _pos + 1;
+        }
+      DB.DBA.GQL_EXPECT (_tokens, _pos, 7);  -- COLON
+      val := DB.DBA.GQL_PARSE_EXPR (_tokens, _pos);
+      props := vector_concat (props, vector (vector (key_name, val)));
+      if (DB.DBA.GQL_PEEK (_tokens, _pos) = 9)  -- COMMA
+        _pos := _pos + 1;
+      else
+        goto bare_props_done;
+    }
+  bare_props_done:
   return props;
 }
 ;

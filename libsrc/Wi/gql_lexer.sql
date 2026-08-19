@@ -706,7 +706,9 @@ create procedure DB.DBA.GQL_TOKENIZE (in _q varchar)
         {
           ch2 := 0; if (i + 1 < qlen) ch2 := aref (_q, i + 1);
           ch3 := 0; if (i + 2 < qlen) ch3 := aref (_q, i + 2);
-          if (ch2 = 126 and ch3 = 91)  -- '<~['
+          if (ch2 = 60)  -- '<<'  RDF 1.2 reified-triple / triple-term start
+            { tokens := vector_concat (tokens, vector (vector (420, '<<', vector (line, col)))); i := i + 2; col := col + 2; }
+          else if (ch2 = 126 and ch3 = 91)  -- '<~['
             { tokens := vector_concat (tokens, vector (vector (53, '<~[', vector (line, col)))); i := i + 3; col := col + 3; }
           else if (ch2 = 126 and ch3 = 47)  -- '<~/'
             { tokens := vector_concat (tokens, vector (vector (37, '<~/', vector (line, col)))); i := i + 3; col := col + 3; }
@@ -742,7 +744,10 @@ create procedure DB.DBA.GQL_TOKENIZE (in _q varchar)
       -- '>' : GTE or GT
       else if (ch = 62)
         {
-          if (i + 1 < qlen and aref (_q, i + 1) = 61)
+          ch2 := 0; if (i + 1 < qlen) ch2 := aref (_q, i + 1);
+          if (ch2 = 62)  -- '>>'  RDF 1.2 reified-triple / triple-term end
+            { tokens := vector_concat (tokens, vector (vector (421, '>>', vector (line, col)))); i := i + 2; col := col + 2; }
+          else if (ch2 = 61)  -- '>='
             { tokens := vector_concat (tokens, vector (vector (18, '>=', vector (line, col)))); i := i + 2; col := col + 2; }
           else
             { tokens := vector_concat (tokens, vector (vector (14, '>', vector (line, col)))); i := i + 1; col := col + 1; }

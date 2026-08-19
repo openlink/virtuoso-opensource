@@ -3699,53 +3699,108 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
           if (length (eprops) > 0 and evar is not null)
             {
               declare annot_mode integer;
+              declare tt_mode integer;
+              declare reifier_n varchar;
+              declare eff_mode integer;
+              declare reifier_var varchar;
               annot_mode := 0;
+              tt_mode := 0;
+              reifier_n := null;
               if (length (elem) > 8)
                 annot_mode := aref (elem, 8);
-              if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+              if (length (elem) > 9)
+                tt_mode := aref (elem, 9);
+              if (length (elem) > 10)
+                reifier_n := aref (elem, 10);
+
+              -- Determine effective mode
+              eff_mode := 0;
+              if (tt_mode = 1)
+                { eff_mode := 1; }
+              else if (tt_mode = 2)
+                { eff_mode := 3; }
+              else if (annot_mode = 1)
+                { eff_mode := 2; }
+              else if (DB.DBA.GQL_CTX_GET (_ctx, 'rdf12_mode') = 1)
+                { eff_mode := 1; }
+
+              reifier_var := null;
+              if (reifier_n is not null)
+                reifier_var := reifier_n;
+              else if (evar is not null)
+                reifier_var := esv;
+
+              if (eff_mode = 2)  -- annotation {| |}
                 {
-                  if (annot_mode = 1)
+                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
                     {
-                      -- RDF 1.2 annotation syntax: emit `s p o {| prop val . |} .` for each edge type
-                      for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                      declare annot_body varchar;
+                      annot_body := '';
+                      for (epi := 0; epi < length (eprops); epi := epi + 1)
                         {
-                          declare annot_body varchar;
-                          annot_body := '';
-                          for (epi := 0; epi < length (eprops); epi := epi + 1)
-                            {
-                              declare epkey any;
-                              declare epval_str varchar;
-                              epkey := aref (aref (eprops, epi), 0);
-                              epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
-                              annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), ' ', epval_str, ' . ');
-                            }
-                          DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx,
-                            concat ('  ', esrc, ' ',
-                              aref (aref (all_edge_iris, eidx), 0), ' ', edst,
-                              ' {| ', annot_body, '|} .\n'));
+                          declare epkey any;
+                          declare epval_str varchar;
+                          epkey := aref (aref (eprops, epi), 0);
+                          epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                          annot_body := concat (annot_body, DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), ' ', epval_str, ' . ');
                         }
+                      DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx,
+                        concat ('  ', esrc, ' ',
+                          aref (aref (all_edge_iris, eidx), 0), ' ', edst,
+                          ' {| ', annot_body, '|} .\n'));
                     }
+                }
+              else if (eff_mode = 1)  -- triple-term <<(s p o)>>
+                {
+                  declare rsv varchar;
+                  if (reifier_var is not null)
+                    rsv := reifier_var;
                   else
+                    rsv := esv;
+                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
                     {
-                      -- RDF 1.2 triple-term: emit <<(src pred dst)>> prop val . for each edge type
-                      for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                      declare tt_obj varchar;
+                      tt_obj := concat ('<<(', esrc, ' ',
+                        aref (aref (all_edge_iris, eidx), 0), ' ', edst, ')>>');
+                      DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, rsv,
+                        concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'reifies>'),
+                        tt_obj);
+                      for (epi := 0; epi < length (eprops); epi := epi + 1)
                         {
-                          declare tt_subject varchar;
-                          tt_subject := concat ('<<(', esrc, ' ',
-                            aref (aref (all_edge_iris, eidx), 0), ' ', edst, ')>>');
-                          for (epi := 0; epi < length (eprops); epi := epi + 1)
-                            {
-                              declare epkey any;
-                              declare epval_str varchar;
-                              epkey := aref (aref (eprops, epi), 0);
-                              epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
-                              DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, tt_subject,
-                                DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
-                            }
+                          declare epkey any;
+                          declare epval_str varchar;
+                          epkey := aref (aref (eprops, epi), 0);
+                          epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, rsv,
+                            DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
                         }
                     }
                 }
-              else
+              else if (eff_mode = 3)  -- reified-triple shorthand << s p o ~ r >>
+                {
+                  declare rsv varchar;
+                  if (reifier_var is not null)
+                    rsv := reifier_var;
+                  else
+                    rsv := esv;
+                  for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
+                    {
+                      declare rt_str varchar;
+                      rt_str := concat ('<<', esrc, ' ',
+                        aref (aref (all_edge_iris, eidx), 0), ' ', edst,
+                        ' ~ ', rsv, '>>');
+                      for (epi := 0; epi < length (eprops); epi := epi + 1)
+                        {
+                          declare epkey any;
+                          declare epval_str varchar;
+                          epkey := aref (aref (eprops, epi), 0);
+                          epval_str := DB.DBA.GQL_GEN_EXPR (aref (aref (eprops, epi), 1), _ctx);
+                          DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, rt_str,
+                            DB.DBA.GQL_GEN_PROP_IRI_CTX (epkey, _ctx), epval_str);
+                        }
+                    }
+                }
+              else  -- classic reification
                 {
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
                     concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'type>'),
@@ -3753,7 +3808,6 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
                     concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'subject>'),
                     esrc);
-                  -- Emit predicate for each type
                   for (eidx := 0; eidx < length (all_edge_iris); eidx := eidx + 1)
                     {
                       DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
@@ -3763,7 +3817,6 @@ create procedure DB.DBA.GQL_GEN_MATCH_PATTERN (in _pattern any, inout _ctx any)
                   DB.DBA.GQL_CTX_ADD_TRIPLE (_ctx, esv,
                     concat ('<', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'object>'),
                     edst);
-                  -- Edge properties go on the reification node
                   for (epi := 0; epi < length (eprops); epi := epi + 1)
                     {
                       declare epkey any;
