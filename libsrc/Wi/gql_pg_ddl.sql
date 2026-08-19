@@ -746,47 +746,37 @@ create procedure DB.DBA.GQL_PG_CREATE_PHYSICAL (
 
   -- --- From-tables path: build quad maps, materialize, drop quad maps ---
 
-  -- Build the quad maps (shared with GQL_PG_CREATE_VIRTUAL).
-  DB.DBA.GQL_PG_BUILD_QM (_pg_name, _graph_iri, _ontology_ns, _data_ns,
+  -- Build the quad maps under a TEMPORARY virtual graph IRI so that the
+  -- SPARQL INSERT fallback can read from the temp virtual graph and
+  -- write to the target physical graph IRI without deadlock.  (Using
+  -- the same IRI for both the quad map and the INSERT target causes a
+  -- self-referential deadlock because the quad map has option(exclusive).)
+  declare _virt_graph_iri varchar;
+  _virt_graph_iri := concat (_graph_iri, '-virtual-tmp');
+
+  DB.DBA.GQL_PG_BUILD_QM (_pg_name, _virt_graph_iri, _ontology_ns, _data_ns,
                           _node_tables, _rel_tables);
 
-  -- Materialize: copy triples from the virtual quad-map graph into the
-  -- physical named graph.  Try RDF_VIEW_SYNC_TO_PHYSICAL first; fall
-  -- back to SPARQL INSERT INTO GRAPH if that procedure is unavailable
-  -- or fails.
-  declare _materialized integer;
-  _materialized := 0;
-
-  if (__proc_exists ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL') is not null)
+  -- Materialize: copy triples from the temp virtual quad-map graph into
+  -- the target physical named graph using SPARQL INSERT INTO GRAPH.
+  -- SPARQL INSERT INTO GRAPH: read from the temp virtual graph (backed
+  -- by quad maps) and write to the target physical graph.  Different
+  -- IRIs avoid deadlock.  This is the primary materialization path for
+  -- property-graph quad maps because RDF_VIEW_SYNC_TO_PHYSICAL expects
+  -- RDF View metadata that raw quad maps do not have.
+  _st := '00000'; _msg := '';
+  exec (sprintf (
+          'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
+          _graph_iri, _virt_graph_iri),
+        _st, _msg, vector (), 0, _m, _d);
+  if (_st <> '00000')
     {
-      _st := '00000'; _msg := '';
-      exec (sprintf ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL (''%s'', 1, null, 1, 1, 0, 0)',
-                     _graph_iri),
-            _st, _msg, vector (), 0, _m, _d);
-      if (_st = '00000')
-        _materialized := 1;
-    }
-
-  if (_materialized = 0)
-    {
-      -- SPARQL INSERT INTO GRAPH fallback: query the virtual graph
-      -- (backed by quad maps) and copy every triple into the physical
-      -- named graph.
-      _st := '00000'; _msg := '';
-      exec (sprintf (
-              'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
-              _graph_iri, _graph_iri),
-            _st, _msg, vector (), 0, _m, _d);
-      if (_st <> '00000')
-        {
-          -- Both materialization paths failed.  Drop the quad maps and
-          -- signal so the user is left with no partial graph.
-          DB.DBA.GQL_PG_DROP_QM (_pg_name, _node_tables);
-          signal ('GQ208', sprintf (
-            'Failed to materialize property graph %s: %s. Both RDF_VIEW_SYNC_TO_PHYSICAL and SPARQL INSERT fallback failed.',
-            _pg_name, _msg));
-        }
-      _materialized := 1;
+      -- Materialization failed.  Drop the quad maps and signal so the
+      -- user is left with no partial graph.
+      DB.DBA.GQL_PG_DROP_QM (_pg_name, _node_tables);
+      signal ('GQ208', sprintf (
+        'Failed to materialize property graph %s: %s',
+        _pg_name, _msg));
     }
 
   -- Drop the quad maps and IRI classes so the graph is purely physical
@@ -946,8 +936,10 @@ create procedure DB.DBA.GQL_PG_DROP (in _pg_name varchar, in _if_exists integer)
 
 ----------------------------------------------------------------------
 -- Materialize a virtual property graph into physical RDF triples.
--- Tries RDF_VIEW_SYNC_TO_PHYSICAL first; falls back to SPARQL INSERT
--- INTO GRAPH if that procedure is unavailable or fails.
+-- Uses SPARQL INSERT INTO GRAPH to copy triples from the virtual quad
+-- map graph into the physical named graph.  RDF_VIEW_SYNC_TO_PHYSICAL
+-- is not used because property-graph quad maps lack the RDF View
+-- metadata that procedure requires.
 ----------------------------------------------------------------------
 create procedure DB.DBA.GQL_PG_MATERIALIZE (in _pg_name varchar)
 {
@@ -955,7 +947,6 @@ create procedure DB.DBA.GQL_PG_MATERIALIZE (in _pg_name varchar)
   declare _pg_mode, _graph_iri varchar;
   declare _st, _msg varchar;
   declare _m, _d any;
-  declare _materialized integer;
 
   meta := DB.DBA.GQL_PG_DEF_GET (_pg_name);
   if (meta is null)
@@ -966,33 +957,20 @@ create procedure DB.DBA.GQL_PG_MATERIALIZE (in _pg_name varchar)
   if (_pg_mode <> 'virtual')
     signal ('GQ207', sprintf ('Property graph %s is not virtual; cannot materialize', _pg_name));
 
-  _materialized := 0;
-
-  -- Try RDF_VIEW_SYNC_TO_PHYSICAL first.
-  if (__proc_exists ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL') is not null)
-    {
-      _st := '00000'; _msg := '';
-      exec (sprintf ('DB.DBA.RDF_VIEW_SYNC_TO_PHYSICAL (''%s'', 1, null, 1, 1, 0, 0)',
-                     _graph_iri),
-            _st, _msg, vector (), 0, _m, _d);
-      if (_st = '00000')
-        _materialized := 1;
-    }
-
-  -- Fallback: SPARQL INSERT INTO GRAPH.
-  if (_materialized = 0)
-    {
-      _st := '00000'; _msg := '';
-      exec (sprintf (
-              'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
-              _graph_iri, _graph_iri),
-            _st, _msg, vector (), 0, _m, _d);
-      if (_st <> '00000')
-        signal ('GQ208', sprintf (
-          'Failed to materialize property graph %s: %s. Both RDF_VIEW_SYNC_TO_PHYSICAL and SPARQL INSERT fallback failed.',
-          _pg_name, _msg));
-      _materialized := 1;
-    }
+  -- SPARQL INSERT INTO GRAPH: copy all triples from the virtual graph
+  -- (backed by quad maps) into the physical named graph.  For virtual
+  -- graphs, the graph IRI is both the quad map IRI and the target IRI,
+  -- but INSERT INTO GRAPH writes to RDF_QUAD which coexists with the
+  -- quad map (the quad map is read-only for that IRI).
+  _st := '00000'; _msg := '';
+  exec (sprintf (
+          'SPARQL INSERT INTO GRAPH <%s> { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }',
+          _graph_iri, _graph_iri),
+        _st, _msg, vector (), 0, _m, _d);
+  if (_st <> '00000')
+    signal ('GQ208', sprintf (
+      'Failed to materialize property graph %s: %s',
+      _pg_name, _msg));
 
   update DB.DBA.GQL_PROPERTY_GRAPH_DEF
      set IS_MATERIALIZED = 1

@@ -2916,6 +2916,7 @@ create procedure DB.DBA.GQL_PARSE_CREATE_PROPERTY_GRAPH_V2 (
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 266)  -- NODE
         {
           declare _nt_first, _rt_first integer;
+          _pos := _pos + 1;  -- consume NODE
           DB.DBA.GQL_EXPECT_KW (_tokens, _pos, 'TABLES');  -- TABLES
           DB.DBA.GQL_EXPECT (_tokens, _pos, 1);    -- LPAREN
           _nt_first := 1;
