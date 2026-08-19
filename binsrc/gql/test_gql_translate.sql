@@ -383,11 +383,11 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16g FAIL: INSERT INTO PROPERTY GRAPH: ', cast (_sparql as varchar)))); }
 
-  -- TR16h: USE PROPERTY GRAPH node IRI uses per-graph data NS
+  -- TR16h: USE PROPERTY GRAPH node IRI uses per-graph data NS with sequential ID
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT (:Customer {name: "Alice"})');
   if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery#node_') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16h PASS: USE PROPERTY GRAPH node IRI')); }
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16h PASS: USE PROPERTY GRAPH node IRI sequential')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16h FAIL: USE PROPERTY GRAPH node IRI: ', cast (_sparql as varchar)))); }
 
@@ -418,6 +418,24 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
     { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16k PASS: USE PROPERTY GRAPH edge props')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16k FAIL: USE PROPERTY GRAPH edge props: ', cast (_sparql as varchar)))); }
+
+  -- TR16l: USE PROPERTY GRAPH edge reification uses sequential edge ID
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('USE PROPERTY GRAPH Bakery INSERT (n {iri:"urn:test#n"})-[r:VISITS {since: "2024"}]->(m {iri:"urn:test#m"})');
+  if (_sparql is not null and strstr (_sparql, '/pgraph/Bakery#edge_') is not null
+      and strstr (_sparql, 'rdf:Statement') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16l PASS: USE PROPERTY GRAPH sequential edge ID')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16l FAIL: sequential edge ID: ', cast (_sparql as varchar)))); }
+
+  -- TR16m: Classic mode still uses UUID for node IDs
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('INSERT (:Customer {name: "Alice"})');
+  if (_sparql is not null and strstr (_sparql, '/gql/data/node_') is not null
+      and strstr (_sparql, 'node_0') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16m PASS: Classic mode uses UUID')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16m FAIL: Classic mode UUID: ', cast (_sparql as varchar)))); }
 
   -- TR17: Phase 0 - gql_t_assert_sparql helper (ORDER BY DESC)
   _total := _total + 1;

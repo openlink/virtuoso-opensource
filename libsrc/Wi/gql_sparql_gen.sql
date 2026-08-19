@@ -666,7 +666,9 @@ create procedure DB.DBA.GQL_GEN_INSERT_WHERE (in _insert_asts any, in _match_ast
                         {
                           declare esv varchar;
                           esv := concat ('<', DB.DBA.GQL_NEW_EDGE_URI_CTX (_ctx), '>');
-                          if (reifier_var is not null)
+                          -- Only use reifier_var as edge subject if it's a concrete IRI
+                          -- (not a SPARQL variable like ?gql_e_r)
+                          if (reifier_var is not null and subseq (reifier_var, 0, 1) <> '?')
                             { esv := reifier_var; }
 
                           insert_body := concat (insert_body, '  ', esv, ' a rdf:Statement .\n');
