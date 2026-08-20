@@ -925,24 +925,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
                 </textarea>
         </div>
 
-<?vsp   if (ui_can_opencypher or ui_can_opengql) { ?>
-        <div class="mb-3 row">
-            <label class="col-lg-2 col-form-label" for="language">Query Language</label>
-            <div class="col-lg-10">
-                <select class="form-select form-select-sm" name="language" id="language">
-                    <option value="sparql"<?vsp if (ui_language = 'sparql') http(' selected="selected"'); ?>>SPARQL</option>
-<?vsp   if (ui_can_opencypher) { ?>
-                    <option value="opencypher"<?vsp if (ui_language = 'opencypher') http(' selected="selected"'); ?>>openCypher</option>
-<?vsp   } ?>
-<?vsp   if (ui_can_opengql) { ?>
-                    <option value="opengql"<?vsp if (ui_language = 'opengql') http(' selected="selected"'); ?>>openGQL</option>
-<?vsp   } ?>
-                </select>
-                <small class="form-text text-muted">openCypher and openGQL inputs are translated to SPARQL before execution. The translated SPARQL is exposed via the <code>X-Generated-SPARQL</code> response header; append <code>&amp;dryrun=1</code> to see it directly.</small>
-            </div>
-        </div>
-<?vsp   } ?>
-
         <div class="mb-3 row">
             <label class="col-lg-2 col-form-label" for="format">Results Format</label>
             <div class="col-lg-10">
