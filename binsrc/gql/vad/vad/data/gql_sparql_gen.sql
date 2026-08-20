@@ -1375,7 +1375,19 @@ create procedure DB.DBA.GQL_GEN_DML (in _delete_ast any, in _set_ast any, in _re
           sparql_text := concat (sparql_text, 'INSERT {\n', DB.DBA.GQL_DML_G_OPEN (graph));
           sparql_text := concat (sparql_text, set_ins);
           sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '} WHERE {\n', DB.DBA.GQL_DML_G_OPEN (graph));
-          sparql_text := concat (sparql_text, swhere_body);
+          -- When this is a combined DELETE+INSERT MODIFY whose INSERT template
+          -- references a computed BIND variable (e.g. SET a.bal = a.bal - 1),
+          -- wrap the WHERE body in a SELECT subquery so the computed value is
+          -- materialised as a projected binding.  A bare DELETE+INSERT ... WHERE
+          -- with a BIND-computed INSERT variable, executed via exec() inside a
+          -- stored procedure (the GQL_RUN path), drops that variable — only the
+          -- DELETE takes effect and the new value is never written.  Wrapping in
+          -- a sub-SELECT makes the value survive.  (INSERT-only SET — e.g. SET
+          -- of a label — has no set_del and is unaffected.)
+          if (set_del <> '')
+            sparql_text := concat (sparql_text, '  { SELECT * WHERE {\n', swhere_body, '  } }\n');
+          else
+            sparql_text := concat (sparql_text, swhere_body);
           sparql_text := concat (sparql_text, DB.DBA.GQL_DML_G_CLOSE (graph), '}\n');
         }
     }

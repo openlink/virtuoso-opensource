@@ -157,8 +157,8 @@ create procedure DB.DBA.GQL_ACID_TEST_3 ()
 
   -- Sum of balances before transfer
   _before_sum := coalesce ((sparql select sum(?bal) from <urn:gql:acid> where {
-    ?s <urn:gql:acid#balance> ?bal .
-    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:gql:acid#Account>
+    ?s ?pbal ?bal . filter (strends (str (?pbal), '/gql/ontology/balance'))
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?tp . filter (strends (str (?tp), '/gql/ontology/Account'))
   }), 0);
 
   -- Execute a transfer
@@ -166,8 +166,8 @@ create procedure DB.DBA.GQL_ACID_TEST_3 ()
 
   -- Sum of balances after transfer
   _after_sum := coalesce ((sparql select sum(?bal) from <urn:gql:acid> where {
-    ?s <urn:gql:acid#balance> ?bal .
-    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:gql:acid#Account>
+    ?s ?pbal ?bal . filter (strends (str (?pbal), '/gql/ontology/balance'))
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?tp . filter (strends (str (?tp), '/gql/ontology/Account'))
   }), 0);
 
   if (_before_sum = _after_sum)
@@ -261,8 +261,8 @@ create procedure DB.DBA.GQL_ACID_TEST_7 ()
   set isolation='serializable';
 
   _initial_sum := coalesce ((sparql select sum(?bal) from <urn:gql:acid> where {
-    ?s <urn:gql:acid#initialBalance> ?bal .
-    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:gql:acid#Account>
+    ?s ?pbal ?bal . filter (strends (str (?pbal), '/gql/ontology/initialBalance'))
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?tp . filter (strends (str (?tp), '/gql/ontology/Account'))
   }), 0);
 
   -- Run 10 transfers
@@ -272,8 +272,8 @@ create procedure DB.DBA.GQL_ACID_TEST_7 ()
     }
 
   _actual_sum := coalesce ((sparql select sum(?bal) from <urn:gql:acid> where {
-    ?s <urn:gql:acid#balance> ?bal .
-    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:gql:acid#Account>
+    ?s ?pbal ?bal . filter (strends (str (?pbal), '/gql/ontology/balance'))
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?tp . filter (strends (str (?tp), '/gql/ontology/Account'))
   }), 0);
 
   -- Note: account 15 was deleted in AC4, so we need to account for that
