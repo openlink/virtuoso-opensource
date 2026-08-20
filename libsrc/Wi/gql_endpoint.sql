@@ -73,6 +73,20 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
         _default_graph := null;
       else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'HOME_GRAPH')
         _default_graph := DB.DBA.GQL_HOME_GRAPH ();
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'USE_PROPERTY_AT_SCHEMA')
+        {
+          -- USE PROPERTY GRAPH <name>: the at-schema clause wraps a GRAPH_REF
+          -- (not a bare graph ref), so resolve the property-graph's graph IRI
+          -- rather than casting the wrapper vector to varchar (which raised
+          -- SR066 CONVERT ARRAY_OF_POINTER -> VARCHAR).  Mirrors the
+          -- USE_PROPERTY_AT_SCHEMA handling in the translator.
+          declare _pg_ref any;
+          _pg_ref := aref (aref (proc_body, 1), 1);
+          if (isarray (_pg_ref) and length (_pg_ref) > 1 and aref (_pg_ref, 0) = 'GRAPH_REF')
+            _default_graph := DB.DBA.GQL_PG_GRAPH_IRI (cast (aref (_pg_ref, 1) as varchar));
+          else
+            _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (_pg_ref);
+        }
       else
         _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
     }
