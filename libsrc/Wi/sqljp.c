@@ -902,7 +902,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
   df_elt_t *fill_copy;
   join_plan_t jp;
   df_elt_t *fill_dfe;
-  if (!enable_hash_fill_join || -1 == hash_set)
+  if (!enable_hash_fill_join || -1 == hash_set || hash_ref_tb->_.table.ot->ot_is_outer)
     return 0;
   jp.jp_hash_fill_preds = org_preds;
   jp.jp_prev = NULL;

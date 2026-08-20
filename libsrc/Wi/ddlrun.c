@@ -6639,8 +6639,8 @@ static const char *charset_define_text =
 "   if (exists (select 1 from DB.DBA.SYS_CHARSETS where CS_NAME = name)) \n"
 "     return; \n"
 "   if (length (charset_string) > 255) signal ('22023', 'Charset definition is not correct', 'SR284'); \n"
-"   parsed_charset := charset__define (name, charset_string, aliases); \n"
-"   log_text(\'charset__define(?, ?, ?)\', name, parsed_charset, aliases); \n"
+"   parsed_charset := __charset_define (name, charset_string, aliases); \n"
+"   log_text(\'__charset_define(?, ?, ?)\', name, parsed_charset, aliases); \n"
 "   insert soft SYS_CHARSETS (CS_NAME, CS_TABLE, CS_ALIASES) values (name, parsed_charset, either (isnull (aliases), NULL, serialize (aliases))); \n"
 "} \n";
 

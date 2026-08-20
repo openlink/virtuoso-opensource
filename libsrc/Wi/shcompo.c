@@ -38,7 +38,7 @@ int32 shcompo_max_cache_sz = 1000;
 /* PART 1. Generic functionality */
 
 shcompo_t *
-shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t key, int key_is_const, struct query_instance_s *qi, void *env, caddr_t *err_ret)
+shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t text, caddr_t key, int key_is_const, struct query_instance_s *qi, void *env, caddr_t *err_ret)
 {
   shcompo_t *res, **val_ptr;
   mutex_enter (vt->shcompo_cache_mutex);
@@ -105,7 +105,7 @@ static int32 shc_rnd_seed;
   id_hash_add_new (vt->shcompo_cache, (caddr_t)(&key), (caddr_t)(&res));
   SHC_ENTER (res); /* Safe to enter there inside vt->shcompo_cache_mutex because nobody else knows about the res at all */
   mutex_leave (vt->shcompo_cache_mutex);
-  vt->shcompo_compile (res, qi, env);
+  vt->shcompo_compile (res, text, qi, env);
   if (NULL != res->shcompo_error)
     {
       if (NULL != err_ret)
@@ -340,9 +340,8 @@ shcompo_alloc__default (void *env)
 shcompo_vtable_t shcompo_vtable__qr;
 
 void
-shcompo_compile__qr(shcompo_t *shc, query_instance_t *qi, void *env)
+shcompo_compile__qr(shcompo_t *shc, caddr_t txt, query_instance_t *qi, void *env)
 {
-  caddr_t txt = ((caddr_t *)(shc->shcompo_key))[0];
   long saved_mrows = qi->qi_client->cli_resultset_max_rows;
   qi->qi_client->cli_resultset_max_rows = -1;
   QR_RESET_CTX_T (qi->qi_thread)
@@ -404,9 +403,8 @@ shcompo_destroy_data__qr (shcompo_t *shc)
 shcompo_vtable_t shcompo_vtable__test;
 
 void
-shcompo_compile__test (shcompo_t *shc, query_instance_t *qi, void *env)
+shcompo_compile__test (shcompo_t *shc, caddr_t txt, query_instance_t *qi, void *env)
 {
-  caddr_t txt = ((caddr_t *)(shc->shcompo_key))[0];
   caddr_t my;
   if ((NULL != shc->shcompo_data) || (NULL != shc->shcompo_error))
     GPF_T1 ("shcompo_compile__test: bad state before");
@@ -431,7 +429,7 @@ shcompo_check_if_stale__test (shcompo_t *shc)
 void
 shcompo_recompile__test (shcompo_t *old_shc, shcompo_t *new_shc)
 {
-  caddr_t txt = ((caddr_t *)(old_shc->shcompo_key))[0];
+  caddr_t txt = (caddr_t)(old_shc->shcompo_data);
   caddr_t my;
   if ((NULL == old_shc->shcompo_data) || (NULL != old_shc->shcompo_error))
     GPF_T1 ("shcompo_recompile__test: bad old_shc state before");
@@ -462,7 +460,7 @@ bif_exec_shcompo_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t txt = bif_string_arg (qst, args, 0, "bif_exec_shcompo_test");
   caddr_t err = NULL;
-  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, list (4, box_copy_tree (txt), (ptrlong)11, (ptrlong)22, (ptrlong)0), 0, qi, NULL, &err);
+  shcompo_t *shc = shcompo_get_or_compile (&shcompo_vtable__test, txt, list (4, box_md5 (txt), (ptrlong)11, (ptrlong)22, (ptrlong)0), 0, qi, NULL, &err);
   if (NULL != err)
     sqlr_resignal (err);
   shcompo_recompile_if_needed (&shc);

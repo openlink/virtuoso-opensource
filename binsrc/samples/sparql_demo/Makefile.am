@@ -35,6 +35,13 @@ DAV_FLAGS       = $(VERBOSE) \
                 --var="TYPE=dav" \
                 --var="VERSION=$(VERSION)"
 
+all-am:
+	@echo "*"
+	@echo "* The SPARQL demo VAD is deprecated and will be removed in a future version"
+	@echo "*"
+
+build: sparql_demo_dav.vad
+
 sparql_demo_dav.vad: $(EXTRA_DIST) Makefile data
 	$(PYTHON) $(top_srcdir)/binsrc/vadpacker/vadpacker.py \
 		-o $(builddir)/sparql_demo_dav.vad \

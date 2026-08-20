@@ -1988,6 +1988,12 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
+  dk_free_tree (ws->ws_xslt_url);
+  ws->ws_xslt_url = NULL;
+  dk_free_tree (ws->ws_xslt_params);
+  ws->ws_xslt_params = NULL;
+  dk_free_box (ws->ws_xslt_doc_url);
+  ws->ws_xslt_doc_url = NULL;
 }
 
 char http_server_id_string_buf [1024];
@@ -9399,7 +9405,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *dhparam = https_dhparam;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
-  ssl_meth = SSLv23_server_method ();
+  ssl_meth = TLS_server_method ();
   ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
 
   /* Initialize the parameters */
@@ -12358,7 +12364,7 @@ http_init_part_two (void)
       char err_buf [1024];
       SSL_CTX* ssl_ctx = NULL;
       const SSL_METHOD *ssl_meth = NULL;
-      ssl_meth = SSLv23_server_method();
+      ssl_meth = TLS_server_method();
       ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
       if (!ssl_ctx)
 	{

@@ -57,6 +57,7 @@ PLDBG=${PLDBG-0}
 LITEMODE=${LITEMODE-0}
 CASE_MODE=${CASE_MODE-1}
 TIMEZONELESS=${TIMEZONELESS-2}
+TRACE=${TRACE-""}
 
 MAKE=${MAKE-make}
 export MAKE
@@ -827,6 +828,7 @@ MAKECFG_FILE ()
     -e "s/LITEMODE/$LITEMODE/g" \
     -e "s/COLUMN_STORE/$column_store/g" \
     -e "s/TIMEZONELESS/$TIMEZONELESS/g" \
+    -e "s/TRACE/$TRACE/g" \
     -e "s/BUILD_HOME/$home_escaped/g" \
      > $_cfgfile
 }
@@ -967,6 +969,7 @@ MAKE_CL_CFG ()
      -e "s/LITEMODE/$LITEMODE/g" \
      -e "s/COLUMN_STORE/$column_store/g" \
      -e "s/TIMEZONELESS/$TIMEZONELESS/g" \
+     -e "s/TRACE/$TRACE/g" \
      > "cl$cl_no/virtuoso.ini"
 
    cat $VIRTUOSO_TEST/../../../binsrc/samples/demo/noise.txt > "cl$cl_no/noise.txt"

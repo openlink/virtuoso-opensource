@@ -5257,6 +5257,8 @@ static const char *sparql11_agg_names[] = {
     "SUM",		"SPECIAL::bif:SUM" };
 
 
+int32 sparql_all_bif_unsafe = 0;
+
 int
 sparp_sql_function_name_is_unsafe (const char *buf)
 {
@@ -5270,6 +5272,8 @@ sparp_bif_function_name_is_unsafe (const char *buf)
   if (buf && !strcasecmp (buf, "__rdf_long_from_batch_params"))
     return 0;
   if (buf && !strncmp (buf, "__", 2)) /* no internal bifs allowed as SPARQL bif:xx() */
+    return 1;
+  if (sparql_all_bif_unsafe)
     return 1;
   return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names, spar_unsafe_bif_names__count, sizeof (caddr_t)));
 }

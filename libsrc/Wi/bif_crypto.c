@@ -367,17 +367,21 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	  else if (tag == V_ASN1_OCTET_STRING)
 	    {
 	      int i, printable = 1;
+	      int oslen = 0;
+	      const unsigned char *osdata = NULL;
 
 	      opp = op;
 	      os = d2i_ASN1_OCTET_STRING (NULL, (const unsigned char **)&opp, len + hl);
-	      if (os != NULL && os->length > 0)
+	      if (os != NULL)
+		oslen = ASN1_STRING_length (os);
+	      if (os != NULL && oslen > 0)
 		{
-		  opp = os->data;
+		  osdata = ASN1_STRING_get0_data (os);
 		  /* testing whether the octet string is
 		   * printable */
-		  for (i = 0; i < os->length; i++)
+		  for (i = 0; i < oslen; i++)
 		    {
-		      if (((opp[i] < ' ') && (opp[i] != '\n') && (opp[i] != '\r') && (opp[i] != '\t')) || (opp[i] > '~'))
+		      if (((osdata[i] < ' ') && (osdata[i] != '\n') && (osdata[i] != '\r') && (osdata[i] != '\t')) || (osdata[i] > '~'))
 			{
 			  printable = 0;
 			  break;
@@ -388,7 +392,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 		    {
 		      /*if (BIO_write(bp,":",1) <= 0)
 		         goto end; */
-		      if (BIO_write (bp, (const char *) opp, os->length) <= 0)
+		      if (BIO_write (bp, (const char *) osdata, oslen) <= 0)
 			goto end;
 		    }
 		  else if (!dump)
@@ -397,9 +401,9 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 		    {
 		      /*if (BIO_write(bp,"[HEX DUMP]:",11) <= 0)
 		         goto end; */
-		      for (i = 0; i < os->length; i++)
+		      for (i = 0; i < oslen; i++)
 			{
-			  if (BIO_printf (bp, "%02X", opp[i]) <= 0)
+			  if (BIO_printf (bp, "%02X", osdata[i]) <= 0)
 			    goto end;
 			}
 		    }
@@ -412,7 +416,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 			     goto end; */
 			  ;
 			}
-		      if (BIO_dump_indent (bp, (const char *) opp, ((dump == -1 || dump > os->length) ? os->length : dump), dump_indent) <= 0)
+		      if (BIO_dump_indent (bp, (const char *) osdata, ((dump == -1 || dump > oslen) ? oslen : dump), dump_indent) <= 0)
 			goto end;
 		      nl = 1;
 		    }
@@ -426,63 +430,31 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	  else if (tag == V_ASN1_INTEGER)
 	    {
 	      ASN1_INTEGER *bs;
-	      int i;
 
 	      opp = op;
 	      bs = d2i_ASN1_INTEGER (NULL, (const unsigned char **)&opp, len + hl);
 	      if (bs != NULL)
 		{
-		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
-		  if (bs->type == V_ASN1_NEG_INTEGER)
-		    if (BIO_write (bp, "-", 1) <= 0)
-		      goto end;
-		  for (i = 0; i < bs->length; i++)
-		    {
-		      if (BIO_printf (bp, "%02X", bs->data[i]) <= 0)
-			goto end;
-		    }
-		  if (bs->length == 0)
-		    {
-		      if (BIO_write (bp, "00", 2) <= 0)
-			goto end;
-		    }
-		}
-	      else
-		{
-		  if (BIO_write (bp, "BAD INTEGER", 11) <= 0)
+		  if (i2a_ASN1_INTEGER (bp, bs) < 0)
 		    goto end;
 		}
+	      else if (BIO_write (bp, "BAD INTEGER", 11) <= 0)
+		goto end;
 	      ASN1_INTEGER_free (bs);
 	    }
 	  else if (tag == V_ASN1_ENUMERATED)
 	    {
 	      ASN1_ENUMERATED *bs;
-	      int i;
 
 	      opp = op;
 	      bs = d2i_ASN1_ENUMERATED (NULL, (const unsigned char **) &opp, len + hl);
 	      if (bs != NULL)
 		{
-		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
-		  if (bs->type == V_ASN1_NEG_ENUMERATED)
-		    if (BIO_write (bp, "-", 1) <= 0)
-		      goto end;
-		  for (i = 0; i < bs->length; i++)
-		    {
-		      if (BIO_printf (bp, "%02X", bs->data[i]) <= 0)
-			goto end;
-		    }
-		  if (bs->length == 0)
-		    {
-		      if (BIO_write (bp, "00", 2) <= 0)
-			goto end;
-		    }
-		}
-	      else
-		{
-		  if (BIO_write (bp, "BAD ENUMERATED", 11) <= 0)
+		  if (i2a_ASN1_ENUMERATED (bp, bs) < 0)
 		    goto end;
 		}
+	      else if (BIO_write (bp, "BAD ENUMERATED", 14) <= 0)
+		goto end;
 	      ASN1_ENUMERATED_free (bs);
 	    }
 	  else if (len > 0 && dump)
@@ -1735,15 +1707,17 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	int i, n;
 	const ASN1_STRING *sig;
 	const X509_ALGOR *sigalg;
+	const ASN1_OBJECT *sigalg_obj;
 	char buf[80];
 	caddr_t val;
 
 	X509_get0_signature (&sig, &sigalg, cert);
+	X509_ALGOR_get0 (&sigalg_obj, NULL, NULL, sigalg);
 
-        i2t_ASN1_OBJECT(buf,sizeof (buf), sigalg->algorithm);
+	i2t_ASN1_OBJECT (buf, sizeof (buf), sigalg_obj);
 
-	n = sig->length;
-	s = sig->data;
+	n = ASN1_STRING_length (sig);
+	s = ASN1_STRING_get0_data (sig);
 	val = dk_alloc_box ((n * 2) + 1, DV_SHORT_STRING);
 	for (i = 0; i < n; i ++)
 	  {

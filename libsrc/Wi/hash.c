@@ -2210,6 +2210,7 @@ runX_begin: ;
 	      {
 		state_slot_t * ssl = setp->setp_dependent_box[dep_box_inx];
 		caddr_t new_val = QST_GET (qst, ssl);
+		caddr_t new_val_copy = NULL;
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_mem_col;
 		if (op->go_distinct_ha)
@@ -2218,8 +2219,13 @@ runX_begin: ;
 		    caddr_t d_val = qst_get (qst, op->go_distinct);
 		    if (DV_DB_NULL == DV_TYPE_OF (d_val))
 		      goto next_mem_col;
+		    new_val_copy = box_copy_tree (new_val);
 		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
-		      goto next_mem_col;
+		      {
+			dk_free_tree (new_val_copy);
+			goto next_mem_col;
+		      }
+		    new_val = new_val_copy;
 		  }
 
 		/* can be null on the row if 1st value was null. Replace w/ new val */
@@ -2244,7 +2250,7 @@ runX_begin: ;
 		      }
 		    else
 		      {
-			int len1 = IS_BOX_POINTER (dep_ptr[0]) ? box_length (dep_ptr[0]) : 0; 
+			int len1 = IS_BOX_POINTER (dep_ptr[0]) ? box_length (dep_ptr[0]) : 0;
 			int len2 = IS_BOX_POINTER (res) ? box_length (res) : 0;
 			if (DV_TYPE_OF (dep_ptr[0]) == DV_TYPE_OF (res) && len1 == len2 && len1 > 0)
 			  memcpy (dep_ptr[0], res, len1);
@@ -2253,6 +2259,8 @@ runX_begin: ;
 			dk_free_tree (res);
 		      }
 		  }
+		if (new_val_copy)
+		  dk_free_tree (new_val_copy);
 		break;
 	      }
 	    case AMMSC_USER:
@@ -2313,6 +2321,7 @@ runX_begin: ;
 	      {
 		state_slot_t * ssl = setp->setp_dependent_box[dep_box_inx];
 		caddr_t new_val = QST_GET (qst, ssl);
+		caddr_t new_val_copy = NULL;
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_disk_col;
 		if (op->go_distinct_ha)
@@ -2321,8 +2330,13 @@ runX_begin: ;
 		    caddr_t d_val = QST_GET (qst, op->go_distinct);
 		    if (DV_DB_NULL == DV_TYPE_OF (d_val))
 		      goto next_disk_col;
+		    new_val_copy = box_copy_tree (new_val);
 		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
-		      goto next_disk_col;
+		      {
+			dk_free_tree (new_val_copy);
+			goto next_disk_col;
+		      }
+		    new_val = new_val_copy;
 		  }
 		/* can be null on the row if 1st value was null. Replace w/ new val */
 		if (DV_DB_NULL == DV_TYPE_OF (QST_GET_V (qst, op->go_old_val)))
@@ -2336,6 +2350,8 @@ runX_begin: ;
 		    rf.rf_row = ihfr.ihfr_disk_buf->bd_buffer + itc->itc_map_pos;
 		    row_set_col (&rf, cl, QST_GET_V (qst, op->go_old_val));
 		  }
+		if (new_val_copy)
+		  dk_free_tree (new_val_copy);
 		break;
 	      }
 	    case AMMSC_USER:

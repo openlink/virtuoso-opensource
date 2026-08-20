@@ -1462,6 +1462,16 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
             }
           continue;
         }
+      if ((DTFLAG_ZH == fld_flag) && (4 == fldlen))
+        { /* ISO 8601 basic TZ format +hhmm / -hhmm (no colon separator) */
+          fld_values[fld_idx] = ((tail[0]-'0') * 10) + (tail[1]-'0');
+          fld_values[fld_idx+1] = ((tail[2]-'0') * 10) + (tail[3]-'0');
+          tzmin = 0;
+          res_flags |= DTFLAG_ZH | DTFLAG_ZM;
+          tail = group_end;
+          fld_idx++;
+          continue;
+        }
       if ((DTFLAG_ALLOW_JAVA_SYNTAX & dtflags) && (DTFLAG_ZH == fld_flag))
         {
           switch (fldlen)
@@ -1484,14 +1494,8 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
               tail = group_end;
               fld_idx++;
               continue;
-            case 4: /* Java format +hhmm */
-              fld_values[fld_idx] = ((tail[0]-'0') * 10) + (tail[1]-'0');
-              fld_values[fld_idx+1] = ((tail[2]-'0') * 10) + (tail[3]-'0');
-              tzmin = 0;
-              res_flags |= DTFLAG_ZH | DTFLAG_ZM;
-              tail = group_end;
-              fld_idx++;
-              continue;
+            case 4: /* handled above */
+              break;
             }
         }
       err_msg_ret[0] = box_sprintf (500, "Incorrect %s field length", names[fld_idx]);

@@ -205,6 +205,7 @@ typedef struct http_cli_ctx_s
   caddr_t           hcctx_cert_pass;
   caddr_t           hcctx_ca_certs;
   char 		    hcctx_ssl_insecure;
+  int32             hcctx_ssl_seclevel;
 #endif
   dk_set_t          hcctx_resp_evts;                 /* HTTP Resp evt queues */
   int               hcctx_resp_evt_ret;
@@ -261,6 +262,7 @@ HC_RET http_cli_read_resp_body (http_cli_ctx *);
 void http_cli_calc_md5 (caddr_t, caddr_t, int);
 caddr_t http_cli_auth_new_cnonce (void);
 HC_RET http_cli_init_std_auth (http_cli_ctx *, caddr_t, caddr_t);
+HC_RET http_cli_ssl_seclevel (http_cli_ctx* ctx, int level);
 HC_RET http_cli_calc_auth_digest (http_cli_ctx *, caddr_t, caddr_t, caddr_t);
 HC_RET http_cli_calc_auth_basic (http_cli_ctx *, caddr_t, caddr_t, caddr_t);
 char* next_delim (char*, char*);

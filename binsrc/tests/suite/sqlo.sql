@@ -544,7 +544,760 @@ use DB;
 --SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --ECHO BOTH ": BUG1286: contains on a non-driving table\n";
 
+-- Case 1
 
+drop table SQLSMITH.orders if exists;
+
+CREATE TABLE SQLSMITH.orders (
+    id          INTEGER,
+    user_id     INTEGER,
+    amount      DOUBLE PRECISION,
+    status      VARCHAR(20),
+    created_at  TIMESTAMP
+);
+
+INSERT INTO SQLSMITH.orders VALUES (1, 1, 100.00, 'paid',    '2022-02-01 09:00:00');
+INSERT INTO SQLSMITH.orders VALUES (2, 1, 200.50, 'shipped', '2022-02-02 10:00:00');
+INSERT INTO SQLSMITH.orders VALUES (3, 2, NULL,   'failed',  '2022-02-03 11:00:00');
+INSERT INTO SQLSMITH.orders VALUES (4, 3, 50.00,  'paid',    '2022-02-04 12:00:00');
+INSERT INTO SQLSMITH.orders VALUES (5, 5, 999.99, 'paid',    '2022-02-05 13:00:00');
+
+SELECT COUNT(*)
+FROM SQLSMITH.orders AS ref_0
+WHERE LOG10(79.28)
+    <= CASE
+        WHEN CEILING(LOG10(76.78)) < EXP(74.48)
+        THEN SQRT(7.94)
+        ELSE 65.63
+    END;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": constant predicate count from SQLSMITH.orders returned " $LAST[1] "\n";
+
+-- Case 2
+
+drop table SQLSMITH.comments if exists;
+
+CREATE TABLE SQLSMITH.comments (
+    id          INTEGER,
+    post_id     INTEGER,
+    user_id     INTEGER,
+    content     VARCHAR(1000),
+    is_spam     INTEGER,
+    created_at  DATETIME
+);
+
+INSERT INTO SQLSMITH.comments VALUES (1, 1, 2, 'Nice post', 0, CAST('2022-01-20 10:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (2, 1, 3, 'Spam here', 1, CAST('2022-01-21 11:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (3, 2, 1, 'Thanks', 0, CAST('2022-01-22 12:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (4, 4, 5, NULL, 0, CAST('2022-01-23 13:00:00' AS DATETIME));
+
+SELECT
+    ref_0.id AS c0,
+    ref_0.is_spam AS c1,
+    ref_0.created_at AS c2
+FROM SQLSMITH.comments AS ref_0
+WHERE EXISTS (
+    SELECT 1
+    FROM SQLSMITH.comments AS ref_1
+    WHERE ref_0.id <> ref_1.id
+);
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": EXISTS self-check on SQLSMITH.comments returned " $ROWCNT " rows\n";
+
+-- Case 3
+
+drop table SQLSMITH.users if exists;
+drop table SQLSMITH.orders if exists;
+
+CREATE TABLE SQLSMITH.users (
+    id           INTEGER,
+    username     VARCHAR(100),
+    email        VARCHAR(255),
+    age          INTEGER,
+    status       VARCHAR(20),
+    created_at   DATETIME,
+    score        DOUBLE PRECISION
+);
+
+CREATE TABLE SQLSMITH.orders (
+    id          INTEGER,
+    user_id     INTEGER,
+    amount      DOUBLE PRECISION,
+    status      VARCHAR(20),
+    created_at  DATETIME
+);
+
+INSERT INTO SQLSMITH.users VALUES (1, 'alice', 'alice@test.com', 20, 'active', CAST('2022-01-01 10:00:00' AS DATETIME), 88.5);
+INSERT INTO SQLSMITH.users VALUES (2, 'bob', 'bob@test.com', 30, 'active', CAST('2022-01-02 11:00:00' AS DATETIME), 92.3);
+INSERT INTO SQLSMITH.users VALUES (3, 'carol', NULL, NULL, 'banned', CAST('2022-01-03 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.users VALUES (4, 'dave', 'dave@test.com', 45, 'active', CAST('2022-01-04 13:00:00' AS DATETIME), 65.2);
+INSERT INTO SQLSMITH.users VALUES (5, NULL, 'null@test.com', 18, 'inactive', CAST('2022-01-05 14:00:00' AS DATETIME), 70.0);
+
+INSERT INTO SQLSMITH.orders VALUES (1, 1, 100.00, 'paid', CAST('2022-02-01 09:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (2, 1, 200.50, 'shipped', CAST('2022-02-02 10:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (3, 2, NULL, 'failed', CAST('2022-02-03 11:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (4, 3, 50.00, 'paid', CAST('2022-02-04 12:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (5, 5, 999.99, 'paid', CAST('2022-02-05 13:00:00' AS DATETIME));
+
+SELECT COUNT(*)
+FROM SQLSMITH.users AS ref_0
+RIGHT JOIN SQLSMITH.users AS ref_1
+    ON ref_0.age = ref_1.id
+INNER JOIN (
+    SELECT
+        ref_2.status AS c7
+    FROM SQLSMITH.orders AS ref_2
+    WHERE ref_2.id < 64
+) AS subq_0
+    ON ref_0.username = subq_0.c7
+WHERE ref_1.score IS NULL;
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": RIGHT JOIN/derived table count returned " $LAST[1] "\n";
+
+-- Case 4
+
+drop table SQLSMITH.users if exists;
+
+CREATE TABLE SQLSMITH.users (
+    id           INTEGER,
+    username     VARCHAR(100),
+    email        VARCHAR(255),
+    age          INTEGER,
+    status       VARCHAR(20),
+    created_at   DATETIME,
+    score        DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.users VALUES (1, 'alice', 'alice@test.com', 20, 'active', CAST('2022-01-01 10:00:00' AS DATETIME), 88.5);
+INSERT INTO SQLSMITH.users VALUES (2, 'bob', 'bob@test.com', 30, 'active', CAST('2022-01-02 11:00:00' AS DATETIME), 92.3);
+INSERT INTO SQLSMITH.users VALUES (3, 'carol', NULL, NULL, 'banned', CAST('2022-01-03 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.users VALUES (4, 'dave', 'dave@test.com', 45, 'active', CAST('2022-01-04 13:00:00' AS DATETIME), 65.2);
+INSERT INTO SQLSMITH.users VALUES (5, NULL, 'null@test.com', 18, 'inactive', CAST('2022-01-05 14:00:00' AS DATETIME), 70.0);
+
+SELECT COUNT(*)
+FROM SQLSMITH.users AS ref_0
+WHERE (ref_0.id >= ref_0.id)
+   OR (
+        (ref_0.age <> ref_0.id)
+        AND (ref_0.username IS NOT NULL)
+        AND (ref_0.id >= ref_0.id)
+      );
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": tautology/or predicate count returned " $LAST[1] "\n";
+
+-- Case 5
+
+drop table SQLSMITH.posts if exists;
+
+CREATE TABLE SQLSMITH.posts (
+    id          INTEGER,
+    user_id     INTEGER,
+    title       VARCHAR(255),
+    content     VARCHAR(1000),
+    views       INTEGER,
+    likes       INTEGER,
+    created_at  DATETIME,
+    rating      DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.posts VALUES (1, 1, 'Hello World', 'First post', 100, 10, CAST('2022-01-10 10:00:00' AS DATETIME), 4.5);
+INSERT INTO SQLSMITH.posts VALUES (2, 1, 'Another Post', NULL, 150, 20, CAST('2022-01-11 11:00:00' AS DATETIME), 3.0);
+INSERT INTO SQLSMITH.posts VALUES (3, 2, 'Bob Post', 'Content', NULL, 5, CAST('2022-01-12 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.posts VALUES (4, 3, NULL, 'Empty', 50, 2, CAST('2022-01-13 13:00:00' AS DATETIME), 5.0);
+INSERT INTO SQLSMITH.posts VALUES (5, 4, 'Last Post', 'Last', 300, 30, CAST('2022-01-14 14:00:00' AS DATETIME), 4.9);
+
+SELECT
+  CASE WHEN 58.63 <> CASE WHEN (46 <= ref_0.views) AND (ref_0.likes <> ref_0.likes) THEN 44.48 ELSE 79.87 END THEN 75 ELSE ref_0.user_id END AS c0,
+  ABS(21.22) AS c1
+FROM SQLSMITH.posts AS ref_0
+WHERE ref_0.likes >= ref_0.user_id
+UNION
+SELECT
+  CASE WHEN 58.63 <> CASE WHEN (46 <= ref_0.views) AND (ref_0.likes <> ref_0.likes) THEN 44.48 ELSE 79.87 END THEN 75 ELSE ref_0.user_id END AS c0,
+  ABS(21.22) AS c1
+FROM SQLSMITH.posts AS ref_0
+WHERE ref_0.views <= ref_0.likes;
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": UNION variant returned " $ROWCNT " rows\n";
+
+SELECT
+  CASE WHEN 58.63 <> CASE WHEN (46 <= ref_0.views) AND (ref_0.likes <> ref_0.likes) THEN 44.48 ELSE 79.87 END THEN 75 ELSE ref_0.user_id END AS c0,
+  ABS(21.22) AS c1
+FROM SQLSMITH.posts AS ref_0
+WHERE ref_0.likes >= ref_0.user_id
+INTERSECT
+SELECT
+  CASE WHEN 58.63 <> CASE WHEN (46 <= ref_0.views) AND (ref_0.likes <> ref_0.likes) THEN 44.48 ELSE 79.87 END THEN 75 ELSE ref_0.user_id END AS c0,
+  ABS(21.22) AS c1
+FROM SQLSMITH.posts AS ref_0
+WHERE ref_0.views <= ref_0.likes;
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": INTERSECT variant returned " $ROWCNT " rows\n";
+
+-- Case 6
+
+drop table SQLSMITH.users if exists;
+
+CREATE TABLE SQLSMITH.users (
+    id           INTEGER,
+    username     VARCHAR(100),
+    email        VARCHAR(255),
+    age          INTEGER,
+    status       VARCHAR(20),
+    created_at   DATETIME,
+    score        DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.users VALUES (1, 'alice', 'alice@test.com', 20, 'active', CAST('2022-01-01 10:00:00' AS DATETIME), 88.5);
+INSERT INTO SQLSMITH.users VALUES (2, 'bob', 'bob@test.com', 30, 'active', CAST('2022-01-02 11:00:00' AS DATETIME), 92.3);
+INSERT INTO SQLSMITH.users VALUES (3, 'carol', NULL, NULL, 'banned', CAST('2022-01-03 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.users VALUES (4, 'dave', 'dave@test.com', 45, 'active', CAST('2022-01-04 13:00:00' AS DATETIME), 65.2);
+INSERT INTO SQLSMITH.users VALUES (5, NULL, 'null@test.com', 18, 'inactive', CAST('2022-01-05 14:00:00' AS DATETIME), 70.0);
+
+-- original query
+SELECT COUNT(*)
+FROM SQLSMITH.users AS ref_0
+WHERE (
+    (ref_0.id >= ref_0.id)
+    OR (
+        ((ref_0.age <> ref_0.id)
+        AND (ref_0.username IS NOT NULL))
+        AND (ref_0.id >= ref_0.id)
+    )
+);
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NOREC original query count returned " $LAST[1] "\n";
+
+-- transformed query (Norec reference construction)
+SELECT SUM(
+    CASE
+        WHEN (
+            (ref_0.id >= ref_0.id)
+            OR (
+                ((ref_0.age <> ref_0.id)
+                AND (ref_0.username IS NOT NULL))
+                AND (ref_0.id >= ref_0.id)
+            )
+        )
+        THEN 1
+        ELSE 0
+    END + 0
+)
+FROM SQLSMITH.users AS ref_0;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NOREC transformed query count returned " $LAST[1] "\n";
+
+-- Case 1
+
+drop table SQLSMITH.posts if exists;
+
+CREATE TABLE SQLSMITH.posts (
+    id          INTEGER,
+    user_id     INTEGER,
+    title       VARCHAR(255),
+    content     VARCHAR(1000),
+    views       INTEGER,
+    likes       INTEGER,
+    created_at  DATETIME,
+    rating      DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.posts VALUES (1, 1, 'Hello World', 'First post', 100, 10, CAST('2022-01-10 10:00:00' AS DATETIME), 4.5);
+INSERT INTO SQLSMITH.posts VALUES (2, 1, 'Another Post', NULL, 150, 20, CAST('2022-01-11 11:00:00' AS DATETIME), 3.0);
+INSERT INTO SQLSMITH.posts VALUES (3, 2, 'Bob Post', 'Content', NULL, 5, CAST('2022-01-12 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.posts VALUES (4, 3, NULL, 'Empty', 50, 2, CAST('2022-01-13 13:00:00' AS DATETIME), 5.0);
+INSERT INTO SQLSMITH.posts VALUES (5, 4, 'Last Post', 'Last', 300, 30, CAST('2022-01-14 14:00:00' AS DATETIME), 4.9);
+
+SELECT COUNT(*)
+FROM SQLSMITH.posts AS ref_0;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 1 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt) FROM (
+  SELECT COUNT(*) AS sub_cnt
+  FROM SQLSMITH.posts AS ref_0
+  WHERE (ref_0.views <> ref_0.views)
+  UNION ALL
+  SELECT COUNT(*) AS sub_cnt
+  FROM SQLSMITH.posts AS ref_0
+  WHERE (NOT (ref_0.views <> ref_0.views))
+  UNION ALL
+  SELECT COUNT(*) AS sub_cnt
+  FROM SQLSMITH.posts AS ref_0
+  WHERE (CASE WHEN (ref_0.views <> ref_0.views) THEN 0 WHEN NOT (ref_0.views <> ref_0.views) THEN 0 ELSE 1 END = 1)
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 1 TLP count returned " $LAST[1] "\n";
+
+-- Case 2
+
+drop table SQLSMITH.users if exists;
+
+CREATE TABLE SQLSMITH.users (
+    id           INTEGER,
+    username     VARCHAR(100),
+    email        VARCHAR(255),
+    age          INTEGER,
+    status       VARCHAR(20),
+    created_at   DATETIME,
+    score        DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.users VALUES (1, 'alice', 'alice@test.com', 20, 'active', CAST('2022-01-01 10:00:00' AS DATETIME), 88.5);
+INSERT INTO SQLSMITH.users VALUES (2, 'bob', 'bob@test.com', 30, 'active', CAST('2022-01-02 11:00:00' AS DATETIME), 92.3);
+INSERT INTO SQLSMITH.users VALUES (3, 'carol', NULL, NULL, 'banned', CAST('2022-01-03 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.users VALUES (4, 'dave', 'dave@test.com', 45, 'active', CAST('2022-01-04 13:00:00' AS DATETIME), 65.2);
+INSERT INTO SQLSMITH.users VALUES (5, NULL, 'null@test.com', 18, 'inactive', CAST('2022-01-05 14:00:00' AS DATETIME), 70.0);
+
+SELECT COUNT(*) FROM SQLSMITH.users;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 2 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt) FROM (
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users
+    WHERE (id < age OR score IS NOT NULL)
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users
+    WHERE NOT (id < age OR score IS NOT NULL)
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users
+    WHERE CASE
+            WHEN (id < age OR score IS NOT NULL) THEN 0
+            WHEN NOT (id < age OR score IS NOT NULL) THEN 0
+            ELSE 1
+          END = 1
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 2 TLP count returned " $LAST[1] "\n";
+
+-- Case 3
+
+drop table SQLSMITH.comments if exists;
+drop table SQLSMITH.orders if exists;
+
+CREATE TABLE SQLSMITH.comments (
+    id          INTEGER,
+    post_id     INTEGER,
+    user_id     INTEGER,
+    content     VARCHAR(1000),
+    is_spam     INTEGER,
+    created_at  DATETIME
+);
+
+CREATE TABLE SQLSMITH.orders (
+    id          INTEGER,
+    user_id     INTEGER,
+    amount      DOUBLE PRECISION,
+    status      VARCHAR(20),
+    created_at  DATETIME
+);
+
+INSERT INTO SQLSMITH.comments VALUES (1, 1, 2, 'Nice post', 0, CAST('2022-01-20 10:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (2, 1, 3, 'Spam here', 1, CAST('2022-01-21 11:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (3, 2, 1, 'Thanks', 0, CAST('2022-01-22 12:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (4, 4, 5, NULL, 0, CAST('2022-01-23 13:00:00' AS DATETIME));
+
+INSERT INTO SQLSMITH.orders VALUES (1, 1, 100.00, 'paid', CAST('2022-02-01 09:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (2, 1, 200.50, 'shipped', CAST('2022-02-02 10:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (3, 2, NULL, 'failed', CAST('2022-02-03 11:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (4, 3, 50.00, 'paid', CAST('2022-02-04 12:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.orders VALUES (5, 5, 999.99, 'paid', CAST('2022-02-05 13:00:00' AS DATETIME));
+
+SELECT COUNT(*)
+FROM (
+    SELECT ref_1.user_id AS c0
+    FROM SQLSMITH.comments AS ref_0
+    LEFT JOIN SQLSMITH.orders AS ref_1
+      ON (ref_0.is_spam = ref_1.id)
+    WHERE ref_1.id IS NULL
+      AND ref_1.user_id IS NULL
+) AS subq_0;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 3 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt) FROM (
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_1.user_id AS c0
+        FROM SQLSMITH.comments AS ref_0
+        LEFT JOIN SQLSMITH.orders AS ref_1
+          ON (ref_0.is_spam = ref_1.id)
+        WHERE ref_1.id IS NULL
+          AND ref_1.user_id IS NULL
+    ) AS subq_0
+    WHERE subq_0.c0 <> subq_0.c0
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_1.user_id AS c0
+        FROM SQLSMITH.comments AS ref_0
+        LEFT JOIN SQLSMITH.orders AS ref_1
+          ON (ref_0.is_spam = ref_1.id)
+        WHERE ref_1.id IS NULL
+          AND ref_1.user_id IS NULL
+    ) AS subq_0
+    WHERE NOT (subq_0.c0 <> subq_0.c0)
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_1.user_id AS c0
+        FROM SQLSMITH.comments AS ref_0
+        LEFT JOIN SQLSMITH.orders AS ref_1
+          ON (ref_0.is_spam = ref_1.id)
+        WHERE ref_1.id IS NULL
+          AND ref_1.user_id IS NULL
+    ) AS subq_0
+    WHERE CASE
+            WHEN subq_0.c0 <> subq_0.c0 THEN 0
+            WHEN NOT (subq_0.c0 <> subq_0.c0) THEN 0
+            ELSE 1
+          END = 1
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 3 TLP count returned " $LAST[1] "\n";
+
+-- Case 4
+
+drop table SQLSMITH.posts if exists;
+drop table SQLSMITH.comments if exists;
+
+CREATE TABLE SQLSMITH.posts (
+    id          INTEGER,
+    user_id     INTEGER,
+    title       VARCHAR(255),
+    content     VARCHAR(1000),
+    views       INTEGER,
+    likes       INTEGER,
+    created_at  DATETIME,
+    rating      DOUBLE PRECISION
+);
+
+CREATE TABLE SQLSMITH.comments (
+    id          INTEGER,
+    post_id     INTEGER,
+    user_id     INTEGER,
+    content     VARCHAR(1000),
+    is_spam     INTEGER,
+    created_at  DATETIME
+);
+
+INSERT INTO SQLSMITH.posts VALUES (1, 1, 'Hello World', 'First post', 100, 10, CAST('2022-01-10 10:00:00' AS DATETIME), 4.5);
+INSERT INTO SQLSMITH.posts VALUES (2, 1, 'Another Post', NULL, 150, 20, CAST('2022-01-11 11:00:00' AS DATETIME), 3.0);
+INSERT INTO SQLSMITH.posts VALUES (3, 2, 'Bob Post', 'Content', NULL, 5, CAST('2022-01-12 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.posts VALUES (4, 3, NULL, 'Empty', 50, 2, CAST('2022-01-13 13:00:00' AS DATETIME), 5.0);
+INSERT INTO SQLSMITH.posts VALUES (5, 4, 'Last Post', 'Last', 300, 30, CAST('2022-01-14 14:00:00' AS DATETIME), 4.9);
+
+INSERT INTO SQLSMITH.comments VALUES (1, 1, 2, 'Nice post', 0, CAST('2022-01-20 10:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (2, 1, 3, 'Spam here', 1, CAST('2022-01-21 11:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (3, 2, 1, 'Thanks', 0, CAST('2022-01-22 12:00:00' AS DATETIME));
+INSERT INTO SQLSMITH.comments VALUES (4, 4, 5, NULL, 0, CAST('2022-01-23 13:00:00' AS DATETIME));
+
+SELECT COUNT(*)
+FROM (
+    SELECT
+        ref_0.id AS c2,
+        ref_0.id AS c3
+    FROM SQLSMITH.comments AS ref_0
+    WHERE EXISTS (
+        SELECT 1
+        FROM SQLSMITH.posts AS ref_1
+        WHERE ref_0.is_spam <> ref_1.views
+    )
+) AS subq_0;
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 4 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt)
+FROM (
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT
+            CASE
+                WHEN ref_0.id >= ref_0.post_id THEN ref_0.is_spam
+                ELSE ref_0.is_spam
+            END AS c0,
+            ref_0.id AS c1,
+            ref_0.id AS c2,
+            ref_0.id AS c3,
+            ref_0.is_spam AS c4
+        FROM SQLSMITH.comments AS ref_0
+        WHERE EXISTS (
+            SELECT 1
+            FROM SQLSMITH.posts AS ref_1
+            WHERE ref_0.is_spam <> ref_1.views
+        )
+    ) AS subq_0
+    WHERE (subq_0.c2 >= subq_0.c3)
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT
+            CASE
+                WHEN ref_0.id >= ref_0.post_id THEN ref_0.is_spam
+                ELSE ref_0.is_spam
+            END AS c0,
+            ref_0.id AS c1,
+            ref_0.id AS c2,
+            ref_0.id AS c3,
+            ref_0.is_spam AS c4
+        FROM SQLSMITH.comments AS ref_0
+        WHERE EXISTS (
+            SELECT 1
+            FROM SQLSMITH.posts AS ref_1
+            WHERE ref_0.is_spam <> ref_1.views
+        )
+    ) AS subq_0
+    WHERE NOT (subq_0.c2 >= subq_0.c3)
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT
+            CASE
+                WHEN ref_0.id >= ref_0.post_id THEN ref_0.is_spam
+                ELSE ref_0.is_spam
+            END AS c0,
+            ref_0.id AS c1,
+            ref_0.id AS c2,
+            ref_0.id AS c3,
+            ref_0.is_spam AS c4
+        FROM SQLSMITH.comments AS ref_0
+        WHERE EXISTS (
+            SELECT 1
+            FROM SQLSMITH.posts AS ref_1
+            WHERE ref_0.is_spam <> ref_1.views
+        )
+    ) AS subq_0
+    WHERE (
+        CASE
+            WHEN (subq_0.c2 >= subq_0.c3) THEN 0
+            WHEN NOT (subq_0.c2 >= subq_0.c3) THEN 0
+            ELSE 1
+        END = 1
+    )
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 4 TLP count returned " $LAST[1] "\n";
+
+-- Case 5
+
+drop table SQLSMITH.posts if exists;
+
+CREATE TABLE SQLSMITH.posts (
+    id          INTEGER,
+    user_id     INTEGER,
+    title       VARCHAR(255),
+    content     VARCHAR(1000),
+    views       INTEGER,
+    likes       INTEGER,
+    created_at  DATETIME,
+    rating      DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.posts VALUES (1, 1, 'Hello World', 'First post', 100, 10, CAST('2022-01-10 10:00:00' AS DATETIME), 4.5);
+INSERT INTO SQLSMITH.posts VALUES (2, 1, 'Another Post', NULL, 150, 20, CAST('2022-01-11 11:00:00' AS DATETIME), 3.0);
+INSERT INTO SQLSMITH.posts VALUES (3, 2, 'Bob Post', 'Content', NULL, 5, CAST('2022-01-12 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.posts VALUES (4, 3, NULL, 'Empty', 50, 2, CAST('2022-01-13 13:00:00' AS DATETIME), 5.0);
+INSERT INTO SQLSMITH.posts VALUES (5, 4, 'Last Post', 'Last', 300, 30, CAST('2022-01-14 14:00:00' AS DATETIME), 4.9);
+
+SELECT COUNT(*)
+FROM (
+    SELECT ref_0.likes AS c0,
+           ref_0.views AS c3
+    FROM SQLSMITH.posts AS ref_0
+    WHERE ref_0.views IS NULL
+) AS subq_0;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 5 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt)
+FROM (
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_0.likes AS c0,
+               ref_0.views AS c3
+        FROM SQLSMITH.posts AS ref_0
+        WHERE ref_0.views IS NULL
+    ) AS subq_0
+    WHERE (
+        (CASE
+            WHEN subq_0.c3 <> 64 THEN
+                CASE
+                    WHEN subq_0.c0 <> subq_0.c3 THEN 23.86
+                    ELSE 44.76
+                END
+            ELSE 34.84
+        END > 98.31)
+        OR (subq_0.c0 > subq_0.c3)
+    )
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_0.likes AS c0,
+               ref_0.views AS c3
+        FROM SQLSMITH.posts AS ref_0
+        WHERE ref_0.views IS NULL
+    ) AS subq_0
+    WHERE NOT (
+        (CASE
+            WHEN subq_0.c3 <> 64 THEN
+                CASE
+                    WHEN subq_0.c0 <> subq_0.c3 THEN 23.86
+                    ELSE 44.76
+                END
+            ELSE 34.84
+        END > 98.31)
+        OR (subq_0.c0 > subq_0.c3)
+    )
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM (
+        SELECT ref_0.likes AS c0,
+               ref_0.views AS c3
+        FROM SQLSMITH.posts AS ref_0
+        WHERE ref_0.views IS NULL
+    ) AS subq_0
+    WHERE CASE
+        WHEN (
+            (CASE
+                WHEN subq_0.c3 <> 64 THEN
+                    CASE
+                        WHEN subq_0.c0 <> subq_0.c3 THEN 23.86
+                        ELSE 44.76
+                    END
+                ELSE 34.84
+            END > 98.31)
+            OR (subq_0.c0 > subq_0.c3)
+        ) THEN 0
+        WHEN NOT (
+            (CASE
+                WHEN subq_0.c3 <> 64 THEN
+                    CASE
+                        WHEN subq_0.c0 <> subq_0.c3 THEN 23.86
+                        ELSE 44.76
+                    END
+                ELSE 34.84
+            END > 98.31)
+            OR (subq_0.c0 > subq_0.c3)
+        ) THEN 0
+        ELSE 1
+    END = 1
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 5 TLP count returned " $LAST[1] "\n";
+
+-- Case 6
+
+drop table SQLSMITH.users if exists;
+
+CREATE TABLE SQLSMITH.users (
+    id           INTEGER,
+    username     VARCHAR(100),
+    email        VARCHAR(255),
+    age          INTEGER,
+    status       VARCHAR(20),
+    created_at   DATETIME,
+    score        DOUBLE PRECISION
+);
+
+INSERT INTO SQLSMITH.users VALUES (1, 'alice', 'alice@test.com', 20, 'active', CAST('2022-01-01 10:00:00' AS DATETIME), 88.5);
+INSERT INTO SQLSMITH.users VALUES (2, 'bob', 'bob@test.com', 30, 'active', CAST('2022-01-02 11:00:00' AS DATETIME), 92.3);
+INSERT INTO SQLSMITH.users VALUES (3, 'carol', NULL, NULL, 'banned', CAST('2022-01-03 12:00:00' AS DATETIME), NULL);
+INSERT INTO SQLSMITH.users VALUES (4, 'dave', 'dave@test.com', 45, 'active', CAST('2022-01-04 13:00:00' AS DATETIME), 65.2);
+INSERT INTO SQLSMITH.users VALUES (5, NULL, 'null@test.com', 18, 'inactive', CAST('2022-01-05 14:00:00' AS DATETIME), 70.0);
+
+SELECT COUNT(*) FROM SQLSMITH.users;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 6 source count returned " $LAST[1] "\n";
+
+SELECT SUM(sub_cnt)
+FROM (
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users AS ref_0
+    WHERE (
+        (ref_0.id >= ref_0.id)
+        OR (
+            ((ref_0.age <> ref_0.id)
+            AND (ref_0.username IS NOT NULL))
+            AND (ref_0.id >= ref_0.id)
+        )
+    )
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users AS ref_0
+    WHERE NOT (
+        (ref_0.id >= ref_0.id)
+        OR (
+            ((ref_0.age <> ref_0.id)
+            AND (ref_0.username IS NOT NULL))
+            AND (ref_0.id >= ref_0.id)
+        )
+    )
+
+    UNION ALL
+
+    SELECT COUNT(*) AS sub_cnt
+    FROM SQLSMITH.users AS ref_0
+    WHERE CASE
+        WHEN (
+            (ref_0.id >= ref_0.id)
+            OR (
+                ((ref_0.age <> ref_0.id)
+                AND (ref_0.username IS NOT NULL))
+                AND (ref_0.id >= ref_0.id))
+        ) THEN 0
+        WHEN NOT (
+            (ref_0.id >= ref_0.id)
+            OR (
+                ((ref_0.age <> ref_0.id)
+                AND (ref_0.username IS NOT NULL))
+                AND (ref_0.id >= ref_0.id))
+        ) THEN 0
+        ELSE 1
+    END = 1
+) AS tlp_parts;
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Case 6 TLP count returned " $LAST[1] "\n";
 
 SELECT COUNT ( 1) FROM DBA.T1 t1 , (SELECT t3.ROW_NO AS ROW_NO, COUNT ( 1) AS CT FROM DBA.T1 t3  GROUP BY t3.ROW_NO) dt2  where 1 + t1.ROW_NO = dt2.ROW_NO;
 ECHO BOTH $IF $EQU $LAST[1] 999 "PASSED" "***FAILED";
@@ -2016,7 +2769,7 @@ ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 set U{caseno} case1270;
 SELECT x FROM ( SELECT ( log ( 0 ) ) x FROM ( SELECT 0 x ) x GROUP BY rollup ( x , 1 ) ) x ORDER BY ( FLOOR ( x ) / ( -100 / ( 60 ) ) ) , MIN ( 'MULTIPOINT((3 10))' );
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
@@ -2352,6 +3105,11 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case 1403 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+
+SELECT COUNT(*) FROM DB.DBA.SYS_USERS WHERE CEILING(65.77) >= FLOOR (EXP(45.7));
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1418 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

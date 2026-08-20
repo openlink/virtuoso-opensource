@@ -2637,15 +2637,27 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
     }
   if (BOP_OR == op)
     {
+      /* Collect unkn labels from non-terminal terms so we can emit the unkn propagation path.
+       * When a non-terminal OR term is UNKNOWN, remaining terms must be re-evaluated with
+       * fail->unk (FALSE or UNKNOWN from remaining -> UNKNOWN for the whole OR, not FALSE).
+       * Labels are pushed in forward order; t_set_pop visits them in reverse (LIFO), which
+       * lets us chain each label to its successor via a running next_unkn variable. */
+      dk_set_t unkn_labels = NULL;
+      int body_inx = n_terms - 1;
+      jmp_label_t term_unkn_lbl;
+      jmp_label_t next_unkn = unk;
+
       for (inx = 1; inx < n_terms; inx++)
 	{
 	  if (inx != n_terms - 1)
 	    {
 	      jmp_label_t temp_fail = sqlc_new_label (sc);
+	      jmp_label_t term_unkn = sqlc_new_label (sc);
 	      if (inx == 2)
 		sqlg_cond_start (sc);
-	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, temp_fail);
+	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, term_unkn);
 	      cv_label (code, temp_fail);
+	      t_set_push (&unkn_labels, (void *)(ptrlong) term_unkn);
 	    }
 	  else
 	    {
@@ -2654,6 +2666,19 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
 	    }
 	}
+      /* Unkn path: pop labels in reverse (last non-terminal first); body_inx counts down
+       * in parallel so each popped label maps to the next body[] term to evaluate.
+       * next_unkn accumulates the label placed in the previous (later) iteration.
+       * Kept inside the cond context (sqlg_cond_end called after) so dfe_ssl values
+       * set during the normal path are still live — scalar_exp_generate reuses them
+       * without re-generating code, preventing double dc allocation for DV_ANY columns. */
+      while ((term_unkn_lbl = (jmp_label_t)(ptrlong) t_set_pop (&unkn_labels)))
+        {
+          cv_label (code, term_unkn_lbl);
+          sqlg_pred_1 (so, (df_elt_t **) body[body_inx], code, succ, next_unkn, next_unkn);
+          next_unkn = term_unkn_lbl;
+          body_inx--;
+        }
       if (inx > 1)
 	sqlg_cond_end (sc);
       return;
@@ -4020,6 +4045,18 @@ setp_set_part_opt (setp_node_t * setp, df_elt_t * tb_dfe)
     }
 }
 
+int
+gby_spec_dependent (df_elt_t * gby, ST * spec)
+{
+  DO_SET (df_elt_t *, dep, &gby->_.setp.gb_dependent)
+    {
+      if (box_equal ((cbox_t) spec->_.o_spec.col, (cbox_t) dep->dfe_tree))
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
 sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
@@ -4136,6 +4173,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
   DO_BOX (ST *, spec, inx, order_by)
     {
       state_slot_t *ssl;
+      if (is_gb && !is_grouping_sets && gby_spec_dependent (oby, spec))
+	continue;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
       if (is_grouping_sets && SSL_CONSTANT == ssl->ssl_type && !IS_NUM_DTP(DV_TYPE_OF(ssl->ssl_constant)))
         sqlc_new_error (so->so_sc->sc_cc, "37001", "SQXXX", "Non-numeric constants are not allowed in CUBE/ROLLUP");
@@ -5094,7 +5133,6 @@ sqlg_alias_or_assign (sqlo_t * so, state_slot_t * ext, state_slot_t * source, dk
       return ext;
     }
 }
-
 
 void
 sqlg_add_fail_stub (sqlo_t * so, data_source_t ** head)

@@ -1307,7 +1307,7 @@ void
 bif_intl_init (void)
 {
   bif_define_ex ("__collation_define_memonly", bif_collation_define_memonly, BMD_RET_TYPE, &bt_integer, BMD_IS_DBA_ONLY, BMD_DONE);
-  bif_define_ex ("charset__define", bif_charset_define, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__charset_define", bif_charset_define, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("charset_canonical_name", bif_charset_canonical_name, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("complete_collation_name", bif_complete_collation_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("collation_order_string", bif_collation_order_string, BMD_RET_TYPE, &bt_any, BMD_DONE);

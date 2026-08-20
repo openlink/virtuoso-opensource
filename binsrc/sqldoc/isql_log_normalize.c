@@ -25,6 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define strdup _strdup
+#endif
+
 typedef struct cut_search_replace_s
 {
   char *csr_search;
@@ -55,10 +59,6 @@ typedef struct cut_env_s
 } cut_env_t;
 
 static char errmsg_buf[1000];
-
-#ifndef strdup
-char *strdup(const char *s);
-#endif
 
 void readtextfile (const char *src_name, char **bufptr, size_t *lenptr, char **err_ret)
 {
@@ -139,6 +139,7 @@ void cut_buf_compose_text (cut_buf_t *tgt)
   tgt->cb_len = tgt_tail - tgt->cb_buf;
 }
 
+#if 0
 char *cut_pattern_match (const char *src, const char *pattern, const char *replace)
 {
   char *res = malloc ( strlen (src) + 1 + strlen (replace));
@@ -164,6 +165,7 @@ fail:
   free (res);
   return NULL;
 }
+#endif
 
 int strbegins (const char * haystack, const char * needle)
 {
@@ -282,7 +284,7 @@ void cut_substitute_all (cut_env_t *env, cut_buf_t *tgt, cut_buf_t *src)
 
 
 
-int main (int argc, const char *argv[])
+int main (int argc, char *argv[])
 {
   char *err = NULL;
   cut_env_t *env = malloc (sizeof (cut_env_t));

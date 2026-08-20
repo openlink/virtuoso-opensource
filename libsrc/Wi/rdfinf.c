@@ -1424,7 +1424,7 @@ bif_rdf_inf_set_prop_types_impl (caddr_t * qst, state_slot_t ** args, id_hash_t 
   if (place)
     {
       dk_free_tree ((caddr_t)(place[0]));
-      place[0] = classes_copy;
+      place[0] = (caddr_t *) classes_copy;
       dk_free_tree (prop_copy);
     }
   else

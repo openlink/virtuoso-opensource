@@ -122,7 +122,6 @@ EXTRA_DIST = \
 	$(srcdir)/SECURITY.md \
 	$(srcdir)/autogen.sh \
 	$(srcdir)/bin/generate \
-	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
 	$(srcdir)/bin/libtool.macosx \
 	$(srcdir)/bin/makever \
 	$(srcdir)/debian/NEWS.Debian \

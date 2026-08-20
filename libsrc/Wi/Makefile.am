@@ -631,7 +631,7 @@ SQL_FILES_2PC		= \
 	$(srcdir)/2pc.sql
 
 SQL_FILES_ADM		= \
-	$(top_srcdir)/binsrc/vsp/admin/admin.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/admin.sql \
 	$(top_srcdir)/binsrc/vspx/browser/admin_dav_browser.sql
 
 SQL_FILES_AUTO		= \
@@ -643,7 +643,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/dav_meta.sql \
 	$(top_srcdir)/binsrc/dav/dav_acct.sql \
 	$(top_srcdir)/binsrc/dav/dav_rdf_quad.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfs.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/admin_dav/vfs.sql \
 	$(top_srcdir)/binsrc/dav/davxml2rdfxml.xsl \
 	$(top_srcdir)/binsrc/dav/davxml2n3xml.xsl \
 	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
@@ -660,21 +660,21 @@ SQL_FILES_DAV		= \
 	$(srcdir)/xml_view.sql
 
 SQL_FILES_DBP		= \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/dbpump_root.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/oper_pars.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/components.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_html.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_misc.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_rpath.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/comp_tables.sql \
-	$(top_srcdir)/binsrc/vsp/admin/dbpump/pars_init.sql
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/dbpump_root.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/oper_pars.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/components.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/comp_html.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/comp_misc.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/comp_rpath.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/comp_tables.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/dbpump/pars_init.sql
 
 SQL_FILES_DDK		= \
 	$(srcdir)/replddk.sql \
 	$(top_srcdir)/binsrc/dav/davddk.sql \
 	$(srcdir)/mail_cli.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_ddl.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_dav/vfsddk.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/admin_ddl.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/admin_dav/vfsddk.sql \
 	$(srcdir)/virtual_dir.sql \
 	$(srcdir)/url_rewrite.sql
 
@@ -683,7 +683,7 @@ SQL_FILES_IMSG		 = \
 	$(srcdir)/pop3_svr.sql \
 	$(srcdir)/ftp.sql \
 	$(srcdir)/nn_svr.sql \
-	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
+	$(top_srcdir)/binsrc/ws/common/admin/admin_news/admin_news.sql
 endif
 
 SQL_FILES_PLDBG		= \
@@ -736,7 +736,7 @@ SQL_FILES_VDB		= \
 	$(srcdir)/vdb.sql
 
 SQL_FILES_WS		= \
-	$(top_srcdir)/binsrc/vsp/vsp_auth.sql \
+	$(top_srcdir)/binsrc/ws/common/admin/vsp_auth.sql \
 	$(srcdir)/soap.sql \
 	$(srcdir)/wsrp_ultim.xsl \
 	$(srcdir)/wsrp_resp.xsl \
