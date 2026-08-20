@@ -1,10 +1,32 @@
--- gqlc.sql — GQL Phase 4 C plugin setup
 --
--- This script is for manual testing. The plugin registers BIFs
--- GQL_NORMALIZE, GQL_IS_NORMALIZED, GQL_PERCENTILE_CONT, and
--- GQL_PERCENTILE_DISC at load time via its connect callback.
--- No SQL-side setup is strictly required, but this script verifies
--- the functions are available.
+--  $Id$
+--
+--  gqlc.sql — GQL Phase 4 C plugin setup
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+--  This script is for manual testing. The plugin registers BIFs
+--  GQL_NORMALIZE, GQL_IS_NORMALIZED, GQL_PERCENTILE_CONT, and
+--  GQL_PERCENTILE_DISC at load time via its connect callback.
+--  No SQL-side setup is strictly required, but this script verifies
+--  the functions are available.
 
 create procedure DB.DBA.GQLC_SELF_TEST ()
 {
