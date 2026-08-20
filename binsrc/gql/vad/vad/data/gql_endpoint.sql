@@ -94,8 +94,12 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
   if (query_ast is null or not isarray (query_ast) or aref (query_ast, 0) <> 'QUERY')
     return;
 
-  -- Check for RETURN clause
+  -- Check for RETURN clause; also flag property-graph DDL, which is
+  -- executed as a side effect of translation (a PL call, not SPARQL text)
+  -- and so must NOT be re-run below.
   has_return := 0;
+  declare has_pg_ddl integer;
+  has_pg_ddl := 0;
   clauses := aref (query_ast, 1);
   n := length (clauses);
   for (i := 0; i < n; i := i + 1)
@@ -103,15 +107,22 @@ create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varch
       clause := aref (clauses, i);
       if (isarray (clause) and aref (clause, 0) = 'RETURN')
         has_return := 1;
+      if (isarray (clause)
+          and (aref (clause, 0) = 'CREATE_PROPERTY_GRAPH_V2'
+               or aref (clause, 0) = 'DROP_PROPERTY_GRAPH'))
+        has_pg_ddl := 1;
     }
 
-  -- Translate to SPARQL
+  -- Translate to SPARQL.  For property-graph DDL this also executes the
+  -- statement (CREATE/DROP VIRTUAL/PHYSICAL PROPERTY GRAPH).
   sparql_str := DB.DBA.GQL_TO_SPARQL_IMPL (ast, _default_graph);
 
   if (sparql_str is null or trim (sparql_str) = '')
     {
-      -- INSERT-only or DML-only: execute for side effects
-      DB.DBA.GQL_RUN (_query, _default_graph);
+      -- Property-graph DDL already ran during translation above — do not
+      -- re-run it (that would double-execute, e.g. GQ202 on CREATE).
+      if (not has_pg_ddl)
+        DB.DBA.GQL_RUN (_query, _default_graph);  -- INSERT-only / DML-only: execute for side effects
       exec_result_names (vector ('Status'));
       exec_result (vector ('OK'));
       return;

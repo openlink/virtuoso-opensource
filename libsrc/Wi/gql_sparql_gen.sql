@@ -1540,19 +1540,17 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
           v2_rel_tables := aref (clause, 4);
           if (__proc_exists ('DB.DBA.GQL_PG_CREATE_VIRTUAL') is not null)
             {
+              -- The DDL is executed here, as a side effect of translation
+              -- (it calls PL procedures, not SPARQL text).  It therefore
+              -- contributes NOTHING to sparql_text: the callers (GQL_RUN,
+              -- OPENGQL_EXEC, GQL_TO_SPARQL) must not try to re-execute a
+              -- generated statement.  Emitting leftover text here caused a
+              -- spurious SQL syntax error (SQ074) when run over the SQL/
+              -- GQL-prefix path even though the graph was created.
               if (v2_pg_mode = 545)  -- VIRTUAL
-                {
-                  declare v2_result varchar;
-                  v2_result := DB.DBA.GQL_PG_CREATE_VIRTUAL (v2_pg_name, v2_node_tables, v2_rel_tables);
-                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
-                  sparql_text := concat (sparql_text, ';\n-- CREATE VIRTUAL PROPERTY GRAPH ', v2_pg_name, ' executed\n');
-                }
+                DB.DBA.GQL_PG_CREATE_VIRTUAL (v2_pg_name, v2_node_tables, v2_rel_tables);
               else  -- PHYSICAL (546)
-                {
-                  DB.DBA.GQL_PG_CREATE_PHYSICAL (v2_pg_name, v2_node_tables, v2_rel_tables);
-                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
-                  sparql_text := concat (sparql_text, ';\n-- CREATE PHYSICAL PROPERTY GRAPH ', v2_pg_name, ' executed\n');
-                }
+                DB.DBA.GQL_PG_CREATE_PHYSICAL (v2_pg_name, v2_node_tables, v2_rel_tables);
             }
           else
             signal ('GQ212', 'CREATE VIRTUAL/PHYSICAL PROPERTY GRAPH requires the gql_pg_ddl.sql module to be loaded');
@@ -1572,23 +1570,43 @@ create procedure DB.DBA.GQL_GEN_CATALOG (in _catalog_asts any, inout _ctx any)
       else if (ctype = 'DROP_PROPERTY_GRAPH')
         {
           declare if_exists integer;
-          declare drop_pg_name varchar;
+          declare drop_pg_name, drop_mode varchar;
           graph_ref := aref (clause, 1);
           if_exists := aref (clause, 2);
+          -- Optional VIRTUAL/PHYSICAL keyword asserts the target's mode.
+          drop_mode := null;
+          if (length (clause) > 3)
+            drop_mode := aref (clause, 3);
           -- For a bare name, derive the property-graph IRI
           if (isarray (graph_ref) and length (graph_ref) > 2 and aref (graph_ref, 2) = 'BARE')
             {
               drop_pg_name := cast (aref (graph_ref, 1) as varchar);
               -- Use the new GQL_PG_DROP function which handles both
-              -- virtual (quad map) and physical (named graph) PGs.
+              -- virtual (quad map) and physical (named graph) PGs.  It is
+              -- executed here (a PL call, not SPARQL text) and contributes
+              -- NOTHING to sparql_text — see CREATE_PROPERTY_GRAPH_V2 above.
               -- DROP PROPERTY GRAPH is idempotent (silent when the graph
               -- is not defined), so pass if_exists=1 regardless of the
               -- IF EXISTS clause.
               if (__proc_exists ('DB.DBA.GQL_PG_DROP') is not null)
                 {
+                  -- Mode assertion: DROP VIRTUAL/PHYSICAL must match the
+                  -- recorded mode of the target graph.
+                  if (drop_mode is not null)
+                    {
+                      declare _dmeta any;
+                      _dmeta := DB.DBA.GQL_PG_DEF_GET (drop_pg_name);
+                      if (_dmeta is null)
+                        {
+                          if (not if_exists)
+                            signal ('GQ206', sprintf ('Property graph %s does not exist', drop_pg_name));
+                        }
+                      else if (aref (_dmeta, 0) <> drop_mode)
+                        signal ('GQ214', sprintf (
+                          'Property graph %s is %s, not %s; use DROP %s PROPERTY GRAPH (or DROP PROPERTY GRAPH)',
+                          drop_pg_name, aref (_dmeta, 0), drop_mode, upper (aref (_dmeta, 0))));
+                    }
                   DB.DBA.GQL_PG_DROP (drop_pg_name, 1);
-                  if (sparql_text <> '') sparql_text := concat (sparql_text, ';\n');
-                  sparql_text := concat (sparql_text, ';\n-- DROP PROPERTY GRAPH ', drop_pg_name, ' executed\n');
                 }
               else
                 {

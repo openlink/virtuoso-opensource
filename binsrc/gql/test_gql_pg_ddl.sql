@@ -83,6 +83,8 @@ create procedure DB.DBA.GQL_PG_TEST_CLEANUP ()
       DB.DBA.GQL_PG_DROP ('pgphys2', 1);
       DB.DBA.GQL_PG_DROP ('pgphys_empty', 1);
       DB.DBA.GQL_PG_DROP ('pgbare', 1);
+      DB.DBA.GQL_PG_DROP ('pgtest_v', 1);
+      DB.DBA.GQL_PG_DROP ('pgtest_p', 1);
     }
   DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_order_items');
   DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customer_orders');
@@ -129,8 +131,12 @@ create procedure DB.DBA.GQL_PG_DDL_TESTS ()
          pg_test_order_items SOURCE pg_test_orders DESTINATION pg_test_products,
          pg_test_customer_orders SOURCE pg_test_customers DESTINATION pg_test_orders
        )');
-  _ok := DB.DBA.GQL_PG_TEST_CONTAINS (_sparql, 'CREATE VIRTUAL PROPERTY GRAPH pgtest');
-  DB.DBA.GQL_PG_TEST_ASSERT ('PG01', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest', _pass, _fail, _results);
+  -- CREATE property-graph DDL executes as a side effect of translation and
+  -- returns no SPARQL text (empty), so assert on the catalog outcome, not
+  -- on the returned string.
+  _ok := 0;
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('pgtest') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG01', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest to create a catalog entry', _pass, _fail, _results);
 
   -- PG02: Verify catalog metadata
   _meta := DB.DBA.GQL_PG_DEF_GET ('pgtest');
@@ -170,8 +176,10 @@ create procedure DB.DBA.GQL_PG_DDL_TESTS ()
            SOURCE pg_test_customers DESTINATION pg_test_orders
            LABEL has_placed
        )');
-  _ok := DB.DBA.GQL_PG_TEST_CONTAINS (_sparql, 'CREATE VIRTUAL PROPERTY GRAPH pgtest');
-  DB.DBA.GQL_PG_TEST_ASSERT ('PG05', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest with labels', _pass, _fail, _results);
+  -- As PG01: DDL returns no SPARQL text; assert on the catalog outcome.
+  _ok := 0;
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('pgtest') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG05', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest with labels to create a catalog entry', _pass, _fail, _results);
 
   -- PG06: SPARQL query with label returns customer data
   _graph_iri := DB.DBA.GQL_PG_GRAPH_IRI ('pgtest');
@@ -327,6 +335,38 @@ create procedure DB.DBA.GQL_PG_DDL_TESTS ()
           _ok := 1;
     }
   DB.DBA.GQL_PG_TEST_ASSERT ('PG20', _ok, 'expected empty physical graph (no tables, not materialized)', _pass, _fail, _results);
+
+  -- PG21: DROP PHYSICAL on a virtual graph is rejected (mode mismatch); graph survives
+  DB.DBA.GQL_PG_TEST_GQL ('CREATE VIRTUAL PROPERTY GRAPH pgtest_v NODE TABLES ( pg_test_products KEY (product_no) LABEL product PROPERTIES (name) )');
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP PHYSICAL PROPERTY GRAPH pgtest_v');  -- expect error -> null
+  _ok := 0;
+  if (_sparql is null and DB.DBA.GQL_PG_DEF_GET ('pgtest_v') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG21', _ok, 'expected DROP PHYSICAL on a virtual PG to be rejected and leave the graph', _pass, _fail, _results);
+
+  -- PG22: DROP VIRTUAL removes the matching virtual graph
+  DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH pgtest_v');
+  _ok := 0;
+  if (DB.DBA.GQL_PG_DEF_GET ('pgtest_v') is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG22', _ok, 'expected DROP VIRTUAL PROPERTY GRAPH to remove the virtual graph', _pass, _fail, _results);
+
+  -- PG23: DROP VIRTUAL on a physical graph is rejected (mode mismatch); graph survives
+  DB.DBA.GQL_PG_TEST_GQL ('CREATE PHYSICAL PROPERTY GRAPH pgtest_p');
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH pgtest_p');  -- expect error -> null
+  _ok := 0;
+  if (_sparql is null and DB.DBA.GQL_PG_DEF_GET ('pgtest_p') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG23', _ok, 'expected DROP VIRTUAL on a physical PG to be rejected and leave the graph', _pass, _fail, _results);
+
+  -- PG24: DROP PHYSICAL removes the matching physical graph
+  DB.DBA.GQL_PG_TEST_GQL ('DROP PHYSICAL PROPERTY GRAPH pgtest_p');
+  _ok := 0;
+  if (DB.DBA.GQL_PG_DEF_GET ('pgtest_p') is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG24', _ok, 'expected DROP PHYSICAL PROPERTY GRAPH to remove the physical graph', _pass, _fail, _results);
+
+  -- PG25: DROP [VIRTUAL] PROPERTY GRAPH IF EXISTS on a missing graph is a silent no-op
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH IF EXISTS pgtest_absent');
+  _ok := 0;
+  if (_sparql is not null) _ok := 1;   -- no error raised (empty text, not null)
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG25', _ok, 'expected DROP VIRTUAL PROPERTY GRAPH IF EXISTS on a missing graph to be a no-op', _pass, _fail, _results);
 
   -- Cleanup
   DB.DBA.GQL_PG_TEST_CLEANUP ();
