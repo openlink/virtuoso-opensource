@@ -704,17 +704,6 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
 	$(srcdir)/rdflddir2.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_runtime.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_lexer.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_parser.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_expr.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_plan.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_translate.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_sparql_gen.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_main.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_opencypher.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_endpoint.sql \
-	$(top_srcdir)/binsrc/cypher/cypher_bootstrap.sql \
 	$(srcdir)/gql_runtime.sql \
 	$(srcdir)/gql_pl.sql \
 	$(srcdir)/gql_lexer.sql \
