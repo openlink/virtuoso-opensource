@@ -336,10 +336,20 @@ create procedure DB.DBA.GQL_VERSION ()
 }
 ;
 
--- Register namespace prefixes for SPARQL integration
+-- Register namespace prefixes for SPARQL integration.
+--
+-- NB: do NOT register a global 'gql:' prefix here.  The GraphQL plugin
+-- (binsrc/graphql/graphql.sql) owns the global 'gql:' prefix
+-- (http://www.openlinksw.com/schemas/graphql#) and its schema-mapping
+-- lookups depend on it; claiming 'gql:' for the openGQL ontology globally
+-- silently breaks the GraphQL endpoint (GQTC2 "Can not find property
+-- mapping").  openGQL never needs the global decl anyway — every SPARQL
+-- statement it generates emits its own `PREFIX gql: <ontology-ns>` (see
+-- gql_sparql_gen.sql).  Register the openGQL namespaces under non-colliding
+-- prefixes only.
 create procedure DB.DBA.GQL_REGISTER_NS ()
 {
-  DB.DBA.XML_SET_NS_DECL ('gql', DB.DBA.GQL_NS (), 2);
+  DB.DBA.XML_SET_NS_DECL ('gqlo', DB.DBA.GQL_NS (), 2);
   DB.DBA.XML_SET_NS_DECL ('gqld', DB.DBA.GQL_DATA_NS (), 2);
 }
 ;
