@@ -823,16 +823,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     enable_bootstrap := atoi (registry_get ('sparql-ui-bootstrap', '1'));
 
     --
-    --  openCypher language mode (Phase 14.6)
+    --  openGQL language mode (Phase 7)
     --
     declare ui_language varchar;
-    declare ui_can_opencypher integer;
     declare ui_can_opengql integer;
     ui_language := lower (trim (coalesce (get_keyword ('language', params, ''), '')));
-    if (ui_language not in ('opencypher', 'sparql', 'opengql'))
+    if (ui_language not in ('sparql', 'opengql'))
       ui_language := 'sparql';
-    ui_can_opencypher := case when (__proc_exists ('DB.DBA.CYPHER_TO_SPARQL_PARAMS', 1) is not null)
-      then 1 else 0 end;
     ui_can_opengql := case when (__proc_exists ('DB.DBA.GQL_TO_SPARQL_PARAMS', 1) is not null)
       then 1 else 0 end;
 
@@ -1713,22 +1710,6 @@ create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout
     http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
     http_value (title);
     http ('</a></nav>\n', ses);
-
-    --
-    --  Phase 14.6: when the request was routed through the openCypher
-    --  translator, render the generated SPARQL above the result so users
-    --  can see the mapping (and copy-paste it back into SPARQL mode).
-    --
-    declare opencypher_panel any;
-    opencypher_panel := connection_get ('opencypher_generated_sparql');
-    if (isstring (opencypher_panel) and length (opencypher_panel) > 0)
-    {
-      http ('<details class="my-2"><summary class="fw-bold">Generated SPARQL (translated from openCypher)</summary>\n', ses);
-      http ('<pre class="bg-light p-2 border rounded"><code>', ses);
-      http_escape (opencypher_panel, 11, ses, 1, 1);
-      http ('</code></pre></details>\n', ses);
-      connection_set ('opencypher_generated_sparql', null);
-    }
 
     declare opengql_panel any;
     opengql_panel := connection_get ('opengql_generated_sparql');

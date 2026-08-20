@@ -3091,29 +3091,6 @@ grant execute on DB.DBA.rdf_find_str to public
 ;
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_OPENCYPHER_BODY (in query varchar)
-{
-  declare q, ql, next_ch varchar;
-
-  if (query is null)
-    return null;
-
-  q := trim (query);
-  ql := lower (q);
-
-  if (ql = 'opencypher')
-    return '';
-  if (length (q) > 10 and subseq (ql, 0, 10) = 'opencypher')
-    {
-      next_ch := subseq (q, 10, 11);
-      if (next_ch in (' ', '\t', '\n', '\r'))
-        return trim (subseq (q, 10));
-    }
-
-  return null;
-}
-;
-
 create procedure WS.WS.SPARQL_ENDPOINT_OPENGQL_BODY (in query varchar)
 {
   declare q, ql, next_ch varchar;
@@ -3142,29 +3119,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_OPENGQL_BODY (in query varchar)
     }
 
     return null;
-}
-;
-
-create procedure WS.WS.SPARQL_ENDPOINT_RETURN_OPENCYPHER_SPARQL (
-  in query varchar,
-  in graph varchar)
-{
-  declare cypher_query, sparql_query varchar;
-
-  cypher_query := WS.WS.SPARQL_ENDPOINT_OPENCYPHER_BODY (query);
-  if (cypher_query is null)
-    return 0;
-
-  if (cypher_query = '')
-    signal ('CY100', 'OPENCYPHER request must contain an openCypher query');
-
-  if (__proc_exists ('DB.DBA.CYPHER_TO_SPARQL', 1) is null)
-    signal ('CY101', 'OPENCYPHER support is not loaded; load binsrc/cypher/cypher_load.sql first');
-
-  sparql_query := DB.DBA.CYPHER_TO_SPARQL (cypher_query, graph);
-  http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
-  http (sparql_query);
-  return 1;
 }
 ;
 
@@ -3380,8 +3334,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
             def_qry := 'SELECT * WHERE {?s ?p ?o}';
         }
 
-      -- Form-render path: leave OPENCYPHER queries as-is so the textarea
-      -- shows the user's original openCypher source. Translation happens
+      -- Form-render path: leave GQL queries as-is so the textarea
+      -- shows the user's original GQL source. Translation happens
       -- only when the query is actually executed.
 
       if (qtxt <> 1)
@@ -3670,120 +3624,6 @@ execute_query:
       return;
     }
 
-  --
-  --  Phase 14.6: openCypher routing.  Translate via the PL fallback
-  --  (DB.DBA.CYPHER_TO_SPARQL_PARAMS) when either:
-  --    * the request explicitly sets language=opencypher, or
-  --    * the query body begins with an "OPENCYPHER " prefix.
-  --
-  declare opencypher_lang, opencypher_body, opencypher_graph, opencypher_dryrun varchar;
-  declare opencypher_translated varchar;
-  declare opencypher_request integer;
-  opencypher_request := 0;
-  opencypher_lang := lower (trim (coalesce (get_keyword ('language', params, ''), '')));
-  opencypher_dryrun := trim (coalesce (get_keyword ('dryrun', params, ''), ''));
-  opencypher_body := WS.WS.SPARQL_ENDPOINT_OPENCYPHER_BODY (query);
-  if (opencypher_lang = 'opencypher' and opencypher_body is null)
-    opencypher_body := query;
-  if (opencypher_body is not null)
-    {
-      opencypher_request := 1;
-      opencypher_graph := null;
-      if (length (dflt_graphs) > 0)
-        opencypher_graph := aref (dflt_graphs, 0);
-      else if (ini_dflt_graph is not null and length (ini_dflt_graph) > 0)
-        opencypher_graph := ini_dflt_graph;
-      if (opencypher_body = '' or trim (opencypher_body) = '')
-        {
-          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-            '400', 'Bad Request',
-            query, 'CY100',
-            'openCypher request must contain a non-empty openCypher query', format);
-          return;
-        }
-      if (__proc_exists ('DB.DBA.CYPHER_TO_SPARQL_PARAMS', 1) is null
-          and __proc_exists ('DB.DBA.CYPHER_TO_SPARQL', 1) is null)
-        {
-          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-            '500', 'openCypher Translator Not Loaded',
-            query, 'CY101',
-            'openCypher support is not loaded; load binsrc/cypher/cypher_load.sql first',
-            format);
-          return;
-        }
-      if (__proc_exists ('DB.DBA.CYPHER_QUERY_HAS_MERGE', 1) is not null
-          and __proc_exists ('DB.DBA.CYPHER', 1) is not null
-          and __proc_exists ('DB.DBA.CYPHER_TO_SPARQL_POST_MERGE', 1) is not null
-          and DB.DBA.CYPHER_QUERY_HAS_MERGE (opencypher_body))
-        {
-          declare merge_exec_result any;
-          declare exit handler for sqlstate '*'
-            {
-              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-                '400', 'openCypher MERGE Execution Failed',
-                opencypher_body, __SQL_STATE, __SQL_MESSAGE, format);
-              return;
-            };
-          if (not (opencypher_dryrun = '1' or opencypher_dryrun = 'true'))
-            merge_exec_result := DB.DBA.CYPHER (opencypher_body, opencypher_graph);
-          opencypher_translated := DB.DBA.CYPHER_TO_SPARQL_POST_MERGE (opencypher_body, opencypher_graph);
-          goto opencypher_translate_ok;
-        }
-      declare cy_state, cy_msg varchar;
-      cy_state := '00000';
-      cy_msg := '';
-      declare exit handler for sqlstate '*' {
-        cy_state := __SQL_STATE;
-        cy_msg := __SQL_MESSAGE;
-        goto opencypher_translate_failed;
-      };
-      if (__proc_exists ('DB.DBA.CYPHER_TO_SPARQL_PARAMS', 1) is not null)
-        opencypher_translated := DB.DBA.CYPHER_TO_SPARQL_PARAMS (opencypher_body, opencypher_graph, null);
-      else
-        opencypher_translated := DB.DBA.CYPHER_TO_SPARQL (opencypher_body, opencypher_graph);
-      goto opencypher_translate_ok;
-    opencypher_translate_failed:
-      if ((cy_state = 'CY092'
-           or (cy_state = 'VY001' and cy_msg is not null and strstr (cy_msg, 'MERGE is procedural') is not null))
-          and not (opencypher_dryrun = '1' or opencypher_dryrun = 'true')
-          and __proc_exists ('DB.DBA.CYPHER', 1) is not null
-          and __proc_exists ('DB.DBA.CYPHER_TO_SPARQL_POST_MERGE', 1) is not null)
-        {
-          declare merge_exec_result any;
-          declare exit handler for sqlstate '*'
-            {
-              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-                '400', 'openCypher MERGE Execution Failed',
-                opencypher_body, __SQL_STATE, __SQL_MESSAGE, format);
-              return;
-            };
-          merge_exec_result := DB.DBA.CYPHER (opencypher_body, opencypher_graph);
-          opencypher_translated := DB.DBA.CYPHER_TO_SPARQL_POST_MERGE (opencypher_body, opencypher_graph);
-          goto opencypher_translate_ok;
-        }
-      DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-        '400', 'openCypher Translation Failed',
-        opencypher_body, cy_state, cy_msg, format);
-      return;
-    opencypher_translate_ok:
-      query := ltrim (coalesce (opencypher_translated, ''));
-      if (strcasestr (query, 'SPARQL ') = 0)
-        query := subseq (query, 7);
-      -- Expose the translated SPARQL so tooling and the /sparql UI
-      -- can show it; URL-encode to keep header value safe.
-      http_header (concat (coalesce (http_header_get (), ''),
-          'X-Generated-SPARQL: ', sprintf ('%U', query), '\r\n'));
-      -- Stash the translated SPARQL so the HTML5 result wrapper can
-      -- render a collapsible panel above the result table.
-      connection_set ('opencypher_generated_sparql', query);
-      if (opencypher_dryrun = '1' or opencypher_dryrun = 'true')
-        {
-          http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
-          http (query);
-          return;
-        }
-    }
-
   -- openGQL language mode (Phase 7)
   declare opengql_lang, opengql_body, opengql_graph, opengql_dryrun varchar;
   declare opengql_translated varchar;
@@ -4051,7 +3891,7 @@ again:
   if (isvector (rset) and length (rset) = maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
-  if (opencypher_request and state = '01W01' and metas is not null)
+  if (opengql_request and state = '01W01' and metas is not null)
     {
       state := '00000';
       msg := '';
