@@ -391,24 +391,26 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16h FAIL: USE PROPERTY GRAPH node IRI: ', cast (_sparql as varchar)))); }
 
-  -- TR16i: CREATE PROPERTY GRAPH emits catalog metadata
+  -- TR16i: CREATE PROPERTY GRAPH executes as a catalog side effect.
+  -- Bare CREATE PROPERTY GRAPH defaults to physical and runs through the
+  -- property-graph DDL path (GQL_PG_CREATE_PHYSICAL); the translation
+  -- itself produces no SPARQL text, so assert the catalog outcome, not the
+  -- returned string.  Drop first so the create is not rejected as a dup.
   _total := _total + 1;
+  DB.DBA.GQL_PG_DROP ('Bakery', 1);
   _sparql := DB.DBA.GQL_TO_SPARQL ('CREATE PROPERTY GRAPH Bakery');
-  if (_sparql is not null and strstr (_sparql, 'CREATE GRAPH') is not null
-      and strstr (_sparql, '/pgraph/Bakery') is not null
-      and strstr (_sparql, 'urn:opengql:PropertyGraph') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16i PASS: CREATE PROPERTY GRAPH metadata')); }
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('Bakery') is not null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16i PASS: CREATE PROPERTY GRAPH creates catalog entry')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16i FAIL: CREATE PROPERTY GRAPH metadata: ', cast (_sparql as varchar)))); }
 
-  -- TR16j: DROP PROPERTY GRAPH is a catalog operation that executes and
-  -- is idempotent (silent when the graph is not defined).  The translator
-  -- returns an "executed" marker rather than raw DROP GRAPH text.
+  -- TR16j: DROP PROPERTY GRAPH executes as a catalog side effect and is
+  -- idempotent (silent when the graph is not defined).  The translation
+  -- produces no SPARQL text, so assert the catalog entry is gone.
   _total := _total + 1;
   _sparql := DB.DBA.GQL_TO_SPARQL ('DROP PROPERTY GRAPH Bakery');
-  if (_sparql is not null and strstr (_sparql, 'DROP PROPERTY GRAPH') is not null
-      and strstr (_sparql, 'Bakery') is not null)
-    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16j PASS: DROP PROPERTY GRAPH')); }
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('Bakery') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR16j PASS: DROP PROPERTY GRAPH removes catalog entry')); }
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR16j FAIL: DROP PROPERTY GRAPH: ', cast (_sparql as varchar)))); }
 
