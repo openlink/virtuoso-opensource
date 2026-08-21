@@ -2116,6 +2116,50 @@ create procedure DB.DBA.GQL_TRANSLATE_TESTS ()
   else
     { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR174 FAIL: PG + <<( )>>: ', cast (_sparql as varchar)))); }
 
+  -- TR175: AS ?name (SPARQL-style alias) should strip ? prefix, not double it
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (p:Person)-[:studyAt]->(u:University) RETURN p.name AS ?n');
+  if (_sparql is not null
+      and strstr (_sparql, 'AS ?n)') is not null
+      and strstr (_sparql, 'AS ??n)') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR175 PASS: AS ?n strips ? prefix')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR175 FAIL: ', cast (_sparql as varchar)))); }
+
+  -- TR176: AS dollar-name should strip dollar prefix, not produce ?NULL
+  -- Use concat/chr(36) to avoid isql macro substitution of dollar-name
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL (concat ('MATCH (p:Person) RETURN p.name AS ', chr (36), 'name'));
+  if (_sparql is not null
+      and strstr (_sparql, 'AS ?name)') is not null
+      and strstr (_sparql, 'AS ??name)') is null
+      and strstr (_sparql, 'AS ?NULL') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector (concat ('TR176 PASS: AS ', chr (36), 'name strips ', chr (36), ' prefix'))); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR176 FAIL: ', cast (_sparql as varchar)))); }
+
+  -- TR177: AS ?n ORDER BY ?n should produce ?n (not ??n) in both projection and ORDER BY
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (p:Person) RETURN p.name AS ?n ORDER BY ?n');
+  if (_sparql is not null
+      and strstr (_sparql, 'AS ?n)') is not null
+      and strstr (_sparql, 'AS ??n)') is null
+      and strstr (_sparql, 'ASC(?n)') is not null
+      and strstr (_sparql, 'ASC(??n)') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR177 PASS: AS ?n ORDER BY ?n correct')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR177 FAIL: ', cast (_sparql as varchar)))); }
+
+  -- TR178: AS n (bare identifier, existing behavior) should still work
+  _total := _total + 1;
+  _sparql := DB.DBA.GQL_TO_SPARQL ('MATCH (p:Person) RETURN p.name AS n');
+  if (_sparql is not null
+      and strstr (_sparql, 'AS ?n)') is not null
+      and strstr (_sparql, 'AS ??n)') is null)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector ('TR178 PASS: AS n (bare) still works')); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat ('TR178 FAIL: ', cast (_sparql as varchar)))); }
+
   -- Summary
   _results := vector_concat (_results, vector (''));
   _results := vector_concat (_results, vector (concat ('TOTAL: ', cast (_total as varchar))));

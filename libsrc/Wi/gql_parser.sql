@@ -697,8 +697,27 @@ create procedure DB.DBA.GQL_PARSE_RETURN_ITEMS (in _tokens any, inout _pos integ
       alias := null;
       if (DB.DBA.GQL_PEEK (_tokens, _pos) = 241)  -- AS
         {
+          declare _alias_tok integer;
           _pos := _pos + 1;
-          alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          _alias_tok := DB.DBA.GQL_PEEK (_tokens, _pos);
+          if (_alias_tok = 64)  -- IDENT: bare name, use as-is
+            alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          else if (_alias_tok = 68)  -- PARAM: ?name or $name, strip prefix
+            {
+              alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+              if (length (alias) > 0 and (aref (alias, 0) = 63 or aref (alias, 0) = 36))
+                alias := subseq (alias, 1);
+            }
+          else if (_alias_tok = 71)  -- ACCENT_IDENT: `name`, strip backticks
+            {
+              alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+              if (length (alias) >= 2 and aref (alias, 0) = 96)
+                alias := subseq (alias, 1, length (alias) - 1);
+            }
+          else if (_alias_tok >= 200)  -- keyword token used as alias name
+            alias := DB.DBA.GQL_PEEK_VAL (_tokens, _pos);
+          else
+            signal ('GQ003', sprintf ('Expected identifier after AS at position %d', _pos));
           _pos := _pos + 1;
         }
       items := vector_concat (items, vector (vector ('RETITEM', expr, alias)));

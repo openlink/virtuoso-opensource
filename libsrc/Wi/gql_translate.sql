@@ -2587,7 +2587,7 @@ create procedure DB.DBA.GQL_GEN_EXPR (in _expr any, inout _ctx any)
       -- it so callers may supply names with or without the '$', and so an
       -- unbound parameter yields a valid SPARQL variable (?v, not ?$v).
       pkey := pname;
-      if (isstring (pkey) and length (pkey) > 0 and aref (pkey, 0) = 36)  -- '$'
+      if (isstring (pkey) and length (pkey) > 0 and (aref (pkey, 0) = 36 or aref (pkey, 0) = 63))  -- '$' or '?'
         pkey := subseq (pkey, 1);
       pbound := connection_get ('gql_bound_params');
       if (pbound is not null and isarray (pbound))
