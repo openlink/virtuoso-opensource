@@ -1334,7 +1334,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
 	shareable = 0; /* a hash inx w/ exps for keys is not shareable */
     }
   END_DO_SET();
-  ts_src->src_after_code = code_to_cv (so->so_sc, fill_code);
+  ts_post->src_after_code = code_to_cv (so->so_sc, fill_code);
   sqlg_unplace_pred_body_ssl (so, tb_dfe->_.table.join_test);
   DO_SET (df_elt_t *, out_dfe, &tb_dfe->_.table.out_cols)
     {
