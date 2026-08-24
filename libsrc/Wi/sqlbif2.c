@@ -1763,6 +1763,7 @@ sqlbif2_init (void)
   /*sqls_bif_init ();*/
   bif_define ("__log_error_event", bif_log_error_event);
   sqls_bif_init ();
+  sqlbif_fuzzy_init ();
   sqlo_inv_bif_int ();
 }
 

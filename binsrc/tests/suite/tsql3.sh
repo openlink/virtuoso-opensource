@@ -183,6 +183,14 @@ then
     exit 1
 fi
 
+LOG + running sql script test_fuzzy
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_fuzzy.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: fuzzy search tests -- test_fuzzy.sql"
+    exit 1
+fi
+
 LOG + running sql script tplmodule
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplmodule.sql
 if test $STATUS -ne 0
