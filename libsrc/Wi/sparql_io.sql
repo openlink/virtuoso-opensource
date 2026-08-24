@@ -915,693 +915,11 @@ probe_done:;
 }
 ;
 
------
--- Pluggable SERVICE handler framework (SYS_SPARQL_SINV_HANDLER)
-
-create table DB.DBA.SYS_SPARQL_SINV_HANDLER (
-  SSH_ID integer identity,
-  SSH_PATTERN varchar not null,
-  SSH_MATCH_KIND varchar not null,
-  SSH_PRIORITY integer not null,
-  SSH_CALLBACK varchar not null,
-  SSH_ENABLED integer not null,
-  SSH_TIMEOUT_MS integer,
-  SSH_MAX_ROWS integer,
-  SSH_OPTIONS long varchar,
-  SSH_COMMENT varchar,
-  primary key (SSH_ID)
-)
-;
-
-create index SYS_SPARQL_SINV_HANDLER_LOOKUP on DB.DBA.SYS_SPARQL_SINV_HANDLER (SSH_ENABLED, SSH_PRIORITY)
-;
-
--- Resolve a handler for a given SERVICE endpoint IRI.
--- Returns a vector (SSH_ID, SSH_CALLBACK, SSH_TIMEOUT_MS, SSH_MAX_ROWS, SSH_OPTIONS) or null.
-create procedure DB.DBA.SPARQL_SINV_RESOLVE_HANDLER (in _ws_endpoint varchar)
-{
-  for select SSH_ID, SSH_PATTERN, SSH_MATCH_KIND, SSH_PRIORITY, SSH_CALLBACK,
-             SSH_TIMEOUT_MS, SSH_MAX_ROWS, SSH_OPTIONS
-      from DB.DBA.SYS_SPARQL_SINV_HANDLER
-      where SSH_ENABLED = 1
-      order by SSH_PRIORITY, SSH_ID do
-    {
-      declare _matched integer;
-      _matched := 0;
-      if (SSH_MATCH_KIND = 'EXACT')
-        {
-          if (_ws_endpoint = SSH_PATTERN)
-            _matched := 1;
-        }
-      else if (SSH_MATCH_KIND = 'LIKE')
-        {
-          if (_ws_endpoint like SSH_PATTERN)
-            _matched := 1;
-        }
-      else if (SSH_MATCH_KIND = 'REGEXP')
-        {
-          if (regexp_match (SSH_PATTERN, _ws_endpoint) is not null)
-            _matched := 1;
-        }
-      if (_matched)
-        return vector (SSH_ID, SSH_CALLBACK, SSH_TIMEOUT_MS, SSH_MAX_ROWS, SSH_OPTIONS);
-    }
-  return null;
-}
-;
-
--- Safe callback invocation wrapper.
--- Validates that callback is in DB.DBA schema and that the procedure exists,
--- then invokes it with the standard SERVICE handler contract.
-create procedure DB.DBA.SPARQL_SINV_CALL_HANDLER (
-  in _handler_info any,
-  in _ws_endpoint varchar,
-  in _ws_params any,
-  in _qtext_template varchar,
-  in _qtext_posmap nvarchar,
-  in _param_row any,
-  in _expected_vars any)
-{
-  declare _callback_name varchar;
-  declare _handler_opts any;
-  _callback_name := cast (_handler_info[1] as varchar);
-  _handler_opts := _handler_info[4];
-  -- Ensure expected_vars is a proper vector (may arrive serialized via procedure view)
-  if (not isvector (_expected_vars) and isstring (_expected_vars))
-    _expected_vars := deserialize (_expected_vars);
-  if ("LEFT" (_callback_name, 7) <> 'DB.DBA.')
-    signal ('RDFZZ', sprintf ('SERVICE handler callback "%.200s" is not in DB.DBA schema', _callback_name));
-  if (__proc_exists (_callback_name) is null)
-    signal ('RDFZZ', sprintf ('SERVICE handler callback procedure "%.200s" not found', _callback_name));
-  return call (_callback_name) (_ws_endpoint, _ws_params, _qtext_template, _qtext_posmap, _param_row, _expected_vars, _handler_opts);
-}
-;
-
--- Helper: extract string value from a SPARQL lexer raw_text token.
--- Handles "...", '...', """...""", '''...''' quote styles and common escapes.
-create procedure DB.DBA.SPARQL_SINV_UNQUOTE_STRING (in _raw varchar)
-{
-  declare _len, _start, _end integer;
-  _len := length (_raw);
-  if (_len < 2)
-    return _raw;
-  -- Detect triple-quote delimiters
-  if (_len >= 6 and (subseq (_raw, 0, 3) = '"""' or subseq (_raw, 0, 3) = ''''''''))
-    {
-      _start := 3;
-      _end := _len - 3;
-    }
-  else if (aref (_raw, 0) = 34 or aref (_raw, 0) = 39) -- '"' or ''''
-    {
-      _start := 1;
-      _end := _len - 1;
-    }
-  else
-    return _raw;
-  if (_end <= _start)
-    return '';
-  -- Unescape common SPARQL string escapes
-  {
-    declare _content varchar;
-    declare _out_ses any;
-    declare _rpos, _rlen, _ch, _nch integer;
-    _content := subseq (_raw, _start, _end);
-    _rlen := length (_content);
-    _rpos := 0;
-    _out_ses := string_output ();
-    while (_rpos < _rlen)
-      {
-        _ch := aref (_content, _rpos);
-        if (_ch = 92 and _rpos + 1 < _rlen) -- backslash
-          {
-            _nch := aref (_content, _rpos + 1);
-            if (_nch = 110)      -- \n
-              http ('\n', _out_ses);
-            else if (_nch = 116) -- \t
-              http ('\t', _out_ses);
-            else if (_nch = 114) -- \r
-              http ('\r', _out_ses);
-            else
-              http (chr (_nch), _out_ses);
-            _rpos := _rpos + 2;
-          }
-        else
-          {
-            http (chr (_ch), _out_ses);
-            _rpos := _rpos + 1;
-          }
-      }
-    return string_output_string (_out_ses);
-  }
-}
-;
-
--- Helper: extract namespace and local name from an IRI using iri_split BIF.
--- Returns the local name, or sets _ns_out if provided.
--- For <http://www.mediawiki.org/ontology#API/search> returns 'search'.
-create procedure DB.DBA.SPARQL_SINV_SPLIT_IRI (in _iri varchar, out _ns_out varchar)
-{
-  declare _local varchar;
-  _ns_out := iri_split (_iri, _local);
-  return _local;
-}
-;
-
--- Parse structured handler options from SSH_OPTIONS column.
--- Supports:
---   (a) Legacy integer format: cast directly to timeout_ms (backward compat).
---   (b) Vector key-value pairs: vector ('timeout_ms', 10000, 'max_rows', 5000).
---   (c) NULL: returns default options.
--- Returns a vector ('timeout_ms', <int>, 'max_rows', <int>).
-create procedure DB.DBA.SPARQL_SINV_PARSE_HANDLER_OPTS (
-  in _handler_opts any,
-  in _default_timeout integer := 10000,
-  in _default_max_rows integer := 10000)
-{
-  declare _timeout_ms, _max_rows integer;
-  _timeout_ms := _default_timeout;
-  _max_rows := _default_max_rows;
-  if (_handler_opts is null)
-    return vector ('timeout_ms', _timeout_ms, 'max_rows', _max_rows);
-  -- Legacy integer format: interpret as timeout_ms
-  if (isinteger (_handler_opts))
-    {
-      _timeout_ms := _handler_opts;
-      return vector ('timeout_ms', _timeout_ms, 'max_rows', _max_rows);
-    }
-  if (isstring (_handler_opts) and length (_handler_opts) > 0)
-    {
-      declare _ival integer;
-      _ival := atoi (_handler_opts);
-      if (_ival > 0)
-        {
-          _timeout_ms := _ival;
-          return vector ('timeout_ms', _timeout_ms, 'max_rows', _max_rows);
-        }
-    }
-  -- Vector key-value format
-  if (isvector (_handler_opts))
-    {
-      declare _octr integer;
-      for (_octr := 0; _octr < length (_handler_opts) - 1; _octr := _octr + 2)
-        {
-          declare _key varchar;
-          _key := cast (_handler_opts[_octr] as varchar);
-          if (_key = 'timeout_ms')
-            _timeout_ms := cast (_handler_opts[_octr + 1] as integer);
-          else if (_key = 'max_rows')
-            _max_rows := cast (_handler_opts[_octr + 1] as integer);
-          else
-            signal ('RDFZZ', sprintf ('SPARQL_SINV_PARSE_HANDLER_OPTS: unknown option "%.100s"', _key));
-        }
-    }
-  return vector ('timeout_ms', _timeout_ms, 'max_rows', _max_rows);
-}
-;
-
--- Lexer-based parser for SERVICE body template text.
--- Uses sparql_lex_analyze to tokenize the SERVICE body and extracts triples
--- using a state machine, replacing fragile manual string scanning.
---
--- Uses text-based token checks (not numeric token IDs) for stability across
--- lexer versions:
---   IRIs: raw_text like '<%>'
---   Variables: raw_text like '?%' or '$%'
---   Strings: raw_text like '"...' or '''...'
---   Punctuation: raw_text = '{', '}', '.', ';'
---
--- Lexem format: vector(lineno, depth, raw_text, lex_value)
-create procedure DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (
-  in _qtext varchar,
-  out _api_action varchar,
-  out _api_host varchar,
-  out _api_params any,
-  out _output_maps any,
-  out _output_item_maps any)
-{
-  declare _lexems any;
-  declare _lex_count, _ctr integer;
-  declare _subj_text, _pred_text, _obj_text varchar;
-  declare _triple_pos integer;
-  declare _brace_depth integer;
-  declare _mwapi_ns, _wb_ns, _bd_ns varchar;
-
-  _api_action := null;
-  _api_host := 'www.wikidata.org';
-  _api_params := vector ();
-  _output_maps := vector ();
-  _output_item_maps := vector ();
-
-  _mwapi_ns := 'http://www.mediawiki.org/ontology#API/';
-  _wb_ns := 'http://wikiba.se/ontology#';
-  _bd_ns := 'http://www.bigdata.com/rdf#';
-
-  _lexems := sparql_lex_analyze (_qtext);
-  _lex_count := length (_lexems);
-  _triple_pos := 0;
-  _brace_depth := 0;
-  _subj_text := null;
-  _pred_text := null;
-
-  for (_ctr := 0; _ctr < _lex_count; _ctr := _ctr + 1)
-    {
-      declare _lex any;
-      declare _raw_text varchar;
-
-      _lex := _lexems[_ctr];
-      -- Error lexem has only 3 elements (lineno, depth, error_message)
-      if (length (_lex) < 4)
-        goto next_token;
-
-      _raw_text := _lex[2];
-
-      -- Track brace depth; only parse triples inside { }
-      -- The SERVICE template is: SELECT ?vars WHERE { <triples> } LIMIT N
-      if (_raw_text = '{')
-        {
-          _brace_depth := _brace_depth + 1;
-          _triple_pos := 0;
-          goto next_token;
-        }
-      if (_raw_text = '}')
-        {
-          _brace_depth := _brace_depth - 1;
-          _triple_pos := 0;
-          goto next_token;
-        }
-      -- Skip everything outside braces (SELECT clause, LIMIT, etc.)
-      if (_brace_depth < 1)
-        goto next_token;
-
-      -- Handle structural separators within triple patterns
-      if (_raw_text = '.')  -- end of triple statement
-        {
-          _triple_pos := 0;
-          goto next_token;
-        }
-      if (_raw_text = ';')  -- same subject, new predicate-object
-        {
-          _triple_pos := 1;
-          goto next_token;
-        }
-      -- Skip unrecognized tokens (keywords, markers, etc.)
-      -- Only process: IRIs (<...>), variables (?../$..), string literals ("../'.')
-      if (not (_raw_text like '<%>' or _raw_text like '?%' or _raw_text like '$%'
-              or _raw_text like '"%' or _raw_text like '''%'))
-        goto next_token;
-
-      -- State machine: collect subject, predicate, object
-      if (_triple_pos = 0)
-        {
-          _subj_text := _raw_text;
-          _triple_pos := 1;
-        }
-      else if (_triple_pos = 1)
-        {
-          _pred_text := _raw_text;
-          _triple_pos := 2;
-        }
-      else if (_triple_pos = 2)
-        {
-          _obj_text := _raw_text;
-          _triple_pos := 0;
-
-          -- Process the complete triple
-          {
-            declare _subj_iri, _pred_iri, _obj_iri varchar;
-            _subj_iri := null;
-            _pred_iri := null;
-            _obj_iri := null;
-
-            -- Strip angle brackets from IRI tokens (<...>)
-            if (_subj_text like '<%>')
-              _subj_iri := subseq (_subj_text, 1, length (_subj_text) - 1);
-            if (_pred_text like '<%>')
-              _pred_iri := subseq (_pred_text, 1, length (_pred_text) - 1);
-            if (_obj_text like '<%>')
-              _obj_iri := subseq (_obj_text, 1, length (_obj_text) - 1);
-
-            -- Pattern 1: bd:serviceParam as subject (input parameters)
-            if (_subj_iri = _bd_ns || 'serviceParam')
-              {
-                if (_pred_iri = _wb_ns || 'api')
-                  {
-                    -- wikibase:api "ActionName"
-                    if (_obj_text like '"%' or _obj_text like '''%') -- string literal
-                      _api_action := DB.DBA.SPARQL_SINV_UNQUOTE_STRING (_obj_text);
-                  }
-                else if (_pred_iri = _wb_ns || 'endpoint')
-                  {
-                    -- wikibase:endpoint "hostname"
-                    if (_obj_text like '"%' or _obj_text like '''%')
-                      _api_host := DB.DBA.SPARQL_SINV_UNQUOTE_STRING (_obj_text);
-                  }
-                else if (_pred_iri is not null and _pred_iri like _mwapi_ns || '%')
-                  {
-                    -- mwapi:paramName "value"
-                    declare _param_local varchar;
-                    _param_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_pred_iri, _param_local);
-                    if (_param_local is not null and length (_param_local) > 0)
-                      {
-                        if (_obj_text like '"%' or _obj_text like '''%') -- string literal
-                          _api_params := vector_concat (_api_params, vector (_param_local, DB.DBA.SPARQL_SINV_UNQUOTE_STRING (_obj_text)));
-                        else if (_obj_text like '?%' or _obj_text like '$%') -- variable (already substituted)
-                          {
-                            -- Variable was already substituted by SPARQL_SINV_IMP posmap;
-                            -- if it reaches here unsubstituted, skip it (no literal value)
-                            ;
-                          }
-                      }
-                  }
-              }
-            -- Pattern 2: ?var wikibase:apiOutput mwapi:field
-            else if (_pred_iri = _wb_ns || 'apiOutput' and (_subj_text like '?%' or _subj_text like '$%') and _obj_iri is not null)
-              {
-                if (_obj_iri like _mwapi_ns || '%')
-                  {
-                    declare _var_name, _field_local varchar;
-                    _var_name := subseq (_subj_text, 1); -- strip '?'
-                    _field_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_obj_iri, _field_local);
-                    if (_var_name is not null and _field_local is not null)
-                      _output_maps := vector_concat (_output_maps, vector (_var_name, _field_local));
-                  }
-              }
-            -- Pattern 3: ?var wikibase:apiOutputItem mwapi:field
-            else if (_pred_iri = _wb_ns || 'apiOutputItem' and (_subj_text like '?%' or _subj_text like '$%') and _obj_iri is not null)
-              {
-                if (_obj_iri like _mwapi_ns || '%')
-                  {
-                    declare _var_name, _field_local varchar;
-                    _var_name := subseq (_subj_text, 1); -- strip '?'
-                    _field_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_obj_iri, _field_local);
-                    if (_var_name is not null and _field_local is not null)
-                      _output_item_maps := vector_concat (_output_item_maps, vector (_var_name, _field_local));
-                  }
-              }
-          }
-        }
-    next_token: ;
-    }
-}
-;
-
------
--- wikibase:mwapi callback implementation (lexer-based parsing)
-
-create procedure DB.DBA.SPARQL_SINV_CB_WIKIBASE_MWAPI (
-  in _ws_endpoint varchar,
-  in _ws_params any,
-  in _qtext varchar,
-  in _qtext_posmap nvarchar,
-  in _param_row any,
-  in _expected_vars any,
-  in _handler_opts any)
-{
-  declare _api_action, _api_host varchar;
-  declare _api_params any;
-  declare _output_maps any;
-  declare _output_item_maps any;
-  declare _url varchar;
-  declare _opts any;
-
-  -- Ensure expected_vars is a proper vector (may arrive serialized via procedure view)
-  if (not isvector (_expected_vars) and isstring (_expected_vars))
-    _expected_vars := deserialize (_expected_vars);
-
-  -- Parse structured handler options (backward compatible with legacy integer format)
-  _opts := DB.DBA.SPARQL_SINV_PARSE_HANDLER_OPTS (_handler_opts);
-
-  -- Parse SERVICE body using lexer-based tokenization
-  DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (_qtext, _api_action, _api_host, _api_params, _output_maps, _output_item_maps);
-
-  if (_api_action is null)
-    signal ('RDFZZ', 'wikibase:mwapi handler: wikibase:api not specified in SERVICE body');
-
-  -- Build MediaWiki API URL
-  {
-    declare _api_url_ses any;
-    _api_url_ses := string_output ();
-    http (sprintf ('https://%s/w/api.php?format=json', _api_host), _api_url_ses);
-    if (lower (_api_action) = 'search')
-      {
-        http ('&action=query&list=search', _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    else if (lower (_api_action) = 'entitysearch' or lower (_api_action) = 'wbsearchentities')
-      {
-        http ('&action=wbsearchentities&language=en', _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              if (_api_params[_pctr] = 'search' or _api_params[_pctr] = 'srsearch')
-                http (sprintf ('&search=%U', _api_params[_pctr + 1]), _api_url_ses);
-              else
-                http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    else
-      {
-        http (sprintf ('&action=%U', _api_action), _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    _url := string_output_string (_api_url_ses);
-  }
-
-  -- Execute HTTP request
-  {
-    declare _resp_body varchar;
-    declare _resp_headers any;
-    declare _timeout_ms integer;
-    _timeout_ms := cast (get_keyword ('timeout_ms', _opts, 10000) as integer);
-    _resp_headers := null;
-    {
-      declare exit handler for sqlstate '*'
-        {
-          signal ('RDFZZ', sprintf ('wikibase:mwapi HTTP request failed for URL %.500s: %s %s', _url, __SQL_STATE, __SQL_MESSAGE));
-        };
-      _resp_body := http_client_ext (url=>_url, headers=>_resp_headers, timeout=>(_timeout_ms / 1000));
-    }
-    if (_resp_headers is null or length (_resp_headers) = 0 or aref (_resp_headers, 0) not like '% 200%')
-      signal ('RDFZZ', sprintf ('wikibase:mwapi HTTP error for URL %.500s', _url));
-
-    -- Parse JSON response and map to result rows
-    {
-      declare _json_tree any;
-      declare _items any;
-      declare _max_rows integer;
-      _max_rows := cast (get_keyword ('max_rows', _opts, 10000) as integer);
-      _json_tree := json_parse (_resp_body);
-      _items := null;
-      if (lower (_api_action) = 'search')
-        {
-          -- Response path: query.search[]
-          declare _query_obj any;
-          _query_obj := get_keyword ('query', _json_tree);
-          if (_query_obj is not null)
-            _items := get_keyword ('search', _query_obj);
-        }
-      else if (lower (_api_action) = 'entitysearch' or lower (_api_action) = 'wbsearchentities')
-        {
-          -- Response path: search[]
-          _items := get_keyword ('search', _json_tree);
-        }
-      else
-        {
-          -- Generic: try query.X[] where X is the first list key, or top-level results
-          _items := get_keyword ('results', _json_tree);
-          if (_items is null)
-            {
-              declare _query_obj any;
-              _query_obj := get_keyword ('query', _json_tree);
-              if (_query_obj is not null and isvector (_query_obj))
-                {
-                  declare _ki integer;
-                  for (_ki := 0; _ki < length (_query_obj); _ki := _ki + 2)
-                    {
-                      if (isvector (_query_obj[_ki + 1]))
-                        {
-                          _items := _query_obj[_ki + 1];
-                          goto got_items;
-                        }
-                    }
-                got_items: ;
-                }
-            }
-        }
-      if (_items is null or not isvector (_items))
-        return vector ();
-
-      -- Map items to expected_vars
-      {
-        declare _result_rows any;
-        declare _row_count, _var_count integer;
-        _result_rows := vector ();
-        _var_count := length (_expected_vars);
-        {
-          declare _ictr integer;
-          for (_ictr := 0; _ictr < length (_items); _ictr := _ictr + 1)
-            {
-              if (_ictr >= _max_rows)
-                goto row_limit_reached;
-              {
-                declare _item any;
-                declare _row any;
-                declare _vctr integer;
-                _item := _items[_ictr];
-                _row := make_array (_var_count, 'any');
-                for (_vctr := 0; _vctr < _var_count; _vctr := _vctr + 1)
-                  {
-                    declare _vname, _mapped_field varchar;
-                    declare _val any;
-                    _vname := _expected_vars[_vctr];
-                    _val := null;
-                    -- Check apiOutput mappings
-                    {
-                      declare _mctr integer;
-                      for (_mctr := 0; _mctr < length (_output_maps); _mctr := _mctr + 2)
-                        {
-                          if (_output_maps[_mctr] = _vname)
-                            {
-                              _mapped_field := _output_maps[_mctr + 1];
-                              _val := get_keyword (_mapped_field, _item);
-                              -- Convert Wikidata entity IDs to IRI_IDs (SPARQL engine applies __id2in)
-                              if (_val is not null and isstring (_val))
-                                {
-                                  declare _sval varchar;
-                                  _sval := cast (_val as varchar);
-                                  if (regexp_match ('^[QPL][0-9]+', _sval) = _sval)
-                                    _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval));
-                                }
-                              goto got_val;
-                            }
-                        }
-                    }
-                    -- Check apiOutputItem mappings (resolve to Wikidata entity IRI)
-                    {
-                      declare _mctr integer;
-                      for (_mctr := 0; _mctr < length (_output_item_maps); _mctr := _mctr + 2)
-                        {
-                          if (_output_item_maps[_mctr] = _vname)
-                            {
-                              _mapped_field := _output_item_maps[_mctr + 1];
-                              _val := get_keyword (_mapped_field, _item);
-                              if (_val is not null)
-                                _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
-                              goto got_val;
-                            }
-                        }
-                    }
-                    -- Positional fallback: SPARQL compiler may rename SERVICE vars (e.g. ?page_title -> ?stubvar11)
-                    -- If no name match found, map by declaration order
-                    if ((_vctr * 2 + 1) < length (_output_maps))
-                      {
-                        _mapped_field := _output_maps[_vctr * 2 + 1];
-                        _val := get_keyword (_mapped_field, _item);
-                        if (_val is not null and isstring (_val))
-                          {
-                            declare _sval2 varchar;
-                            _sval2 := cast (_val as varchar);
-                            if (regexp_match ('^[QPL][0-9]+', _sval2) = _sval2)
-                              _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval2));
-                          }
-                        goto got_val;
-                      }
-                    if ((_vctr * 2 + 1) < length (_output_item_maps))
-                      {
-                        _mapped_field := _output_item_maps[_vctr * 2 + 1];
-                        _val := get_keyword (_mapped_field, _item);
-                        if (_val is not null)
-                          _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
-                        goto got_val;
-                      }
-                    -- Last resort: try variable name directly as JSON field
-                    _val := get_keyword (_vname, _item);
-                  got_val:
-                    -- SPARQL engine applies __id2in() to all procedure view columns.
-                    -- IRI_IDs survive, but plain strings return NULL.  Wrap string
-                    -- literals as DV_UNAME so they pass through __id2in() intact.
-                    if (_val is not null and isstring (_val) and not isiri_id (_val))
-                      _val := __uname (cast (_val as varchar));
-                    aset (_row, _vctr, _val);
-                  }
-                _result_rows := vector_concat (_result_rows, vector (_row));
-              }
-            }
-        row_limit_reached: ;
-        }
-        return _result_rows;
-      }
-    }
-  }
-}
-;
-
------
--- wikibase:label callback (rewrite-first / Track A).
--- This handler intercepts SERVICE wikibase:label and returns empty results,
--- relying on the query being rewritten to use standard SPARQL constructs
--- (OPTIONAL + rdfs:label) before reaching the SERVICE execution path.
--- It prevents the engine from attempting remote federation to the label service IRI.
-
-create procedure DB.DBA.SPARQL_SINV_CB_WIKIBASE_LABEL (
-  in _ws_endpoint varchar,
-  in _ws_params any,
-  in _qtext varchar,
-  in _qtext_posmap nvarchar,
-  in _param_row any,
-  in _expected_vars any,
-  in _handler_opts any)
-{
-  -- In rewrite-first mode, the label service body should have been rewritten
-  -- to standard SPARQL. If we get here, return empty results rather than
-  -- attempting remote federation to a non-SPARQL endpoint.
-  return vector ();
-}
-;
-
------
--- Register default Wikidata SERVICE handlers
-
-create procedure DB.DBA.SPARQL_SINV_HANDLER_INIT ()
-{
-  if (not exists (select 1 from DB.DBA.SYS_SPARQL_SINV_HANDLER where SSH_PATTERN = 'http://wikiba.se/ontology#mwapi'))
-    insert into DB.DBA.SYS_SPARQL_SINV_HANDLER (SSH_PATTERN, SSH_MATCH_KIND, SSH_PRIORITY, SSH_CALLBACK, SSH_ENABLED, SSH_TIMEOUT_MS, SSH_MAX_ROWS, SSH_COMMENT)
-      values ('http://wikiba.se/ontology#mwapi', 'EXACT', 10, 'DB.DBA.SPARQL_SINV_CB_WIKIBASE_MWAPI', 1, 10000, 10000, 'Wikidata MediaWiki API service handler');
-  if (not exists (select 1 from DB.DBA.SYS_SPARQL_SINV_HANDLER where SSH_PATTERN = 'http://wikiba.se/ontology#label'))
-    insert into DB.DBA.SYS_SPARQL_SINV_HANDLER (SSH_PATTERN, SSH_MATCH_KIND, SSH_PRIORITY, SSH_CALLBACK, SSH_ENABLED, SSH_TIMEOUT_MS, SSH_MAX_ROWS, SSH_COMMENT)
-      values ('http://wikiba.se/ontology#label', 'EXACT', 10, 'DB.DBA.SPARQL_SINV_CB_WIKIBASE_LABEL', 1, 5000, 10000, 'Wikidata label service handler (rewrite-first)');
-}
-;
-
-DB.DBA.SPARQL_SINV_HANDLER_INIT ()
-;
-
------
--- Modified SPARQL_SINV_IMP with pluggable handler dispatch
-
 create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params any, in qtext_template varchar, in qtext_posmap nvarchar, in param_row any, in expected_vars any)
 {
   declare RSET, retarray any;
-  declare handler_info any;
   result_names (RSET);
   -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars, ')');
-  -- Ensure expected_vars is a proper vector (may arrive serialized via procedure view)
-  if (not isvector (expected_vars) and isstring (expected_vars))
-    expected_vars := deserialize (expected_vars);
   if (N'' <> qtext_posmap)
     {
       declare qtext_ses any;
@@ -1623,28 +941,6 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
       http (subseq (qtext_template, prev_pos), qtext_ses);
       qtext_template := string_output_string (qtext_ses);
     }
-  -- Handler dispatch: check for registered SERVICE handler
-  handler_info := DB.DBA.SPARQL_SINV_RESOLVE_HANDLER (ws_endpoint);
-  if (handler_info is not null)
-    {
-      {
-        declare exit handler for sqlstate '*'
-          {
-            -- dbg_obj_princ ('SPARQL_SINV_IMP handler error: ', __SQL_STATE, __SQL_MESSAGE);
-            resignal;
-          };
-        retarray := DB.DBA.SPARQL_SINV_CALL_HANDLER (handler_info, ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars);
-      }
-      if (retarray is not null)
-        {
-          foreach (any retrow in retarray) do
-            {
-              result (retrow);
-            }
-        }
-      return;
-    }
-  -- Original federation path (fallback when no handler matched)
   retarray := DB.DBA.SPARQL_REXEC_TO_ARRAY_OF_OBJ (
     ws_endpoint,
     qtext_template,
@@ -1663,45 +959,6 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
 ;
 
 create procedure view DB.DBA.SPARQL_SINV_2 as DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars)(RSET any)
-;
-
------
--- Seed dialect metadata for wikibase SERVICE IRIs to prevent parser-time
--- LOAD SERVICE DATA attempts for these non-SPARQL endpoints.
--- 0x7ffe = all SSG_SD flags except SSG_SD_QUAD_MAP (0x0001)
--- Must be placed AFTER SPARQL_SINV_IMP to not abort bootstrap.
-
-create procedure DB.DBA.SPARQL_SINV_WIKIBASE_DIALECT_INIT ()
-{
-  declare _state, _msg varchar;
-  -- wikibase:mwapi
-  exec ('jso_triples_del (?, ?, null)', _state, _msg,
-    vector ('http://wikiba.se/ontology#mwapi', 'http://www.openlinksw.com/schemas/virtrdf#dialect'));
-  exec ('jso_triple_add (?, ?, ?)', _state, _msg,
-    vector ('http://wikiba.se/ontology#mwapi', 'http://www.openlinksw.com/schemas/virtrdf#dialect', '00007ffe'));
-  exec ('sparql define input:storage ""
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    DELETE FROM virtrdf: { <http://wikiba.se/ontology#mwapi> virtrdf:dialect ?o }
-    WHERE { <http://wikiba.se/ontology#mwapi> virtrdf:dialect ?o }', _state, _msg);
-  exec ('sparql define input:storage ""
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    INSERT IN virtrdf: { <http://wikiba.se/ontology#mwapi> virtrdf:dialect "00007ffe" }', _state, _msg);
-  -- wikibase:label
-  exec ('jso_triples_del (?, ?, null)', _state, _msg,
-    vector ('http://wikiba.se/ontology#label', 'http://www.openlinksw.com/schemas/virtrdf#dialect'));
-  exec ('jso_triple_add (?, ?, ?)', _state, _msg,
-    vector ('http://wikiba.se/ontology#label', 'http://www.openlinksw.com/schemas/virtrdf#dialect', '00007ffe'));
-  exec ('sparql define input:storage ""
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    DELETE FROM virtrdf: { <http://wikiba.se/ontology#label> virtrdf:dialect ?o }
-    WHERE { <http://wikiba.se/ontology#label> virtrdf:dialect ?o }', _state, _msg);
-  exec ('sparql define input:storage ""
-    prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-    INSERT IN virtrdf: { <http://wikiba.se/ontology#label> virtrdf:dialect "00007ffe" }', _state, _msg);
-}
-;
-
-DB.DBA.SPARQL_SINV_WIKIBASE_DIALECT_INIT ()
 ;
 
 -----
@@ -3834,6 +3091,37 @@ grant execute on DB.DBA.rdf_find_str to public
 ;
 
 
+create procedure WS.WS.SPARQL_ENDPOINT_OPENGQL_BODY (in query varchar)
+{
+  declare q, ql, next_ch varchar;
+
+  if (query is null)
+    return null;
+
+  q := trim (query);
+  ql := lower (q);
+
+  if (ql = 'opengql' or ql = 'gql')
+    return '';
+
+  if (length (q) > 7 and subseq (ql, 0, 7) = 'opengql')
+    {
+      next_ch := subseq (q, 7, 8);
+      if (next_ch in (' ', '\t', '\n', '\r'))
+        return trim (subseq (q, 7));
+    }
+
+  if (length (q) > 3 and subseq (ql, 0, 3) = 'gql')
+    {
+      next_ch := subseq (q, 3, 4);
+      if (next_ch in (' ', '\t', '\n', '\r'))
+        return trim (subseq (q, 3));
+    }
+
+    return null;
+}
+;
+
 
 -- Web service endpoint.
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -4045,6 +3333,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
           if (def_qry is null)
             def_qry := 'SELECT * WHERE {?s ?p ?o}';
         }
+
+      -- Form-render path: leave GQL queries as-is so the textarea
+      -- shows the user's original GQL source. Translation happens
+      -- only when the query is actually executed.
 
       if (qtxt <> 1)
 	{
@@ -4332,6 +3624,82 @@ execute_query:
       return;
     }
 
+  -- openGQL language mode (Phase 7)
+  declare opengql_lang, opengql_body, opengql_graph, opengql_dryrun varchar;
+  declare opengql_translated varchar;
+  declare opengql_request integer;
+  opengql_request := 0;
+
+  opengql_lang := lower (trim (coalesce (get_keyword ('language', params, ''), '')));
+  opengql_body := WS.WS.SPARQL_ENDPOINT_OPENGQL_BODY (query);
+  if (opengql_lang = 'opengql' and opengql_body is null)
+    opengql_body := query;
+
+  if (opengql_body is not null)
+    {
+      opengql_request := 1;
+      opengql_graph := coalesce (
+        trim (get_keyword ('graph', params, null)),
+        trim (get_keyword ('default-graph-uri', params, null)),
+        '');
+      if (opengql_graph = '') opengql_graph := null;
+      opengql_dryrun := lower (trim (coalesce (get_keyword ('dryrun', params, ''), '')));
+
+      if (opengql_body = '' or trim (opengql_body) = '')
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '400', 'openGQL Request Empty',
+            '', 'GQ101', 'OPENGQL request must contain a GQL query', format);
+          return;
+        }
+
+      if (__proc_exists ('DB.DBA.GQL_TO_SPARQL_PARAMS', 1) is null)
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '501', 'openGQL Support Not Loaded',
+            opengql_body, 'GQ102', 'openGQL support is not loaded; load binsrc/gql/gql_load.sql first', format);
+          return;
+        }
+
+      {
+        -- Any lexer/parser/translator error becomes a 400 with the GQ*
+        -- code and message. (GQL is translated to SPARQL and then executed
+        -- on the normal SPARQL path below, so it inherits the endpoint's
+        -- content negotiation, result serialization, and authorization.)
+        declare exit handler for sqlstate '*'
+          {
+            DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+              '400', 'openGQL Translation Failed',
+              opengql_body, __SQL_STATE, __SQL_MESSAGE, format);
+            return;
+          };
+        opengql_translated := DB.DBA.GQL_TO_SPARQL_PARAMS (opengql_body, opengql_graph, null);
+      }
+
+    opengql_translate_ok:
+      query := ltrim (coalesce (opengql_translated, ''));
+      if (strcasestr (query, 'SPARQL ') = 0)
+        query := subseq (query, 7);
+      -- The full translated SPARQL is always available to the in-process HTML
+      -- result panel (via this connection variable) and to clients via
+      -- dryrun=1. It is ALSO echoed in an X-Generated-SPARQL response header
+      -- for transparency/debugging, but that header is gated so operators can
+      -- turn it off in production (registry '__opengql_generated_sparql_header'
+      -- = 'off') and capped in size so a very large translation cannot emit an
+      -- oversized header that some proxies/clients reject.
+      connection_set ('opengql_generated_sparql', query);
+      if (coalesce (registry_get ('__opengql_generated_sparql_header'), 'on') <> 'off'
+          and length (query) <= 8000)
+        http_header (concat (coalesce (http_header_get (), ''),
+            'X-Generated-SPARQL: ', sprintf ('%U', query), '\r\n'));
+      if (opengql_dryrun = '1' or opengql_dryrun = 'true')
+        {
+          http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
+          http (query);
+          return;
+        }
+    }
+
   full_query := query;
   -- dbg_obj_princ ('dflt_graphs = ', dflt_graphs, ', named_graphs = ', named_graphs);
   --if (quiet_geo <> '')
@@ -4523,6 +3891,13 @@ again:
   if (isvector (rset) and length (rset) = maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
+  if (opengql_request and state = '01W01' and metas is not null)
+    {
+      state := '00000';
+      msg := '';
+      if (rset is null)
+        rset := vector ();
+    }
   if (state = '00000')
     goto write_results;
   if (state = 'S1TAT')

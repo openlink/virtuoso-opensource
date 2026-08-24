@@ -1,0 +1,404 @@
+--
+--  $Id$
+--
+--  openGQL: CREATE VIRTUAL/PHYSICAL PROPERTY GRAPH — DDL Tests
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+--  Run via isql: isql <host>:<port> dba dba < test_gql_pg_ddl.sql
+--
+
+create procedure DB.DBA.GQL_PG_TEST_ASSERT (
+  in _test_name varchar, in _condition integer, in _detail varchar,
+  inout _pass integer, inout _fail integer, inout _results any)
+{
+  if (_condition)
+    { _pass := _pass + 1; _results := vector_concat (_results, vector (concat (_test_name, ' PASS'))); }
+  else
+    { _fail := _fail + 1; _results := vector_concat (_results, vector (concat (_test_name, ' FAIL: ', _detail))); }
+}
+;
+
+create procedure DB.DBA.GQL_PG_TEST_GQL (in _gql_text varchar) returns varchar
+{
+  declare _sparql varchar;
+  declare exit handler for sqlstate '*' { return null; };
+  _sparql := DB.DBA.GQL_TO_SPARQL (_gql_text);
+  return _sparql;
+}
+;
+
+create procedure DB.DBA.GQL_PG_TEST_EXEC (in _sql varchar) returns integer
+{
+  declare _st, _msg varchar; declare _m, _d any;
+  declare exit handler for sqlstate '*' { return 0; };
+  _st := '00000'; _msg := '';
+  exec (_sql, _st, _msg, vector(), 0, _m, _d);
+  if (_st = '00000') return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.GQL_PG_TEST_QUERY (in _sql varchar) returns any
+{
+  declare _st, _msg varchar; declare _m, _d any;
+  declare exit handler for sqlstate '*' { return vector (); };
+  _st := '00000'; _msg := '';
+  exec (_sql, _st, _msg, vector(), 0, _m, _d);
+  if (_st = '00000') return _d;
+  return vector ();
+}
+;
+
+create procedure DB.DBA.GQL_PG_TEST_SETUP ()
+{
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_order_items');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customer_orders');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_orders');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_products');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customers');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_employees');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_products (product_no integer PRIMARY KEY, name varchar, price numeric)');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_customers (customer_id integer PRIMARY KEY, name varchar, address varchar)');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_orders (order_id integer PRIMARY KEY, ordered_when date)');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_employees (employee_id integer PRIMARY KEY, employee_name varchar)');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_order_items (order_items_id integer PRIMARY KEY, order_id integer, product_no integer, quantity integer)');
+  DB.DBA.GQL_PG_TEST_EXEC ('CREATE TABLE DB.DBA.pg_test_customer_orders (customer_orders_id integer PRIMARY KEY, customer_id integer, order_id integer)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_products VALUES (1, ''Widget'', 9.99)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_products VALUES (2, ''Gadget'', 19.99)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_customers VALUES (1, ''Alice'', ''123 Main St'')');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_customers VALUES (2, ''Bob'', ''456 Oak Ave'')');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_orders VALUES (1, ''2024-01-15'')');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_orders VALUES (2, ''2024-02-20'')');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_order_items VALUES (1, 1, 1, 5)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_order_items VALUES (2, 1, 2, 3)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_customer_orders VALUES (1, 1, 1)');
+  DB.DBA.GQL_PG_TEST_EXEC ('INSERT INTO DB.DBA.pg_test_customer_orders VALUES (2, 2, 2)');
+}
+;
+
+create procedure DB.DBA.GQL_PG_TEST_CLEANUP ()
+{
+  if (__proc_exists ('DB.DBA.GQL_PG_DROP') is not null)
+    {
+      DB.DBA.GQL_PG_DROP ('pgtest', 1);
+      DB.DBA.GQL_PG_DROP ('pgtest2', 1);
+      DB.DBA.GQL_PG_DROP ('pgphys', 1);
+      DB.DBA.GQL_PG_DROP ('pgphys2', 1);
+      DB.DBA.GQL_PG_DROP ('pgphys_empty', 1);
+      DB.DBA.GQL_PG_DROP ('pgbare', 1);
+      DB.DBA.GQL_PG_DROP ('pgtest_v', 1);
+      DB.DBA.GQL_PG_DROP ('pgtest_p', 1);
+    }
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_order_items');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customer_orders');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_orders');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_products');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_customers');
+  DB.DBA.GQL_PG_TEST_EXEC ('DROP TABLE DB.DBA.pg_test_employees');
+}
+;
+
+-- Helper: check that a string contains a substring (returns 1/0)
+create procedure DB.DBA.GQL_PG_TEST_CONTAINS (in _haystack varchar, in _needle varchar) returns integer
+{
+  if (_haystack is null) return 0;
+  if (strstr (_haystack, _needle) is not null) return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.GQL_PG_DDL_TESTS ()
+{
+  declare _pass, _fail, _total integer;
+  declare _results any;
+  declare _sparql varchar;
+  declare _data any;
+  declare _ok integer;
+  declare _meta any;
+  declare _desc varchar;
+  declare _ttl varchar;
+  declare _graph_iri, _ont_ns, _q varchar;
+  declare _summary varchar;
+  declare _i integer;
+
+  _pass := 0; _fail := 0; _total := 0;
+  _results := vector ();
+
+  DB.DBA.GQL_PG_TEST_SETUP ();
+
+  -- PG01: CREATE VIRTUAL PROPERTY GRAPH minimal
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE VIRTUAL PROPERTY GRAPH pgtest
+       NODE TABLES (pg_test_products, pg_test_customers, pg_test_orders)
+       RELATIONSHIP TABLES (
+         pg_test_order_items SOURCE pg_test_orders DESTINATION pg_test_products,
+         pg_test_customer_orders SOURCE pg_test_customers DESTINATION pg_test_orders
+       )');
+  -- CREATE property-graph DDL executes as a side effect of translation and
+  -- returns no SPARQL text (empty), so assert on the catalog outcome, not
+  -- on the returned string.
+  _ok := 0;
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('pgtest') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG01', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest to create a catalog entry', _pass, _fail, _results);
+
+  -- PG02: Verify catalog metadata
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgtest');
+  _ok := 0;
+  if (_meta is not null) if (aref (_meta, 0) = 'virtual') _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG02', _ok, 'expected catalog entry with mode=virtual', _pass, _fail, _results);
+
+  -- PG03: GQL_PG_DESCRIBE
+  _desc := DB.DBA.GQL_PG_DESCRIBE ('pgtest');
+  _ok := 0;
+  if (DB.DBA.GQL_PG_TEST_CONTAINS (_desc, 'pgtest')) if (DB.DBA.GQL_PG_TEST_CONTAINS (_desc, 'virtual')) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG03', _ok, 'expected describe output with pgtest and virtual', _pass, _fail, _results);
+
+  -- PG04: SPARQL query against virtual graph
+  _graph_iri := DB.DBA.GQL_PG_GRAPH_IRI ('pgtest');
+  _ont_ns := DB.DBA.GQL_PG_ONTOLOGY_NS ('pgtest');
+  _q := sprintf ('SPARQL SELECT ?name FROM <%s> WHERE { ?p <%sname> ?name }', _graph_iri, _ont_ns);
+  _data := DB.DBA.GQL_PG_TEST_QUERY (_q);
+  _ok := 0;
+  if (isarray (_data)) if (length (_data) > 1) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG04', _ok, 'expected product data from virtual graph', _pass, _fail, _results);
+
+  -- PG05: DROP and recreate with labels and properties
+  DB.DBA.GQL_PG_DROP ('pgtest', 1);
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE VIRTUAL PROPERTY GRAPH pgtest
+       NODE TABLES (
+         pg_test_products KEY (product_no) LABEL product PROPERTIES (name, price),
+         pg_test_customers KEY (customer_id) LABEL customer LABEL person PROPERTIES (name),
+         pg_test_orders KEY (order_id) LABEL "order" PROPERTIES (ordered_when)
+       )
+       RELATIONSHIP TABLES (
+         pg_test_order_items KEY (order_items_id)
+           SOURCE pg_test_orders DESTINATION pg_test_products
+           LABEL contains PROPERTIES (quantity),
+         pg_test_customer_orders KEY (customer_orders_id)
+           SOURCE pg_test_customers DESTINATION pg_test_orders
+           LABEL has_placed
+       )');
+  -- As PG01: DDL returns no SPARQL text; assert on the catalog outcome.
+  _ok := 0;
+  if (_sparql is not null and DB.DBA.GQL_PG_DEF_GET ('pgtest') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG05', _ok, 'expected CREATE VIRTUAL PROPERTY GRAPH pgtest with labels to create a catalog entry', _pass, _fail, _results);
+
+  -- PG06: SPARQL query with label returns customer data
+  _graph_iri := DB.DBA.GQL_PG_GRAPH_IRI ('pgtest');
+  _ont_ns := DB.DBA.GQL_PG_ONTOLOGY_NS ('pgtest');
+  _q := sprintf ('SPARQL SELECT ?name FROM <%s> WHERE { ?c a <%scustomer> . ?c <%sname> ?name }', _graph_iri, _ont_ns, _ont_ns);
+  _data := DB.DBA.GQL_PG_TEST_QUERY (_q);
+  _ok := 0;
+  if (isarray (_data)) if (length (_data) > 1) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG06', _ok, 'expected customer data with label filter', _pass, _fail, _results);
+
+  -- PG07: Multi-label — person matches both customers (2 rows)
+  _q := sprintf ('SPARQL SELECT ?c FROM <%s> WHERE { ?c a <%sperson> }', _graph_iri, _ont_ns);
+  _data := DB.DBA.GQL_PG_TEST_QUERY (_q);
+  _ok := 0;
+  if (isarray (_data)) if (length (_data) > 1) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG07', _ok, 'expected person multi-label data', _pass, _fail, _results);
+
+  -- PG08: R2RML export
+  _ok := 0;
+  if (__proc_exists ('DB.DBA.R2RML_MAKE_QM_FROM_G') is not null)
+    {
+      declare exit handler for sqlstate '*' { goto pg08_skip; };
+      _ttl := DB.DBA.GQL_PG_EXPORT_R2RML ('pgtest');
+      if (DB.DBA.GQL_PG_TEST_CONTAINS (_ttl, 'rr:TriplesMap'))
+        if (DB.DBA.GQL_PG_TEST_CONTAINS (_ttl, 'rdf:reifies'))
+          if (DB.DBA.GQL_PG_TEST_CONTAINS (_ttl, '<<('))
+            _ok := 1;
+    pg08_skip:;
+    }
+  else
+    _ok := 1;  -- skip if rdb2rdf not installed
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG08', _ok, 'expected R2RML TTL with TriplesMap, rdf:reifies, triple terms', _pass, _fail, _results);
+
+  -- PG09: CREATE PHYSICAL PROPERTY GRAPH
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('CREATE PHYSICAL PROPERTY GRAPH pgphys');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys');
+  _ok := 0;
+  if (_meta is not null) if (aref (_meta, 0) = 'physical') _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG09', _ok, 'expected catalog entry with mode=physical', _pass, _fail, _results);
+
+  -- PG10: CREATE PROPERTY GRAPH (no keyword) defaults to physical
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('CREATE PROPERTY GRAPH pgtest2');
+  _ok := 0;
+  if (_sparql is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG10', _ok, 'expected non-null SPARQL for CREATE PROPERTY GRAPH', _pass, _fail, _results);
+  DB.DBA.GQL_PG_TEST_EXEC (sprintf ('SPARQL DROP SILENT GRAPH <%s>', DB.DBA.GQL_PG_GRAPH_IRI ('pgtest2')));
+  DB.DBA.GQL_PG_DROP ('pgtest2', 1);
+
+  -- PG11: DROP removes catalog metadata
+  DB.DBA.GQL_PG_DROP ('pgphys', 1);
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys');
+  _ok := 0;
+  if (_meta is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG11', _ok, 'expected catalog entry removed after DROP', _pass, _fail, _results);
+
+  -- PG12: Duplicate PG name rejected
+  _ok := 1;
+  {
+    declare exit handler for sqlstate '*' { _ok := 0; };
+    DB.DBA.GQL_PG_CREATE_PHYSICAL ('pgtest', vector (), vector ());
+  }
+  _ok := 1 - _ok;  -- invert: 1=was rejected, 0=was not rejected
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG12', _ok, 'expected duplicate PG name rejected', _pass, _fail, _results);
+
+  -- PG13: Nonexistent table rejected
+  _ok := 1;
+  {
+    declare exit handler for sqlstate '*' { _ok := 0; };
+    DB.DBA.GQL_PG_CREATE_VIRTUAL ('pgtest_bad',
+      vector (vector ('DB.DBA.nonexistent_table', null, vector (), null)),
+      vector ());
+  }
+  _ok := 1 - _ok;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG13', _ok, 'expected nonexistent table rejected', _pass, _fail, _results);
+
+  -- PG14: SOURCE referencing non-declared node table rejected
+  _ok := 1;
+  {
+    declare exit handler for sqlstate '*' { _ok := 0; };
+    DB.DBA.GQL_PG_CREATE_VIRTUAL ('pgtest_bad2',
+      vector (vector ('DB.DBA.pg_test_products', null, vector ('product'), null)),
+      vector (vector ('DB.DBA.pg_test_order_items', null,
+                      'DB.DBA.pg_test_nonexistent', null,
+                      'DB.DBA.pg_test_products', null,
+                      'contains', null, 0, null)));
+  }
+  _ok := 1 - _ok;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG14', _ok, 'expected undeclared SOURCE rejected', _pass, _fail, _results);
+
+  -- PG15: CREATE PHYSICAL PROPERTY GRAPH with NODE TABLES — materialized
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE PHYSICAL PROPERTY GRAPH pgphys2
+       NODE TABLES (
+         pg_test_products KEY (product_no) LABEL product PROPERTIES (name, price),
+         pg_test_customers KEY (customer_id) LABEL customer PROPERTIES (name)
+       )');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys2');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')      -- mode is physical
+        if (aref (_meta, 5) = 1)              -- IS_MATERIALIZED = 1
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG15', _ok, 'expected physical mode + IS_MATERIALIZED=1 for from-tables physical graph', _pass, _fail, _results);
+
+  -- PG16: Data from underlying tables appears in the physical graph
+  _graph_iri := DB.DBA.GQL_PG_GRAPH_IRI ('pgphys2');
+  _ont_ns := DB.DBA.GQL_PG_ONTOLOGY_NS ('pgphys2');
+  _q := sprintf ('SPARQL SELECT ?name FROM <%s> WHERE { ?p a <%sproduct> . ?p <%sname> ?name }', _graph_iri, _ont_ns, _ont_ns);
+  _data := DB.DBA.GQL_PG_TEST_QUERY (_q);
+  _ok := 0;
+  if (isarray (_data)) if (length (_data) > 1) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG16', _ok, 'expected product data materialized into physical graph', _pass, _fail, _results);
+
+  -- PG17: INSERT into physical graph succeeds (writable)
+  _ok := DB.DBA.GQL_PG_TEST_EXEC (sprintf (
+    'SPARQL INSERT INTO GRAPH <%s> { <urn:pgtest:manual1> <%sname> "ManualNode" }',
+    _graph_iri, _ont_ns));
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG17', _ok, 'expected INSERT into physical graph to succeed (writable)', _pass, _fail, _results);
+
+  -- PG18: DROP removes triples and catalog for physical-from-tables graph
+  DB.DBA.GQL_PG_DROP ('pgphys2', 1);
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys2');
+  _ok := 0;
+  if (_meta is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG18', _ok, 'expected catalog entry removed after DROP of physical-from-tables graph', _pass, _fail, _results);
+
+  -- PG19: Bare CREATE PROPERTY GRAPH with NODE TABLES defaults to physical
+  _sparql := DB.DBA.GQL_PG_TEST_GQL (
+    'CREATE PROPERTY GRAPH pgbare
+       NODE TABLES (
+         pg_test_products KEY (product_no) LABEL product PROPERTIES (name)
+       )');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgbare');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')
+        if (aref (_meta, 5) = 1)
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG19', _ok, 'expected bare CREATE PROPERTY GRAPH with NODE TABLES to default to physical + materialized', _pass, _fail, _results);
+
+  -- PG20: CREATE PHYSICAL PROPERTY GRAPH (no tables) creates empty writable graph
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('CREATE PHYSICAL PROPERTY GRAPH pgphys_empty');
+  _meta := DB.DBA.GQL_PG_DEF_GET ('pgphys_empty');
+  _ok := 0;
+  if (_meta is not null)
+    {
+      if (aref (_meta, 0) = 'physical')
+        if (aref (_meta, 5) = 0)              -- not materialized (empty)
+          _ok := 1;
+    }
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG20', _ok, 'expected empty physical graph (no tables, not materialized)', _pass, _fail, _results);
+
+  -- PG21: DROP PHYSICAL on a virtual graph is rejected (mode mismatch); graph survives
+  DB.DBA.GQL_PG_TEST_GQL ('CREATE VIRTUAL PROPERTY GRAPH pgtest_v NODE TABLES ( pg_test_products KEY (product_no) LABEL product PROPERTIES (name) )');
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP PHYSICAL PROPERTY GRAPH pgtest_v');  -- expect error -> null
+  _ok := 0;
+  if (_sparql is null and DB.DBA.GQL_PG_DEF_GET ('pgtest_v') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG21', _ok, 'expected DROP PHYSICAL on a virtual PG to be rejected and leave the graph', _pass, _fail, _results);
+
+  -- PG22: DROP VIRTUAL removes the matching virtual graph
+  DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH pgtest_v');
+  _ok := 0;
+  if (DB.DBA.GQL_PG_DEF_GET ('pgtest_v') is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG22', _ok, 'expected DROP VIRTUAL PROPERTY GRAPH to remove the virtual graph', _pass, _fail, _results);
+
+  -- PG23: DROP VIRTUAL on a physical graph is rejected (mode mismatch); graph survives
+  DB.DBA.GQL_PG_TEST_GQL ('CREATE PHYSICAL PROPERTY GRAPH pgtest_p');
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH pgtest_p');  -- expect error -> null
+  _ok := 0;
+  if (_sparql is null and DB.DBA.GQL_PG_DEF_GET ('pgtest_p') is not null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG23', _ok, 'expected DROP VIRTUAL on a physical PG to be rejected and leave the graph', _pass, _fail, _results);
+
+  -- PG24: DROP PHYSICAL removes the matching physical graph
+  DB.DBA.GQL_PG_TEST_GQL ('DROP PHYSICAL PROPERTY GRAPH pgtest_p');
+  _ok := 0;
+  if (DB.DBA.GQL_PG_DEF_GET ('pgtest_p') is null) _ok := 1;
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG24', _ok, 'expected DROP PHYSICAL PROPERTY GRAPH to remove the physical graph', _pass, _fail, _results);
+
+  -- PG25: DROP [VIRTUAL] PROPERTY GRAPH IF EXISTS on a missing graph is a silent no-op
+  _sparql := DB.DBA.GQL_PG_TEST_GQL ('DROP VIRTUAL PROPERTY GRAPH IF EXISTS pgtest_absent');
+  _ok := 0;
+  if (_sparql is not null) _ok := 1;   -- no error raised (empty text, not null)
+  DB.DBA.GQL_PG_TEST_ASSERT ('PG25', _ok, 'expected DROP VIRTUAL PROPERTY GRAPH IF EXISTS on a missing graph to be a no-op', _pass, _fail, _results);
+
+  -- Cleanup
+  DB.DBA.GQL_PG_TEST_CLEANUP ();
+
+  -- Report
+  _total := _pass + _fail;
+  _summary := sprintf ('=========================\nPG DDL Tests: %d/%d passed, %d failed\n=========================\n', _pass, _total, _fail);
+  for (_i := 0; _i < length (_results); _i := _i + 1)
+    _summary := concat (_summary, aref (_results, _i), '\n');
+  return _summary;
+}
+;
+
+DB.DBA.GQL_PG_DDL_TESTS ();

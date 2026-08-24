@@ -1,0 +1,163 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+--
+--  openGQL: GQL for Virtuoso - SQL Execution Handler
+--
+--  Copyright (C) 1998-2026 OpenLink Software
+--
+--  Provides the DB.DBA.OPENGQL_EXEC entry point for direct SQL invocation
+--  of GQL queries. Parses optional DEFINE/PREFIX preamble, then
+--  dispatches into DB.DBA.GQL / DB.DBA.GQL_PARAMS.
+--
+
+----------------------------------------------------------------------
+-- OPENGQL execution handler
+----------------------------------------------------------------------
+
+create procedure DB.DBA."OPENGQL" (in _query varchar, in _default_graph varchar := null)
+{
+  return DB.DBA.OPENGQL_EXEC (_query, _default_graph);
+}
+;
+
+create procedure DB.DBA.OPENGQL_PARAMS (in _query varchar, in _default_graph varchar := null, in _params any := null)
+{
+  return DB.DBA.GQL_PARAMS (_query, _default_graph, _params);
+}
+;
+
+create procedure DB.DBA.OPENGQL_EXEC (in _query varchar, in _default_graph varchar := null)
+{
+  declare tokens, ast, query_ast any;
+  declare proc_body any;
+  declare sparql_str varchar;
+  declare state, msg varchar;
+  declare meta, data any;
+  declare has_return integer;
+  declare clauses, clause any;
+  declare i, n integer;
+
+  if (_default_graph is null)
+    _default_graph := DB.DBA.GQL_SESSION_DEFAULT_GRAPH ();
+
+  -- Tokenize
+  tokens := DB.DBA.GQL_TOKENIZE (_query);
+
+  -- Parse
+  ast := DB.DBA.GQL_PARSE (tokens);
+  proc_body := null;
+  if (isarray (ast) and aref (ast, 0) = 'PROG')
+    proc_body := aref (ast, 1);
+  if (proc_body is not null and isarray (proc_body) and aref (proc_body, 0) = 'PROC'
+      and aref (proc_body, 1) is not null)
+    {
+      if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'ANY_GRAPH')
+        _default_graph := null;
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'HOME_GRAPH')
+        _default_graph := DB.DBA.GQL_HOME_GRAPH ();
+      else if (isarray (aref (proc_body, 1)) and aref (aref (proc_body, 1), 0) = 'USE_PROPERTY_AT_SCHEMA')
+        {
+          -- USE PROPERTY GRAPH <name>: the at-schema clause wraps a GRAPH_REF
+          -- (not a bare graph ref), so resolve the property-graph's graph IRI
+          -- rather than casting the wrapper vector to varchar (which raised
+          -- SR066 CONVERT ARRAY_OF_POINTER -> VARCHAR).  Mirrors the
+          -- USE_PROPERTY_AT_SCHEMA handling in the translator.
+          declare _pg_ref any;
+          _pg_ref := aref (aref (proc_body, 1), 1);
+          if (isarray (_pg_ref) and length (_pg_ref) > 1 and aref (_pg_ref, 0) = 'GRAPH_REF')
+            _default_graph := DB.DBA.GQL_PG_GRAPH_IRI (cast (aref (_pg_ref, 1) as varchar));
+          else
+            _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (_pg_ref);
+        }
+      else
+        _default_graph := DB.DBA.GQL_GRAPH_REF_VALUE (aref (proc_body, 1));
+    }
+
+  -- Validate scope
+  ast := DB.DBA.GQL_PLAN_VALIDATE_SCOPE (ast);
+  query_ast := ast;
+
+  -- Navigate to QUERY
+  if (aref (query_ast, 0) = 'PROG')
+    {
+      if (aref (query_ast, 1) is not null and isarray (aref (query_ast, 1))
+          and aref (aref (query_ast, 1), 0) = 'PROC')
+        query_ast := aref (aref (query_ast, 1), 3);
+      else
+        return;
+    }
+
+  if (query_ast is null or not isarray (query_ast) or aref (query_ast, 0) <> 'QUERY')
+    return;
+
+  -- Check for RETURN clause; also flag property-graph DDL, which is
+  -- executed as a side effect of translation (a PL call, not SPARQL text)
+  -- and so must NOT be re-run below.
+  has_return := 0;
+  declare has_pg_ddl integer;
+  has_pg_ddl := 0;
+  clauses := aref (query_ast, 1);
+  n := length (clauses);
+  for (i := 0; i < n; i := i + 1)
+    {
+      clause := aref (clauses, i);
+      if (isarray (clause) and aref (clause, 0) = 'RETURN')
+        has_return := 1;
+      if (isarray (clause)
+          and (aref (clause, 0) = 'CREATE_PROPERTY_GRAPH_V2'
+               or aref (clause, 0) = 'DROP_PROPERTY_GRAPH'))
+        has_pg_ddl := 1;
+    }
+
+  -- Translate to SPARQL.  For property-graph DDL this also executes the
+  -- statement (CREATE/DROP VIRTUAL/PHYSICAL PROPERTY GRAPH).
+  sparql_str := DB.DBA.GQL_TO_SPARQL_IMPL (ast, _default_graph);
+
+  if (sparql_str is null or trim (sparql_str) = '')
+    {
+      -- Property-graph DDL already ran during translation above — do not
+      -- re-run it (that would double-execute, e.g. GQ202 on CREATE).
+      if (not has_pg_ddl)
+        DB.DBA.GQL_RUN (_query, _default_graph);  -- INSERT-only / DML-only: execute for side effects
+      exec_result_names (vector ('Status'));
+      exec_result (vector ('OK'));
+      return;
+    }
+
+  -- Execute SPARQL and stream rows to the client
+  state := '00000';
+  msg := '';
+  exec (sparql_str, state, msg, vector (), 0, meta, data);
+  if (state <> '00000')
+    signal (state, msg);
+  if (isarray (meta) and length (meta) > 0)
+    {
+      declare j, nrows integer;
+      exec_result_names (meta[0]);
+      if (isarray (data))
+        {
+          nrows := length (data);
+          for (j := 0; j < nrows; j := j + 1)
+            exec_result (aref (data, j));
+        }
+    }
+}
+;

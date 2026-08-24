@@ -703,7 +703,21 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
-	$(srcdir)/rdflddir2.sql
+	$(srcdir)/rdflddir2.sql \
+	$(srcdir)/gql_runtime.sql \
+	$(srcdir)/gql_pl.sql \
+	$(srcdir)/gql_lexer.sql \
+	$(srcdir)/gql_expr.sql \
+	$(srcdir)/gql_parser.sql \
+	$(srcdir)/gql_plan.sql \
+	$(srcdir)/gql_var_pass.sql \
+	$(srcdir)/gql_translate.sql \
+	$(srcdir)/gql_sparql_gen.sql \
+	$(srcdir)/gql_main.sql \
+	$(srcdir)/gql_stats.sql \
+	$(srcdir)/gql_endpoint.sql \
+	$(srcdir)/gql_bootstrap.sql \
+	$(srcdir)/gql_pg_ddl.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql

@@ -56,7 +56,7 @@ rm -f virtuoso.log virtuoso.lck virtuoso.tdb virtuoso.ttr
 PLUGINDIR=.
 export PLUGINDIR
 MAKECFG_FILE "$VIRTUOSO_TEST/$TESTCFGFILE" $PORT $CFGFILE
-sed -e 's/^Load[1-6][   ]*=.*/;&/' $CFGFILE > tmp.ini
+sed -e 's/^Load[1-6][	 ]*=.*/;&/' $CFGFILE > tmp.ini
 mv -f tmp.ini $CFGFILE
 cat >> $CFGFILE <<END_HTTP_COMPAT
 [HTTPServer]

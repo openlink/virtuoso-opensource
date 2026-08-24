@@ -157,6 +157,7 @@ echo both ": o = c1 3 rows\n";
 
 drop table DB.DBA.ps if exists;
 
+drop table DB.DBA.ps if exists;
 create table ps (ps iri_id primary key);
 
 insert into ps values (iri_to_id ('c1', 1));
