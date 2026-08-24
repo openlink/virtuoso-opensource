@@ -98,6 +98,7 @@
 
 
 ## Oct 14, 2025, v7.2.16
+
   * Virtuoso Engine
     - Added disk space monitor
     - Added event logger with rate limiting on frequently repeated errors
@@ -113,22 +114,20 @@
     - Fixed issues with `PAGE_DEBUG`
     - Fixed issues with `sqlc_hook`
     - Fixed issue when usernames are repeated
-    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
-    - Fixed issue with JSON parsing unknown band with many types
+    - Fixed issue where Virtuoso mistakenly reports that user `ID:0` (`dba`) has no permissions
+    - Fixed issue with JSON parsing an unknown band with many types
     - Fixed issue with max memory pool size greater than 4GB
     - Fixed issue with `xsd:time` conversion
     - Fixed to not re-enter mutex when resetting iterator
 
   * SPARQL
-    - Added assert to check if the memory pool is busy
+    - Added assert to check whether the memory pool is busy
     - Fixed RDF Views total count statistics
     - Fixed issue trying to call CXML PL when the VAD package is not installed
-    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
-    - Fixed so numbers and dates preserve datatypes in JSON output
+    - Fixed preservation of number and date datatypes in JSON output
     - Fixed issue with table name qualifiers in case mode 2
     - Fixed issue when performing a `same-as` query without specifying a graph
-    - Fixed to prevent call to parse if timeout is already reached
-    - Fixed to preserve datatypes for numbers and dates in JSON output
+    - Fixed to prevent call to parse whether timeout has already been reached
     - Fixed handling when cast is unknown; do not point to datatype in JSON output
     - Fixed to check for DBA group instead of DBA user
     - Fixed issue with queries without indexes
@@ -154,11 +153,11 @@
     - Fixed encoding issues
     - Fixed issue with encoding `&nbsp;`
     - Fixed issues with LDP
-    - Fixed print DAV IDs in debug mode
+    - Fixed issue with printing DAV IDs in debug mode
 
   * Faceted Browser
     - Added option to prevent bots from crawling `/fct/rdfdesc/usage.vsp`
-    - Added config UI setting to change the maximum amount of facets (default 20)
+    - Added config UI setting to change the maximum number of facets (default 20)
     - Improved performance when using `same-as` for a label
     - Changed `output:valmode` from "AUTO" to "LONG"
     - Fixed issue with CXML link at the bottom of the page
@@ -170,6 +169,7 @@
     - Fixed save and restore of connection variables on VAD installation
 
 ## May 21, 2025, v7.2.15
+
   * Virtuoso Engine
     - Fixed compiler warnings on misleading indentation
     - Fixed compiler warnings for empty body
