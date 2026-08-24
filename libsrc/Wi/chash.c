@@ -2150,6 +2150,7 @@ setp_chash_distinct_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
   int *out_sets;
   cha_cmp_t cmp = cha_cmp;
   char is_intersect = INTERSECT_ST == setp->setp_set_op || INTERSECT_ALL_ST == setp->setp_set_op;
+  char is_distinct_intersect = INTERSECT_ST == setp->setp_set_op;
   hash_index_t *hi = it->it_hi;
   hash_area_t *ha = setp->setp_ha;
   chash_t *cha = hi->hi_chash;
@@ -2192,7 +2193,9 @@ setp_chash_distinct_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
 
 #define dis_dup(n) \
 	  { if (is_intersect) {int nth = QST_INT (inst, setp->src_gen.src_out_fill)++; \
-	    out_sets[nth] = set + n - 1; } }
+	    out_sets[nth] = set + n - 1; \
+	    /* Consume a distinct INTERSECT key by invalidating its stored hash. */ \
+	    if (is_distinct_intersect) *ent = ~h_##n; } }
 
 
 #define DIS_PRE(n) \

@@ -2225,6 +2225,15 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	op_table_t ** deps = (op_table_t **) t_list_to_array (dfe->dfe_tables);
 	placed = dfe_latest_by_ot (so, n_deps, deps, 1);
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
+	/* An IN-list argument can pre-place an uncorrelated value subquery at
+	 * this exact point.  Reuse it instead of inserting the same DFE again. */
+	if (DFE_PLACED == dfe->dfe_is_placed && dfe->_.sub.generated_dfe &&
+	    placed->dfe_next == dfe && dfe->dfe_prev == placed)
+	  {
+	    sqlo_check_outside_dt (so, dfe);
+	    sqlo_mark_gb_dep (so, dfe, dfe);
+	    return dfe;
+	  }
 	so->so_mark_gb_dep = 1;
 	sqlo_place_dfe_after (so, pref_loc, placed, dfe);
         if (!dfe->_.sub.ot)
@@ -2257,8 +2266,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
         DO_BOX (op_table_t *, ot, inx, deps)
           {
-            if (ot->ot_is_group_dummy && ot->ot_fref_ot && ot->ot_fref_ot->ot_dfe && ot->ot_fref_ot->ot_dfe->dfe_is_placed)
-              placed = ot->ot_fref_ot->ot_dfe;
+            if (ot->ot_is_group_dummy && ot->ot_fref_ot && ot->ot_dfe && ot->ot_dfe->dfe_is_placed)
+              placed = ot->ot_dfe;
           }
         END_DO_BOX;
 	dfe->_.control.terms = (df_elt_t ***) t_box_copy ((caddr_t) dfe->dfe_tree->_.comma_exp.exps);
@@ -2527,6 +2536,23 @@ dfe_nth_selection (df_elt_t * tb_dfe, int inx)
 }
 
 
+ST * sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe);
+
+static ST **
+sqlo_import_exp_array (ST ** exps, df_elt_t * tb_dfe, df_elt_t * target_dfe)
+{
+  ST ** copy;
+  int inx;
+
+  copy = (ST **) t_box_copy ((caddr_t) exps);
+  DO_BOX (ST *, elt, inx, copy)
+    {
+      copy[inx] = sqlo_import (elt, tb_dfe, target_dfe);
+    }
+  END_DO_BOX;
+  return copy;
+}
+
 ST *
 sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe)
 {
@@ -2554,6 +2580,21 @@ sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe)
 	}
       else
 	return ((ST*) t_box_copy_tree ((caddr_t) tree));
+    }
+
+  /* A CASE/COALESCE expression owns an array of expressions.  Do not pass
+   * that array itself to sqlo_import(): its first member can be an integer
+   * literal which happens to be a BOP code.  The generic BOP handling below
+   * would then overwrite the array's fifth member as bin_exp.serial.  For
+   * NULLIF(14, 0), that fifth member is the ELSE value 14. */
+  if ((SIMPLE_CASE == tree->type || SEARCHED_CASE == tree->type ||
+       COALESCE_EXP == tree->type || COMMA_EXP == tree->type) &&
+      2 == BOX_ELEMENTS (tree) && ARRAYP (tree->_.comma_exp.exps))
+    {
+      copy = (ST **) t_box_copy ((caddr_t) tree);
+      ((ST *)copy)->_.comma_exp.exps =
+	sqlo_import_exp_array (tree->_.comma_exp.exps, tb_dfe, target_dfe);
+      return (ST *) copy;
     }
   copy = (ST **) t_box_copy ((caddr_t) tree);
   /* touch the serial for the imported preds as well */
@@ -2614,6 +2655,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
   op_table_t * prev_dt = so->so_this_dt;
   dk_set_t res = NULL;
   sql_scope_t sco, *old_sco;
+  char old_rescope = so->so_is_rescope;
 
   memset (&sco, 0, sizeof (sql_scope_t));
   sco.sco_so = so;
@@ -2639,6 +2681,7 @@ sqlo_import_preds (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
       sqlo_scope (so, &all_new_tree);
       so->so_is_top_and = 0;
       so->so_scope = old_sco;
+      so->so_is_rescope = old_rescope;
 
       sqlc_make_and_list (all_new_tree, &and_set);
       DO_SET (predicate_t *, new_tree_pred, &and_set)
@@ -2796,18 +2839,22 @@ sqlc_is_all_union_alls (ST * tree)
 void
 sqlo_add_union_reqd_outs (sqlo_t * so, df_elt_t * dt_dfe)
 {
-  int inx;
-  if (! sqlc_is_all_union_alls (dt_dfe->_.sub.ot->ot_dt))
+  op_table_t * ot = dt_dfe->_.sub.ot;
+  int inx, is_all_union_alls = sqlc_is_all_union_alls (ot->ot_dt);
+  ST * sel = ot->ot_left_sel;
+  DO_BOX (ST *, as_exp, inx, sel->_.select_stmt.selection)
     {
-      op_table_t * ot = dt_dfe->_.sub.ot;
-      ST * sel = dt_dfe->_.sub.ot->ot_left_sel;
-      DO_BOX (ST *, as_exp, inx, sel->_.select_stmt.selection)
-	{
-	  sqlo_place_exp (so, dt_dfe->_.sub.generated_dfe,
-			  sqlo_df (so, (ST*) t_list (3, COL_DOTTED, ot->ot_new_prefix, as_exp->_.as_exp.name)));
-	}
-      END_DO_BOX;
+      ST* as = (ST*) t_list (3, COL_DOTTED, ot->ot_new_prefix, as_exp->_.as_exp.name);
+      /* For a pure UNION ALL, a select-list column already placed elsewhere
+       * (found via the CSE cache) must not be placed here again -- doing so
+       * re-links its dfe into this chain too and can leave dfe_prev pointing
+       * back into an earlier segment, forming a cycle (case #1454). */
+      if (!is_all_union_alls || !sqlo_df_elt (so, as))
+        {
+          sqlo_place_exp (so, dt_dfe->_.sub.generated_dfe, sqlo_df (so, as));
+        }
     }
+  END_DO_BOX;
 }
 
 

@@ -3114,3 +3114,456 @@ ECHO BOTH ": case 1418 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
+--
+-- vos_cases.sql
+-- Regression tests for openlink/virtuoso-opensource issues #1452 onward.
+--
+
+ECHO BOTH "\nSTARTED: optimizer regression cases #1452 onward (vos_cases.sql)\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+-- --------------------------------------------------------------------------
+-- Case #1452: SQ155 optimized compiler error with JOIN and nested IN subquery
+-- --------------------------------------------------------------------------
+DROP TABLE c1452_t3 IF EXISTS;
+DROP TABLE c1452_t2 IF EXISTS;
+DROP TABLE c1452_t1 IF EXISTS;
+
+CREATE TABLE c1452_t1 (
+    c1 INT NOT NULL, c2 VARCHAR(255) NOT NULL, c3 VARCHAR(255) NULL,
+    c4 INT NULL, c5 DATE NOT NULL, c6 VARCHAR(10) NOT NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1452_t2 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL, c5 DATE NOT NULL, c6 VARCHAR(4000) NULL,
+    c7 VARCHAR(4000) NULL, c8 VARBINARY(4000) NULL,
+    c9 VARBINARY(4000) NULL, c10 VARCHAR(4000) NULL,
+    c11 VARCHAR(4000) NULL, c12 INTEGER NULL, c13 DATETIME NULL,
+    c14 FLOAT NULL, c15 DOUBLE PRECISION NULL, c16 VARCHAR(4000) NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1452_t3 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 INT NOT NULL, c4 INT NOT NULL,
+    c5 DATETIME NULL, c6 SMALLINT NULL, c7 SMALLINT NULL, c8 INTEGER NULL,
+    c9 BIGINT NULL, c10 VARCHAR(4000) NULL, c11 VARCHAR(255) NULL,
+    c12 VARCHAR(4000) NULL, c13 VARBINARY(4000) NULL,
+    c14 VARCHAR(4000) NULL, c15 SMALLINT NULL,
+    PRIMARY KEY (c1)
+);
+
+SELECT TOP 29 c1452_t2.c11 AS q3_col_1, LOWER(c1452_t1.c7) AS q3_col_2, c1452_t2.c5 AS q3_col_3 FROM c1452_t2 AS c1452_t1 JOIN c1452_t3 AS c1452_t2 ON ((c1452_t1.c1 < c1452_t2.c2 OR c1452_t1.c2 <> 71) AND c1452_t2.c14 IN ((SELECT (sq3.q2_col_3 - 59) AS subq_col_1 FROM (SELECT DISTINCT sq4.q1_col_1 AS q2_col_1, sq4.q1_col_3 AS q2_col_2, sq4.q1_col_4 AS q2_col_3, sq4.q1_col_3 AS q2_col_4 FROM (SELECT t5.c11 AS q1_col_1, DAYOFYEAR(t5.c5) AS q1_col_2, COUNT(DISTINCT t5.c5) AS q1_col_3, t5.c3 AS q1_col_4, t5.c1 AS q1_col_5 FROM c1452_t3 AS t5 WHERE NOT t5.c9 NOT BETWEEN 1 AND 27 GROUP BY t5.c11, DAYOFYEAR(t5.c5), t5.c5, t5.c3, t5.c1) AS sq4 WHERE (sq4.q1_col_3 <= 74)) AS sq3 WHERE (sq3.q2_col_4 IN ((SELECT t7.c4 AS subq_col_1 FROM c1452_t2 AS t6 RIGHT JOIN c1452_t3 AS t7 ON t6.c2 > t7.c2)))))) OR c1452_t2.c9 IS NOT NULL CROSS JOIN c1452_t1 AS t8 ON c1452_t2.c12 <> t8.c6 WHERE (c1452_t2.c12 <> 'sample_64' AND c1452_t1.c5 <> '2023-01-01' AND c1452_t2.c1 IS NOT NULL);
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1452 - SQ155 optimized compiler error with JOIN and nested IN subquery; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1453: SQI01 compiler loop with DISTINCT aggregate and scalar subquery
+-- --------------------------------------------------------------------------
+DROP TABLE c1453_t3 IF EXISTS;
+DROP TABLE c1453_t2 IF EXISTS;
+DROP TABLE c1453_t1 IF EXISTS;
+
+CREATE TABLE c1453_t1 (
+    c1 INT NOT NULL, c2 VARCHAR(255) NOT NULL, c3 VARCHAR(255) NULL,
+    c4 INT NULL, c5 DATE NOT NULL, c6 VARCHAR(10) NOT NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1453_t2 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL, c5 DATE NOT NULL, c6 VARCHAR(4000) NULL,
+    c7 VARCHAR(4000) NULL, c8 VARBINARY(4000) NULL,
+    c9 VARBINARY(4000) NULL, c10 VARCHAR(4000) NULL,
+    c11 VARCHAR(4000) NULL, c12 INTEGER NULL, c13 DATETIME NULL,
+    c14 FLOAT NULL, c15 DOUBLE PRECISION NULL, c16 VARCHAR(4000) NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1453_t3 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 INT NOT NULL, c4 INT NOT NULL,
+    c5 DATETIME NULL, c6 SMALLINT NULL, c7 SMALLINT NULL, c8 INTEGER NULL,
+    c9 BIGINT NULL, c10 VARCHAR(4000) NULL, c11 VARCHAR(255) NULL,
+    c12 VARCHAR(4000) NULL, c13 VARBINARY(4000) NULL,
+    c14 VARCHAR(4000) NULL, c15 SMALLINT NULL,
+    PRIMARY KEY (c1)
+);
+
+SET MACRO_SUBSTITUTION OFF;
+SELECT DISTINCT SUM(sq1.q1_col_4) AS q3_col_1, (sq1.q1_col_4 - sq1.q1_col_4) AS q3_col_2, sq1.q1_col_4 AS q3_col_3, (SELECT TOP 1 t6.c3 AS subq_col_1 FROM c1453_t2 AS t6 CROSS JOIN (SELECT MOD(t8.c2, t8.c2) AS q4_col_1, t8.c2 AS q4_col_2, REVERSE(t8.c10) AS q4_col_3, VAR_SAMP(t8.c1) AS q4_col_4 FROM c1453_t2 AS t8 WHERE (t8.c6 NOT IN ((SELECT t9.c14 AS subq_col_1 FROM c1453_t3 AS t9 WHERE (t9.c11 NOT LIKE '^sample_[0-9]+$'))) AND t8.c2 BETWEEN 12 AND 30 AND EXISTS(SELECT t10.c3 AS subq_col_1 FROM c1453_t1 AS t10 ORDER BY t10.c2 DESC) AND t8.c6 NOT LIKE '%sample_98' AND t8.c4 LIKE '^sample_[0-9]+$') GROUP BY MOD(t8.c2, t8.c2), t8.c2, REVERSE(t8.c10), t8.c10 HAVING NOT EXISTS(SELECT t11.c5 AS subq_col_1 FROM c1453_t2 AS t11)) AS sq7 ON sq7.q4_col_1 <= 84 AND sq7.q4_col_3 LIKE '%sample_29%' ORDER BY sq7.q4_col_4 ASC) AS q3_col_4, SUM(sq1.q1_col_4) AS q3_col_5 FROM (SELECT TOP 48 c1453_t2.c6 AS q1_col_1, c1453_t2.c5 AS q1_col_2, (SELECT TOP 1 (sq3.q2_col_2 / NULLIF(sq3.q2_col_4, 0)) AS subq_col_1 FROM (SELECT (t4.c3 + t4.c1) AS q2_col_1, t4.c1 AS q2_col_2, CASE WHEN (t4.c14 < 6) THEN 1 ELSE 0 END AS q2_col_3, VAR_SAMP(t4.c1) AS q2_col_4 FROM c1453_t2 AS t4 WHERE (t4.c6 <> 'sample_29') GROUP BY (t4.c3 + t4.c1), t4.c3, t4.c1, CASE WHEN (t4.c14 < 6) THEN 1 ELSE 0 END, t4.c14 HAVING (VAR_SAMP(t4.c1) < 49)) AS sq3 WHERE (NOT sq3.q2_col_1 NOT BETWEEN 29 AND 60 AND sq3.q2_col_1 BETWEEN 31 AND 45)) AS q1_col_3, AVG(c1453_t2.c1) AS q1_col_4, c1453_t2.c3 AS q1_col_5 FROM c1453_t1 AS c1453_t2 WHERE EXISTS(SELECT t5.c5 AS subq_col_1 FROM c1453_t2 AS t5) GROUP BY c1453_t2.c6, c1453_t2.c5, c1453_t2.c3 HAVING (AVG(c1453_t2.c1) <> 82)) AS sq1 GROUP BY (sq1.q1_col_4 - sq1.q1_col_4), sq1.q1_col_4;
+SET MACRO_SUBSTITUTION ON;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1453 - SQI01 compiler loop with DISTINCT aggregate and scalar subquery; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1454: SQI01 compiler loop in mixed set-operation query
+-- --------------------------------------------------------------------------
+DROP TABLE c1454_t3 IF EXISTS;
+DROP TABLE c1454_t2 IF EXISTS;
+DROP TABLE c1454_t1 IF EXISTS;
+
+CREATE TABLE c1454_t1 (
+    c1 INT NOT NULL, c2 VARCHAR(255) NOT NULL, c3 VARCHAR(255) NULL,
+    c4 INT NULL, c5 DATE NOT NULL, c6 VARCHAR(10) NOT NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1454_t2 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL, c5 DATE NOT NULL, c6 VARCHAR(4000) NULL,
+    c7 VARCHAR(4000) NULL, c8 VARBINARY(4000) NULL,
+    c9 VARBINARY(4000) NULL, c10 VARCHAR(4000) NULL,
+    c11 VARCHAR(4000) NULL, c12 INTEGER NULL, c13 DATETIME NULL,
+    c14 FLOAT NULL, c15 DOUBLE PRECISION NULL, c16 VARCHAR(4000) NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1454_t3 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 INT NOT NULL, c4 INT NOT NULL,
+    c5 DATETIME NULL, c6 SMALLINT NULL, c7 SMALLINT NULL, c8 INTEGER NULL,
+    c9 BIGINT NULL, c10 VARCHAR(4000) NULL, c11 VARCHAR(255) NULL,
+    c12 VARCHAR(4000) NULL, c13 VARBINARY(4000) NULL,
+    c14 VARCHAR(4000) NULL, c15 SMALLINT NULL,
+    PRIMARY KEY (c1)
+);
+
+SELECT c1454_t2.c4 AS q1_col_1, c1454_t2.c5 AS q1_col_2 FROM c1454_t1 AS c1454_t1 JOIN c1454_t3 AS c1454_t2 ON c1454_t1.c3 NOT LIKE '%sample_76' WHERE (c1454_t1.c4 <> 69) UNION ALL (SELECT (t10.c2 * t10.c15) AS q3_col_1, STR_TO_DATE(t10.c14, t10.c12) AS q3_col_2 FROM c1454_t3 AS t10 WHERE (EXISTS(SELECT t11.c11 AS subq_col_1 FROM c1454_t3 AS t11 LEFT JOIN (SELECT sq13.q4_col_4 AS q5_col_1, CASE WHEN (sq13.q4_col_4 <> ALL (SELECT t15.c8 AS subq_col_1 FROM c1454_t3 AS t15 WHERE ((t15.c2 > 69 OR t15.c6 >= 22) AND t15.c12 <> 'sample_14'))) THEN 1 ELSE 0 END AS q5_col_2, SUM(sq13.q4_col_3) AS q5_col_3 FROM (SELECT MIN(t14.c6) AS q4_col_1, t14.c3 AS q4_col_2, STDDEV(t14.c4) AS q4_col_3, t14.c4 AS q4_col_4 FROM c1454_t1 AS t14 WHERE (t14.c4 <= 3 OR t14.c2 <> 'sample_100') GROUP BY t14.c3, t14.c4) AS sq13 WHERE (sq13.q4_col_4 >= 99 AND sq13.q4_col_3 IN ((SELECT t16.c9 AS subq_col_1 FROM c1454_t3 AS t16 WHERE (t16.c5 BETWEEN '2023-01-01 00:00:00' AND '2023-12-31 23:59:59')))) GROUP BY sq13.q4_col_4, CASE WHEN (sq13.q4_col_4 <> ALL (SELECT t15.c8 AS subq_col_1 FROM c1454_t3 AS t15 WHERE ((t15.c2 > 69 OR t15.c6 >= 22) AND t15.c12 <> 'sample_14'))) THEN 1 ELSE 0 END HAVING NOT SUM(sq13.q4_col_3) <= 43) AS sq12 ON t11.c1 >= sq12.q5_col_1 WHERE (t11.c10 <> 'sample_54' AND t11.c2 BETWEEN 42 AND 65 AND t11.c3 BETWEEN 24 AND 69)) AND t10.c11 NOT IN ((SELECT sq17.q7_col_1 AS subq_col_1 FROM (SELECT sq18.q6_col_3 AS q7_col_1, MOD(sq18.q6_col_2, NULLIF(sq18.q6_col_2, 0)) AS q7_col_2, AVG(sq18.q6_col_2) AS q7_col_3, sq18.q6_col_1 AS q7_col_4, DEGREES(sq18.q6_col_2) AS q7_col_5 FROM (SELECT t19.c5 AS q6_col_1, VAR_SAMP(t19.c2) AS q6_col_2, t19.c6 AS q6_col_3 FROM c1454_t2 AS t19 WHERE (t19.c4 <> 'sample_7' AND t19.c4 <> 'sample_31' AND t19.c13 <> '2023-01-01') GROUP BY t19.c5, t19.c6 HAVING (VAR_SAMP(t19.c2) >= 19 OR VAR_SAMP(t19.c2) <= 2)) AS sq18 WHERE (sq18.q6_col_1 NOT IN ((SELECT t22.c13 AS subq_col_1 FROM c1454_t1 AS t20 RIGHT JOIN c1454_t3 AS t21 ON t20.c6 = t21.c11 AND t20.c2 = t21.c12 AND t21.c5 NOT BETWEEN '2023-01-01 00:00:00' AND '2023-12-31 23:59:59' AND t21.c15 IS NOT NULL RIGHT JOIN c1454_t2 AS t22 ON t22.c6 IS NULL AND t22.c5 BETWEEN '2023-01-01 00:00:00' AND '2023-12-31 23:59:59' WHERE ((t21.c1 BETWEEN 33 AND 81 AND t20.c6 <> 'sample_61') OR t22.c2 > 16) ORDER BY t20.c5 ASC))) GROUP BY sq18.q6_col_3, MOD(sq18.q6_col_2, NULLIF(sq18.q6_col_2, 0)), sq18.q6_col_2, sq18.q6_col_1, DEGREES(sq18.q6_col_2) HAVING ((AVG(sq18.q6_col_2) <= 75 OR AVG(sq18.q6_col_2) <> 41) AND AVG(sq18.q6_col_2) >= 19) ORDER BY q7_col_2 ASC) AS sq17 WHERE (sq17.q7_col_2 < 33 AND sq17.q7_col_2 = 51 AND sq17.q7_col_5 = 64)))));
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1454 - SQI01 compiler loop in mixed set-operation query; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1455: SQL compiler stack overflow on nested subqueries
+-- --------------------------------------------------------------------------
+DROP TABLE c1455_t3 IF EXISTS;
+DROP TABLE c1455_t2 IF EXISTS;
+DROP TABLE c1455_t1 IF EXISTS;
+
+CREATE TABLE c1455_t1 (
+    c1 INT NOT NULL, c2 VARCHAR(255) NOT NULL, c3 VARCHAR(255) NULL,
+    c4 INT NULL, c5 DATE NOT NULL, c6 VARCHAR(10) NOT NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1455_t2 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL, c5 DATE NOT NULL, c6 VARCHAR(4000) NULL,
+    c7 VARCHAR(4000) NULL, c8 VARBINARY(4000) NULL,
+    c9 VARBINARY(4000) NULL, c10 VARCHAR(4000) NULL,
+    c11 VARCHAR(4000) NULL, c12 INTEGER NULL, c13 DATETIME NULL,
+    c14 FLOAT NULL, c15 DOUBLE PRECISION NULL, c16 VARCHAR(4000) NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1455_t3 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 INT NOT NULL, c4 INT NOT NULL,
+    c5 DATETIME NULL, c6 SMALLINT NULL, c7 SMALLINT NULL, c8 INTEGER NULL,
+    c9 BIGINT NULL, c10 VARCHAR(4000) NULL, c11 VARCHAR(255) NULL,
+    c12 VARCHAR(4000) NULL, c13 VARBINARY(4000) NULL,
+    c14 VARCHAR(4000) NULL, c15 SMALLINT NULL,
+    PRIMARY KEY (c1)
+);
+
+SET MACRO_SUBSTITUTION OFF;
+SELECT TOP 2 (SELECT TOP 1 c1455_t2.c5 AS subq_col_1 FROM c1455_t3 AS c1455_t2 WHERE (c1455_t2.c6 IS NOT NULL)) AS q1_col_1, CASE WHEN (c1455_t1.c3 NOT IN ((SELECT t4.c3 AS subq_col_1 FROM c1455_t1 AS c1455_t3 JOIN c1455_t3 AS t4 ON (c1455_t3.c4 NOT BETWEEN 19 AND 40 OR t4.c15 <= 82 OR c1455_t3.c4 > t4.c4) AND t4.c12 IN ((SELECT t5.c3 AS subq_col_1 FROM c1455_t1 AS t5)) WHERE ((t4.c14 NOT LIKE '.*[0-9]{2}.*' OR t4.c3 BETWEEN 39 AND 77) AND c1455_t3.c6 = 'sample_19')))) THEN 1 ELSE 0 END AS q1_col_2, (SELECT TOP 1 t6.c12 AS subq_col_1 FROM c1455_t3 AS t6 JOIN c1455_t1 AS t7 ON t7.c6 IN ((SELECT t9.c10 AS subq_col_1 FROM c1455_t1 AS t8 RIGHT JOIN c1455_t2 AS t9 ON t9.c4 LIKE 'sample_4%' CROSS JOIN c1455_t3 AS t10 ON (t9.c1 > t10.c4 AND t10.c4 >= 31) OR t9.c3 <= t10.c9 WHERE (t10.c14 LIKE '^sample_[0-9]+$'))) JOIN c1455_t2 AS t11 ON t11.c7 <> 'sample_61' OR t7.c5 = '2023-01-01' OR t7.c2 <> t11.c6 ORDER BY t11.c13 ASC) AS q1_col_3, c1455_t1.c2 AS q1_col_4 FROM c1455_t2 AS c1455_t1 WHERE (c1455_t1.c1 <= 74);
+SET MACRO_SUBSTITUTION ON;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1455 - SQL compiler stack overflow on nested subqueries; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1456: Clarification request: ORDER BY scope in a parenthesized EXCEPT operand
+-- --------------------------------------------------------------------------
+DROP TABLE c1456_t3 IF EXISTS;
+DROP TABLE c1456_t2 IF EXISTS;
+DROP TABLE c1456_t1 IF EXISTS;
+
+CREATE TABLE c1456_t1 (
+    c1 INT NOT NULL, c2 VARCHAR(255) NOT NULL, c3 VARCHAR(255) NULL,
+    c4 INT NULL, c5 DATE NOT NULL, c6 VARCHAR(10) NOT NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1456_t2 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL, c5 DATE NOT NULL, c6 VARCHAR(4000) NULL,
+    c7 VARCHAR(4000) NULL, c8 VARBINARY(4000) NULL,
+    c9 VARBINARY(4000) NULL, c10 VARCHAR(4000) NULL,
+    c11 VARCHAR(4000) NULL, c12 INTEGER NULL, c13 DATETIME NULL,
+    c14 FLOAT NULL, c15 DOUBLE PRECISION NULL, c16 VARCHAR(4000) NULL,
+    PRIMARY KEY (c1)
+);
+
+CREATE TABLE c1456_t3 (
+    c1 INT NOT NULL, c2 INT NOT NULL, c3 INT NOT NULL, c4 INT NOT NULL,
+    c5 DATETIME NULL, c6 SMALLINT NULL, c7 SMALLINT NULL, c8 INTEGER NULL,
+    c9 BIGINT NULL, c10 VARCHAR(4000) NULL, c11 VARCHAR(255) NULL,
+    c12 VARCHAR(4000) NULL, c13 VARBINARY(4000) NULL,
+    c14 VARCHAR(4000) NULL, c15 SMALLINT NULL,
+    PRIMARY KEY (c1)
+);
+
+SELECT c5, c5 FROM c1456_t1 EXCEPT (SELECT (SELECT TOP 1 c5 FROM c1456_t1) AS x, t4.c5 FROM c1456_t1 AS t4 ORDER BY t4.c5);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1456 - Clarification request: ORDER BY scope in a parenthesized EXCEPT operand; expected compilation failure, STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1458: INTERSECT incorrectly preserves duplicate NULL rows
+-- --------------------------------------------------------------------------
+DROP TABLE rift_intersect_a IF EXISTS;
+DROP TABLE rift_intersect_b IF EXISTS;
+
+CREATE TABLE rift_intersect_a (x INT);
+
+CREATE TABLE rift_intersect_b (x INT);
+
+INSERT INTO rift_intersect_a VALUES (NULL);
+
+INSERT INTO rift_intersect_a VALUES (NULL);
+
+INSERT INTO rift_intersect_a VALUES (NULL);
+
+INSERT INTO rift_intersect_b VALUES (NULL);
+
+-- Incorrectly returns three NULL rows.
+SELECT x FROM rift_intersect_a
+INTERSECT
+SELECT x FROM rift_intersect_b;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1458 (variant 1) - INTERSECT incorrectly preserves duplicate NULL rows; expected 1 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- Returns one NULL row.
+SELECT DISTINCT *
+FROM (
+    SELECT x FROM rift_intersect_a
+    INTERSECT
+    SELECT x FROM rift_intersect_b
+) AS intersect_result;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1458 (variant 2) - INTERSECT incorrectly preserves duplicate NULL rows; expected 1 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1459: INTERSECT returns duplicate NULL rows that do not occur in the right input
+-- --------------------------------------------------------------------------
+DROP TABLE rift_intersect_left IF EXISTS;
+DROP TABLE rift_intersect_right IF EXISTS;
+
+CREATE TABLE rift_intersect_left (x INT, y INT);
+
+CREATE TABLE rift_intersect_right (x INT, y INT);
+
+INSERT INTO rift_intersect_left VALUES (NULL, NULL);
+
+INSERT INTO rift_intersect_left VALUES (NULL, NULL);
+
+INSERT INTO rift_intersect_left VALUES (NULL, NULL);
+
+INSERT INTO rift_intersect_right VALUES (1, 1);
+
+-- Incorrectly returns duplicate (NULL, NULL) rows.
+SELECT x, y FROM rift_intersect_left
+INTERSECT
+SELECT x, y FROM rift_intersect_right;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1459 (variant 1) - INTERSECT returns duplicate NULL rows that do not occur in the right input; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- Correctly returns no rows.
+SELECT DISTINCT x, y FROM rift_intersect_left
+INTERSECT
+SELECT x, y FROM rift_intersect_right;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1459 (variant 2) - INTERSECT returns duplicate NULL rows that do not occur in the right input; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1460: AND TRUE removes a row produced by nested derived aggregates
+-- --------------------------------------------------------------------------
+DROP TABLE rift_identity_logic IF EXISTS;
+DROP TABLE rift_digit_identity IF EXISTS;
+
+CREATE TABLE rift_digit_identity (n INT);
+
+INSERT INTO rift_digit_identity VALUES (0);
+
+INSERT INTO rift_digit_identity VALUES (1);
+
+INSERT INTO rift_digit_identity VALUES (2);
+
+INSERT INTO rift_digit_identity VALUES (3);
+
+INSERT INTO rift_digit_identity VALUES (4);
+
+INSERT INTO rift_digit_identity VALUES (5);
+
+INSERT INTO rift_digit_identity VALUES (6);
+
+INSERT INTO rift_digit_identity VALUES (7);
+
+INSERT INTO rift_digit_identity VALUES (8);
+
+INSERT INTO rift_digit_identity VALUES (9);
+
+CREATE TABLE rift_identity_logic (c1 INT PRIMARY KEY, c4 INT, c5 DATE NOT NULL);
+
+INSERT INTO rift_identity_logic
+SELECT a.n * 100 + b.n * 10 + d.n + 1,
+       MOD(a.n * 100 + b.n * 10 + d.n, 100),
+       DATEADD('day', MOD(a.n * 100 + b.n * 10 + d.n, 366),
+               {d '2025-08-15'})
+FROM rift_digit_identity AS a
+CROSS JOIN rift_digit_identity AS b
+CROSS JOIN rift_digit_identity AS d;
+
+-- Original query: should return no rows.
+SELECT m.x - m.x, m.z, MOD(m.y, NULLIF(21, 0))
+FROM (
+    SELECT DISTINCT q.a AS x, q.b AS y, MOD(q.a, NULLIF(14, 0)) AS z
+    FROM (
+        SELECT (SELECT TOP 1 SUM(s.c4) FROM rift_identity_logic AS s) AS unused,
+               SUM(t.c1) AS a, COUNT(DISTINCT t.c5) AS b
+        FROM rift_identity_logic AS t
+        WHERE t.c5 <> {d '2023-01-01'}
+    ) AS q
+    WHERE q.a > 11
+) AS m
+WHERE (((m.z IS NOT NULL OR m.z NOT BETWEEN 19 AND 50) AND m.z >= 21)
+       OR m.y < 91);
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1460 (variant 1) - AND TRUE removes a row produced by nested derived aggregates; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- Query with the Boolean identity: should also return no rows.
+SELECT m.x - m.x, m.z, MOD(m.y, NULLIF(21, 0))
+FROM (
+    SELECT DISTINCT q.a AS x, q.b AS y, MOD(q.a, NULLIF(14, 0)) AS z
+    FROM (
+        SELECT (SELECT TOP 1 SUM(s.c4) FROM rift_identity_logic AS s) AS unused,
+               SUM(t.c1) AS a, COUNT(DISTINCT t.c5) AS b
+        FROM rift_identity_logic AS t
+        WHERE t.c5 <> {d '2023-01-01'}
+    ) AS q
+    WHERE q.a > 11
+) AS m
+WHERE (((m.z IS NOT NULL OR m.z NOT BETWEEN 19 AND 50) AND m.z >= 21)
+       OR m.y < 91)
+  AND 1 = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1460 (variant 2) - AND TRUE removes a row produced by nested derived aggregates; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1463: SQ156 optimized compiler error for a grouped CASE containing double-parenthesized NOT IN
+-- --------------------------------------------------------------------------
+DROP TABLE rift_sq156_outer IF EXISTS;
+DROP TABLE rift_sq156_inner IF EXISTS;
+
+CREATE TABLE rift_sq156_outer (
+    a VARCHAR(10),
+    b INT
+) if not exists;
+
+CREATE TABLE rift_sq156_inner (
+    x INT
+) if not exists;
+
+SELECT CASE
+         WHEN (o.a IS NOT NULL
+               AND o.b NOT IN ((SELECT i.x
+                                FROM rift_sq156_inner AS i)))
+         THEN 1
+         ELSE 0
+       END AS flag
+FROM rift_sq156_outer AS o
+GROUP BY CASE
+           WHEN (o.a IS NOT NULL
+                 AND o.b NOT IN ((SELECT i.x
+                                  FROM rift_sq156_inner AS i)))
+           THEN 1
+           ELSE 0
+         END,
+         o.a,
+         o.b;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1463 - SQ156 optimized compiler error for a grouped CASE containing double-parenthesized NOT IN; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case #1464: VECSL internal error for ANY subquery with chained RIGHT JOINs and a grouped derived table
+-- --------------------------------------------------------------------------
+DROP TABLE rift_vecsl_t3 IF EXISTS;
+DROP TABLE rift_vecsl_t2 IF EXISTS;
+DROP TABLE rift_vecsl_t1 IF EXISTS;
+
+CREATE TABLE rift_vecsl_t1 (
+    c1 INT NOT NULL PRIMARY KEY,
+    c2 VARCHAR(255) NOT NULL,
+    c3 VARCHAR(255),
+    c4 INT,
+    c5 DATE NOT NULL,
+    c6 VARCHAR(10) NOT NULL
+) if not exists;
+
+CREATE TABLE rift_vecsl_t2 (
+    c1 INT NOT NULL PRIMARY KEY,
+    c2 INT NOT NULL,
+    c3 DECIMAL(10,2) NOT NULL,
+    c4 VARCHAR(50) NOT NULL,
+    c5 DATE NOT NULL,
+    c6 VARCHAR(4000),
+    c7 VARCHAR(4000),
+    c8 VARBINARY(4000),
+    c9 VARBINARY(4000),
+    c10 VARCHAR(4000),
+    c11 VARCHAR(4000),
+    c12 INTEGER,
+    c13 DATETIME,
+    c14 FLOAT,
+    c15 DOUBLE PRECISION,
+    c16 VARCHAR(4000)
+) if not exists;
+
+CREATE TABLE rift_vecsl_t3 (
+    c1 INT NOT NULL PRIMARY KEY,
+    c2 INT NOT NULL,
+    c3 INT NOT NULL,
+    c4 INT NOT NULL,
+    c5 DATETIME,
+    c6 SMALLINT,
+    c7 SMALLINT,
+    c8 INTEGER,
+    c9 BIGINT,
+    c10 VARCHAR(4000),
+    c11 VARCHAR(255),
+    c12 VARCHAR(4000),
+    c13 VARBINARY(4000),
+    c14 VARCHAR(4000),
+    c15 SMALLINT
+) if not exists;
+
+SELECT x.c7
+FROM rift_vecsl_t2 AS x
+WHERE x.c4 <> ANY (
+    SELECT z.c7
+    FROM rift_vecsl_t3 AS y
+    RIGHT JOIN (
+        SELECT b.c16, b.c14, b.c10
+        FROM rift_vecsl_t3 AS a
+        RIGHT JOIN rift_vecsl_t2 AS b ON a.c7 >= b.c15
+        GROUP BY b.c16, b.c14, b.c10
+    ) AS d ON y.c9 BETWEEN 10 AND 21
+    RIGHT JOIN rift_vecsl_t2 AS z
+        ON y.c6 = z.c3 AND z.c4 IS NULL
+);
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case #1464 - VECSL internal error for ANY subquery with chained RIGHT JOINs and a grouped derived table; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
