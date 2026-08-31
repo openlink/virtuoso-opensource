@@ -1038,7 +1038,7 @@ create procedure DB.DBA.proxy_sp_html_error_page (
 
 --
 -- Python-style format - takes a format string and an array of params.
--- It''s handier for templating, etc.
+-- This is handier for templating, etc.
 --
 
 create procedure DB.DBA.str_fmt (
@@ -1487,7 +1487,7 @@ create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar, in mask any
     {
       item := mime := trim(mime);
       vec := split_and_decode (mime, 0, '\0\0;');
-      -- known mime types default's to 1, unknown are minimal
+      -- known media types (previously called MIME types) default to 1, unknown are minimal
       if (not isnull(http_sys_find_best_sparql_accept(item, 0)) or not isnull(http_sys_find_best_sparql_accept(item, 1)))
         q := 1.0;
       else
