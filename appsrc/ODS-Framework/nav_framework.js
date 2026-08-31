@@ -791,6 +791,7 @@ ODS.Nav = function(navOptions) {
 	  "WA_SES_VALIDBIND",
 	  function() {
 			self.createCookie ('sid', self.session.sid, 1);
+			self.createCookie ('realm', self.session.realm, 1);
 			self.userLogged = 1;
   		self.session.usersGetInfo(self.session.userId, 'fullName', function(xmlDoc) {
 			self.setLoggedUserInfo(xmlDoc);

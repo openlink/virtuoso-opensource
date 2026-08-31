@@ -252,7 +252,9 @@
       if (get_keyword('cb_remember_me', self.vc_event.ve_params) is not null)
         expire := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, now())));
 
-            cook_str := http_header_get () || sprintf ('Set-Cookie: sid=%s;%s path=/\r\n', self.sid, expire);
+          cook_str := http_header_get () || 
+            sprintf ('Set-Cookie: sid=%s; %s path=/\r\n', self.sid, expire) ||
+            sprintf ('Set-Cookie: realm=%s; %s path=/\r\n', self.realm, expire);
           http_header (cook_str);
         }
 ]]>
