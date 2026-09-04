@@ -1067,6 +1067,31 @@ create procedure DB.DBA.SPARQL_SINV_SPLIT_IRI (in _iri varchar, out _ns_out varc
 }
 ;
 
+-- Helper: if _iri is in the wikibase:mwapi parameter namespace, return its
+-- local name; otherwise null.
+-- WDQS, the MediaWiki API docs and Scholia templates use the https://
+-- spelling of the namespace; both spellings and the trailing-slash-less
+-- variants are accepted:
+--   http://www.mediawiki.org/ontology#API/srsearch  -> 'srsearch'
+--   https://www.mediawiki.org/ontology#API/srsearch -> 'srsearch'
+--   https://www.mediawiki.org/ontology#APIsrsearch  -> 'srsearch'
+create procedure DB.DBA.SPARQL_SINV_MWAPI_LOCAL_NAME (in _iri varchar)
+{
+  declare _rest varchar;
+  if (_iri is null)
+    return null;
+  if (subseq (_iri, 0, length ('http://www.mediawiki.org/ontology#API')) = 'http://www.mediawiki.org/ontology#API')
+    _rest := subseq (_iri, length ('http://www.mediawiki.org/ontology#API'));
+  else if (subseq (_iri, 0, length ('https://www.mediawiki.org/ontology#API')) = 'https://www.mediawiki.org/ontology#API')
+    _rest := subseq (_iri, length ('https://www.mediawiki.org/ontology#API'));
+  else
+    return null;
+  if (_rest is not null and length (_rest) > 0 and subseq (_rest, 0, 1) = '/')
+    _rest := subseq (_rest, 1);
+  return _rest;
+}
+;
+
 -- Parse structured handler options from SSH_OPTIONS column.
 -- Supports:
 --   (a) Legacy integer format: cast directly to timeout_ms (backward compat).
@@ -1144,7 +1169,7 @@ create procedure DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (
   declare _subj_text, _pred_text, _obj_text varchar;
   declare _triple_pos integer;
   declare _brace_depth integer;
-  declare _mwapi_ns, _wb_ns, _bd_ns varchar;
+  declare _wb_ns, _bd_ns varchar;
 
   _api_action := null;
   _api_host := 'www.wikidata.org';
@@ -1152,7 +1177,6 @@ create procedure DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (
   _output_maps := vector ();
   _output_item_maps := vector ();
 
-  _mwapi_ns := 'http://www.mediawiki.org/ontology#API/';
   _wb_ns := 'http://wikiba.se/ontology#';
   _bd_ns := 'http://www.bigdata.com/rdf#';
 
@@ -1256,11 +1280,11 @@ create procedure DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (
                     if (_obj_text like '"%' or _obj_text like '''%')
                       _api_host := DB.DBA.SPARQL_SINV_UNQUOTE_STRING (_obj_text);
                   }
-                else if (_pred_iri is not null and _pred_iri like _mwapi_ns || '%')
+                else if (_pred_iri is not null)
                   {
                     -- mwapi:paramName "value"
                     declare _param_local varchar;
-                    _param_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_pred_iri, _param_local);
+                    _param_local := DB.DBA.SPARQL_SINV_MWAPI_LOCAL_NAME (_pred_iri);
                     if (_param_local is not null and length (_param_local) > 0)
                       {
                         if (_obj_text like '"%' or _obj_text like '''%') -- string literal
@@ -1277,31 +1301,388 @@ create procedure DB.DBA.SPARQL_SINV_PARSE_QUERY_LEXER (
             -- Pattern 2: ?var wikibase:apiOutput mwapi:field
             else if (_pred_iri = _wb_ns || 'apiOutput' and (_subj_text like '?%' or _subj_text like '$%') and _obj_iri is not null)
               {
-                if (_obj_iri like _mwapi_ns || '%')
-                  {
-                    declare _var_name, _field_local varchar;
-                    _var_name := subseq (_subj_text, 1); -- strip '?'
-                    _field_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_obj_iri, _field_local);
-                    if (_var_name is not null and _field_local is not null)
-                      _output_maps := vector_concat (_output_maps, vector (_var_name, _field_local));
-                  }
+                declare _var_name, _field_local varchar;
+                _var_name := subseq (_subj_text, 1); -- strip '?'
+                _field_local := DB.DBA.SPARQL_SINV_MWAPI_LOCAL_NAME (_obj_iri);
+                if (_var_name is not null and _field_local is not null and length (_field_local) > 0)
+                  _output_maps := vector_concat (_output_maps, vector (_var_name, _field_local));
               }
             -- Pattern 3: ?var wikibase:apiOutputItem mwapi:field
             else if (_pred_iri = _wb_ns || 'apiOutputItem' and (_subj_text like '?%' or _subj_text like '$%') and _obj_iri is not null)
               {
-                if (_obj_iri like _mwapi_ns || '%')
-                  {
-                    declare _var_name, _field_local varchar;
-                    _var_name := subseq (_subj_text, 1); -- strip '?'
-                    _field_local := DB.DBA.SPARQL_SINV_SPLIT_IRI (_obj_iri, _field_local);
-                    if (_var_name is not null and _field_local is not null)
-                      _output_item_maps := vector_concat (_output_item_maps, vector (_var_name, _field_local));
-                  }
+                declare _var_name, _field_local varchar;
+                _var_name := subseq (_subj_text, 1); -- strip '?'
+                _field_local := DB.DBA.SPARQL_SINV_MWAPI_LOCAL_NAME (_obj_iri);
+                if (_var_name is not null and _field_local is not null and length (_field_local) > 0)
+                  _output_item_maps := vector_concat (_output_item_maps, vector (_var_name, _field_local));
               }
           }
         }
     next_token: ;
     }
+}
+;
+
+-----
+-- Pure helpers for the wikibase:mwapi callback: URL building, response
+-- parsing and item-to-variable mapping are split out so they can be
+-- exercised directly (no HTTP involved).
+
+-- Build the MediaWiki API request URL for a wikibase:mwapi action.
+-- Pure string manipulation: no HTTP.  _api_params is the flat
+-- (name, value, ...) vector extracted from the SERVICE body.
+-- The 'Generator' action maps to the WDQS pattern
+--   wikibase:api "Generator" ; mwapi:generator "search" ; ...
+-- to action=query&generator=search&<remaining parameters>&prop=pageprops;
+-- prop=pageprops is merged into a caller-supplied prop (MediaWiki accepts
+-- pipe-separated prop lists) because apiOutputItem mwapi:item needs it.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_BUILD_URL (
+  in _api_action varchar,
+  in _api_host varchar,
+  in _api_params any)
+{
+  declare _url varchar;
+  declare _lower_action varchar;
+  declare _pctr integer;
+  declare _generator_val, _prop_val varchar;
+  -- PL varchar locals are uninitialized boxes, not SQL NULL; explicit init
+  -- is required for the 'is null' checks below
+  _generator_val := null;
+  _prop_val := null;
+  _lower_action := lower (_api_action);
+  _url := sprintf ('https://%s/w/api.php?format=json', _api_host);
+  if (_lower_action = 'search')
+    _url := _url || '&action=query&list=search';
+  else if (_lower_action = 'entitysearch' or _lower_action = 'wbsearchentities')
+    _url := _url || '&action=wbsearchentities&language=en';
+  else if (_lower_action = 'generator')
+    _url := _url || '&action=query';
+  else
+    _url := _url || sprintf ('&action=%U', _api_action);
+  for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
+    {
+      declare _pname, _pval varchar;
+      _pname := cast (_api_params[_pctr] as varchar);
+      _pval := cast (_api_params[_pctr + 1] as varchar);
+      if (_lower_action = 'entitysearch' or _lower_action = 'wbsearchentities')
+        {
+          -- 'search' and 'srsearch' name the same Wikibase search argument
+          if (_pname = 'search' or _pname = 'srsearch')
+            _pname := 'search';
+        }
+      if (_lower_action = 'generator')
+        {
+          -- generator and prop are captured and emitted once below; the
+          -- action marker itself is not caller-settable
+          if (_pname = 'generator')
+            _generator_val := _pval;
+          else if (_pname = 'prop')
+            _prop_val := _pval;
+          if (_pname = 'generator' or _pname = 'prop' or _pname = 'action')
+            goto next_param;
+        }
+      _url := _url || sprintf ('&%U=%U', _pname, _pval);
+next_param: ;
+    }
+  if (_lower_action = 'generator')
+    {
+      if (_generator_val is null)
+        signal ('RDFZZ', 'wikibase:mwapi handler: Generator action requires a mwapi:generator parameter');
+      _url := _url || sprintf ('&generator=%U', _generator_val);
+      if (_prop_val is null)
+        _url := _url || '&prop=pageprops';
+      else
+        {
+          -- MediaWiki accepts pipe-separated prop lists; add pageprops to a
+          -- caller-supplied prop when it is not already there
+          if (('|' || _prop_val || '|') like '%|pageprops|%')
+            _url := _url || sprintf ('&prop=%U', _prop_val);
+          else
+            _url := _url || sprintf ('&prop=%U|pageprops', _prop_val);
+        }
+    }
+  return _url;
+}
+;
+
+-- Signal a diagnosable error when a MediaWiki API response reports one.
+-- MediaWiki answers with HTTP 200 and an {"error": {...}} object for unknown
+-- actions, bad parameters and throttling; without this check the
+-- wikibase:mwapi handler would silently return empty bindings.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_CHECK_ERROR (in _json_tree any, in _url varchar)
+{
+  declare _err any;
+  if (_json_tree is null or not isvector (_json_tree))
+    return;
+  _err := get_keyword ('error', _json_tree);
+  if (_err is null)
+    return;
+  if (isvector (_err))
+    signal ('RDFZZ', sprintf ('wikibase:mwapi MediaWiki API error for URL %.500s: %s: %s',
+      _url, cast (get_keyword ('code', _err) as varchar), cast (get_keyword ('info', _err) as varchar)));
+  signal ('RDFZZ', sprintf ('wikibase:mwapi MediaWiki API error for URL %.500s: %.200s', _url, cast (_err as varchar)));
+}
+;
+
+-- Resolve a mwapi output field against a parsed page / search-hit map.
+-- Flat JSON keys first ('title', 'snippet', ...); a dotted path descends
+-- nested objects ('pageprops.wikibase_item'); the bare name 'item' is the
+-- WDQS convention for the linked Wikidata entity and resolves through
+-- pageprops.wikibase_item.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (in _item any, in _field varchar)
+{
+  declare _val any;
+  declare _rest, _key varchar;
+  declare _dot integer;
+  if (_item is null or not isvector (_item) or _field is null or length (_field) = 0)
+    return null;
+  _key := null;
+  _val := _item;
+  _rest := _field;
+  -- Descend dotted paths ('pageprops.wikibase_item') one member at a time
+  while (_rest is not null and length (_rest) > 0)
+    {
+      _dot := strchr (_rest, '.');
+      if (_dot is null)
+        {
+          _key := _rest;
+          _rest := null;
+        }
+      else
+        {
+          _key := subseq (_rest, 0, _dot);
+          _rest := subseq (_rest, _dot + 1);
+        }
+      if (not isvector (_val))
+        return null;
+      _val := get_keyword (_key, _val);
+    }
+  if (_val is not null)
+    return _val;
+  if (_key = 'item')
+    {
+      declare _pp any;
+      _pp := get_keyword ('pageprops', _item);
+      if (_pp is not null and isvector (_pp))
+        return get_keyword ('wikibase_item', _pp);
+    }
+  return null;
+}
+;
+
+-- Order Generator response pages by their 'index' field (MediaWiki emits the
+-- result position of each page but does not guarantee the member order of
+-- the query.pages{} object); pages without a usable index keep encounter
+-- order after the indexed ones.
+-- _pages is the parsed query.pages{} object; its keys and the JSON object
+-- marker are scalars, the page maps are the vector-valued members.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_ORDER_PAGES (in _pages any)
+{
+  declare _count, _ctr integer;
+  declare _indexed, _unindexed, _out any;
+  declare _page, _idx any;
+  _count := 0;
+  for (_ctr := 0; _ctr < length (_pages); _ctr := _ctr + 1)
+    {
+      if (isvector (_pages[_ctr]))
+        _count := _count + 1;
+    }
+  _indexed := make_array (_count, 'any');
+  -- make_array slots are 0-boxes, not SQL NULL; null-init so that slot
+  -- occupancy can be tested with 'is null'
+  for (_ctr := 0; _ctr < _count; _ctr := _ctr + 1)
+    aset (_indexed, _ctr, null);
+  _unindexed := vector ();
+  for (_ctr := 0; _ctr < length (_pages); _ctr := _ctr + 1)
+    {
+      _page := _pages[_ctr];
+      if (not isvector (_page))
+        goto next_page;
+      _idx := get_keyword ('index', _page);
+      if (_idx is not null and isinteger (_idx) and _idx >= 1 and _idx <= _count
+          and _indexed[_idx - 1] is null)
+        aset (_indexed, _idx - 1, _page);
+      else
+        _unindexed := vector_concat (_unindexed, vector (_page));
+next_page: ;
+    }
+  _out := vector ();
+  for (_ctr := 0; _ctr < _count; _ctr := _ctr + 1)
+    {
+      if (_indexed[_ctr] is not null)
+        _out := vector_concat (_out, vector (_indexed[_ctr]));
+    }
+  return vector_concat (_out, _unindexed);
+}
+;
+
+-- Extract the item list from a parsed MediaWiki API response for a
+-- wikibase:mwapi action.  Pure: no HTTP; _json_tree is the json_parse()d
+-- response.  Returns the vector of item maps, or null when there are none.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_EXTRACT_ITEMS (
+  in _api_action varchar,
+  in _json_tree any)
+{
+  declare _lower_action varchar;
+  declare _query_obj, _pages any;
+  _lower_action := lower (_api_action);
+  if (_json_tree is null or not isvector (_json_tree))
+    return null;
+  if (_lower_action = 'search')
+    {
+      -- Response path: query.search[]
+      _query_obj := get_keyword ('query', _json_tree);
+      if (_query_obj is not null)
+        return get_keyword ('search', _query_obj);
+      return null;
+    }
+  if (_lower_action = 'entitysearch' or _lower_action = 'wbsearchentities')
+    {
+      -- Response path: search[]
+      return get_keyword ('search', _json_tree);
+    }
+  if (_lower_action = 'generator')
+    {
+      -- Response path: query.pages{} is an object keyed by pageid, not an
+      -- array; iterate its member values as pages.
+      _query_obj := get_keyword ('query', _json_tree);
+      if (_query_obj is null or not isvector (_query_obj))
+        return null;
+      _pages := get_keyword ('pages', _query_obj);
+      if (_pages is null or not isvector (_pages))
+        return null;
+      return DB.DBA.SPARQL_SINV_MWAPI_ORDER_PAGES (_pages);
+    }
+  -- Generic fallback: top-level results[], else the first list-valued
+  -- member of query{}
+  {
+    declare _items any;
+    _items := get_keyword ('results', _json_tree);
+    if (_items is not null)
+      return _items;
+    _query_obj := get_keyword ('query', _json_tree);
+    if (_query_obj is not null and isvector (_query_obj))
+      {
+        declare _ki integer;
+        for (_ki := 0; _ki < length (_query_obj); _ki := _ki + 2)
+          {
+            if (isvector (_query_obj[_ki + 1]))
+              return _query_obj[_ki + 1];
+          }
+      }
+  }
+  return null;
+}
+;
+
+-- Map MediaWiki API items (parsed page / search-hit maps) to the SERVICE
+-- variable bindings of the wikibase:mwapi handler.  Pure: no HTTP; input is
+-- the item list from SPARQL_SINV_MWAPI_EXTRACT_ITEMS.  Returns a vector of
+-- row arrays aligned with _expected_vars.
+create procedure DB.DBA.SPARQL_SINV_MWAPI_MAP_ROWS (
+  in _expected_vars any,
+  in _items any,
+  in _output_maps any,
+  in _output_item_maps any,
+  in _max_rows integer)
+{
+  declare _result_rows any;
+  declare _var_count integer;
+  _result_rows := vector ();
+  _var_count := length (_expected_vars);
+  {
+    declare _ictr integer;
+    for (_ictr := 0; _ictr < length (_items); _ictr := _ictr + 1)
+      {
+        if (_ictr >= _max_rows)
+          goto row_limit_reached;
+        {
+          declare _item any;
+          declare _row any;
+          declare _vctr integer;
+          _item := _items[_ictr];
+          _row := make_array (_var_count, 'any');
+          for (_vctr := 0; _vctr < _var_count; _vctr := _vctr + 1)
+            {
+              declare _vname, _mapped_field varchar;
+              declare _val any;
+              _vname := _expected_vars[_vctr];
+              _val := null;
+              -- Check apiOutput mappings
+              {
+                declare _mctr integer;
+                for (_mctr := 0; _mctr < length (_output_maps); _mctr := _mctr + 2)
+                  {
+                    if (_output_maps[_mctr] = _vname)
+                      {
+                        _mapped_field := _output_maps[_mctr + 1];
+                        _val := DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (_item, _mapped_field);
+                        -- Convert Wikidata entity IDs to IRI_IDs (SPARQL engine applies __id2in)
+                        if (_val is not null and isstring (_val))
+                          {
+                            declare _sval varchar;
+                            _sval := cast (_val as varchar);
+                            if (regexp_match ('^[QPL][0-9]+', _sval) = _sval)
+                              _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval));
+                          }
+                        goto got_val;
+                      }
+                  }
+              }
+              -- Check apiOutputItem mappings (resolve to Wikidata entity IRI)
+              {
+                declare _mctr integer;
+                for (_mctr := 0; _mctr < length (_output_item_maps); _mctr := _mctr + 2)
+                  {
+                    if (_output_item_maps[_mctr] = _vname)
+                      {
+                        _mapped_field := _output_item_maps[_mctr + 1];
+                        _val := DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (_item, _mapped_field);
+                        if (_val is not null)
+                          _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
+                        goto got_val;
+                      }
+                  }
+              }
+              -- Positional fallback: SPARQL compiler may rename SERVICE vars (e.g. ?page_title -> ?stubvar11)
+              -- If no name match found, map by declaration order
+              if ((_vctr * 2 + 1) < length (_output_maps))
+                {
+                  _mapped_field := _output_maps[_vctr * 2 + 1];
+                  _val := DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (_item, _mapped_field);
+                  if (_val is not null and isstring (_val))
+                    {
+                      declare _sval2 varchar;
+                      _sval2 := cast (_val as varchar);
+                      if (regexp_match ('^[QPL][0-9]+', _sval2) = _sval2)
+                        _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval2));
+                    }
+                  goto got_val;
+                }
+              if ((_vctr * 2 + 1) < length (_output_item_maps))
+                {
+                  _mapped_field := _output_item_maps[_vctr * 2 + 1];
+                  _val := DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (_item, _mapped_field);
+                  if (_val is not null)
+                    _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
+                  goto got_val;
+                }
+              -- Last resort: try variable name directly as JSON field
+              _val := DB.DBA.SPARQL_SINV_MWAPI_GET_FIELD (_item, _vname);
+            got_val:
+              -- SPARQL engine applies __id2in() to all procedure view columns.
+              -- IRI_IDs survive, but plain strings return NULL.  Wrap string
+              -- literals as DV_UNAME so they pass through __id2in() intact.
+              if (_val is not null and isstring (_val) and not isiri_id (_val))
+                _val := __uname (cast (_val as varchar));
+              aset (_row, _vctr, _val);
+            }
+          _result_rows := vector_concat (_result_rows, vector (_row));
+        }
+      }
+  row_limit_reached: ;
+  }
+  return _result_rows;
 }
 ;
 
@@ -1337,49 +1718,8 @@ create procedure DB.DBA.SPARQL_SINV_CB_WIKIBASE_MWAPI (
   if (_api_action is null)
     signal ('RDFZZ', 'wikibase:mwapi handler: wikibase:api not specified in SERVICE body');
 
-  -- Build MediaWiki API URL
-  {
-    declare _api_url_ses any;
-    _api_url_ses := string_output ();
-    http (sprintf ('https://%s/w/api.php?format=json', _api_host), _api_url_ses);
-    if (lower (_api_action) = 'search')
-      {
-        http ('&action=query&list=search', _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    else if (lower (_api_action) = 'entitysearch' or lower (_api_action) = 'wbsearchentities')
-      {
-        http ('&action=wbsearchentities&language=en', _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              if (_api_params[_pctr] = 'search' or _api_params[_pctr] = 'srsearch')
-                http (sprintf ('&search=%U', _api_params[_pctr + 1]), _api_url_ses);
-              else
-                http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    else
-      {
-        http (sprintf ('&action=%U', _api_action), _api_url_ses);
-        {
-          declare _pctr integer;
-          for (_pctr := 0; _pctr < length (_api_params); _pctr := _pctr + 2)
-            {
-              http (sprintf ('&%U=%U', _api_params[_pctr], _api_params[_pctr + 1]), _api_url_ses);
-            }
-        }
-      }
-    _url := string_output_string (_api_url_ses);
-  }
+  -- Build MediaWiki API URL (pure helper, no HTTP)
+  _url := DB.DBA.SPARQL_SINV_MWAPI_BUILD_URL (_api_action, _api_host, _api_params);
 
   -- Execute HTTP request
   {
@@ -1405,146 +1745,13 @@ create procedure DB.DBA.SPARQL_SINV_CB_WIKIBASE_MWAPI (
       declare _max_rows integer;
       _max_rows := cast (get_keyword ('max_rows', _opts, 10000) as integer);
       _json_tree := json_parse (_resp_body);
-      _items := null;
-      if (lower (_api_action) = 'search')
-        {
-          -- Response path: query.search[]
-          declare _query_obj any;
-          _query_obj := get_keyword ('query', _json_tree);
-          if (_query_obj is not null)
-            _items := get_keyword ('search', _query_obj);
-        }
-      else if (lower (_api_action) = 'entitysearch' or lower (_api_action) = 'wbsearchentities')
-        {
-          -- Response path: search[]
-          _items := get_keyword ('search', _json_tree);
-        }
-      else
-        {
-          -- Generic: try query.X[] where X is the first list key, or top-level results
-          _items := get_keyword ('results', _json_tree);
-          if (_items is null)
-            {
-              declare _query_obj any;
-              _query_obj := get_keyword ('query', _json_tree);
-              if (_query_obj is not null and isvector (_query_obj))
-                {
-                  declare _ki integer;
-                  for (_ki := 0; _ki < length (_query_obj); _ki := _ki + 2)
-                    {
-                      if (isvector (_query_obj[_ki + 1]))
-                        {
-                          _items := _query_obj[_ki + 1];
-                          goto got_items;
-                        }
-                    }
-                got_items: ;
-                }
-            }
-        }
+      -- MediaWiki reports API errors with HTTP 200; fail loudly rather than
+      -- returning empty bindings
+      DB.DBA.SPARQL_SINV_MWAPI_CHECK_ERROR (_json_tree, _url);
+      _items := DB.DBA.SPARQL_SINV_MWAPI_EXTRACT_ITEMS (_api_action, _json_tree);
       if (_items is null or not isvector (_items))
         return vector ();
-
-      -- Map items to expected_vars
-      {
-        declare _result_rows any;
-        declare _row_count, _var_count integer;
-        _result_rows := vector ();
-        _var_count := length (_expected_vars);
-        {
-          declare _ictr integer;
-          for (_ictr := 0; _ictr < length (_items); _ictr := _ictr + 1)
-            {
-              if (_ictr >= _max_rows)
-                goto row_limit_reached;
-              {
-                declare _item any;
-                declare _row any;
-                declare _vctr integer;
-                _item := _items[_ictr];
-                _row := make_array (_var_count, 'any');
-                for (_vctr := 0; _vctr < _var_count; _vctr := _vctr + 1)
-                  {
-                    declare _vname, _mapped_field varchar;
-                    declare _val any;
-                    _vname := _expected_vars[_vctr];
-                    _val := null;
-                    -- Check apiOutput mappings
-                    {
-                      declare _mctr integer;
-                      for (_mctr := 0; _mctr < length (_output_maps); _mctr := _mctr + 2)
-                        {
-                          if (_output_maps[_mctr] = _vname)
-                            {
-                              _mapped_field := _output_maps[_mctr + 1];
-                              _val := get_keyword (_mapped_field, _item);
-                              -- Convert Wikidata entity IDs to IRI_IDs (SPARQL engine applies __id2in)
-                              if (_val is not null and isstring (_val))
-                                {
-                                  declare _sval varchar;
-                                  _sval := cast (_val as varchar);
-                                  if (regexp_match ('^[QPL][0-9]+', _sval) = _sval)
-                                    _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval));
-                                }
-                              goto got_val;
-                            }
-                        }
-                    }
-                    -- Check apiOutputItem mappings (resolve to Wikidata entity IRI)
-                    {
-                      declare _mctr integer;
-                      for (_mctr := 0; _mctr < length (_output_item_maps); _mctr := _mctr + 2)
-                        {
-                          if (_output_item_maps[_mctr] = _vname)
-                            {
-                              _mapped_field := _output_item_maps[_mctr + 1];
-                              _val := get_keyword (_mapped_field, _item);
-                              if (_val is not null)
-                                _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
-                              goto got_val;
-                            }
-                        }
-                    }
-                    -- Positional fallback: SPARQL compiler may rename SERVICE vars (e.g. ?page_title -> ?stubvar11)
-                    -- If no name match found, map by declaration order
-                    if ((_vctr * 2 + 1) < length (_output_maps))
-                      {
-                        _mapped_field := _output_maps[_vctr * 2 + 1];
-                        _val := get_keyword (_mapped_field, _item);
-                        if (_val is not null and isstring (_val))
-                          {
-                            declare _sval2 varchar;
-                            _sval2 := cast (_val as varchar);
-                            if (regexp_match ('^[QPL][0-9]+', _sval2) = _sval2)
-                              _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', _sval2));
-                          }
-                        goto got_val;
-                      }
-                    if ((_vctr * 2 + 1) < length (_output_item_maps))
-                      {
-                        _mapped_field := _output_item_maps[_vctr * 2 + 1];
-                        _val := get_keyword (_mapped_field, _item);
-                        if (_val is not null)
-                          _val := iri_to_id (sprintf ('http://www.wikidata.org/entity/%s', cast (_val as varchar)));
-                        goto got_val;
-                      }
-                    -- Last resort: try variable name directly as JSON field
-                    _val := get_keyword (_vname, _item);
-                  got_val:
-                    -- SPARQL engine applies __id2in() to all procedure view columns.
-                    -- IRI_IDs survive, but plain strings return NULL.  Wrap string
-                    -- literals as DV_UNAME so they pass through __id2in() intact.
-                    if (_val is not null and isstring (_val) and not isiri_id (_val))
-                      _val := __uname (cast (_val as varchar));
-                    aset (_row, _vctr, _val);
-                  }
-                _result_rows := vector_concat (_result_rows, vector (_row));
-              }
-            }
-        row_limit_reached: ;
-        }
-        return _result_rows;
-      }
+      return DB.DBA.SPARQL_SINV_MWAPI_MAP_ROWS (_expected_vars, _items, _output_maps, _output_item_maps, _max_rows);
     }
   }
 }
