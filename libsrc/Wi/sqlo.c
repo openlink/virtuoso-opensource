@@ -134,6 +134,31 @@ sqlo_ot_effective_prefix (op_table_t * ot)
 }
 
 
+/*
+ *  Check SELECT access for a column.
+ *
+ *  Returns 0 if access is granted.
+ *  Returns 1 if access is denied:
+ *    - If generate is 1, raises a SQL error (42000/SQ033)
+ *    - If generate is 0, caller should treat as "column not found" and fail quietly
+ */
+static int
+sco_check_col_access (sql_scope_t *sco, op_table_t *ot, dbe_column_t *col, int generate)
+{
+  if (ot && ot->ot_table && IS_BOX_POINTER (col) &&
+      !sec_tb_check (ot->ot_table, ot->ot_g_id, ot->ot_u_id, GR_SELECT)
+      && !sec_col_check (col, ot->ot_g_id, ot->ot_u_id, GR_SELECT))
+    {
+      if (generate)
+	sqlc_new_error (sco->sco_so->so_sc->sc_cc, "42000", "SQ033",
+	    "SELECT access denied for column %s of table %s, user ID %lu",
+	    col->col_name, ot->ot_table->tb_name, ot->ot_u_id);
+      return 1;
+    }
+  return 0;
+}
+
+
 op_table_t *
 sco_is_defd (sql_scope_t * sco, ST * col_ref, int mode, int generate)
 {
@@ -142,30 +167,36 @@ sco_is_defd (sql_scope_t * sco, ST * col_ref, int mode, int generate)
   int n_found = 0;
   DO_SET (op_table_t *, ot, &sco->sco_tables)
     {
-      if (SCO_UNQUALIFIED == mode
-	  && NULL != (col = ot_is_defd (ot, col_ref)))
+      if (SCO_UNQUALIFIED == mode)
 	{
-	  if (!def_ot)
+	  dbe_column_t *this_col = ot_is_defd (ot, col_ref);
+	  /* only commit into col/def_ot together, else a later non-match clobbers col */
+	  if (NULL != this_col)
 	    {
-	      n_found++;
-	      def_ot = ot;
-	    }
-	  else
-	    {
-	      if (!def_ot->ot_prefix && !ot->ot_prefix)
+	      if (!def_ot)
 		{
 		  n_found++;
-		  goto next;
-		}
-	      if (!def_ot->ot_prefix && ot->ot_prefix)
-		goto next;
-	      if (def_ot->ot_prefix && !ot->ot_prefix)
-		{
-		  n_found = 1;
 		  def_ot = ot;
+		  col = this_col;
 		}
-	      if (def_ot->ot_prefix && ot->ot_prefix)
-		n_found++;
+	      else
+		{
+		  if (!def_ot->ot_prefix && !ot->ot_prefix)
+		    {
+		      n_found++;
+		      goto next;
+		    }
+		  if (!def_ot->ot_prefix && ot->ot_prefix)
+		    goto next;
+		  if (def_ot->ot_prefix && !ot->ot_prefix)
+		    {
+		      n_found = 1;
+		      def_ot = ot;
+		      col = this_col;
+		    }
+		  if (def_ot->ot_prefix && ot->ot_prefix)
+		    n_found++;
+		}
 	    }
 	}
       if (SCO_THIS_QUAL == mode
@@ -173,6 +204,8 @@ sco_is_defd (sql_scope_t * sco, ST * col_ref, int mode, int generate)
 	{
 	  if (NULL != (col = ot_is_defd (ot, col_ref)))
 	    {
+	      if (sco_check_col_access (sco, ot, col, generate))
+		return NULL;
 	      col_ref->_.col_ref.prefix = ot->ot_new_prefix;
 	      ot->ot_has_cols = 1;
 	      def_ot = ot;
@@ -185,21 +218,25 @@ sco_is_defd (sql_scope_t * sco, ST * col_ref, int mode, int generate)
 	  else
 	    return NULL;
 	}
-      if (SCO_ANY_QUAL == mode
-	  && NULL != (col = ot_is_defd (ot, col_ref)))
+      if (SCO_ANY_QUAL == mode)
 	{
-	  if (!def_ot)
+	  dbe_column_t *this_col = ot_is_defd (ot, col_ref);
+	  if (NULL != this_col)
 	    {
-	      def_ot = ot;
-	      n_found = 1;
-	    }
-	  else
-	    {
-	      if (generate)
-		sqlc_error (sco->sco_so->so_sc->sc_cc, "S0022",
-		    "Ambiguous col ref %s", col_ref->_.col_ref.name);
+	      if (!def_ot)
+		{
+		  def_ot = ot;
+		  col = this_col;
+		  n_found = 1;
+		}
 	      else
-		return NULL;
+		{
+		  if (generate)
+		    sqlc_error (sco->sco_so->so_sc->sc_cc, "S0022",
+			"Ambiguous col ref %s", col_ref->_.col_ref.name);
+		  else
+		    return NULL;
+		}
 	    }
 	}
     }
@@ -211,10 +248,12 @@ next: ;
 	  col_ref->_.col_ref.prefix);
       DO_SET (op_table_t *, ot, &sco->sco_tables)
 	{
+	  dbe_column_t *prefix_col;
 	  if (!ot->ot_prefix && ot->ot_table == prefix_table &&
-	      ot_is_defd (ot, col_ref))
+	      NULL != (prefix_col = ot_is_defd (ot, col_ref)))
 	    {
 	      def_ot = ot;
+	      col = prefix_col;
 	      n_found++;
 	    }
 	}
@@ -231,20 +270,13 @@ next: ;
     }
   if (def_ot)
     {
+      if (sco_check_col_access (sco, def_ot, col, generate))
+	return NULL;
       col_ref->_.col_ref.prefix = def_ot->ot_new_prefix;
       def_ot->ot_has_cols = 1;
     }
 ok:
-  if (def_ot && def_ot->ot_table && IS_BOX_POINTER (col) &&
-      !sec_tb_check (def_ot->ot_table, def_ot->ot_g_id, def_ot->ot_u_id, GR_SELECT)
-      && !sec_col_check (col, def_ot->ot_g_id, def_ot->ot_u_id, GR_SELECT))
-    {
-      if (generate)
-	sqlc_new_error (sco->sco_so->so_sc->sc_cc, "42000", "SQ033", "SELECT access denied for column %s of table %s, user ID %lu",
-	    col->col_name, def_ot->ot_table->tb_name, def_ot->ot_u_id );
-      else
-	return NULL;
-    }
+  /* access already checked wherever def_ot was assigned above */
   return def_ot;
 }
 

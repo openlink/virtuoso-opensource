@@ -485,6 +485,20 @@ then
   exit 1
 fi
 
+RUN $ISQL $DSN dba dba tsecjoin.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+  LOG "***ABORTED: tsecjoin.sql -- SELECT-privilege enforcement across joins/derived tables"
+  exit 1
+fi
+
+RUN $ISQL $DSN dba dba tsecprobe.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+  LOG "***ABORTED: tsecprobe.sql -- SELECT-privilege leak via dotted-identifier probing"
+  exit 1
+fi
+
 # XXX
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
 #cat $VIRTUOSO_TEST/../wb/SparqlSec.sql | grep -v "set echo on;" > $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql
