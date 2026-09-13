@@ -16535,8 +16535,8 @@ create function DB.DBA.RDF_STAR_REIFIER_IRI (in node_iri any) returns any
   if (left (node_str, 20) = 'urn:rdf-star:triple:')
     return __uname (concat ('urn:rdf-star:reifier:', subseq (node_str, 20)));
   tt_iri := null;
-  for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-    { tt_iri := id_to_iri ("o"); }
+  for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id (node_str) AND "P" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
+    { tt_iri := id_to_iri ("O"); }
   if (tt_iri is null) return null;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return null;
   return __uname (concat ('urn:rdf-star:reifier:', subseq (tt_iri, 20)));
@@ -16553,8 +16553,8 @@ create function DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (in node_iri any) returns 
   if (left (node_str, 21) = 'urn:rdf-star:reifier:')
     return __uname (concat ('urn:rdf-star:triple:', subseq (node_str, 21)));
   tt_iri := null;
-  for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-    { tt_iri := id_to_iri ("o"); }
+  for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id (node_str) AND "P" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
+    { tt_iri := id_to_iri ("O"); }
   if (tt_iri is null) return null;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return null;
   return __uname (tt_iri);
@@ -16576,8 +16576,8 @@ create function DB.DBA.RDF_STAR_TT_CHECK (in node_iri any, in s_val any, in p_va
   else
     {
       tt_iri := null;
-      for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-        { tt_iri := id_to_iri ("o"); }
+      for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id (node_str) AND "P" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
+        { tt_iri := id_to_iri ("O"); }
     }
   if (tt_iri is null) return 0;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return 0;
