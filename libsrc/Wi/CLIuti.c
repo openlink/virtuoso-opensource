@@ -1583,12 +1583,21 @@ sqlc_sizeof_1 (int sqlc, SQLULEN cbColDef, SQLLEN cbValueMax, int wide_as_utf16)
     case SQL_C_BOX:
       return sizeof (caddr_t);
 
+#if (ODBCVER >= 0x0300)
+    case SQL_C_TYPE_TIMESTAMP:
+#endif
     case SQL_C_TIMESTAMP:
       return sizeof (TIMESTAMP_STRUCT);
 
+#if (ODBCVER >= 0x0300)
+    case SQL_C_TYPE_DATE:
+#endif
     case SQL_C_DATE:
       return sizeof (DATE_STRUCT);
 
+#if (ODBCVER >= 0x0300)
+    case SQL_C_TYPE_TIME:
+#endif
     case SQL_C_TIME:
       return sizeof (TIME_STRUCT);
 
