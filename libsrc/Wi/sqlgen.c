@@ -4671,7 +4671,11 @@ sqlg_oby_node (sqlo_t * so, data_source_t ** head, df_elt_t * oby, df_elt_t * dt
       if (dt_dfe->_.sub.dt_out && dt_dfe->_.sub.dt_out[inx])
 	{
 	  if (oby->_.setp.oby_dep_cols && oby->_.setp.oby_dep_cols[inx])
-	    ;
+	    {
+	      df_elt_t * exp_dfe = sqlo_df_elt (so, sqlc_strip_as (exp));
+	      if (exp_dfe)
+		sqlg_mark_not_gen (so, exp_dfe);
+	    }
 	  else
 	    ssl_out[inx] = scalar_exp_generate (sc, exp, &pre_code);
 	}
