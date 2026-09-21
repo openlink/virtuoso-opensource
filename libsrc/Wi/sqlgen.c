@@ -758,6 +758,8 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
   txs->txs_main_range_out = sqlg_virtual_col_ssl (so, ot->ot_main_range_out);
   txs->txs_attr_range_out = sqlg_virtual_col_ssl (so, ot->ot_attr_range_out);
   txs->txs_score = sqlg_virtual_col_ssl (so, ot->ot_text_score);
+  txs->txs_distance = sqlg_virtual_col_ssl (so, ot->ot_text_distance);
+  txs->txs_similarity = sqlg_virtual_col_ssl (so, ot->ot_text_similarity);
   txs->txs_offband = (state_slot_t **) box_copy ((box_t) ot->ot_text_offband);
   DO_BOX (op_virt_col_t *, vc, inx, ot->ot_text_offband)
     {
@@ -775,6 +777,14 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     txs->txs_ext_fti = scalar_exp_generate (sc, ot->ot_ext_fti, &code);
   if (ot->ot_geo_prec)
     txs->txs_precision = scalar_exp_generate (sc, ot->ot_geo_prec, &code);
+  if (ot->ot_text_fuzzy_algo)
+    txs->txs_fuzzy_algo = scalar_exp_generate (sc, ot->ot_text_fuzzy_algo, &code);
+  if (ot->ot_text_fuzzy_threshold)
+    txs->txs_fuzzy_threshold = scalar_exp_generate (sc, ot->ot_text_fuzzy_threshold, &code);
+  if (ot->ot_text_fuzzy_n)
+    txs->txs_fuzzy_n = scalar_exp_generate (sc, ot->ot_text_fuzzy_n, &code);
+  if (ot->ot_text_fuzzy_prefix)
+    txs->txs_fuzzy_prefix = scalar_exp_generate (sc, ot->ot_text_fuzzy_prefix, &code);
   if (ot->ot_text_start)
     txs->txs_init_id = scalar_exp_generate (sc, ot->ot_text_start, &code);
   if (ot->ot_text_end)
@@ -1088,7 +1098,7 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   END_DO_SET ();
   ts->ts_order = sc->sc_order;
 #ifdef BIF_XML
-  if (tb_dfe->_.table.text_pred || ot->ot_text_score)
+  if (tb_dfe->_.table.text_pred || ot->ot_text_score || ot->ot_text_distance || ot->ot_text_similarity)
     {
       if (!tb_dfe->_.table.text_pred)
 	SQL_GPF_T1 (cc, "The contains pred present and not placed");

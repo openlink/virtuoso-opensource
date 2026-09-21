@@ -32,6 +32,7 @@
 #include "xpathp_impl.h"
 #include "xml_ecm.h"
 #include "bif_text.h"
+#include "fuzzy_algorithms.h"
 #include "rdf_core.h"
 #include "security.h" /* for sec_proc_check () */
 #include "sqltype.h" /* for XMLTYPE_TO_ENTITY */
@@ -2446,6 +2447,10 @@ xp_text_contains (xp_instance_t * xqi, XT * tree,  xml_entity_t * ctx_xe, xml_en
       context.tctx_descending = 0;
       context.tctx_end_id = NULL;
       context.tctx_vtb = NULL;
+      context.tctx_fuzzy_algo = FUZZY_NONE;
+      context.tctx_fuzzy_threshold = FUZZY_DEFAULT_THRESHOLD;
+      context.tctx_fuzzy_n = FUZZY_DEFAULT_N;
+      context.tctx_fuzzy_prefix = 2;
       sst = sst_from_tree (&context, text_tree);
       XQI_SET (xqi, (ptrlong) args[3], (caddr_t) sst);
     }

@@ -62,7 +62,8 @@ noinst_HEADERS = \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h json.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
-	col.h simd.h vec.h mhash.h qncache.h sparqlwords.h clq.h geo.h monitor.h
+	col.h simd.h vec.h mhash.h qncache.h sparqlwords.h clq.h geo.h monitor.h \
+	fuzzy_algorithms.h
 
 
 
@@ -244,6 +245,8 @@ libwi_la_SOURCES = \
 	sql_code_ws.c \
 	sqlbif.c \
 	sqlbif2.c \
+	sqlbif_fuzzy.c \
+	fuzzy_algorithms.c \
 	sqlcomp.c \
 	sqlcomp2.c \
 	sqlcost.c \
@@ -394,6 +397,8 @@ libwi_odbc_la_SOURCES = \
 	sql_code_ws.c \
 	sqlbif.c \
 	sqlbif2.c \
+	sqlbif_fuzzy.c \
+	fuzzy_algorithms.c \
 	sqlcomp.c \
 	sqlcomp2.c \
 	sqlcost.c \

@@ -173,7 +173,7 @@ sparp_gp_trav_list_subquery_retval_names (sparp_t *sparp, SPART *curr, sparp_tra
           caddr_t name = NULL;
           switch (key)
             {
-            case OFFBAND_L: case SCORE_L: name = val->_.var.vname; break;
+            case OFFBAND_L: case SCORE_L: case DISTANCE_L: case SIMILARITY_L: name = val->_.var.vname; break;
             case T_STEP_L: name = val->_.alias.aname; break;
             }
           if (sparp_varname_is_nice_retval (sparp, name, env->names, env->include_hidden_triple_term_helpers))
@@ -1068,13 +1068,13 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
       SPART *val = options[ctr-1];
       switch (key)
         {
-        case OFFBAND_L: case SCORE_L:
+        case OFFBAND_L: case SCORE_L: case DISTANCE_L: case SIMILARITY_L:
           {
             if (SPART_VARR_GLOBAL & val->_.var.rvr.rvrRestrictions)
-              spar_error (sparp, "Only plain variables can be used in OFFBAND_L or SCORE_L options, not parameters like ?%.50s", val->_.var.vname);
+              spar_error (sparp, "Only plain variables can be used in OFFBAND_L, SCORE_L, DISTANCE_L or SIMILARITY_L options, not parameters like ?%.50s", val->_.var.vname);
             sparp_equiv_get (sparp, gp, val, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
             if (!set_tabid)
-              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_options(): OFFBAND_L or SCORE_L not in triple");
+              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_options(): OFFBAND_L, SCORE_L, DISTANCE_L or SIMILARITY_L not in triple");
             val->_.var.tabid = curr->_.triple.tabid;
             break;
           }
@@ -1087,6 +1087,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
         case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
         case GEO_L: case PRECISION_L:
         case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
+        case FUZZY_L: case FUZZY_THRESHOLD_L: case FUZZY_N_L: case FUZZY_PREFIX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))

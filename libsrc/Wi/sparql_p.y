@@ -855,6 +855,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DESC_L		/*:: PUNCT_SPAR_LAST("DESC") ::*/
 %token DESCRIBE_L	/*:: PUNCT_SPAR_LAST("DESCRIBE") ::*/
 %token DETACH_L		/*:: PUNCT_SPAR_LAST("DETACH") ::*/
+%token DISTANCE_L	/*:: PUNCT_SPAR_LAST("DISTANCE") ::*/
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
 %token DROP_L		/*:: PUNCT_SPAR_LAST("DROP") ::*/
 %token ELSE_L		/*:: PUNCT_SPAR_LAST("ELSE") ::*/
@@ -865,6 +866,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
+%token FUZZY_L		/*:: PUNCT_SPAR_LAST("FUZZY") ::*/
+%token FUZZY_THRESHOLD_L	/*:: PUNCT_SPAR_LAST("FUZZY_THRESHOLD") ::*/
+%token FUZZY_N_L		/*:: PUNCT_SPAR_LAST("FUZZY_N") ::*/
+%token FUZZY_PREFIX_L	/*:: PUNCT_SPAR_LAST("FUZZY_PREFIX") ::*/
 %token GEO_L		/*:: PUNCT_SPAR_LAST("GEO") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
@@ -930,6 +935,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SERVICE_L	/*:: PUNCT_SPAR_LAST("SERVICE") ::*/
 %token SETS_L		/*:: PUNCT_SPAR_LAST("SETS") ::*/
+%token SIMILARITY_L	/*:: PUNCT_SPAR_LAST("SIMILARITY") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
 %token SQLQUERY_L	/*:: PUNCT("SQLQUERY"), SPAR, LAST1("SQLQUERY {"), LAST1("SQLQUERY ("), LAST1("SQLQUERY #cmt\n{"), LAST1("SQLQUERY\r\n("), ERR("SQLQUERY"), ERR("SQLQUERY bad") ::*/
@@ -3080,6 +3086,18 @@ spar_triple_freetext_option
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
 	| SCORE_LIMIT_L spar_expn	{	/*... | 'SCORE_LIMIT' Expn	*/
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
+	| DISTANCE_L spar_var		{	/*... | 'DISTANCE' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)DISTANCE_L, $2); }
+	| SIMILARITY_L spar_var		{	/*... | 'SIMILARITY' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)SIMILARITY_L, $2); }
+	| FUZZY_L spar_expn		{	/*... | 'FUZZY' Expn (algorithm name)	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_L, $2); }
+	| FUZZY_THRESHOLD_L spar_expn	{	/*... | 'FUZZY_THRESHOLD' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_THRESHOLD_L, $2); }
+	| FUZZY_N_L spar_expn		{	/*... | 'FUZZY_N' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_N_L, $2); }
+	| FUZZY_PREFIX_L spar_expn	{	/*... | 'FUZZY_PREFIX' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)FUZZY_PREFIX_L, $2); }
 	;
 
 spar_triple_geo_option
