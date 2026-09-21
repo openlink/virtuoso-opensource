@@ -354,6 +354,11 @@ scn3_set_file_line (char *file, int file_nchars, int line_no)
 
 void yyfatalerror (const char *s);
 
+#ifndef SCN3SPLIT
+struct scn3_include_fragment_s;
+void scn3_opengql_inline (const char * tail_sql_text, struct scn3_include_fragment_s *outer, yyscan_t yyscanner);
+#endif
+
 #define YY_FATAL_ERROR(msg) yyfatalerror (msg)
 
 extern int yylex (YYSTYPE *yylval, yyscan_t yyscanner);
@@ -388,6 +393,7 @@ extern int yylex (YYSTYPE *yylval, yyscan_t yyscanner);
 	/* Internals of triple-double-quoted SPARQL string lit */
 %x SPARQL_DDDQ_SKIP
 
+%x OPENCYPHER_SKIP
 
 S_NL	(\r\n|\n|\r)
 SPAR_SQ_PLAIN	([^\\''\r\n])
@@ -501,7 +507,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     {
       global_scs->scs_scn3c.last_keyword_yytext = yytext;
       global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
-      yylval->strval = t_sym_string (k->kwd);
+      yylval->strval = k->kwd;
       if (SPARQL_L == k->token)
         {
 #ifndef SCN3SPILT
@@ -515,6 +521,21 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 #endif
           BEGIN (SPARQL_SKIP);
           RETURN_CODE (SPARQL_L);
+        }
+      if (OPENCYPHER_L == k->token)
+        {
+#ifndef SCN3SPILT
+          scn3_include_fragment_t *outer;
+          outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+          outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
+          outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
+          outer->_.sif_saved_lineno_increment = global_scs->scs_scn3c.lineno_increment;
+          outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
+          outer->_.sif_skipped_part = strses_allocate ();
+#endif
+          yylval->subtok = 1;
+          BEGIN (OPENCYPHER_SKIP);
+          RETURN_CODE (OPENCYPHER_L);
         }
       RETURN_CODE (k->token);
     }
@@ -1077,6 +1098,95 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>[<>]	TOK_SKIP;
 <SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SPARQL text */
 
+	/* OPENCYPHER - similar to SPARQL but for Cypher queries */
+
+<OPENCYPHER_SKIP>"("	TOKOPEN_SKIP ('(',')');
+<OPENCYPHER_SKIP>")"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_opengql_inline ("\n)\n", outer, yyscanner);
+#else
+        TOKCLOSE (')',')');
+#endif
+      }
+    else
+      {
+        TOKCLOSE_SKIP (')',')');
+      }
+  }
+
+<OPENCYPHER_SKIP>";"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_opengql_inline ("\n;\n", outer, yyscanner);
+#else
+        TOK (';');
+#endif
+      }
+    else
+      {
+        TOK_SKIP;
+      }
+  }
+
+<OPENCYPHER_SKIP>"{"	TOKOPEN_SKIP ('{','}');
+<OPENCYPHER_SKIP>"}"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_opengql_inline ("\n}\n", outer, yyscanner);
+#else
+        TOKCLOSE ('}','}');
+#endif
+      }
+    else
+      {
+        TOKCLOSE_SKIP ('}','}');
+      }
+  }
+<OPENCYPHER_SKIP>"["	TOKOPEN_SKIP ('[',']');
+<OPENCYPHER_SKIP>"]"	TOKCLOSE_SKIP (']',']');
+
+<OPENCYPHER_SKIP>"<"([^<>"{}|^`\001-\040\\])*">"		{ TOK_SKIP; }
+<OPENCYPHER_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	{ TOK_SKIP; }
+
+<OPENCYPHER_SKIP>['']['']['']		{ BEGIN(SPARQL_SSSQ_SKIP); TOK_SKIP; }
+<OPENCYPHER_SKIP>[""][""][""]		{ BEGIN(SPARQL_DDDQ_SKIP); TOK_SKIP; }
+
+<OPENCYPHER_SKIP>['']		{ BEGIN(SPARQL_SQ_SKIP); TOK_SKIP; }
+<OPENCYPHER_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP; }
+
+<OPENCYPHER_SKIP>({PN_PREFIX}?)":"{PN_LOCAL}	TOK_SKIP;
+<OPENCYPHER_SKIP>({PN_PREFIX}?)":"			TOK_SKIP;
+<OPENCYPHER_SKIP>"_:"{PN_LOCAL}			TOK_SKIP;
+<OPENCYPHER_SKIP>[^#''""\\\n\r(){}\[\];:<>]+	TOK_SKIP;
+
+<OPENCYPHER_SKIP><<EOF>>  {
+#ifndef SCN3SPLIT
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    BEGIN(SQL);
+    scn3_opengql_inline ("\n;\n", outer, yyscanner);
+#else
+    yyterminate();
+#endif
+  }
+
+<OPENCYPHER_SKIP>[#]([^\n\r]*){S_NL}	TOK_NL_SKIP;
+<OPENCYPHER_SKIP>{S_NL}	TOK_NL_SKIP;
+<OPENCYPHER_SKIP>[<>]	TOK_SKIP;
+<OPENCYPHER_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-OPENCYPHER text */
+
 .		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 %%
 
@@ -1120,6 +1230,50 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
    outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
    global_scs->scs_scn3c.include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
    global_scs->scs_scn3c.lineno_increment = 0;
+}
+
+void
+scn3_opengql_inline (const char * tail_sql_text, scn3_include_fragment_t *outer, yyscan_t yyscanner)
+{
+   struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+   caddr_t gql_text;
+   dk_session_t *out;
+   caddr_t compiled;
+   int i, len;
+
+   gql_text = t_strses_string (outer->_.sif_skipped_part);
+   strses_free (outer->_.sif_skipped_part);
+   outer->_.sif_skipped_part = NULL;
+
+   out = strses_allocate ();
+   session_buffered_write (out, " \"DB\".\"DBA\".\"OPENGQL_EXEC\" ('", 29);
+
+   len = (int) strlen (gql_text);
+   for (i = 0; i < len; i++)
+     {
+       if (gql_text[i] == '\'')
+         session_buffered_write (out, "''", 2);
+       else
+         session_buffered_write_char (gql_text[i], out);
+     }
+
+   session_buffered_write (out, "')", 2);
+   session_buffered_write (out, tail_sql_text, strlen (tail_sql_text));
+   session_buffered_write_char (0, out);
+   session_buffered_write_char (0, out);
+
+   compiled = t_strses_string (out);
+   strses_free (out);
+
+   outer->sif_buffer = YY_CURRENT_BUFFER;
+   outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
+   outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
+   outer->_.sif_saved_lineno_increment = global_scs->scs_scn3c.lineno_increment;
+   outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
+   global_scs->scs_scn3c.include_depth++;
+   global_scs->scs_scn3c.lineno_increment = 0;
+
+   yy_scan_buffer (compiled, box_length (compiled) - 1, yyscanner);
 }
 #endif
 

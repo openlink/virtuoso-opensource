@@ -683,6 +683,17 @@ path_member (trans_state_t * tst, caddr_t value)
   return 0;
 }
 
+int
+edge_path_member (trans_state_t * tst, caddr_t edge)
+{
+  if (!edge)
+    return 0;
+  for (tst = tst; tst; tst = tst->tst_prev)
+    if (tst->tst_edge && box_equal (tst->tst_edge, edge))
+      return 1;
+  return 0;
+}
+
 
 trans_state_t *
 tn_rl_shifted_copy (trans_state_t * rl, caddr_t data)
@@ -806,6 +817,12 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       if (tn->tn_no_cycles
 	  && path_member (tst, related))
 	continue;
+      if (tn->tn_trail)
+	{
+	  caddr_t edge = (caddr_t)t_list (2, tst->tst_value, related);
+	  if (edge_path_member (tst, edge))
+	    continue;
+	}
       if (mem_co && mp->mp_bytes > mem_co)
 	continue;
       if (mp->mp_bytes > tn->tn_max_memory)
@@ -816,6 +833,8 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       rel = (trans_state_t*)t_alloc (sizeof (trans_state_t));
       memset (rel, 0, sizeof (trans_state_t));
       rel->tst_value = related;
+      if (tn->tn_trail)
+	rel->tst_edge = (caddr_t)t_list (2, tst->tst_value, related);
       if (tn->tn_data)
 	rel->tst_data = related_tuple[1];
       rel->tst_prev = tst;
@@ -871,6 +890,32 @@ ts_advance (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
     {
       ts->ts_new = NULL;
       return;
+    }
+  /* GQL SHORTEST k GROUPS (k > 1): stop exploring once results span at
+     least k distinct path lengths.  This is the generalization of
+     tn_shortest_only (which is the k=1 case).  The search is breadth-first
+     by depth, so once k distinct result depths are accumulated, any further
+     expansion would only yield paths at longer lengths.  Results are
+     appended in BFS order (non-decreasing depth), so a single pass with a
+     running prev_depth suffices to count distinct lengths. */
+  if (tn->tn_shortest_k_groups > 0 && ts->ts_result)
+    {
+      int distinct_depths = 0;
+      int prev_depth = -1;
+      DO_SET (trans_state_t *, tst, &ts->ts_result)
+	{
+	  if (tst->tst_depth != prev_depth)
+	    {
+	      distinct_depths++;
+	      prev_depth = tst->tst_depth;
+	    }
+	}
+      END_DO_SET ();
+      if (distinct_depths >= tn->tn_shortest_k_groups)
+	{
+	  ts->ts_new = NULL;
+	  return;
+	}
     }
   if (card_co && ts->ts_traversed && ts->ts_traversed->ht_count >= card_co)
     {
@@ -1276,9 +1321,20 @@ tn_results (trans_node_t * tn, caddr_t * inst)
   if (-1 == QST_INT (inst, tn->clb.clb_nth_set))
     {
       SET_THR_TMP_POOL (itcl->itcl_pool);
-      if (tn->tn_complement)
-	tn_init_pair (tn, inst);
-      while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+      /* T_SHORTEST_K_GROUPS requires unidirectional BFS so that results
+	 are produced in non-decreasing depth order.  The bidirectional
+	 (complement) optimization produces results at multiple depths in
+	 a single expansion step, which makes depth-group counting
+	 unreliable.  Fall through to plain tn_advance which processes
+	 only the primary trans_node's sets. */
+      if (tn->tn_shortest_k_groups > 0)
+	while (tn_advance (tn, inst));
+      else
+	{
+	  if (tn->tn_complement)
+	    tn_init_pair (tn, inst);
+	  while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+	}
       SET_THR_TMP_POOL (NULL);
       QST_INT (inst, tn->clb.clb_nth_set) = 0;
     }

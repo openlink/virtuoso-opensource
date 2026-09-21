@@ -143,3 +143,16 @@ libsrc/util/getdate.c
 a.out.dSYM
 binsrc/config/ccdefs
 binsrc/config/ccdefs.dSYM/
+
+#
+#  Editor / AI assistant tooling (never commit)
+#
+.windsurf/
+.claude/
+.cursor/
+.vscode/
+.idea/
+.aider*
+.devin/
+.codeium/
+.continue/

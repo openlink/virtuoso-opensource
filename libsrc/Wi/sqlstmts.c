@@ -1950,4 +1950,3 @@ sqlc_sch_list (sql_comp_t * sc, ST * tree)
   }
   END_DO_BOX;
 }
-

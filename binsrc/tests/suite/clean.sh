@@ -73,8 +73,12 @@ rm -f core.*
 rm -f debug.txt
 rm -f $DELETEMASK
 rm -f dump
+rm -rf examples
 rm -f ftp_test_file
+rm -f fct_dav.vad
+rm -f graphql.so
 rm -f ident.txt
+rm -rf introspection
 rm -f new.ini
 rm -f noise.txt
 rm -f results.xml
@@ -84,6 +88,8 @@ rm -f t1.xml
 rm -f t2.xml
 rm -f t3.xml
 rm -f t4.xml
+rm -f tvadbtest.sql
+rm -f tvadtest.sql
 rm -f tdav_meta_rdf_checks.sql
 rm -f test_file
 rm -f test.xa
@@ -93,6 +99,7 @@ rm -f t.xsl
 rm -f txslt.diff
 rm -f vg
 rm -f virt.odbc
+rm -f conductor_dav.vad
 rm -f virtuoso.ini
 rm -f wi.cfg
 rm -f wierr.rep1

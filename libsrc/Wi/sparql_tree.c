@@ -4698,7 +4698,15 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         case T_NO_CYCLES_L:
         case T_NO_ORDER_L:
         case T_SHORTEST_ONLY_L:
+        case T_TRAIL_L:
           needs_transitive++; continue;
+        case T_SHORTEST_K_GROUPS_L: needs_transitive++;
+          {
+            ptrlong kgroups = (ptrlong)(val);
+            if (kgroups < 1)
+              spar_error (sparp, "The value of T_SHORTEST_K_GROUPS option should be a positive integer");
+            continue;
+          }
         case T_DIRECTION_L: needs_transitive++;
           direction = (ptrlong)(val);
           if ((direction > 3) || (direction < 1))

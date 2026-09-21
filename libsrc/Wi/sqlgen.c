@@ -2181,9 +2181,11 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   tn->tn_is_second_in_direction3 = tl->tl_is_second_in_direction3;
   tn->tn_no_cycles = trans->_.trans.no_cycles;
   tn->tn_cycles_only = trans->_.trans.cycles_only;
+  tn->tn_trail = trans->_.trans.trail;
   tn->tn_exists = trans->_.trans.exists;
   tn->tn_ordered = !trans->_.trans.no_order;
   tn->tn_shortest_only = trans->_.trans.shortest_only;
+  tn->tn_shortest_k_groups = trans->_.trans.shortest_k_groups;
   tn->tn_step_set_no = ssl_new_variable (sc->sc_cc, "step_set", DV_LONG_INT);
   tn->tn_input_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.in : trans->_.trans.out));
   tn->tn_output_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.out : trans->_.trans.in));

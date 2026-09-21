@@ -270,7 +270,9 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case T_NO_ORDER_L: return "T_NO_ORDER";
     case T_OUT_L: return "T_OUT";
     case T_SHORTEST_ONLY_L: return "T_SHORTEST_ONLY";
+    case T_SHORTEST_K_GROUPS_L: return "T_SHORTEST_K_GROUPS";
     case T_STEP_L: return "T_STEP";
+    case T_TRAIL_L: return "T_TRAIL";
     case TRANSITIVE_L: return "TRANSITIVE";
     case true_L: return "true";
     case SAME_AS_L: return "SAME_AS";
@@ -598,7 +600,7 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
       switch (opt_id)
         {
         case T_CYCLES_ONLY_L: case T_DISTINCT_L: case T_EXISTS_L: case T_NO_CYCLES_L:
-        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case TRANSITIVE_L: case IFP_L:
+        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case T_TRAIL_L: case TRANSITIVE_L: case IFP_L:
           ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
           break;
         case T_STEP_L:

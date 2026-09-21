@@ -1485,6 +1485,91 @@ AC_SUBST(SHAPEFILEIO_LIBS)
 
 ##########################################################################
 #                                                                        #
+# GQL C plugin (gqlc) — Unicode normalization via ICU                  #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(gqlc, [dnl
+AC_HELP_STRING([--enable-gqlc(=DIR)], [enable the gqlc plugin (default)])
+AC_HELP_STRING([--disable-gqlc], [disable the gqlc plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_gqlc="yes" ;;
+       no)	with_gqlc="no" ;;
+       /*)	with_gqlc="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-gqlc) ;;
+     esac
+  ],
+  [ with_gqlc="yes" ]
+)
+
+if test "x$with_gqlc" != "xno"
+then
+    AC_MSG_CHECKING([ICU library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    if test "x$with_gqlc" = "xyes"
+    then
+	GQLC_CPPFLAGS=""
+	GQLC_LDFLAGS=""
+    else
+        GQLC_CPPFLAGS="-I$with_gqlc/include"
+        GQLC_LDFLAGS="-L$with_gqlc/lib"
+    fi
+    GQLC_LIBS="-licuuc -licui18n"
+
+    CPPFLAGS="$CPPFLAGS $GQLC_CPPFLAGS"
+    LIBS="$LIBS $GQLC_LDFLAGS $GQLC_LIBS"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_gqlc/lib"
+    export LD_LIBRARY_PATH
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <unicode/utypes.h>
+#include <unicode/unorm.h>
+#include <unicode/ustring.h>
+int
+main ()
+{
+  UErrorCode err = U_ZERO_ERROR;
+  UChar src[4];
+  UChar dst[8];
+  int32_t len;
+
+  u_uastrcpy (src, "caf");
+  unorm_normalize (src, 3, UNORM_NFC, 0, dst, 8, &err);
+  if (U_FAILURE (err))
+    exit (1);
+  exit (0);
+}
+],
+[
+  AC_MSG_RESULT(good.)
+  BUILD_OPTS="$BUILD_OPTS gqlc"
+],
+[
+  AC_MSG_RESULT([bad. Check config.log for details])
+  with_gqlc="no"
+  AC_MSG_WARN([The gqlc plugin will not be built])
+])
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LIBS="$save_LIBS"
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
+fi
+
+AM_CONDITIONAL(WITH_GQLC, test "x$with_gqlc" != "xno" )
+AC_SUBST(GQLC_CPPFLAGS)
+AC_SUBST(GQLC_LDFLAGS)
+AC_SUBST(GQLC_LIBS)
+
+
+##########################################################################
+#                                                                        #
 # graphql  								 #
 #                                                                        #
 ##########################################################################
@@ -3329,6 +3414,7 @@ AC_CONFIG_FILES([
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
 	binsrc/hosting/shapefileio/Makefile
+	binsrc/hosting/gqlc/Makefile
 	binsrc/isparql/Makefile
 	binsrc/jena/Makefile
 	binsrc/jena2/Makefile

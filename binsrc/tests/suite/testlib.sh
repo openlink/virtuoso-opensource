@@ -227,6 +227,44 @@ RUNSQL()
     RUN $ISQL $DSN dba dba '"EXEC=$sql"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
 }
 
+LISTENER_PIDS()
+{
+    port=$1
+    if command -v lsof >/dev/null 2>&1
+    then
+        lsof -nP -iTCP:$port -sTCP:LISTEN -t 2>/dev/null | sort -u
+    fi
+}
+
+IS_VIRTUOSO_PROCESS()
+{
+    pid=$1
+    ps -p $pid -o command= 2>/dev/null | egrep '(^|[[:space:][:punct:]])(virtuoso|virtuoso-t|M2)($|[[:space:]])' >/dev/null
+}
+
+KILL_VIRTUOSO_LISTENERS_ON_PORT()
+{
+    port=$1
+    for pid in `LISTENER_PIDS $port`
+    do
+        if IS_VIRTUOSO_PROCESS $pid
+        then
+            LOG "Removing stale Virtuoso listener pid $pid on port $port"
+            kill $pid 2>/dev/null || true
+            timeout=20
+            while ps -p $pid >/dev/null 2>&1 && [ $timeout -gt 0 ]
+            do
+                sleep 1
+                timeout=`expr $timeout - 1`
+            done
+            if ps -p $pid >/dev/null 2>&1
+            then
+                kill -9 $pid 2>/dev/null || true
+            fi
+        fi
+    done
+}
+
 
 RUNSERVER()
 {
@@ -301,6 +339,7 @@ START_SERVER()
     shift
 
     stat="true"
+    kill_attempted=0
     ddate=`date`
     starth=`date | cut -f 2 -d :`
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
@@ -316,6 +355,11 @@ START_SERVER()
 	nows=`expr $nows - $starts`
 
 	nows=`expr $nows + $nowh \*  60`
+	if test "z$stat" != "z" -a $nows -ge 15 -a $kill_attempted -eq 0
+	then
+	    KILL_VIRTUOSO_LISTENERS_ON_PORT $port
+	    kill_attempted=1
+	fi
 	if test $nows -ge $timeout
 	then
 	    LOG "***FAILED: The Listener on port $port didn't stop within $timeout seconds"
@@ -326,11 +370,16 @@ START_SERVER()
     ddate=`date`
     starth=`date | cut -f 2 -d :`
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+    log_seek=1
     
     if test -f "$LOCKFILE"
     then
         echo Removing $LOCKFILE >> $LOGFILE
         rm $LOCKFILE
+    fi
+    if test -f "$SRVMSGLOGFILE"
+    then
+        log_seek=`expr \`wc -c < "$SRVMSGLOGFILE"\` + 1`
     fi
     
     if [ $timeout -eq 0 ]
@@ -348,8 +397,11 @@ START_SERVER()
             stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
             if [ "z$stat" != "z" ]
             then
-        	LOG "PASSED: Virtuoso Server successfully started on port $port"
-        	break
+                if test -f "$SRVMSGLOGFILE" && tail -c +$log_seek "$SRVMSGLOGFILE" 2>/dev/null | grep "Server online at $port" >/dev/null 2>&1
+                then
+        	    LOG "PASSED: Virtuoso Server successfully started on port $port"
+        	    break
+                fi
             fi
             nowh=`date | cut -f 2 -d :`
             nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
@@ -454,7 +506,12 @@ KILL_TEST_INSTANCES()
     #
     #  Killing virtuoso instances left, if any.
     #
-    for f in `find . -type f -name virtuoso.lck`; do . $f ; kill $VIRT_PID ; done
+    for f in `find . -type f -name virtuoso.lck`
+    do
+        . $f
+        kill $VIRT_PID 2>/dev/null || true
+        rm -f $f
+    done
 }
 
 
@@ -570,7 +627,12 @@ RUN_TEST()
   mkdir $VIRTUOSO_TEST/$test_dir
   LOGFILE=$test.output
   export LOGFILE
-  
+
+  if [ ! -f $CFGFILE ]
+  then
+    MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
+  fi
+
   cp $CFGFILE $VIRTUOSO_TEST/$test_dir
   cp $TESTCFGFILE $VIRTUOSO_TEST/$test_dir
 
@@ -626,6 +688,11 @@ RUN_SQL_TEST()
   export LOGFILE
   SILENT=$silent
   export SILENT
+
+  if [ ! -f $CFGFILE ]
+  then
+    MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
+  fi
 
   cp $CFGFILE $VIRTUOSO_TEST/$test_dir
   cp $TESTCFGFILE $VIRTUOSO_TEST/$test_dir
@@ -1200,4 +1267,3 @@ CL_START_SERVER ()
             read REPLY
         fi
 }
-
