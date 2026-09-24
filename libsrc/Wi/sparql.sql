@@ -8773,7 +8773,7 @@ create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any,
 --                  0                      1  2  3                 4     5         6  7  8
     _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), null, log_mode, 0, 0, uid);
   if (not _env[1])
-    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL DELETE');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 1);
 }
 ;
@@ -8785,7 +8785,7 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 --                  0                      1  2  3     4                 5         6  7  8
     _env := vector (iri_to_id (graph_iri), 0, 0, null, dict_new (80000), log_mode, 0, 0, uid);
   if (not _env[2])
-    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL INSERT');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 2);
 }
 ;
@@ -8796,7 +8796,7 @@ create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any
 --                  0                      1  2  3                 4                 5         6  7  8
     _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), dict_new (80000), log_mode, 0, 0, uid);
   if (not _env[1] and not _env[2])
-    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
+    __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL MODIFY');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, del_opcodes, vars, log_mode, 1);
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, ins_opcodes, vars, log_mode, 2);
 }
@@ -8852,7 +8852,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
       ins_count := graph_iri[2]; -- 2, not 1
       graph_iri := graph_iri[0]; -- the last op.
     }
-  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL INSERT');
   while (dict_size (triples_dict) > 0)
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 80000);
@@ -8885,7 +8885,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
       del_count := graph_iri[1];
       graph_iri := graph_iri[0]; -- the last op.
     }
-  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL DELETE');
   while (dict_size (triples_dict) > 0)
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
@@ -8919,7 +8919,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
       ins_count := graph_iri[2];
       graph_iri := graph_iri[0]; -- the last op.
     }
-  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
+  __rgs_assert_cbk (graph_iri, uid, 2, 'SPARQL MODIFY');
   if (del_triples_dict is not null)
     {
       del_count := del_count + dict_size (del_triples_dict);
