@@ -82,6 +82,7 @@ dk_mutex_t * ws_queue_mtx;
 dk_mutex_t * ws_http_log_mtx = NULL;
 dk_mutex_t * ftp_log_mtx = NULL;
 dk_mutex_t * http_acl_mtx = NULL;
+static dk_mutex_t * ws_vsp_compile_mtx = NULL;
 int http_n_keep_alives;
 caddr_t ws_default_charset_name = NULL;
 wcharset_t * ws_default_charset = NULL;
@@ -3953,6 +3954,7 @@ ws_request (ws_connection_t * ws)
   int is_dsl, is_wsdl, is_vsmx, is_http_binding;
   int is_physical_soap, previous_http_status = 0;
   int is_soap_mime_att = 0;
+  int vsp_compile_locked = 0;
 
 request_do_again:
   start = 0;
@@ -4416,6 +4418,27 @@ vsmx_start:
 	  log_info ("EXEC_3 %s %s Exec vsp %.*s", user, from, LOG_PRINT_STR_L, p_name[0] != 0 ? p_name :"");
 	}
 
+      /*
+       * A first request for a VSP page compiles and registers its generated
+       * procedure from WS.WS.DEFAULT.  Several HTTP workers can reach this
+       * path before the registry and procedure catalog entries are visible
+       * to the other workers.  Serialize that first compile through the
+       * transaction commit so only one worker can create the procedure.
+       */
+      /* A proxy request executes WS.WS.DEFAULT and can synchronously issue
+       * another request to this server.  Do not hold the VSP compile mutex
+       * across that nested request, or the proxy worker and the target
+       * worker will wait on each other. */
+      if (deflt && !ws->ws_proxy_request && ws->ws_path_string)
+	{
+	  char *dot = strrchr (ws->ws_path_string, '.');
+	  if (dot && 0 == stricmp (dot, ".vsp"))
+	    {
+	      mutex_enter (ws_vsp_compile_mtx);
+	      vsp_compile_locked = 1;
+	    }
+	}
+
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
 			   ":0", p_name, QRP_STR,
 			   ":1", box_copy_tree ((box_t) ws->ws_path), QRP_RAW,
@@ -4447,6 +4470,11 @@ error_in_procedure:
     rc = lt_commit (cli->cli_trx, TRX_CONT);
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
+  if (vsp_compile_locked)
+    {
+      mutex_leave (ws_vsp_compile_mtx);
+      vsp_compile_locked = 0;
+    }
   if (prof_on && start)
     prof_exec (NULL, p_name, (long) (get_msec_real_time () - start), PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
   if (rc != LTE_OK)
@@ -12185,6 +12213,7 @@ http_init_part_one (void)
   ws_http_log_mtx = mutex_allocate (); /* for HTTP log writing */
   http_acl_mtx = mutex_allocate (); /* for HTTP log writing */
   ftp_log_mtx = mutex_allocate (); /* for FTP log writing */
+  ws_vsp_compile_mtx = mutex_allocate ();
   if (http_threads)
     ws_dbcs = resource_allocate (http_threads, NULL, NULL, NULL, NULL);
 
