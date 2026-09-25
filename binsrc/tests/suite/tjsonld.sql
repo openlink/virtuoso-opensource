@@ -6,6 +6,8 @@ create procedure jldfile(in f varchar)
 
 DB.DBA.SYS_CACHED_RESOURCE_ADD ('https://www.w3.org/ns/activitystreams', '', jldfile ('activitystreams.jsonld'), curutcdatetime(), 'Activity Streams Vocabulary');
 DB.DBA.SYS_CACHED_RESOURCE_ADD ('http://www.w3.org/ns/activitystreams', '', jldfile ('activitystreams.jsonld'), curutcdatetime(), 'Activity Streams Vocabulary');
+DB.DBA.SYS_CACHED_RESOURCE_ADD ('https://www.w3.org/ns/activitystreams#', '', jldfile ('activitystreams.jsonld'), curutcdatetime(), 'Activity Streams Vocabulary');
+DB.DBA.SYS_CACHED_RESOURCE_ADD ('http://www.w3.org/ns/activitystreams#', '', jldfile ('activitystreams.jsonld'), curutcdatetime(), 'Activity Streams Vocabulary');
 DB.DBA.SYS_CACHED_RESOURCE_ADD ('https://w3id.org/security/v1', '', jldfile ('security-v1.jsonld'), curutcdatetime(), 'Security Vocabulary');
 DB.DBA.SYS_CACHED_RESOURCE_ADD ('http://schema.org/', '', jldfile ('jsonldcontext.json'), curutcdatetime(), 'Schema.org Vocabulary');
 DB.DBA.SYS_CACHED_RESOURCE_ADD ('https://json-ld.org/contexts/person.jsonld', '', jldfile ('person.jsonld'), curutcdatetime(), 'Person Vocabulary');
@@ -71,7 +73,10 @@ create procedure jacts_run (in tn varchar, in f int := 0)
   };
   jacts_load_ttl (tn);
   sparql clear graph ?:graph_iid;
-  DB.DBA.RDF_LOAD_JSON_LD (file_to_string (jacts_path (tn)), '', jacts_graph(tn));
+  -- ActivityStreams cases depend on an external JSON-LD context.  Keep the
+  -- parser and its context resolution in the caller transaction so a test
+  -- cannot race the vectorized loader's worker queue while comparing graphs.
+  DB.DBA.RDF_LOAD_JSON_LD (file_to_string (jacts_path (tn)), '', jacts_graph(tn), 0, 0, 1);
   commit work;
   return 'OK';
 }
@@ -303,4 +308,3 @@ jacts_dump_results();
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": JSON-LD results check STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-

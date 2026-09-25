@@ -458,7 +458,8 @@ jsonld_frame_pop (jsonp_t *jsonp_arg)
 /*
    tries to get vocab from cache, the calling code is in charge to set XML_URI_GET_ACCEPT connection property
    as well as HTTP_CLI_TIMEOUT sec
-   if can't find or get from cache fails silently, if find something parse in same MP and pushe in the CTX's HT maps.
+   if can't find or get from cache fails, retry once and then propagate the
+   error instead of silently parsing terms without the requested context.
    Note parsing uses JMODE_LD_CTX which do not load anything in RDF store, only fill the current cache,
    another note, the CTX nesting is not performed because is import
  */
@@ -473,10 +474,16 @@ jsonld_context_uri_get (jsonp_t * jsonp_arg, caddr_t uri, id_hash_t *ht)
   jsonld_ctx_t jctx;
   yyscan_t scanner;
 
-  if (err) /* not loaded, http error or something */
+  if (err) /* retry transient cache/HTTP failures once */
     {
       dk_free_tree (err);
-      return;
+      err = NULL;
+      content = xml_uri_get (qi, &err, NULL, jsonp_arg->base_uri, uri, XML_URI_STRING);
+      if (err)
+	{
+	  sqlr_resignal (err);
+	  return;
+	}
     }
   if (NULL == THR_TMP_POOL) /* outside of parser, caller must take care to set THR mem pool*/
     return;
