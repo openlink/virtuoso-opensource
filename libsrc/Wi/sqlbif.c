@@ -14059,15 +14059,13 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
-  if (n_args < 8 || !ssl_is_settable (args[7]))
-    { /* no cursor for stored procedures */
-      if (max_rows_is_set)
-        cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
-      if (n_args > 5 && ssl_is_settable (args[5]))
-	cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
-      if (n_args > 6 && ssl_is_settable (args[6]))
-	cli->cli_resultset_data_ptr = &proc_resultset;
-    }
+  /* also with a cursor: a statement that turns out not to be a select still returns its procedure result set, a select discards it */
+  if (max_rows_is_set)
+    cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
+  if (n_args > 5 && ssl_is_settable (args[5]))
+    cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
+  if (n_args > 6 && ssl_is_settable (args[6]))
+    cli->cli_resultset_data_ptr = &proc_resultset;
   if (NULL != options)
     {
       caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
@@ -14767,6 +14765,13 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       lc->lc_error = NULL;
       if (err)
 	{
+	  client_connection_t *cli = ((query_instance_t *) qst)->qi_client;
+	  if (cli->cli_terminate_requested == CLI_RESULT)
+	    {
+	      cli->cli_terminate_requested = 0;
+	      cli->cli_anytime_timeout_orig = cli->cli_anytime_timeout = 0;
+	      cli->cli_anytime_started = 0;
+	    }
 	  return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
 	}
       else

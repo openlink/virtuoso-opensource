@@ -8161,6 +8161,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (IS_CHUNKED_OUTPUT (ws))
     {
       volatile int len = strses_length (ws->ws_strses);
+      int abort_chunked = (BOX_ELEMENTS (args) > 0 && 4 == bif_long_arg (qst, args, 0, "http_flush"));
       CATCH_WRITE_FAIL (ws->ws_session)
 	{
 	  if (len > 0)
@@ -8181,6 +8182,14 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    *err_ret = srv_make_new_error ("42000", "HT061", "Write to HTTP client output stream failed");
 	}
       END_WRITE_FAIL (ws->ws_session);
+      if (abort_chunked)
+	{
+	  /* no terminating zero chunk, so the client sees a truncated body instead of a complete one */
+	  CHUNKED_STATE_CLEAR (ws);
+	  strses_flush (ws->ws_strses);
+	  ws->ws_try_pipeline = 0;
+	  ws_write_failed (ws);
+	}
       return box_num (res);
     }
 
