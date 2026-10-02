@@ -4542,7 +4542,7 @@ do_file:
 
   if (ws->ws_flushed)
     {
-      if (IS_CHUNKED_OUTPUT (ws))
+      if ((1 == ws->ws_flushed || ws->ws_status_code > 399) && IS_CHUNKED_OUTPUT (ws))
 	{
 	  char tmp[20];
 	  volatile int len = strses_length (ws->ws_strses);
@@ -4563,9 +4563,8 @@ do_file:
 	      ws_write_failed (ws);
 	    }
 	  END_WRITE_FAIL (ws->ws_session);
-	  CHUNKED_STATE_CLEAR(ws);
 	}
-
+      CHUNKED_STATE_CLEAR(ws); /* reset always chunked strses serializer */
       strses_flush (ws->ws_strses);
     }
 /* XXX: moved before post processing hook
@@ -8148,7 +8147,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *) qst;
   ws_connection_t *ws;
   int is_chunked = 0, try_chunked = 0, saved_try_pipeline;
-  int go_direct = 0;
+  int go_direct = 0, sse_compat = 0;
   const char *code;
   ptrlong res = 0;
 
@@ -8203,6 +8202,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  case 1 : try_chunked = 1; break;
           case 2 : go_direct = 1; break;
+          case 3 : sse_compat = 1; try_chunked = 1; break;
 	}
 
       if (ws->ws_method != WM_HEAD && ws->ws_method != WM_OPTIONS && ws->ws_proto_no > 10)
@@ -8211,7 +8211,10 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   code = "HTTP/1.1 200 OK";
 
-  ws->ws_try_pipeline = 0;
+  if (sse_compat)
+    ws->ws_try_pipeline = 1;
+  else
+    ws->ws_try_pipeline = 0;
   if (is_chunked)
     {
       ws_make_chunked (qi, ws);
@@ -8233,7 +8236,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   ws_strses_reply (ws, code);
-  ws->ws_flushed = 1;
+  ws->ws_flushed = 1 << sse_compat;
 
   if (!is_chunked && !go_direct && !ws->ws_session->dks_to_close)
     {
@@ -11749,7 +11752,7 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (ws && ws->ws_session)
     {
       /* We should mark the session so it will not be disconnected nor freed */
-      if (ws->ws_flushed)
+      if (1 == ws->ws_flushed)
 	sqlr_new_error ("42000", "HT000", "The client session is already flushed");
       mutex_enter (thread_mtx);
       ses = qi->qi_client->cli_ws->ws_session;
@@ -11803,7 +11806,7 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (ws)
     {
       /* We should mark the session so it will not be disconnected nor freed */
-      if (ws->ws_flushed)
+      if (1 == ws->ws_flushed)
         {
           *err_ret = srv_make_new_error ("42000", "HT000", "The client session is already flushed");
           goto err;
