@@ -5623,6 +5623,8 @@ spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args,
   return NULL; /* Some nontrivial cast is needed, so can execute but anyway can not optimize */
 }
 
+int32 enable_sparql_sample_min = 1; /* [Flags] enable_sparql_sample_min */
+
 SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
@@ -5636,6 +5638,9 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   if (NULL == args)
     args = (SPART **)t_list (0);
   argcount = BOX_ELEMENTS (args);
+  /* SAMPLE may return any value of the group: MIN is a built in aggregate, DB.DBA.SAMPLE is a PL one called per row */
+  if (enable_sparql_sample_min && aggregate_mode && !strcmp (funname, "sql:SAMPLE"))
+    funname = funname_to_store = uname_SPECIAL_cc_bif_c_MIN;
   if ('h' == funname[0]) /* It's kond of strange to begin function name name with 'h', right? 99% of them are bif:... or sql:... */
     {
       if (!strncmp (funname, OPENLINKSW_BIF_NS_URI, OPENLINKSW_BIF_NS_URI_LEN))
