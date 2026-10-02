@@ -2840,6 +2840,14 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
     (DV_BLOB_HANDLE == value_dtp) || (DV_UNAME == value_dtp) ||
     (DV_XML_ENTITY == value_dtp) )
     {
+      if ((DV_STRING == value_dtp) && !(box_flags (value) & BF_IRI))
+        {
+          /* what DB.DBA.RDF_MAKE_LONG_OF_LITERAL makes of a plain string, without a PL call per row */
+          ssg_puts (" rdf_box (");
+          ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)value);
+          ssg_puts (", 257, 257, 0, 1)");
+          return;
+        }
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_LITERAL (");
       ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)value);
       ssg_putchar (')');
@@ -4234,7 +4242,7 @@ expanded_sameterm_ready:
           ssg_puts_with_comment (" NULL", "optimized LANG");
           goto print_asname;
         }
-      ssg_puts (" DB.DBA.rdf_lang_impl (");
+      ssg_puts (" __rdf_lang_impl (");
       ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LONG, NULL_ASNAME);
       ssg_puts (")");
       goto print_asname;
@@ -5384,6 +5392,19 @@ const char *ssg_tmpl_ref_short_of_X (qm_format_t *qm_fmt, ssg_valmode_t native)
 
 #define SSG_IDENTITY_VALMODED_TMPL ((const char *)1)
 
+/* a boolean cast to a number is its 0 or 1, no xsd:boolean literal has to be made for the cast */
+static ssg_valmode_t
+ssg_xqf_cast_arg_valmode (spar_sqlgen_t *ssg, xqf_str_parser_desc_t *parser_desc, SPART *arg)
+{
+  switch (parser_desc->p_dest_dtp)
+    {
+    case DV_LONG_INT: case DV_NUMERIC: case DV_DOUBLE_FLOAT: case DV_SINGLE_FLOAT:
+      if (SSG_VALMODE_BOOL == sparp_expn_native_valmode (ssg->ssg_sparp, arg))
+        return SSG_VALMODE_BOOL;
+    }
+  return SSG_VALMODE_SQLVAL;
+}
+
 const char *ssg_tmpl_X_of_Y (spar_sqlgen_t *ssg, ssg_valmode_t needed, ssg_valmode_t native)
 {
   if (SSG_VALMODE_LONG == needed)
@@ -5843,7 +5864,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               {
                 ssg_puts (" CAST (");
                 ssg->ssg_indent++;
-                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], ssg_xqf_cast_arg_valmode (ssg, parser_desc, tree->_.funcall.argtrees[0]), NULL_ASNAME);
                 ssg->ssg_indent--;
                 ssg_puts_with_comment (" AS ", "xqf parser funcall");
                 ssg_puts (parser_desc->p_sql_cast_type);
@@ -8375,7 +8396,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
               {
                 ssg_puts (" CAST (");
                 ssg->ssg_indent++;
-                ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[0], ssg_xqf_cast_arg_valmode (ssg, parser_desc, tree->_.funcall.argtrees[0]), NULL_ASNAME);
                 ssg->ssg_indent--;
                 ssg_puts_with_comment (" AS ", "xqf parser simple retval");
                 ssg_puts (parser_desc->p_sql_cast_type);
