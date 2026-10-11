@@ -123,7 +123,8 @@
 	    if (vec is not null)
 	      {
 		sid := DB.DBA.vspx_sid_generate ();
-		insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE) values (sid, 'wa', serialize (vector ('OpenID_sreg', vec)));
+		insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_STATE, VS_IP) 
+                        values (sid, 'wa', serialize (vector ('OpenID_sreg', vec)), http_client_ip());
 		self.vc_event.ve_params := OPENID.DBA.oid_set_sid (sid, self.vc_event.ve_params);
 	      }
           }

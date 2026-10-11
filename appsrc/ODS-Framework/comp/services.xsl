@@ -309,12 +309,8 @@ function selectAllCheckboxes (form, btn, txt)
                         _owner_id := (select WAM_USER from WA_MEMBER where WAM_MEMBER_TYPE = 1 and WAM_INST = (control.vc_parent as vspx_row_template).te_rowset[3]);
                         _owner_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner_id);
                         sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-                        insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-                          values ('wa', sid, _owner_name,
-                          serialize (
-                            vector (
-                              'vspx_user', _owner_name)
-                            ), now());
+                        insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+                          values ('wa', sid, _owner_name, serialize ( vector ( 'vspx_user', _owner_name)), now(), http_client_ip());
                         http_request_status ('HTTP/1.1 302 Found');
                         http_header(sprintf('Location: services.vspx?sid=%s&realm=wa\r\n', sid));
                       ]]>
