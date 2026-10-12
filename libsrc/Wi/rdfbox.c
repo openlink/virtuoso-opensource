@@ -2173,7 +2173,7 @@ bif_rdf_box_to_ro_id_search_fields (caddr_t * qst, caddr_t * err_ret, state_slot
           ro_val = box_copy_tree (rbb->rbb_chksum);
           goto res; /* see below */
         }
-      if (DV_GEO == cdtp)
+      if (DV_GEO == cdtp || IS_GENERIC_DURATION (content))
         {
           caddr_t err = NULL;
           caddr_t serial = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
