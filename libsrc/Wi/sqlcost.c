@@ -2397,24 +2397,21 @@ caddr_t
 itc_sample_cache_key (it_cursor_t * itc)
 {
   int inx;
-  int64 conds = 0;
+  dk_set_t specs = NULL;
   caddr_t * box = (caddr_t*) dk_alloc_box (sizeof (caddr_t) * (2 + itc->itc_search_par_fill), DV_ARRAY_OF_POINTER);
   search_spec_t * sp;
   box[0] = box_num (itc->itc_insert_key->key_id);
   for (sp = itc->itc_key_spec.ksp_spec_array; sp; sp = sp->sp_next)
     {
-      conds= (conds << 3) | sp->sp_min_op;
-      if (CMP_NONE != sp->sp_max_op)
-	conds = (conds << 3) | sp->sp_max_op;
+      dk_set_push (&specs, box_num (((int64)sp->sp_cl.cl_col_id << 16) | (sp->sp_min_op << 8) | sp->sp_max_op));
     }
-  /* do same for itc->itc_row_specs */
+  /* Include column identities and the index/row boundary to separate sampling ranges. */
+  dk_set_push (&specs, box_num (-1));
   for (sp = itc->itc_row_specs; sp; sp = sp->sp_next)
     {
-      conds= (conds << 3) | sp->sp_min_op;
-      if (CMP_NONE != sp->sp_max_op)
-	conds = (conds << 3) | sp->sp_max_op;
+      dk_set_push (&specs, box_num (((int64)sp->sp_cl.cl_col_id << 16) | (sp->sp_min_op << 8) | sp->sp_max_op));
     }
-  box[1] = box_num (conds);
+  box[1] = list_to_array (dk_set_nreverse (specs));
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
     box[inx + 2] = box_copy_tree (itc->itc_search_params[inx]);
   return (caddr_t) box;
