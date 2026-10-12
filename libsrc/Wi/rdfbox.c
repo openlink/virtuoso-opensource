@@ -2469,6 +2469,38 @@ bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #define DT_MODE_MASK(v) ~((DT_TYPE_DATE == DT_DT_TYPE((v))) ? DT_PRINT_MODE_HMS : ((DT_TYPE_TIME == DT_DT_TYPE((v))) ? DT_PRINT_MODE_YMD : 0))
 
+int
+rb_duration_snprintf (char *buf, size_t buf_size, int rb_type, ccaddr_t val)
+{
+  if (!RB_IS_DURATION (rb_type))
+    return -1;
+  if (IS_GENERIC_DURATION (val))
+    return snprintf_generic_duration (buf, buf_size, val);
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT:
+      /* integer year-month or generic duration is a count of months, as stored before generic durations */
+      if (rb_type__xsd_dayTimeDuration != rb_type)
+        return snprintf_duration (buf, buf_size, unbox (val), 0);
+    case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC:
+      return snprintf_duration (buf, buf_size, 0, box_to_double ((caddr_t) val, DV_TYPE_OF (val)));
+    }
+  return -1;
+}
+
+caddr_t
+rb_duration_auto_string (rdf_box_t * rb, int64 * area, size_t area_size)
+{
+  char tmp[100];
+  db_buf_t ptr = ((db_buf_t) area) + 4;
+  int len = rb_duration_snprintf (tmp, sizeof (tmp), rb->rb_type, rb->rb_box);
+  if (len < 0 || (size_t) len + 1 + BOX_AUTO_OVERHEAD > area_size)
+    return NULL;
+  WRITE_BOX_HEADER (ptr, len + 1, DV_STRING);
+  memcpy (ptr, tmp, len + 1);
+  return (caddr_t) ptr;
+}
+
 caddr_t
 bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2490,11 +2522,11 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (DV_LONG_INT == DV_TYPE_OF (val))
             val = unbox (val) ? uname_true : uname_false;
         }
-      else if (rb_type__xsd_duration == rb_type)
+      else if (RB_IS_DURATION (rb_type))
         {
           char temp[255];
-          snprintf_generic_duration (temp, sizeof (temp), val);
-	  return box_dv_short_string (temp);
+          if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb_type, val))
+	    return box_dv_short_string (temp);
         }
     }
   switch (val_dtp)
@@ -3468,46 +3500,12 @@ http_ttl_number_suffix (caddr_t txt, dtp_t dtp)
 }
 
 static void
-http_ttl_write_duration (dk_session_t * ses, double boxdbl, char * intl)
-{
-  char tmpbuf[50];
-  int buffill;
-  TIMESTAMP_STRUCT ts;
-  memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));
-  ts.year = 1970;
-  ts.month = 1;
-  ts.day = 1;
-  ts_add (&ts, boxdbl, intl);
-  strcpy (tmpbuf, "P"); buffill = 1;
-  if (ts.year > 1970)
-    buffill += sprintf (tmpbuf + buffill, "%dY", ts.year - 1970);
-  if (ts.month > 1)
-    buffill += sprintf (tmpbuf + buffill, "%dM", ts.month - 1);
-  if (ts.day > 1)
-    buffill += sprintf (tmpbuf + buffill, "%dD", ts.day - 1);
-
-  if (ts.hour > 0 || ts.minute > 0 || ts.second > 0)
-    {
-      strcat (tmpbuf, "T");
-      buffill ++;
-    }
-  if (ts.hour> 0)
-    buffill += sprintf (tmpbuf + buffill, "%dH", ts.hour);
-  if (ts.minute > 0)
-    buffill += sprintf (tmpbuf + buffill, "%dM", ts.minute);
-  if (ts.second > 0)
-    buffill += sprintf (tmpbuf + buffill, "%dS", ts.second);
-
-  session_buffered_write_char ('"', ses);
-  session_buffered_write (ses, tmpbuf, buffill);
-  session_buffered_write_char ('"', ses);
-}
-
-static void
 http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ptr)
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   int html_ttl = (TTL_ENV_HTML_OUTPUT & env->te_flags);
   if (DV_RDF == obj_dtp)
     {
@@ -3515,6 +3513,11 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -3591,12 +3594,6 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         char tmpbuf[50];
         int buffill;
         double boxdbl = unbox_double (obj_box_value);
-        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_MIN_TYPE);
-	if (RB_IS_DURATION (rb_type))
-	  {
-	    http_ttl_write_duration (ses, boxdbl, "second");
-	    break;
-	  }
         buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
         if ((NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
           {
@@ -3635,12 +3632,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     default:
       {
 	caddr_t tmp_utf8_box;
-        int need_quotes, rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_MIN_TYPE);
-	if (RB_IS_DURATION (rb_type) && DV_LONG_INT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
-	    break;
-	  }
+        int need_quotes;
         if (IS_GENERIC_DURATION (obj_box_value))
           {
             char buf[100];
@@ -4036,12 +4028,19 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       obj_box_value = ((rdf_box_t *)obj)->rb_box;
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -4289,12 +4288,19 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       obj_box_value = ((rdf_box_t *)obj)->rb_box;
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -4368,17 +4374,6 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
         caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
-        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
-	if (RB_IS_DURATION (rb_type) && DV_LONG_INT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
-	    goto print_dt_iri;
-	  }
-	if (RB_IS_DURATION (rb_type) && DV_DOUBLE_FLOAT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox_double (obj_box_value), "second");
-	    goto print_dt_iri;
-	  }
         if (IS_GENERIC_DURATION (obj_box_value))
           {
             char buf[100];
@@ -4845,6 +4840,8 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   caddr_t type_uri = NULL;
   if (DV_RDF == obj_dtp)
     {
@@ -4858,6 +4855,11 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
       if ((rb_type__xsd_boolean == rb->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string (rb, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -5083,6 +5085,8 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
   caddr_t type_uri = NULL;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
@@ -5093,6 +5097,11 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+      if (NULL != (dur_str = rb_duration_auto_string (rb, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -5963,6 +5972,8 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
         case DV_RDF:
           {
             rdf_box_t *rb = (rdf_box_t *)val;
+            char dur_buf[100];
+            int dur_len;
             rb_dt_lang_check(rb);
             if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
               {
@@ -6013,6 +6024,9 @@ literal_elt_printed:
                 else
                   SES_PRINT (ses, "false");
               }
+            else if (RB_IS_DURATION (rb->rb_type) && 0 <= (dur_len = rb_duration_snprintf (dur_buf, sizeof (dur_buf), rb->rb_type, rb->rb_box)))
+              session_buffered_write (ses, dur_buf, dur_len);
+            else
               dks_sqlval_esc_write ((caddr_t *)qi, ses, rb->rb_box, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
             SES_PRINT (ses, "</literal>");
             break;

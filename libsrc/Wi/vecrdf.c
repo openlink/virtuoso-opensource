@@ -869,6 +869,19 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
                     dk_free_box (rb);
                     break;
                   }
+                if (RB_IS_DURATION (rb->rb_type))
+                  {
+                    char temp[100];
+                    if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb->rb_type, rb->rb_box))
+                      {
+                        int save = dc->dc_n_values;
+                        dc->dc_n_values = set;
+                        dc_append_box (dc, box_dv_short_string (temp));
+                        dc->dc_n_values = save;
+                        dk_free_box (rb);
+                        break;
+                      }
+                  }
                 if (DV_DATETIME == DV_TYPE_OF (rb->rb_box))
                   {
                     char temp[100];

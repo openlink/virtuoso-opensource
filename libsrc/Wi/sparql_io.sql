@@ -2509,7 +2509,10 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (inout ses any, inout val
             res := cast (__xsd_type (dat) as varchar);
           http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
-          dat := __rdf_strsqlval (dat);
+          if (typ in (sys_stat ('rb_type__xsd:duration'), sys_stat ('rb_type__xsd:dayTimeDuration'), sys_stat ('rb_type__xsd:yearMonthDuration')))
+            dat := __rdf_strsqlval (val);
+          else
+            dat := __rdf_strsqlval (dat);
         }
       else if (257 <> typ)
         {

@@ -84,6 +84,7 @@ void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
+int snprintf_duration (char *buf, size_t buf_size, long ym, double dt);
 int snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration);
 
 #define DTFLAG_YY	0x1

@@ -529,6 +529,18 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
 	return dt_compare (box1, box2, 1);
     }
 
+  if (IS_GENERIC_DURATION (box1) && IS_GENERIC_DURATION (box2))
+    {
+      /* xsd:duration is partially ordered, e.g. P1M vs P30D has no order */
+      int ym_cmp = cmp_double (GENERIC_DURATION_GET_YM (box1), GENERIC_DURATION_GET_YM (box2), DBL_EPSILON);
+      int dt_cmp = cmp_double (GENERIC_DURATION_GET_DT (box1), GENERIC_DURATION_GET_DT (box2), DBL_EPSILON);
+      if (DVC_MATCH == ym_cmp)
+	return dt_cmp;
+      if (DVC_MATCH == dt_cmp || ym_cmp == dt_cmp)
+	return ym_cmp;
+      return DVC_NOORDER;
+    }
+
   switch (dtp1)
     {
     case DV_STRING:
