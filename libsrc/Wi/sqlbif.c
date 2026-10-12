@@ -13899,7 +13899,13 @@ type_lc_destroy (caddr_t box)
     lc_free (lc);
     ret[1] = NULL;
   }
-  if (qr)
+  if (ret[3])
+  {
+    shcompo_release ((shcompo_t *) ret[3]);
+    ret[3] = NULL;
+    ret[0] = NULL;
+  }
+  else if (qr)
   {
     qr_free (qr);
     ret[0] = NULL;
@@ -14053,15 +14059,13 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
-  if (n_args < 8 || !ssl_is_settable (args[7]))
-    { /* no cursor for stored procedures */
-      if (max_rows_is_set)
-        cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
-      if (n_args > 5 && ssl_is_settable (args[5]))
-	cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
-      if (n_args > 6 && ssl_is_settable (args[6]))
-	cli->cli_resultset_data_ptr = &proc_resultset;
-    }
+  /* also with a cursor: a statement that turns out not to be a select still returns its procedure result set, a select discards it */
+  if (max_rows_is_set)
+    cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
+  if (n_args > 5 && ssl_is_settable (args[5]))
+    cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
+  if (n_args > 6 && ssl_is_settable (args[6]))
+    cli->cli_resultset_data_ptr = &proc_resultset;
   if (NULL != options)
     {
       caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
@@ -14157,13 +14161,16 @@ qr_set:
 	{
 	  if (ssl_is_settable (args[7]))
 	    {
-	      caddr_t *ret = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_EXEC_CURSOR);
+	      caddr_t *ret = (caddr_t *) dk_alloc_box (4 * sizeof (caddr_t), DV_EXEC_CURSOR);
 	      ret[0] = (caddr_t) qr;
 	      ret[1] = (caddr_t) lc;
 	      ret[2] = (caddr_t) (ptrlong) n_cols;
+	      /* a cached qr stays owned by its shcompo until exec_close */
+	      ret[3] = (caddr_t) shc;
 	      qst_set (qst, args[7], (caddr_t) ret);
 	      res = box_num (0);
 	      qr = NULL;
+	      shc = NULL;
 	      goto done;
 	    }
 	  else
@@ -14744,7 +14751,7 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return bif_exec_error (qst, args,
 	srv_make_new_error ("22023", "SR079", "Too few arguments to exec_next(cursor, state, message, row)"), NULL, NULL, NULL);
 
-  if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
+  if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 4)
     return bif_exec_error (qst, args,
 	srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"), NULL, NULL, NULL);
 
@@ -14758,6 +14765,13 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       lc->lc_error = NULL;
       if (err)
 	{
+	  client_connection_t *cli = ((query_instance_t *) qst)->qi_client;
+	  if (cli->cli_terminate_requested == CLI_RESULT)
+	    {
+	      cli->cli_terminate_requested = 0;
+	      cli->cli_anytime_timeout_orig = cli->cli_anytime_timeout = 0;
+	      cli->cli_anytime_started = 0;
+	    }
 	  return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
 	}
       else
@@ -14787,7 +14801,7 @@ bif_exec_close (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   local_cursor_t *lc;
   query_t *qr;
 
-  if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
+  if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 4)
     return bif_exec_error (qst, args,
 	srv_make_new_error ("22023", "SR081", "Parameter 1 is not a valid local exec handle"), NULL, NULL, NULL);
 
@@ -14797,8 +14811,14 @@ bif_exec_close (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != lc)
     lc_free (lc);
   handle[0] = NULL;
-  qr_free (qr);
   handle[1] = NULL;
+  if (NULL != handle[3])
+    {
+      shcompo_release ((shcompo_t *) handle[3]);
+      handle[3] = NULL;
+    }
+  else
+    qr_free (qr);
 
   return (NULL);
 }

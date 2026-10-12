@@ -3257,7 +3257,6 @@ ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
     }
 }
 
-#ifdef NOT_CURRENTLY_USED
 static caddr_t
 rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 {
@@ -3269,7 +3268,7 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
   if (NULL != lang_id)
     return lang_id;
   if (!qr)
-    qr = sql_compile ("select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = ?", qi->qi_client, &err, SQLC_DEFAULT);
+    qr = sql_compile_static ("select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = ?", bootstrap_cli, &err, SQLC_DEFAULT); /* not as the caller, who may have no raw access to RDF tables */
   if (!err)
     {
       err = qr_rec_exec (qr, qi->qi_client, &lc, CALLER_LOCAL, NULL, 1, ":0", (ptrlong) lang, QRP_INT);
@@ -3287,7 +3286,35 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
     }
   return lang_id;
 }
-#endif
+
+
+/* SPARQL LANG(), same result as DB.DBA.rdf_lang_impl without a PL call and a select per row */
+caddr_t
+bif_rdf_lang_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_lang_impl");
+  dtp_t dtp = DV_TYPE_OF (val);
+  rdf_box_t *rb;
+  caddr_t lang, dash, res;
+  if (DV_RDF != dtp)
+    {
+      if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp || DV_UNAME == dtp || (DV_STRING == dtp && (box_flags (val) & BF_IRI)))
+	return NEW_DB_NULL;
+      return box_dv_short_string ("");
+    }
+  rb = (rdf_box_t *) val;
+  if (RDF_BOX_DEFAULT_LANG == rb->rb_lang)
+    return box_dv_short_string ("");
+  lang = rdf_box_get_lang ((query_instance_t *) qst, rb->rb_lang);
+  if (NULL == lang)
+    sqlr_new_error ("RDFXX", "RDF..", "Unknown language in __rdf_lang_impl, bad id %d", (int) rb->rb_lang);
+  dash = strstr (lang, "--");
+  if (NULL == dash || dash == lang)
+    return lang;
+  res = box_dv_short_nchars (lang, dash - lang);
+  dk_free_box (lang);
+  return res;
+}
 
 int32 rdf_geo_use_wkt = 1;
 
@@ -7240,6 +7267,7 @@ rdf_box_init (void)
   bif_define_ex ("ro_digest_id", bif_ro_digest_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
   bif_define_ex ("rdf_box_lang", bif_rdf_box_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rdf_lang_impl", bif_rdf_lang_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_box_type", bif_rdf_box_type, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);

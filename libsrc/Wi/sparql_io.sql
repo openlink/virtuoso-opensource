@@ -2091,14 +2091,23 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta 
 
 create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
 {
-  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (..., {', dta[rowno], '},...)');
+  declare r any;
+  r := aref_set_0 (dta, rowno);
+  DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (ses, mdta, r, rowno);
+  aset_zap_arg (dta, rowno, r);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (inout ses any, in mdta any, inout row any, in rowno integer)
+{
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (..., {', row, '},...)');
   mdta := mdta[0];
   for (declare x any, x := 0; x < length (mdta); x := x + 1)
     {
       declare _name varchar;
       declare _val any;
       _name := mdta[x][0];
-      _val := dta[rowno][x];
+      _val := row[x];
       if (_val is null)
         goto end_of_binding;
       http (sprintf ('\n      <res:binding rdf:nodeID="r%dc%d"><res:variable>%V</res:variable><res:value', rowno, x, _name), ses);
@@ -2706,11 +2715,10 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
 }
 ;
 
-create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_HEAD (inout ses any, inout metas any)
 {
-  declare varctr, varcount, resctr, rescount integer;
+  declare varctr, varcount integer;
   varcount := length (metas[0]);
-  rescount := length (rset);
   http ('\n{ "head": { "link": [], "vars": [', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
@@ -2722,38 +2730,55 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas an
       http('"', ses);
     }
   http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_ROW (inout ses any, inout metas any, inout row any, in rowno integer)
+{
+  declare varctr, varcount, need_comma integer;
+  varcount := length (metas[0]);
+  if (rowno > 0)
+    http(',\n    {', ses);
+  else
+    http('\n    {', ses);
+  need_comma := 0;
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      declare val any;
+      val := row[varctr];
+      if (val is null)
+        goto end_of_val_print; -- see below
+      if (need_comma)
+        http('\t,', ses);
+      else
+        need_comma := 1;
+      SPARQL_RESULTS_JSON_WRITE_BINDING (ses, metas[0][varctr][0], val);
+end_of_val_print: ;
+    }
+  http('}', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare resctr, rescount integer;
+  rescount := length (rset);
+  SPARQL_RESULTS_JSON_WRITE_HEAD (ses, metas);
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
     {
-      declare need_comma integer;
-      if (resctr > 0)
-        http(',\n    {', ses);
-      else
-        http('\n    {', ses);
-      need_comma := 0;
-      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
-        {
-          declare val any;
-          val := rset[resctr][varctr];
-          if (val is null)
-            goto end_of_val_print; -- see below
-          if (need_comma)
-            http('\t,', ses);
-          else
-            need_comma := 1;
-          SPARQL_RESULTS_JSON_WRITE_BINDING (ses, metas[0][varctr][0], val);
-end_of_val_print: ;
-        }
-      http('}', ses);
+      declare r any;
+      r := aref_set_0 (rset, resctr);
+      SPARQL_RESULTS_JSON_WRITE_ROW (ses, metas, r, resctr);
+      aset_zap_arg (rset, resctr, r);
     }
   http (' ] } }', ses);
 }
 ;
 
-create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_HEAD (inout ses any, inout metas any)
 {
-  declare varctr, varcount, resctr, rescount integer;
+  declare varctr, varcount integer;
   varcount := length (metas[0]);
-  rescount := length (rset);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       if (varctr > 0)
@@ -2761,18 +2786,37 @@ create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE (inout ses any, inout metas any
       DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, metas[0][varctr][0]);
     }
   http ('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_ROW (inout ses any, inout metas any, inout row any)
+{
+  declare varctr, varcount integer;
+  varcount := length (metas[0]);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      declare val any;
+      val := row[varctr];
+      if (varctr > 0)
+        http(',', ses);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
+    }
+  http('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare resctr, rescount integer;
+  rescount := length (rset);
+  DB.DBA.SPARQL_RESULTS_CSV_WRITE_HEAD (ses, metas);
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
     {
-      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
-        {
-          declare val any;
-          val := rset[resctr][varctr];
-          if (varctr > 0)
-            http(',', ses);
-          if (val is not null)
-            DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
-        }
-      http('\n', ses);
+      declare r any;
+      r := aref_set_0 (rset, resctr);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_ROW (ses, metas, r);
+      aset_zap_arg (rset, resctr, r);
     }
 }
 ;
@@ -2895,11 +2939,10 @@ emit_tt:
 }
 ;
 
-create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_HEAD (inout ses any, inout metas any)
 {
-  declare varctr, varcount, resctr, rescount integer;
+  declare varctr, varcount integer;
   varcount := length (metas[0]);
-  rescount := length (rset);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       if (varctr > 0)
@@ -2907,18 +2950,37 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
       http ('?', ses); http (metas[0][varctr][0], ses);
     }
   http ('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW (inout ses any, inout metas any, inout row any)
+{
+  declare varctr, varcount integer;
+  varcount := length (metas[0]);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      declare val any;
+      val := row[varctr];
+      if (varctr > 0)
+        http('\t', ses);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
+    }
+  http('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare resctr, rescount integer;
+  rescount := length (rset);
+  DB.DBA.SPARQL_RESULTS_TSV_WRITE_HEAD (ses, metas);
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
     {
-      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
-        {
-          declare val any;
-          val := rset[resctr][varctr];
-          if (varctr > 0)
-            http('\t', ses);
-          if (val is not null)
-            DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
-        }
-      http('\n', ses);
+      declare r any;
+      r := aref_set_0 (rset, resctr);
+      DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW (ses, metas, r);
+      aset_zap_arg (rset, resctr, r);
     }
 }
 ;
@@ -3176,6 +3238,52 @@ found_match:
 }
 ;
 
+
+create procedure DB.DBA.SPARQL_RESULTS_WRITE_DEBUG_LOG (inout ses any, in ret_format varchar)
+{
+  declare line_begin, line_end varchar;
+  declare log_array any;
+  log_array := 0;
+  if (connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0))
+    connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', log_array, -1);
+  if (__tag(log_array) <> __tag of vector)
+    log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
+  else
+    vectorbld_final (log_array);
+  if (ret_format like '%HTML%' or ret_format like '%XML%')
+    {
+      line_begin := '<!-' || '- '; line_end := '-' || '->\n';
+    }
+  else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
+    {
+      line_begin := '<!-' || '- '; line_end := '-' || '->\n';
+    }
+  else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
+    {
+      line_begin := '# '; line_end := '\n';
+    }
+  else
+    line_begin := null;
+  if (line_begin is not null)
+    DB.DBA.SPARQL_LOG_DEBUG_INFO (log_array, line_begin, line_end, ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_SET_CONTENT_TYPE (in ret_mime varchar)
+{
+  declare hdr, hdr2 varchar;
+  hdr := coalesce (http_header_get (), '');
+  while (strcasestr (hdr, 'Content-Type:') is not null)
+    {
+      hdr2 := regexp_replace (hdr, '[Cc][Oo][Nn][Tt][Ee][Nn][Tt]-[Tt][Yy][Pp][Ee]:[^\r\n]*(\r\n|$)', '', 1, null);
+      if (hdr2 = hdr)
+        goto ct_hdr_done;
+      hdr := hdr2;
+    }
+ct_hdr_done:
+  http_header (hdr || 'Content-Type: ' || ret_mime || case when strstr (ret_mime, 'json') is null then '; charset=UTF-8' else '' end || '\r\n');
+}
+;
 
 --! \c flags is bitmask: 1 to add HTTP headers, 2 to dump the log of debug info composed by RDF_LOG_DEBUG_INFO in current connection, there may be more in the future
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in flags integer, in status any := null) returns varchar
@@ -3504,51 +3612,314 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 
 body_complete:
   if (bit_and (flags, 2))
-    {
-      declare line_begin, line_end varchar;
-      declare log_array any;
-      log_array := 0;
-      if (connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0))
-        connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', log_array, -1);
-      if (__tag(log_array) <> __tag of vector)
-        log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
-      else
-        vectorbld_final (log_array);
-      if (ret_format like '%HTML%' or ret_format like '%XML%')
-        {
-          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
-        }
-      else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
-        {
-          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
-        }
-      else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
-        {
-          line_begin := '# '; line_end := '\n';
-        }
-      else
-        line_begin := null;
-      if (line_begin is not null)
-        DB.DBA.SPARQL_LOG_DEBUG_INFO (log_array, line_begin, line_end, ses);
-    }
+    DB.DBA.SPARQL_RESULTS_WRITE_DEBUG_LOG (ses, ret_format);
 
   DB.DBA.SPARQL_CONTENT_DISPOSITION (ret_format);
 
   if (bit_and (flags, 1))
-    {
-      declare hdr, hdr2 varchar;
-      hdr := coalesce (http_header_get (), '');
-      while (strcasestr (hdr, 'Content-Type:') is not null)
-        {
-          hdr2 := regexp_replace (hdr, '[Cc][Oo][Nn][Tt][Ee][Nn][Tt]-[Tt][Yy][Pp][Ee]:[^\r\n]*(\r\n|$)', '', 1, null);
-          if (hdr2 = hdr)
-            goto ct_hdr_done;
-          hdr := hdr2;
-        }
-ct_hdr_done:
-      http_header (hdr || 'Content-Type: ' || ret_mime || case when strstr (ret_mime, 'json') is null then '; charset=UTF-8' else '' end || '\r\n');
-    }
+    DB.DBA.SPARQL_RESULTS_SET_CONTENT_TYPE (ret_mime);
   return ret_mime;
+}
+;
+
+--! Returns the streamable kind of result for given metas and accept, or NULL if the result must be written by SPARQL_RESULTS_WRITE as a whole.
+--! \c ret_mime and \c ret_format are set exactly as SPARQL_RESULTS_WRITE would set them.
+create function DB.DBA.SPARQL_RESULTS_STREAM_KIND (inout metas any, in accept varchar, out ret_mime varchar, out ret_format varchar) returns varchar
+{
+  declare singlefield varchar;
+  ret_mime := null;
+  ret_format := null;
+  if (not isvector (metas) or not isvector (metas[0]) or 0 = length (metas[0]))
+    return null;
+  if (1 = length (metas[0]))
+    {
+      singlefield := metas[0][0][0];
+      if (singlefield = '__ask_retval' or singlefield like 'fmtaggret-%' or singlefield like 'aggret-%')
+        return null;
+    }
+  ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
+  if (ret_format in ('JSON', 'JSON;RES'))
+    return 'JSON';
+  if (ret_format in ('TTL', 'NICE_TTL'))
+    return 'TTL';
+  if (ret_format = 'NT')
+    return 'NT';
+  if (ret_format = 'RDFXML')
+    {
+      ret_mime := 'application/rdf+xml';
+      return 'RDFXML';
+    }
+  if (ret_format = 'CSV')
+    {
+      ret_mime := 'text/csv';
+      return 'CSV';
+    }
+  if (ret_format = 'TSV')
+    {
+      ret_mime := 'text/tab-separated-values';
+      return 'TSV';
+    }
+  if (ret_format is null or ret_format = 'XML')
+    {
+      ret_mime := 'application/sparql-results+xml';
+      return 'XML';
+    }
+  return null;
+}
+;
+
+--! Sends the headers of a chunked response; returns 0 and restores the headers if chunked encoding is not possible.
+create function DB.DBA.SPARQL_RESULTS_STREAM_BEGIN (in ret_mime varchar, in ret_format varchar, in flags integer) returns integer
+{
+  declare hdr any;
+  declare chunked integer;
+  hdr := http_header_get ();
+  DB.DBA.SPARQL_CONTENT_DISPOSITION (ret_format);
+  if (bit_and (flags, 1))
+    DB.DBA.SPARQL_RESULTS_SET_CONTENT_TYPE (ret_mime);
+  chunked := 0;
+  {
+    declare exit handler for sqlstate '*' { chunked := 0; };
+    chunked := http_flush (1);
+  }
+  if (not chunked)
+    http_header (coalesce (hdr, ''));
+  return chunked;
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_STREAM_HEAD (inout ses any, inout metas any, in kind varchar, inout env any)
+{
+  if ('XML' = kind)
+    {
+      SPARQL_RSET_XML_WRITE_NS (ses);
+      SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
+      http ('\n <results distinct="false" ordered="true">', ses);
+    }
+  else if ('JSON' = kind)
+    SPARQL_RESULTS_JSON_WRITE_HEAD (ses, metas);
+  else if ('TTL' = kind or 'NT' = kind)
+    {
+      declare colctr, colcount integer;
+      declare cols, colbuf any;
+      cols := metas[0];
+      colcount := length (cols);
+      colbuf := make_array (colcount * 7, 'any');
+      for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+        colbuf [colctr * 7] := cols[colctr][0];
+      if ('TTL' = kind)
+        {
+          SPARQL_RESULTS_TTL_WRITE_NS (ses);
+          SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
+          env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (16000, 0, colbuf, ses);
+        }
+      else
+        {
+          SPARQL_RESULTS_NT_WRITE_NS (ses);
+          SPARQL_RESULTS_NT_WRITE_HEAD (ses, metas);
+          env := vector (0, colbuf, ses);
+        }
+    }
+  else if ('RDFXML' = kind)
+    {
+      SPARQL_RESULTS_RDFXML_WRITE_NS (ses);
+      SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
+    }
+  else if ('CSV' = kind)
+    SPARQL_RESULTS_CSV_WRITE_HEAD (ses, metas);
+  else if ('TSV' = kind)
+    SPARQL_RESULTS_TSV_WRITE_HEAD (ses, metas);
+}
+;
+
+--! Row callbacks of SPARQL_RESULTS_STREAM, one per kind, DB.DBA.SPARQL_RESULTS_<kind>_STREAM_ROW, all with the same arguments.
+create procedure DB.DBA.SPARQL_RESULTS_XML_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  SPARQL_RESULTS_XML_WRITE_ROW (ses, metas, row);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_JSON_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  SPARQL_RESULTS_JSON_WRITE_ROW (ses, metas, row, rowno);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_TTL_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  declare fake_agg_ctx integer;
+  sparql_rset_ttl_write_row (fake_agg_ctx, env, row);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_NT_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  declare fake_agg_ctx integer;
+  sparql_rset_nt_write_row (fake_agg_ctx, env, row);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  http (sprintf ('\n    <res:solution rdf:nodeID="r%d">', rowno), ses);
+  SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (ses, metas, row, rowno);
+  http ('\n    </res:solution>', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_CSV_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  declare varctr, varcount integer;
+  varcount := length (metas[0]);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      declare val any;
+      val := row[varctr];
+      if (varctr > 0)
+        http(',', ses);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
+    }
+  http('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_TSV_STREAM_ROW (inout ses any, inout metas any, inout env any, inout row any, in rowno integer)
+{
+  declare varctr, varcount integer;
+  varcount := length (metas[0]);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      declare val any;
+      val := row[varctr];
+      if (varctr > 0)
+        http('\t', ses);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
+    }
+  http('\n', ses);
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_STREAM_END (inout ses any, inout metas any, in kind varchar, inout env any)
+{
+  if ('XML' = kind)
+    http ('\n </results>\n</sparql>\n', ses);
+  else if ('JSON' = kind)
+    http (' ] } }', ses);
+  else if ('RDFXML' = kind)
+    http ('\n  </rdf:Description>\n</rdf:RDF>\n', ses);
+}
+;
+
+--! Leaves a trace of an error that happened after the response headers are sent; formats without comments get nothing, the aborted chunked transfer is the signal.
+create procedure DB.DBA.SPARQL_RESULTS_STREAM_ERROR (inout ses any, in kind varchar, in state varchar, in msg varchar)
+{
+  declare txt varchar;
+  txt := sprintf ('SPARQL request failed after sending partial result: %s: %s', cast (state as varchar), cast (msg as varchar));
+  if (kind in ('XML', 'RDFXML'))
+    http ('\n<!-' || '- ' || replace (txt, '--', '- -') || ' -' || '->\n', ses);
+  else if (kind in ('TTL', 'NT'))
+    http ('\n# ' || replace (replace (txt, '\r', ' '), '\n', ' ') || '\n', ses);
+}
+;
+
+--! Executes a SPARQL query and, if the result is a plain result set in a streamable format, sends it with chunked encoding, each row written as soon as it is fetched.
+--! Returns 1 if the response is completely written (successfully or as an aborted transfer).
+--! Returns 0 if the result is not streamed; then \c state, \c msg, \c metas and \c rset are like after exec() and the caller writes the response as usual.
+--! Headers are sent after the first row is fetched, so an empty result or an error before the first row gets the usual response.
+--! \c maxrows limits a collected (not streamed) result, \c stream_maxrows limits a streamed one, 0 means no limit.
+create function DB.DBA.SPARQL_RESULTS_STREAM (
+  in qry varchar, inout state varchar, inout msg varchar, inout qry_params any, in maxrows integer, in stream_maxrows integer,
+  inout metas any, inout rset any, inout ses any, in accept varchar, in flags integer, in jsonp_callback any ) returns integer
+{
+  declare hnd, row, env, acc any;
+  declare kind, ret_mime, ret_format, row_cb varchar;
+  declare rc, rowno, lim, streaming, flush_msec, last_flush integer;
+  flush_msec := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'StreamingFlushMsec'), '500'));
+  hnd := null;
+  metas := null;
+  rset := null;
+  exec (qry, state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset, hnd);
+  if (state <> '00000')
+    return 0;
+  if (__tag (hnd) <> 224) -- DV_EXEC_CURSOR, not a select otherwise, rset is the procedure result or row count
+    {
+      if (not isvector (metas))
+        metas := vector (vector ());
+      return 0;
+    }
+  kind := DB.DBA.SPARQL_RESULTS_STREAM_KIND (metas, accept, ret_mime, ret_format);
+  row_cb := null;
+  if (kind is not null)
+    row_cb := __proc_exists ('DB.DBA.SPARQL_RESULTS_' || kind || '_STREAM_ROW');
+  vectorbld_init (acc);
+  streaming := 0;
+  rowno := 0;
+  lim := maxrows;
+  {
+    declare exit handler for sqlstate '*'
+      {
+        exec_close (hnd);
+        if (not streaming)
+          resignal;
+        DB.DBA.SPARQL_RESULTS_STREAM_ERROR (ses, kind, __SQL_STATE, __SQL_MESSAGE);
+        {
+          declare exit handler for sqlstate '*' { ; };
+          http_flush (4);
+        }
+        return 1;
+      };
+    while (lim <= 0 or rowno < lim)
+      {
+        rc := exec_next (hnd, state, msg, row);
+        if (0 <> rc)
+          {
+            if (100 <> rc and streaming)
+              signal (state, msg);
+            goto done;
+          }
+        -- the first row decides: a CONSTRUCT/DESCRIBE dictionary or no chunked encoding is collected as exec() does
+        if (0 = rowno and row_cb is not null and not (1 = length (row) and __tag of dictionary reference = __tag (row[0])))
+          {
+            streaming := DB.DBA.SPARQL_RESULTS_STREAM_BEGIN (ret_mime, ret_format, flags);
+            if (streaming)
+              {
+                lim := stream_maxrows;
+                if (isstring (jsonp_callback))
+                  http (jsonp_callback || '(\n', ses);
+                DB.DBA.SPARQL_RESULTS_STREAM_HEAD (ses, metas, kind, env);
+              }
+          }
+        if (streaming)
+          {
+            call (row_cb) (ses, metas, env, row, rowno);
+            -- rows go out in DKSES_OUT_BUFFER_LENGTH chunks by themselves; the timed flush sends a partial chunk and also detects a gone client
+            if (0 = rowno or flush_msec <= 0 or (0 = bit_and (rowno, 1023) and msec_time () - last_flush >= flush_msec))
+              {
+                http_flush ();
+                last_flush := msec_time ();
+              }
+          }
+        else
+          vectorbld_acc (acc, row);
+        rowno := rowno + 1;
+      }
+done:
+    exec_close (hnd);
+    if (streaming)
+      {
+        DB.DBA.SPARQL_RESULTS_STREAM_END (ses, metas, kind, env);
+        if (isstring (jsonp_callback))
+          http (')', ses);
+        if (bit_and (flags, 2))
+          DB.DBA.SPARQL_RESULTS_WRITE_DEBUG_LOG (ses, ret_format);
+        return 1;
+      }
+  }
+  vectorbld_final (acc);
+  rset := acc;
+  return 0;
 }
 ;
 
@@ -3850,7 +4221,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
   declare __debug_mode integer;
-  declare qtxt, deadl integer;
+  declare qtxt, deadl, can_stream, maxrows_set, stream_maxrows integer;
   declare save_mode, save_dir, dav_refresh, overwrite, fname varchar;
   declare explain_report varchar;
   declare save_dir_id any;
@@ -3898,6 +4269,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   using_graphs := vector ();
   using_named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
+  maxrows_set := 0;
   deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := virtuoso_ini_item_value ('SPARQL', 'DefaultGraph');
@@ -4080,6 +4452,7 @@ execute_query:
 	  declare cls, words, ft, vec, cond varchar;
 	  cls := get_keyword ('class', params);
 	  maxrows := atoi (get_keyword ('maxrows', params, cast (maxrows as varchar)));
+	  maxrows_set := case when get_keyword ('maxrows', params) is null then 0 else 1 end;
 	  if (def_max > 0 and def_max < maxrows)
 	    maxrows := def_max;
 	  if (cls is not null)
@@ -4153,6 +4526,7 @@ execute_query:
       else if ('maxrows' = pname)
         {
 	  maxrows := cast (pvalue as integer);
+	  maxrows_set := 1;
 	}
       else if ('should-sponge' = pname)
         {
@@ -4432,7 +4806,11 @@ host_found:
             fmtttl := '"HTTP+TTL application/turtle" ';
           else if (strstr (accept, 'application/x-turtle') is not null)
             fmtttl := '"HTTP+TTL application/x-turtle" ';
-          if (isstring (fmtttl))
+          -- result sets are streamed by SPARQL_RESULTS_STREAM, the in-query formatters are kept for CONSTRUCT and DESCRIBE only
+          if (isstring (fmtttl) and (save_mode is null) and (add_http_headers <> 0)
+            and ('0' <> coalesce (virtuoso_ini_item_value ('SPARQL', 'StreamingResults'), '1')))
+            full_query := 'define output:dict-format ' || fmtttl || '\n' || full_query;
+          else if (isstring (fmtttl))
             {
               if (isstring (fmtxml))
                 full_query := 'define output:format ' || fmtxml || '\ndefine output:dict-format ' || fmtttl || '\n' || full_query;
@@ -4515,10 +4893,32 @@ host_found:
     connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
 
+  -- a partial result needs its own HTTP status, so it can not be streamed after headers are sent
+  can_stream := case when (save_mode is null) and (add_http_headers <> 0)
+    and not (client_supports_partial_res and (timeout >= 1000))
+    and ('0' <> coalesce (virtuoso_ini_item_value ('SPARQL', 'StreamingResults'), '1')) then 1 else 0 end;
+  -- the default maxrows only protects a result kept in memory, a streamed one is limited only if asked or configured
+  if (maxrows_set)
+    stream_maxrows := maxrows;
+  else if (def_max > 0)
+    stream_maxrows := def_max;
+  else
+    stream_maxrows := 0;
+
 again:
   state := '00000';
   start_time := msec_time();
-  exec ( signed_query_to_exec, state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
+  if (can_stream)
+    {
+      if (DB.DBA.SPARQL_RESULTS_STREAM (signed_query_to_exec, state, msg, qry_params, maxrows, stream_maxrows, metas, rset, ses, accept,
+          1 + case log_debug_info when '' then 0 else 2 end, jsonp_callback))
+        {
+          commit work;
+          return;
+        }
+    }
+  else
+    exec ( signed_query_to_exec, state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   if (isvector (rset) and length (rset) = maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
@@ -5557,6 +5957,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_HEAD to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_NS to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_HEAD to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES to SPARQL_SELECT',
@@ -5566,11 +5967,32 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
 	    'grant execute on DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE to SPARQL_SELECT',
 	    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM to SPARQL_SELECT',
 	    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_ROW to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE_ROW to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_HTML_NICE_TTL_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_WRITE_DEBUG_LOG to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_SET_CONTENT_TYPE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM_KIND to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM_BEGIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_CSV_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TSV_STREAM_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM_END to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM_ERROR to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_STREAM to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_WRITE to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
     {

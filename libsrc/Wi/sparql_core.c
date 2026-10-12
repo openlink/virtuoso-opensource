@@ -3352,6 +3352,168 @@ spar_gp_add_transitive_triple_anchor_filter (sparp_t *sparp, caddr_t fld_vname, 
   spar_gp_add_filter (sparp, filt, 0);
 }
 
+/*! Start points of a transitive triple with both ends unbound: every path of one or more steps begins at a subject of the step */
+static SPART *
+spar_make_trans_start_gp (sparp_t *sparp, SPART *graph, SPART *predicate, caddr_t start_vname, SPART **qm_iri_or_pair, int banned_tricks)
+{
+  SPART *where_gp, *top;
+  spar_gp_init (sparp, 0);
+  spar_env_push (sparp);
+  t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL);
+  spar_gp_init (sparp, WHERE_L);
+  spar_gp_add_triplelike (sparp, (SPART *)t_box_copy_tree ((caddr_t)graph), spar_make_variable (sparp, start_vname),
+    (SPART *)t_box_copy_tree ((caddr_t)predicate), spar_make_variable (sparp, spar_mkid (sparp, "_::trans_start_any")),
+    (SPART **)t_box_copy_tree ((caddr_t)qm_iri_or_pair), NULL, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE);
+  where_gp = spar_gp_finalize (sparp, NULL);
+  top = spar_make_top (sparp, DISTINCT_L, (SPART **)t_list (1, spar_make_variable (sparp, start_vname)), where_gp,
+    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)NULL, (SPART *)t_box_num_nonull (0), NULL);
+  sparp_expand_top_retvals (sparp, top, 1 /* safely_copy_all_vars */, NULL);
+  spar_env_pop (sparp);
+  return spar_gp_finalize_with_subquery (sparp, NULL, top);
+}
+
+typedef struct spar_trans_scan_s
+{
+  SPART *	sts_wrapper;	/*!< The gp of the transitive subquery */
+  SPART *	sts_parent;	/*!< The gp that contains sts_wrapper, found by the scan */
+  caddr_t	sts_subj;	/*!< Names of the variables at the ends of the transitive triple */
+  caddr_t	sts_obj;
+  int		sts_subj_uses;
+  int		sts_obj_uses;
+  int		sts_unsafe;	/*!< The query has something that may bind a variable without the scan seeing it */
+} spar_trans_scan_t;
+
+static void
+spar_trans_scan_name (caddr_t name, spar_trans_scan_t *sc)
+{
+  if (!strcmp (name, sc->sts_subj))
+    sc->sts_subj_uses++;
+  if (!strcmp (name, sc->sts_obj))
+    sc->sts_obj_uses++;
+}
+
+static void
+spar_trans_scan (SPART *tree, spar_trans_scan_t *sc)
+{
+  int ctr;
+  ptrlong type;
+  if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) || (0 == BOX_ELEMENTS (tree)))
+    return;
+  if (IS_BOX_POINTER (((caddr_t *)tree)[0]))
+    {
+      DO_BOX_FAST (SPART *, sub, ctr, (SPART **)tree)
+        spar_trans_scan (sub, sc);
+      END_DO_BOX_FAST;
+      return;
+    }
+  type = tree->type;
+  switch (type)
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      spar_trans_scan_name (tree->_.var.vname, sc);
+      return;
+    case SPAR_ALIAS:
+      spar_trans_scan_name (tree->_.alias.aname, sc);
+      spar_trans_scan (tree->_.alias.arg, sc);
+      return;
+    case SPAR_GP:
+      if (SERVICE_L == tree->_.gp.subtype)
+        sc->sts_unsafe = 1;
+      DO_BOX_FAST (SPART *, memb, ctr, tree->_.gp.members)
+        {
+          if (memb == sc->sts_wrapper)
+            sc->sts_parent = tree;
+          spar_trans_scan (memb, sc);
+        }
+      END_DO_BOX_FAST;
+      spar_trans_scan ((SPART *)(tree->_.gp.filters), sc);
+      if (NULL != tree->_.gp.subquery)
+        {
+          if (SPAR_REQ_TOP == SPART_TYPE (tree->_.gp.subquery))
+            spar_trans_scan (tree->_.gp.subquery, sc);
+          else
+            sc->sts_unsafe = 1; /* VALUES */
+        }
+      return;
+    case SPAR_REQ_TOP:
+      /* a plain variable in a result list does not bind it, the pattern that makes it is scanned anyway; an alias does, e.g. BIND */
+      DO_BOX_FAST (SPART *, rv, ctr, tree->_.req_top.retvals)
+        {
+          if (SPAR_ALIAS == SPART_TYPE (rv))
+            spar_trans_scan_name (rv->_.alias.aname, sc);
+        }
+      END_DO_BOX_FAST;
+      spar_trans_scan (tree->_.req_top.pattern, sc);
+      if (NULL != tree->_.req_top.binv)
+        sc->sts_unsafe = 1;
+      return;
+    case SPAR_TRIPLE:
+      for (ctr = 0; ctr < SPART_TRIPLE_FIELDS_COUNT; ctr++)
+        spar_trans_scan (tree->_.triple.tr_fields[ctr], sc);
+      return;
+    case SPAR_LIT: case SPAR_QNAME: case SPAR_PPATH:
+      return;
+    case SPAR_BUILT_IN_CALL:
+      spar_trans_scan ((SPART *)(tree->_.builtin.args), sc);
+      return;
+    case SPAR_FUNCALL:
+      spar_trans_scan ((SPART *)(tree->_.funcall.argtrees), sc);
+      return;
+    case SPAR_LIST:
+      spar_trans_scan ((SPART *)(tree->_.list.items), sc);
+      return;
+    }
+  if ((SPAR_MIN_TREE_TYPE > type) || (SPAR_BOP_EQ_NONOPT == type) || (SPAR_BOP_EQNAMES == type) || (SPAR_UNION_WO_ALL == type))
+    {
+      /* operators and the like, all operands are trees */
+      for (ctr = BOX_ELEMENTS (tree); --ctr > 0; /* no step */)
+        spar_trans_scan (((SPART **)tree)[ctr], sc);
+      return;
+    }
+  sc->sts_unsafe = 1;
+}
+
+/*! Attaches the start points of transitive triples in \c req_top whose end variables are used nowhere else */
+void
+spar_attach_trans_starts (sparp_t *sparp, SPART *req_top)
+{
+  dk_set_t other_trees = NULL;
+  while (NULL != sparp->sparp_trans_starts)
+    {
+      SPART **entry = (SPART **)t_set_pop (&(sparp->sparp_trans_starts));
+      SPART *parent, *start_gp = entry[1], **membs, **new_membs;
+      spar_trans_scan_t sc;
+      int ctr, new_ctr = 0;
+      memset (&sc, 0, sizeof (sc));
+      sc.sts_wrapper = entry[0];
+      sc.sts_subj = (caddr_t)(entry[2]);
+      sc.sts_obj = (caddr_t)(entry[3]);
+      spar_trans_scan (req_top, &sc);
+      parent = sc.sts_parent;
+      if (NULL == parent)
+        {
+          t_set_push (&other_trees, entry);
+          continue;
+        }
+      /* each end is named once elsewhere, by the filter that ties it to the transitive subquery */
+      if (sc.sts_unsafe || (1 != sc.sts_subj_uses) || (1 != sc.sts_obj_uses))
+        continue;
+      if ((0 != parent->_.gp.subtype) && (WHERE_L != parent->_.gp.subtype) && (OPTIONAL_L != parent->_.gp.subtype))
+        continue;
+      membs = parent->_.gp.members;
+      new_membs = (SPART **)t_alloc_list (BOX_ELEMENTS (membs) + 1);
+      DO_BOX_FAST (SPART *, memb, ctr, membs)
+        {
+          if (memb == sc.sts_wrapper)
+            new_membs[new_ctr++] = start_gp;
+          new_membs[new_ctr++] = memb;
+        }
+      END_DO_BOX_FAST;
+      parent->_.gp.members = new_membs;
+    }
+  sparp->sparp_trans_starts = other_trees;
+}
+
 SPART *
 spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
@@ -3500,6 +3662,18 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   spar_gp_add_member (sparp, wrapper_gp);
   spar_gp_add_transitive_triple_anchor_filter (sparp, subj_vname, subject);
   spar_gp_add_transitive_triple_anchor_filter (sparp, obj_vname, object);
+  if (subj_is_plain_var && obj_is_plain_var && ('\0' == t_in_preset_fld)
+    && strcmp (subject->_.var.vname, object->_.var.vname)
+    && (NULL == sparp_get_option (sparp, options, T_DIRECTION_L))
+    && ((NULL == graph) || (SPAR_QNAME == SPART_TYPE (graph)) || graph_is_assigned_by_context) )
+    {
+      SPART *t_min = sparp_get_option (sparp, options, T_MIN_L);
+      /* zero-length matches pair every node of the graph with itself, not only the subjects, so T_MIN 0 is left as it is */
+      if ((NULL == t_min) || ((DV_LONG_INT == DV_TYPE_OF (t_min)) && (1 <= unbox ((caddr_t)t_min))))
+        t_set_push (&(sparp->sparp_trans_starts), t_list (4, wrapper_gp,
+            spar_make_trans_start_gp (sparp, graph, predicate, subject->_.var.vname, qm_iri_or_pair, banned_tricks),
+            subject->_.var.vname, object->_.var.vname ) );
+    }
 #ifdef DEBUG
   if (saved_env != sparp->sparp_env)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in env");
@@ -3698,7 +3872,8 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
             t_set_push (&opts, (caddr_t)((ptrlong)T_MIN_L));
           }
         t_set_push (&opts, (caddr_t)((ptrlong)1));
-        t_set_push (&opts, (caddr_t)((ptrlong)T_NO_CYCLES_L));
+        /* T_DISTINCT visits a node once, at its lowest depth, so with T_MIN above 1 a node also reachable by a shorter path would be lost */
+        t_set_push (&opts, (caddr_t)((ptrlong)((1 >= minrepeat_num) ? T_DISTINCT_L : T_NO_CYCLES_L)));
         t_set_push (&opts, (caddr_t)((ptrlong)1));
         t_set_push (&opts, (caddr_t)((ptrlong)TRANSITIVE_L));
         if (wrapper_gp_needed)
@@ -3910,7 +4085,11 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
       int tricks = spar_inf_tricks_for_pred (sparp, predicate->_.qname.val, inf_ctx, banned_tricks, &inv_names);
       if (SPAR_TRIPLE_TRICK_TRANSITIVE & tricks)
         {
+          SPART *t_min = sparp_get_option (sparp, options, T_MIN_L);
           sparp_set_option (sparp, &options, TRANSITIVE_L, (SPART *)((ptrlong)1), SPARP_SET_OPTION_REPLACING);
+          /* same limit as for property paths: T_DISTINCT only while T_MIN is known to be at most 1 */
+          if ((NULL == t_min) || ((DV_LONG_INT == DV_TYPE_OF (t_min)) && (1 >= unbox ((caddr_t)t_min))))
+            sparp_set_option (sparp, &options, T_DISTINCT_L, (SPART *)((ptrlong)1), SPARP_SET_OPTION_REPLACING);
           return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, SPAR_TRIPLE_TRICK_TRANSITIVE | banned_tricks);
         }
       if (SPAR_TRIPLE_TRICK_INV_UNION & tricks)
@@ -5444,6 +5623,8 @@ spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args,
   return NULL; /* Some nontrivial cast is needed, so can execute but anyway can not optimize */
 }
 
+int32 enable_sparql_sample_min = 1; /* [Flags] enable_sparql_sample_min */
+
 SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
@@ -5457,6 +5638,9 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   if (NULL == args)
     args = (SPART **)t_list (0);
   argcount = BOX_ELEMENTS (args);
+  /* SAMPLE may return any value of the group: MIN is a built in aggregate, DB.DBA.SAMPLE is a PL one called per row */
+  if (enable_sparql_sample_min && aggregate_mode && !strcmp (funname, "sql:SAMPLE"))
+    funname = funname_to_store = uname_SPECIAL_cc_bif_c_MIN;
   if ('h' == funname[0]) /* It's kond of strange to begin function name name with 'h', right? 99% of them are bif:... or sql:... */
     {
       if (!strncmp (funname, OPENLINKSW_BIF_NS_URI, OPENLINKSW_BIF_NS_URI_LEN))
@@ -5951,6 +6135,8 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       spar_sqlgen_t ssg;
       sql_comp_t sc;
       caddr_t action_sql;
+      if (NULL != sparp->sparp_trans_starts)
+        spar_attach_trans_starts (sparp, action);
       sparp->sparp_entire_query = action = sparp_rewrite_all (sparp, action, 0 /* no cloning -- no need in safely_copy_retvals */);
 #ifndef NDEBUG
       t_check_tree (action);
@@ -6368,6 +6554,8 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
     {
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
+      if (NULL != sparp->sparp_trans_starts)
+        spar_attach_trans_starts (sparp, sparp->sparp_entire_query);
       if (rewrite_all)
         sparp->sparp_entire_query = sparp_rewrite_all (sparp, sparp->sparp_entire_query, 0 /* top is never cloned, hence zero safely_copy_retvals */);
         

@@ -132,7 +132,7 @@ typedef struct ws_connection_s
     caddr_t		ws_xslt_url;
     caddr_t		ws_xslt_params;
     caddr_t             ws_xslt_doc_url;
-    unsigned long 	ws_flushed;
+    uint8_t 	        ws_flushed;  /*!< at least http response headers are sent to client and TE is chunked */
 #endif
     caddr_t		ws_client_ip;
     char 		ws_forward;

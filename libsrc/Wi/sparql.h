@@ -455,6 +455,7 @@ typedef struct sparp_s {
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
   dk_set_t sparp_bare_tt_nodes;		/*!< Set of SPAR_TRIPLE_TERM nodes built from <<(s p o)>> syntax; used by parser-only validation rules. */
+  dk_set_t sparp_trans_starts;		/*!< Start point subqueries made for transitive triples with both ends unbound, attached after parsing if the ends are really unbound. */
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;
@@ -1023,6 +1024,7 @@ extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern SPART *spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
+extern void spar_attach_trans_starts (sparp_t *sparp, SPART *req_top);
 #define SPAR_TRIPLE_TRICK_TRANSITIVE	0x1 /*!< Make transitive subquery or a repeating property path, due to transitivity in inference rules or options */
 #define SPAR_TRIPLE_TRICK_INV_UNION	0x2 /*!< Make union gp or property path leaf with '^', due to inverse properties in inference rules */
 #define SPAR_TRIPLE_TRICK_MACRO		0x4 /*!< Check triple pattern for matchong to macro signatures and make macro invocation instead of a triple */

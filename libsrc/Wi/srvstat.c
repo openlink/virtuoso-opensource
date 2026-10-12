@@ -281,6 +281,8 @@ long  tft_random_seek;
 long  tft_seq_seek;
 
 extern int dbf_explain_level;
+extern int32 enable_sparql_count_distinct_dt;
+extern int32 enable_sparql_sample_min;
 long  prof_on;
 long  prof_stat_table;
 time_msec_t prof_start_time;
@@ -2332,6 +2334,8 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I32 (enable_no_free, "enable_no_free"),
 #endif
     SD_DEF_I32 (enable_rdf_box_const, "enable_rdf_box_const"),
+    SD_DEF_I32 (enable_sparql_count_distinct_dt, "enable_sparql_count_distinct_dt"),
+    SD_DEF_I32 (enable_sparql_sample_min, "enable_sparql_sample_min"),
     SD_DEF_I32 (rdf_rpid64_mode, "rdf_rpid64_mode"),
     SD_DEF_I32 (xte_use_mhash, "xte_use_mhash"),
     SD_DEF_I32 (rdf_geo_use_wkt, "rdf_geo_use_wkt"),

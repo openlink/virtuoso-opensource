@@ -2714,6 +2714,66 @@ sqlo_distinct_redundant (ST * sel, ST * gb)
   return 1;
 }
 
+int32 enable_sparql_count_distinct_dt = 1; /* [Flags] enable_sparql_count_distinct_dt */
+
+/* SPARQL's SELECT COUNT (DISTINCT e) FROM RDF_QUAD ... becomes SELECT COUNT (dt.e) FROM (SELECT DISTINCT e FROM ...) dt: the distinct node is vectored, the distinct count is checked row by row */
+static void
+sqlo_count_distinct_to_dt (sqlo_t * so, ST * tree)
+{
+  ST *texp = tree->_.select_stmt.table_exp;
+  ST *sel, *fref, *inner, *new_texp;
+  caddr_t col_name, dt_name;
+  char tmp[20];
+  int inx;
+  if (!enable_sparql_count_distinct_dt)
+    return;
+  if (!texp || tree->_.select_stmt.target || 1 != BOX_ELEMENTS (tree->_.select_stmt.selection))
+    return;
+  if (!sqlo_opt_value (ST_OPT (texp, caddr_t *, _.table_exp.opts), OPT_SPARQL))
+    return;
+  _DO_BOX (inx, texp->_.table_exp.from)
+    {
+      ST *tref = texp->_.table_exp.from[inx];
+      dbe_table_t *tb;
+      if (!ST_P (tref, TABLE_REF) || !ST_P (tref->_.table_ref.table, TABLE_DOTTED))
+	return;
+      tb = sch_name_to_table (wi_inst.wi_schema, tref->_.table_ref.table->_.table.name);
+      if (!tb || !tb_is_rdf_quad (tb))
+	return;
+    }
+  END_DO_BOX;
+  if (IS_BOX_POINTER (tree->_.select_stmt.top) || tree->_.select_stmt.top)
+    return;
+  if (texp->_.table_exp.group_by || texp->_.table_exp.having
+      || (BOX_ELEMENTS (texp) > 8 && texp->_.table_exp.group_by_full))
+    return;
+  sel = (ST *) tree->_.select_stmt.selection[0];
+  fref = ST_P (sel, BOP_AS) ? sel->_.as_exp.left : sel;
+  if (!ST_P (fref, FUN_REF) || AMMSC_COUNT != fref->_.fn_ref.fn_code || !fref->_.fn_ref.all_distinct || !fref->_.fn_ref.fn_arg)
+    return;
+  /* only the IRI_ID columns: the distinct node counts some equal ANY values of O as different */
+  if (!ST_COLUMN (fref->_.fn_ref.fn_arg, COL_DOTTED))
+    return;
+  col_name = fref->_.fn_ref.fn_arg->_.col_ref.name;
+  if (strcmp (col_name, "G") && strcmp (col_name, "S") && strcmp (col_name, "P"))
+    return;
+  /* distinct subjects of all quads: 66M keys make the distinct node's hash slower than the hash area */
+  if (!texp->_.table_exp.where && !strcmp (col_name, "S"))
+    return;
+  snprintf (tmp, sizeof (tmp), "cd%d", so->so_name_ctr++);
+  dt_name = t_box_string (tmp);
+  col_name = t_box_string ("cd_val");
+  inner = (ST *) t_box_copy_tree ((caddr_t) tree);
+  inner->_.select_stmt.selection = (caddr_t *) t_list (1, t_list (5, BOP_AS, fref->_.fn_ref.fn_arg, NULL, col_name, NULL));
+  inner->_.select_stmt.top = (ST *) (ptrlong) 1;
+  new_texp = t_listst (9, TABLE_EXP, t_list (1, t_list (3, DERIVED_TABLE, sqlp_view_def (NULL, inner, 0), dt_name)),
+      NULL, NULL, NULL, NULL, (ptrlong) 0, t_box_copy_tree ((caddr_t) ST_OPT (texp, caddr_t *, _.table_exp.opts)), NULL);
+  tree->_.select_stmt.table_exp = new_texp;
+  fref->_.fn_ref.all_distinct = 0;
+  fref->_.fn_ref.fn_arg = t_listst (3, COL_DOTTED, dt_name, col_name);
+}
+
+
 void
 sqlo_select_scope (sqlo_t * so, ST ** ptree)
 {
@@ -2734,6 +2794,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
   if (texp && sqlo_opt_value (ST_OPT (texp, caddr_t *, _.table_exp.opts), OPT_SPARQL))
     so->so_identity_joins = 1;
 
+  sqlo_count_distinct_to_dt (so, tree);
   so->so_this_dt = ot;
   sco->sco_so = so;
   sco->sco_super = so->so_scope;
