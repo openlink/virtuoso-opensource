@@ -67,6 +67,24 @@
 
 #include "strlike.h"
 
+
+/*
+ *  Default settings for jemalloc
+ *
+ *  Uses the default retain:true so jemalloc keeps unused address space
+ *  and only releases the physical pages, which avoids munmap() churn
+ *  and keeps the number of memory mappings low.
+ *
+ *  These settings can be overridden by the MALLOC_CONF environment
+ *  variable or by a /etc/malloc.conf symlink on BSD systems.
+ */
+const char *malloc_conf =
+    "background_thread:true"
+    ",dirty_decay_ms:4000"
+    ",muzzy_decay_ms:0"
+    ",narenas:16";
+
+
 int mode_pass_change;
 
 int in_srv_global_init = 0;
