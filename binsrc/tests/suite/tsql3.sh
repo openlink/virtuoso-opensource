@@ -283,6 +283,14 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfdur
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfdur.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: xsd:duration -- trdfdur.sql"
+    exit 1
+fi
+
 LOG + running sql script trdfinf_filter
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf_filter.sql
 if test $STATUS -ne 0
