@@ -2713,7 +2713,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     {
       caddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
       int dt_twobytes_for_bif = 0;
-      int box_is_plain_num = ((type == dflt_xsd_type_of_box)
+      int box_is_plain_num = (((type == dflt_xsd_type_of_box) && !IS_GENERIC_DURATION (value))
         || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box))
         || ((uname_xmlschema_ns_uri_hash_boolean == type) && (DV_LONG_INT == DV_TYPE_OF (value)) && ((0 == unbox(value)) || (1 == unbox(value)))) );
       dk_free_box (dflt_xsd_type_of_box);
@@ -2793,7 +2793,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   if ((NULL != datatype) || (NULL != language))
     {
       int dt_twobytes_for_bif = 0;
-      if ((NULL == language) && (datatype == xsd_type_of_box (value)))
+      if ((NULL == language) && (datatype == xsd_type_of_box (value)) && !IS_GENERIC_DURATION (value))
         {
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
           return;
@@ -6173,6 +6173,9 @@ args_are_printed:
             if ((DV_STRING == DV_TYPE_OF (litvalue)) &&
               ((NULL != littype) || (NULL != litlang)) )
               ssg_print_tmpl (ssg, needed, needed->qmfShortOfTypedsqlvalTmpl, NULL, NULL, tree, asname);
+            else if ((NULL != littype) && (NULL == litlang) && ((uname_xmlschema_ns_uri_hash_duration == littype)
+                || (uname_xmlschema_ns_uri_hash_dayTimeDuration == littype) || (uname_xmlschema_ns_uri_hash_yearMonthDuration == littype)) )
+              ssg_print_tmpl (ssg, needed, needed->qmfShortOfTypedsqlvalTmpl, NULL, NULL, tree, asname); /* the plain value does not tell which duration it is */
             else if ((0 != needed->qmfDtpOfNiceSqlval) &&
               (needed->qmfDtpOfNiceSqlval == DV_TYPE_OF (litvalue)) &&
               (NULL != needed->qmfShortOfNiceSqlvalTmpl) )
@@ -6634,7 +6637,8 @@ ssg_print_rvr_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, ssg_valmode_t
     goto use_sql_box;
   if ((NULL != rvr->rvrFixedOrigText) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue)) || DV_SINGLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue) || DV_NUMERIC == DV_TYPE_OF (rvr->rvrFixedValue)))
     goto use_temporary_literal;
-  if ((rvr->rvrDatatype == uname_xmlschema_ns_uri_hash_string) || (rvr->rvrDatatype != xsd_type_of_box ((caddr_t)(rvr->rvrFixedValue))))
+  if ((rvr->rvrDatatype == uname_xmlschema_ns_uri_hash_string) || (rvr->rvrDatatype != xsd_type_of_box ((caddr_t)(rvr->rvrFixedValue)))
+    || IS_GENERIC_DURATION (rvr->rvrFixedValue)) /* the plain value does not tell which duration it is */
     goto use_temporary_literal;
 
 use_sql_box:

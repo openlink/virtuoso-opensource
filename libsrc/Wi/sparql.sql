@@ -1535,6 +1535,13 @@ retry_unrdf:
           v := rdf_box_data (v);
           goto retry_unrdf;
         }
+      -- a parsed duration is stored as ttlp stores it, by its declared type
+      if (dt_iid is not null and lang is null)
+        {
+          dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
+          if (dt_twobyte in (sys_stat ('rb_type__xsd:duration'), sys_stat ('rb_type__xsd:dayTimeDuration'), sys_stat ('rb_type__xsd:yearMonthDuration')))
+            return DB.DBA.RDF_OBJ_OF_SQLVAL (rdf_box (v, dt_twobyte, 257, 0, 1));
+        }
       -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() should accept only string representations of typed values, real arguments are ', v, dt_iid, lang);
       return v;
     }
@@ -1780,9 +1787,15 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
   if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
-        res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+        {
+          -- a typed duration goes to the same RDF_OBJ row as ttlp makes of it
+          if (__tag (rdf_box_data (v)) = 195 and length (rdf_box_data (v)) = 2)
+            res := DB.DBA.RDF_OBJ_ADD (case rdf_box_type (v) when 257 then __rdf_duration_twobyte (rdf_box_data (v)) else rdf_box_type (v) end, serialize (rdf_box_data (v)), 257);
+          else
+            res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+        }
       else if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
-        res := DB.DBA.RDF_OBJ_ADD (sys_stat ('rb_type__xsd:duration'), serialize (v), 257);
+        res := DB.DBA.RDF_OBJ_ADD (__rdf_duration_twobyte (v), serialize (v), 257);
       else
         res := v;
     }

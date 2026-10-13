@@ -215,10 +215,10 @@ rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
   if (uname_xmlschema_ns_uri_hash_gYear			== dt_uname) return rb_type__xsd_gYear			;
   if (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname) return rb_type__xsd_gYearMonth		;
   if (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) return rb_type__xsd_yearMonthDuration	;
+  if (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname) return rb_type__xsd_dayTimeDuration	;
   if (uname_rdf_ns_uri_HTML				== dt_uname) return rb_type__rdf_HTML			;
   if (uname_rdf_ns_uri_JSON				== dt_uname) return rb_type__rdf_JSON			;
 
-  /* (uname_xmlschema_ns_uri_hash_dayTimeDuration       == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTime              == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTimeStamp         == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_hexBinary             == dt_uname) */
@@ -2468,6 +2468,15 @@ bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 #define DT_MODE_MASK(v) ~((DT_TYPE_DATE == DT_DT_TYPE((v))) ? DT_PRINT_MODE_HMS : ((DT_TYPE_TIME == DT_DT_TYPE((v))) ? DT_PRINT_MODE_YMD : 0))
+
+caddr_t
+bif_rdf_duration_twobyte (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_duration_twobyte");
+  if (!IS_GENERIC_DURATION (val))
+    sqlr_new_error ("22023", "SR659", "Function __rdf_duration_twobyte needs a duration as its argument");
+  return box_num (RB_DURATION_TWOBYTE (val));
+}
 
 int
 rb_duration_snprintf (char *buf, size_t buf_size, int rb_type, ccaddr_t val)
@@ -7490,6 +7499,7 @@ rdf_box_init (void)
   bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define ("__rdf_duration_twobyte", bif_rdf_duration_twobyte);
   bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE, &bt_any, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);

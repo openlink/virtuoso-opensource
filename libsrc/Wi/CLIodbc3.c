@@ -1348,7 +1348,7 @@ SQLGetConnectAttr (SQLHDBC connectionHandle,
     }
 }
 
-static caddr_t
+caddr_t
 get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key)
 {
   dk_hash_t * ht;

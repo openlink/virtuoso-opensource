@@ -412,6 +412,7 @@ SQLRETURN str_box_to_buffer(char *box, char *buffer, int buffer_length, void *st
 void str_box_to_place (char *box, char *place, int max, int *sz);
 int dv_to_sqlc_default (caddr_t xx);
 int vector_to_text (caddr_t vec, size_t box_len, dtp_t vectype, char *dest, size_t dest_size);
+caddr_t get_rdf_literal_prop (cli_connection_t * con, SQLSMALLINT ftype, short key);
 SQLLEN dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place, SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t *stmt, int nth_col, SQLLEN box_len, int c_type, SQLSMALLINT sql_type, SQLLEN *out_chars);
 SQLLEN dv_to_place (caddr_t it, int c_type, SQLSMALLINT sql_type, SQLLEN max, caddr_t place, SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t *stmt, int nth_col, SQLLEN *out_chars);
 #ifndef MAP_DIRECT_BIN_CHAR

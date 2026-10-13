@@ -394,6 +394,8 @@ extern int rb_type__xsd_duration;
 extern int rb_type__xsd_yearMonthDuration;
 extern int rb_type__xsd_dayTimeDuration;
 #define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+/* the type a plain duration stands for, as xsd_type_of_box tells it */
+#define RB_DURATION_TWOBYTE(v) ((0 == GENERIC_DURATION_GET_DT (v)) ? rb_type__xsd_yearMonthDuration : rb_type__xsd_duration)
 
 extern int rb_type__xsd_duration;
 extern int rb_type__xsd_yearMonthDuration;
