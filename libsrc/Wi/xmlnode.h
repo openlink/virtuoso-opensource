@@ -115,6 +115,28 @@ typedef struct xpath_node_s
   } xpath_node_t;
 
 
+/* Vector index ANN search node (M3) */
+typedef struct vvec_search_node_s
+  {
+    data_source_t	src_gen;
+    cl_buffer_t		clb;
+    dbe_key_t *		vsn_vec_key;	/*!< Vector index key */
+    state_slot_t *	vsn_query_vec;	/*!< Query vector SSL (already a vector; unused when vsn_query_text is set) */
+    state_slot_t *	vsn_query_text;	/*!< Query text SSL; embedded internally on first touch instead of via __VEC_INDEX_QUERY_TEXT_VECTOR + SSL_REF */
+    state_slot_t *	vsn_pk_id;	/*!< Output: PK row ID */
+	    state_slot_t *	vsn_distance;	/*!< Output: distance (optional) */
+	    state_slot_t *	vsn_similarity;	/*!< Output: similarity, derived from vsn_distance + vsn_metric (optional) */
+	    state_slot_t *	vsn_k;		/*!< Number of results to return */
+	    state_slot_t *	vsn_ef_search;	/*!< ef_search parameter */
+	    state_slot_t *	vsn_results;	/*!< ANN result rows for this input */
+	    state_slot_t *	vsn_pos;	/*!< Current ANN result offset */
+	    ptrlong		vsn_metric;	/*!< Distance metric (cosine/l2) */
+	    float		vsn_card;	/*!< Estimated cardinality (k) */
+	    char		vsn_is_driving;	/*!< If this node drives the table scan */
+	    char		vsn_rdf;	/*!< knnSimilar on RDF_QUAD.O: vsn_pk_id is O, found by RO_ID */
+	    state_slot_t *	vsn_ro_id;	/*!< RDF check mode: RO_ID of the incoming O, from ro_digest_id */
+  } vvec_search_node_t;
+
 
 typedef struct misc_accelerator_s {
   search_spec_t ***	ma_specs;
@@ -265,7 +287,8 @@ void geo_node_input (text_node_t * txs, caddr_t * inst, caddr_t * state);
 void txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state);
 void txs_free (text_node_t * txs);
 void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
+void vvec_search_node_input (vvec_search_node_t * vsn, caddr_t * inst, caddr_t * state);
+void vvec_search_node_free (vvec_search_node_t * vsn);
 caddr_t txs_xn_text_query (text_node_t * txs, query_instance_t * qi, caddr_t xp_str);
 
 #endif /* _XMLNODE_H */
-

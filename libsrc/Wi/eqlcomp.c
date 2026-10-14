@@ -340,6 +340,7 @@ qn_size (data_source_t * qn)
   QNSZ (op_node_input, op_node_t);
   QNSZ (breakup_node_input, breakup_node_t);
   QNSZ (txs_input, text_node_t);
+  QNSZ (vvec_search_node_input, vvec_search_node_t);
   return -1;
 }
 

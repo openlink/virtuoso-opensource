@@ -173,7 +173,7 @@ sparp_gp_trav_list_subquery_retval_names (sparp_t *sparp, SPART *curr, sparp_tra
           caddr_t name = NULL;
           switch (key)
             {
-            case OFFBAND_L: case SCORE_L: name = val->_.var.vname; break;
+            case OFFBAND_L: case SCORE_L: case DISTANCE_L: name = val->_.var.vname; break;
             case T_STEP_L: name = val->_.alias.aname; break;
             }
           if (sparp_varname_is_nice_retval (sparp, name, env->names, env->include_hidden_triple_term_helpers))
@@ -1068,13 +1068,13 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
       SPART *val = options[ctr-1];
       switch (key)
         {
-        case OFFBAND_L: case SCORE_L:
+        case OFFBAND_L: case SCORE_L: case DISTANCE_L:
           {
             if (SPART_VARR_GLOBAL & val->_.var.rvr.rvrRestrictions)
-              spar_error (sparp, "Only plain variables can be used in OFFBAND_L or SCORE_L options, not parameters like ?%.50s", val->_.var.vname);
+              spar_error (sparp, "Only plain variables can be used in OFFBAND_L, SCORE_L or DISTANCE_L options, not parameters like ?%.50s", val->_.var.vname);
             sparp_equiv_get (sparp, gp, val, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
             if (!set_tabid)
-              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_options(): OFFBAND_L or SCORE_L not in triple");
+              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_options(): OFFBAND_L, SCORE_L or DISTANCE_L not in triple");
             val->_.var.tabid = curr->_.triple.tabid;
             break;
           }
@@ -1086,7 +1086,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
           }
         case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
         case GEO_L: case PRECISION_L:
-        case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
+        case SCORE_LIMIT_L: case DISTANCE_LIMIT_L: case T_MIN_L: case T_MAX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
             if (!IS_BOX_POINTER (val))
@@ -5535,6 +5535,17 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
   int graph_type;
   int required_source_type;
   old_cases_count = BOX_ELEMENTS_0 (triple->_.triple.tc_list);
+  if (triple->_.triple.ft_type == uname_bif_c_vector_search)
+    {
+      if (1 != old_cases_count)
+        {
+          triple->_.triple.tc_list = (triple_case_t **)t_list (1, tc_default);
+          mp_box_tag_modify (triple->_.triple.tc_list, DV_ARRAY_OF_LONG);
+        }
+      for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
+        triple->_.triple.native_formats[field_ctr] = qm_default_values[field_ctr]->qmvFormat;
+      return;
+    }
   if ((0 < old_cases_count) && (4 > old_cases_count))
     return;
   graph = triple->_.triple.tr_graph;
@@ -6233,6 +6244,8 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
       if (memb->_.triple.ft_type)
         {
           int filt_ctr;
+          if (memb->_.triple.ft_type == uname_bif_c_vector_search)
+            goto skip_ft_filter_search;
           DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
             {
               if (NULL != spar_filter_is_freetext_or_rtree (sparp, filt, memb))
@@ -6246,6 +6259,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
             spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s",
               curr->_.triple.tr_object->_.var.vname );
         }
+skip_ft_filter_search:
       if (0 == tc_count)
         {
           if (!curr_is_union)
@@ -7761,6 +7775,8 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       int g_norm_is_var;
       SPART *gp_of_cache;
       if (SPAR_TRIPLE != memb->type)
+        continue;
+      if (memb->_.triple.ft_type == uname_bif_c_vector_search)
         continue;
       if (NULL != memb->_.triple.sinv_idx_and_qms[0])
         continue; /* New fix for reopened Bug 14737: No permission filters should be placed inside service invocations */

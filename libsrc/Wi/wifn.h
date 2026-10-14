@@ -35,6 +35,9 @@
 #include "../Dk/Dkhash64.h"
 /*include "../Dk/Dkbox.h"*/
 
+typedef struct query_instance_s query_instance_t;
+typedef struct client_connection_s client_connection_t;
+
 /* search.c */
 
 void const_length_init (void);
@@ -593,6 +596,46 @@ void wi_new_dirty (buffer_desc_t * buf);
 
 void dbe_key_open (dbe_key_t * key);
 void key_dropped (dbe_key_t * key);
+int vvec_index_opts_p (caddr_t * opts);
+caddr_t * vvec_prepare_index_opts (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * cols, caddr_t * opts);
+/* Vector index metrics */
+#define VVEC_METRIC_COSINE 1
+#define VVEC_METRIC_L2 2
+#define VVEC_METRIC_L1 3
+
+void vvec_index_post_create (query_instance_t * qi, caddr_t table, caddr_t name, caddr_t * opts);
+int vvec_key_p (dbe_key_t * key);
+int vvec_replay_page (key_id_t key_id, dp_addr_t dp, int offset, db_buf_t bytes, int len);
+void vvec_replay_condemn (key_id_t key_id);
+void vvec_restore_maps_free (void);
+int vvec_backup_pages (lock_trx_t * lt, index_tree_t * it);
+void vvec_page_images_free (dk_hash_64_t ** images_ret);
+void vvec_trx_rollback (lock_trx_t * lt);
+void vvec_replay_rollback_mark (key_id_t key_id, int offset);
+void vvec_replay_rollback_finish (void);
+void vvec_trx_undo_free (lock_trx_t * lt);
+void vvec_tree_free (vvec_tree_t * vt);
+int vvec_parse_metric (const char *metric);
+int vvec_key_source_match (dbe_key_t * key, const char *source_col_name, const char **pk_col_name_ret, int *metric_ret);
+caddr_t vvec_opt_value (caddr_t * opts, const char * name);
+int vvec_is_string_box (caddr_t box);
+int vvec_source_column_needs_pk_key (query_instance_t * qi, caddr_t table, caddr_t source_col_name);
+int vvec_explain_index_info (const char *index_name, const char *mode, char *buf, int buflen);
+int vvec_explain_row_distance_info (const char *index_name, char *buf, int buflen);
+caddr_t vvec_search_run (query_instance_t * qi, const char *func_name, char * index_name, caddr_t query_vec, int k, int ef_search);
+caddr_t vvec_search_run_key (query_instance_t * qi, const char *func_name, dbe_key_t * key, caddr_t query_vec, int k, int ef_search);
+int vvec_ann_cost (dbe_key_t * key, int k, int ef_search, float *rows_out, float *cost_out);
+int vvec_rdf_obj_n_indexes (void);
+#define VEC_SIMILAR_DEFAULT_K 100	/* knnSimilar's k when none is given */
+dbe_key_t * vvec_rdf_obj_search_key (const char * name, int * n_ret);
+int sqlo_vvec_require_ann_for_client (client_connection_t *cli);
+int sqlo_vvec_filter_mode_for_client (client_connection_t *cli);
+#define VVEC_FILTER_MODE_AUTO   0	/*!< cost-based leading-ANN-vs-filter choice */
+#define VVEC_FILTER_MODE_FILTER 1	/*!< force filter/rerank: never take leading ANN */
+#define VVEC_FILTER_MODE_ANN    2	/*!< force leading ANN regardless of other preds */
+void vvec_key_open_init_root (index_tree_t * it, dbe_key_t * key);
+void vvec_key_dropped (dbe_key_t * key);
+void vvec_drop_index (query_instance_t * qi, dbe_key_t * key);
 void dbe_key_save_roots (dbe_key_t * key);
 void sch_save_roots (dbe_schema_t * sc);
 
@@ -614,6 +657,7 @@ buffer_desc_t * itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, i
 dbe_schema_t * isp_schema_1 (void * thr);
 #define isp_schema(x) (wi_inst.wi_schema)
 buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, oid_t col_id, it_cursor_t * has_hold);
+buffer_desc_t * it_new_page_exact (index_tree_t * it, dp_addr_t dp, int type);
 void it_free_page (index_tree_t * it, buffer_desc_t * buf);
 void it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type, oid_t col_id);
 void it_cache_check (index_tree_t * it, int mode);
@@ -740,6 +784,7 @@ int itc_row_insert (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf
 		    int blobs_in_place, int pk_only);
 
 void itc_drop_index (it_cursor_t * it, dbe_key_t * key);
+void bif_vvec_init (void);
 
 void itc_row_key_insert (it_cursor_t * it, db_buf_t row, dbe_key_t * ins_key);
 
@@ -850,6 +895,7 @@ extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
 extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
+extern float sqlo_vvec_ann_cost_bias;
 extern size_t txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;

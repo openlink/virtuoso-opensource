@@ -283,13 +283,14 @@ libwi_la_SOURCES = \
 	trans.c \
 	update.c \
 	uuencode.c \
-	vec.c \
-	vechash.c \
-	vecins.c \
-	vecrdf.c \
-	vecsearch.c \
-	wirpc.c \
-	wiservic.c \
+		vec.c \
+		vechash.c \
+		vecins.c \
+		vecrdf.c \
+		vecsearch.c \
+		vvec.c \
+		wirpc.c \
+		wiservic.c \
 	xpathp.c \
 	xpscn.c \
 	$(C_FILES_SPARQL)
@@ -696,6 +697,8 @@ SQL_FILES_REPL		= \
 
 SQL_FILES_SPARQL	= \
 	$(srcdir)/ttlpv.sql \
+	$(srcdir)/sparql_vec_onnx.sql \
+	$(srcdir)/sparql_vec_index.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
 	$(srcdir)/sparql_ui.sql \
@@ -703,7 +706,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
-	$(srcdir)/rdflddir2.sql
+	$(srcdir)/rdflddir2.sql \
+	$(srcdir)/sparql_vec_index_view.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql

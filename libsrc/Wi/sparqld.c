@@ -229,7 +229,10 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case DATATYPE_L: return "DATATYPE";
     case DESC_L: return "DESC";
     case DESCRIBE_L: return "DESCRIBE";
+    case DISTANCE_L: return "DISTANCE";
+    case DISTANCE_LIMIT_L: return "DISTANCE_LIMIT";
     case DISTINCT_L: return "SELECT DISTINCT";
+    case EF_SEARCH_L: return "EF_SEARCH";
     case false_L: return "false";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
@@ -237,6 +240,8 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     /* case GRAPH_L: return "GRAPH"; */
     case IFP_L: return "IFP";
     case IN_L: return "IN";
+    case INDEX_L: return "INDEX";
+    case INDEX_ALL_L: return "INDEX *";
     case INFERENCE_L: return "INFERENCE";
     case IRI_L: return "IRI";
     case LANG_L: return "LANG";
@@ -250,6 +255,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case OPTIONAL_L: return "OPTIONAL";
     case ORDER_L: return "ORDER";
     case PRECISION_L: return "PRECISION";
+    case RANKING_L: return "RANKING";
     /* case PREDICATE_L: return "PREDICATE"; */
     /* case PREFIX_L: return "PREFIX"; */
     case SCORE_L: return "SCORE";
@@ -598,7 +604,7 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
       switch (opt_id)
         {
         case T_CYCLES_ONLY_L: case T_DISTINCT_L: case T_EXISTS_L: case T_NO_CYCLES_L:
-        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case TRANSITIVE_L: case IFP_L:
+        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case TRANSITIVE_L: case IFP_L: case INDEX_ALL_L:
           ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
           break;
         case T_STEP_L:
@@ -614,9 +620,14 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
           ssg->ssg_inside_t_inouts = 0;
           break;
         default:
-          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
-          ssg_sdprint_tree (ssg, opt_val);
-          break;
+          {
+            const char *opname = ssg_sd_opname (ssg->ssg_sparp, opt_id, 0);
+            if (NULL == opname)
+              spar_error (ssg->ssg_sparp, "Triple option %ld can not be rendered in SPARQL text", (long) opt_id);
+            ssg_puts (opname);
+            ssg_sdprint_tree (ssg, opt_val);
+            break;
+          }
         }
     }
   END_DO_BOX_FAST_STEP2;

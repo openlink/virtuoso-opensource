@@ -249,7 +249,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
     }
     }
 
-  if (DPF_INDEX == type)
+  if (DPF_INDEX == type || DPF_VEC == type)
     it->it_n_index_est++;
   else
     it->it_n_blob_est++;
@@ -321,8 +321,14 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
     }
   else if (buf->bd_content_map)
     {
+      if (type == DPF_VEC)
+	LONG_SET (buf->bd_buffer + DP_KEY_ID, it->it_key ? it->it_key->key_id : KI_TEMP);
       pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
       buf->bd_content_map = NULL;
+    }
+  else if (type == DPF_VEC)
+    {
+      LONG_SET (buf->bd_buffer + DP_KEY_ID, it->it_key ? it->it_key->key_id : KI_TEMP);
     }
 
 #ifdef PAGE_DEBUG
@@ -332,6 +338,90 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
   buf_set_dirty (buf);
   DBG_PT_PRINTF (("New page L=%d B=%p FL=%d K=%s \n", buf->bd_page, buf, type,
 		 it->it_key ? (it->it_key->key_name ? it->it_key->key_name : "unnamed key") : "no key"));
+  TC (tc_new_page);
+  return buf;
+}
+
+
+/* Allocate the exact logical/physical page DP without reading its old disk
+   contents.  This is the recovery counterpart of it_new_page (), used when a
+   WAL full-page image initializes a page that did not exist at the checkpoint
+   (PostgreSQL's P_NEW/RBM_ZERO + full-image case).
+
+   The caller must have verified that DP belongs to IT's extent map and is free
+   in the storage map.  em_dp_allocated () reserves it in both allocator
+   layers; installing it directly in itm_dp_to_buf avoids buf_disk_read ()
+   interpreting stale bytes from the formerly free disk page. */
+buffer_desc_t *
+it_new_page_exact (index_tree_t * it, dp_addr_t dp, int type)
+{
+  extent_map_t * em = it->it_extent_map;
+  buffer_pool_t * action_bp = NULL;
+  buffer_desc_t * buf;
+  it_map_t * itm;
+  int n_tries;
+  /* Extent type, not page type: the test below is against EXT_*, and comparing
+     it to a DPF_* value never matched -- DPF_INDEX is 0 and DPF_VEC is 13. */
+  int ext_type = (!it->it_blobs_with_index && (DPF_BLOB == type || DPF_BLOB_DIR == type)) ? EXT_BLOB : EXT_INDEX;
+
+  em_dp_allocated (em, dp, 0);
+  if (DPF_INDEX == type || DPF_VEC == type)
+    it->it_n_index_est++;
+  else
+    it->it_n_blob_est++;
+
+  for (n_tries = 0; ; n_tries++)
+    {
+      buf = bp_get_buffer_1 (NULL, &action_bp,
+	  in_log_replay ? BP_BUF_REQUIRED : BP_BUF_IF_AVAIL);
+      if (buf)
+	break;
+      if (action_bp)
+	bp_delayed_stat_action (action_bp);
+      action_bp = NULL;
+      if (n_tries > 10)
+	{
+	  em_free_dp (em, dp, EXT_INDEX);
+	  return NULL;
+	}
+      if (n_tries > 4)
+	virtuoso_sleep (0, 50000 * (n_tries - 4));
+    }
+  if (action_bp)
+    bp_delayed_stat_action (action_bp);
+  if (buf->bd_readers != 1)
+    GPF_T1 ("expecting exact new-page buffer to be wired down");
+
+  itm = IT_DP_MAP (it, dp);
+  mutex_enter (&itm->itm_mtx);
+  sethash (DP_ADDR2VOID (dp), &itm->itm_dp_to_buf, (void *) buf);
+  sethash (DP_ADDR2VOID (dp), &itm->itm_remap, DP_ADDR2VOID (dp));
+  buf->bd_page = dp;
+  buf->bd_physical_page = dp;
+  buf->bd_tree = it;
+  buf->bd_storage = it->it_storage;
+  buf->bd_pl = NULL;
+  buf->bd_readers = 0;
+  BD_SET_IS_WRITE (buf, 1);
+  mutex_leave (&itm->itm_mtx);
+
+  if (em != em->em_dbs->dbs_extent_map && EXT_INDEX == ext_type)
+    {
+      mutex_enter (em->em_mtx);
+      remhash (DP_ADDR2VOID (dp), em->em_uninitialized);
+      mutex_leave (em->em_mtx);
+    }
+  if (buf->bd_content_map)
+    {
+      pm_store (buf, buf->bd_content_map->pm_size, (void *) buf->bd_content_map);
+      buf->bd_content_map = NULL;
+    }
+  memset (buf->bd_buffer, 0, PAGE_SZ);
+  SHORT_SET (buf->bd_buffer + DP_FLAGS, type);
+  if (DPF_INDEX == type || DPF_VEC == type)
+    LONG_SET (buf->bd_buffer + DP_KEY_ID,
+	 it->it_key ? it->it_key->key_id : KI_TEMP);
+  buf_set_dirty (buf);
   TC (tc_new_page);
   return buf;
 }
@@ -356,7 +446,7 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
   if (!(l == DPF_BLOB || l == DPF_BLOB_DIR || l == DPF_COLUMN)
       && !remap)
     GPF_T1 ("Freeing a page that is not remapped");
-  if (DPF_INDEX == l || DPF_COLUMN == l)
+  if (DPF_INDEX == l || DPF_COLUMN == l || DPF_VEC == l)
     it->it_n_index_est--;
   else
     it->it_n_blob_est--;
@@ -525,4 +615,3 @@ dp_info (dbe_storage_t * dbs, dp_addr_t dp)
   printf (" no buffer or remap\n");
  found: ;
 }
-

@@ -99,6 +99,7 @@ extern void qi_read_table_schema (query_instance_t * qi, char *read_tb);
 extern void ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *err_ret);
 extern void bif_date_init (void);
 extern void bif_geo_init (void);
+extern void bif_vvec_init (void);
 extern void bif_file_init (void);
 extern void bif_explain_init (void);
 extern void bif_status_init (void);
@@ -2254,7 +2255,7 @@ bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   case DV_ARRAY_OF_LONG:
     return (box_num (len / sizeof (ptrlong)));
   case DV_ARRAY_OF_FLOAT:
-    return (box_num (len / sizeof (long)));
+    return (box_num (len / sizeof (float)));
   case DV_ARRAY_OF_DOUBLE:
     return (box_num (len / sizeof (double)));
   case DV_WIDE:
@@ -2544,7 +2545,7 @@ again:
     ((ptrlong *) arr)[inx] = unbox (it);
     break;
   case DV_ARRAY_OF_FLOAT:
-    if (((size_t) inx) >= len / sizeof (caddr_t))
+    if (((size_t) inx) >= len / sizeof (float))
       goto bs;
     ((float *) arr)[inx] = bif_float_arg (qst, args, idxcount + 1, "aset");
     break;
@@ -6920,7 +6921,11 @@ caddr_t
 bif_isvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "isvector");
-  return box_bool (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg0));
+  dtp_t dtp = DV_TYPE_OF (arg0);
+  /* vector(), fvector(), dvector() and lvector() all build vectors.  isarray is no
+     substitute here -- it is also true for a string, which is the whole point of this. */
+  return box_bool (DV_ARRAY_OF_POINTER == dtp || DV_ARRAY_OF_FLOAT == dtp
+      || DV_ARRAY_OF_DOUBLE == dtp || DV_ARRAY_OF_LONG == dtp);
 }
 
 caddr_t
@@ -8997,7 +9002,7 @@ caddr_t
 bif_fvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len = BOX_ELEMENTS (args);
-  float *res = (float *) dk_alloc_box (len * sizeof (caddr_t),
+  float *res = (float *) dk_alloc_box (len * sizeof (float),
     DV_ARRAY_OF_FLOAT);
   int inx;
   for (inx = 0; inx < len; inx++)
@@ -11100,6 +11105,8 @@ BIF_STUB (bif_stub_contains		, "contains"		)
 BIF_STUB (bif_stub_xpath_contains	, "xpath_contains"	)
 BIF_STUB (bif_stub_xquery_contains	, "xquery_contains"	)
 BIF_STUB (bif_stub_xcontains		, "xcontains"		)
+BIF_STUB (bif_stub_vector_search	, "vector_search"	)
+BIF_STUB (bif_stub_knn_similar	, "knnSimilar"	)
 
 
 caddr_t
@@ -18473,6 +18480,8 @@ sql_bif_init (void)
   bif_define ("xpath_contains", bif_stub_xpath_contains);
   bif_define ("xquery_contains", bif_stub_xquery_contains);
   bif_define ("xcontains", bif_stub_xcontains);
+  bif_define ("vector_search", bif_stub_vector_search);
+  bif_define ("knnSimilar", bif_stub_knn_similar);
   bif_define_ex ("exists", bif_stub_exists, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
   st_nvarchar = (sql_tree_tmp *) list (3, DV_WIDE, 0, 0);
@@ -18704,6 +18713,7 @@ bif_define ("je_heap_profile_active", bif_je_heap_profile_active);
 
   bif_date_init ();
   bif_geo_init ();
+  bif_vvec_init ();
   bif_file_init ();
   bif_status_init ();
   bif_explain_init ();

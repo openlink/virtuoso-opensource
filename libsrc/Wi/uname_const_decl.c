@@ -88,6 +88,8 @@ caddr_t uname_bif_c_st_within;
 caddr_t uname_bif_c_xcontains;
 caddr_t uname_bif_c_xpath_contains;
 caddr_t uname_bif_c_xquery_contains;
+caddr_t uname_bif_c_vector_search;
+caddr_t uname_bif_c_knnSimilar;
 caddr_t uname_bif_ns_uri;
 caddr_t uname_opengis_def_function_gs_ns_uri;
 caddr_t uname_opengis_def_function_gs_ns_uri_boundary;
@@ -420,6 +422,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_bif_c_xcontains			, "bif:xcontains"		},
   { &uname_bif_c_xpath_contains			, "bif:xpath_contains"		},
   { &uname_bif_c_xquery_contains		, "bif:xquery_contains"		},
+  { &uname_bif_c_vector_search		, "bif:vector_search"		},
+  { &uname_bif_c_knnSimilar		, "bif:knnSimilar"		},
   { &uname_bif_ns_uri					, OPENLINKSW_BIF_NS_URI				},
   { &uname_opengis_def_function_gs_ns_uri		, OPENGIS_DEF_FUNCTION_GS_NS_URI		},
   { &uname_opengis_def_function_gs_ns_uri_boundary	, OPENGIS_DEF_FUNCTION_GS_NS_URI "boundary"	},

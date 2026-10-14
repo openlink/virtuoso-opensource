@@ -2529,6 +2529,8 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
   dbe_key_t * key = ik->ik_key;
   query_instance_t * qi = (query_instance_t *) qst;
   QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+  if (vvec_key_p (key))
+    return DVC_LESS;
   cl_enlist_ck (it, NULL);
   memset (&rd, 0, sizeof (row_delta_t));
   rd.rd_allocated = RD_AUTO;
@@ -3138,4 +3140,3 @@ __get_column_name (oid_t col_id, dbe_key_t *key)
 #define IS_TIME_DTP(d) \
 	(d == DV_TIMESTAMP_OBJ || d == DV_TIMESTAMP || d == DV_DATE || \
 	 d == DV_TIME || d == DV_DATETIME)
-

@@ -36,6 +36,7 @@
 #include "security.h"
 #include "sqlo.h"
 #include "list2.h"
+#include "wifn.h"
 
 
 
@@ -45,6 +46,235 @@
 
 #define SPEC_ALL_COLS 1
 #define SPEC_MIXED 0
+
+
+/* M3: Detect TOP k ORDER BY VECTOR_DISTANCE(col, const) pattern for ANN search.
+ * Returns 1 if the order_by expression is a VECTOR_DISTANCE call on a
+ * vector-indexed column with a constant query vector.
+ */
+static int
+sqlo_vvec_metric_string_p (ST *tree)
+{
+  if (!IS_BOX_POINTER (tree))
+    return 0;
+  switch (DV_TYPE_OF (tree))
+    {
+    case DV_STRING:
+    case DV_C_STRING:
+    case DV_SYMBOL:
+    case DV_UNAME:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+
+static dbe_key_t *
+sqlo_vvec_key_by_name (op_table_t *ot, const char *key_name)
+{
+  if (!ot || !ot->ot_table || !key_name)
+    return NULL;
+  DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
+    {
+      if (vvec_key_p (key) && 0 == CASEMODESTRCMP (key->key_name, key_name))
+	return key;
+    }
+  END_DO_SET ();
+  return NULL;
+}
+
+
+static ST *
+sqlo_vvec_query_text_arg (dbe_key_t *vec_key, ST *query_arg)
+{
+  if (vec_key && IS_BOX_POINTER (query_arg) && DV_STRING == DV_TYPE_OF (query_arg))
+    return (ST *) t_listst (3, CALL_STMT,
+	t_sqlp_box_id_upcase ("__VEC_INDEX_QUERY_TEXT_VECTOR"),
+	t_list (2, t_box_dv_short_string (vec_key->key_name), query_arg));
+  return query_arg;
+}
+
+
+static int
+sqlo_is_vector_distance_ann_eligible (sqlo_t *so, ST *oby_col, op_table_t **ot_ret, dbe_key_t **key_ret, ST **query_ret)
+{
+  ST **args;
+  op_table_t *ot;
+  dbe_key_t *chosen_key = NULL;
+  ST *query_arg = NULL;
+  const char *call_name;
+
+  if (!IS_BOX_POINTER (oby_col))
+    return 0;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (oby_col))
+    return 0;
+  if (!ST_P (oby_col, CALL_STMT))
+    return 0;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (oby_col->_.call.name))
+    return 0;
+  if (!sqlo_vvec_metric_string_p ((ST *) oby_col->_.call.name))
+    return 0;
+  call_name = (const char *) oby_col->_.call.name;
+
+  args = oby_col->_.call.params;
+  if (0 == stricmp (call_name, "__VEC_INDEX_ROW_DISTANCE"))
+    {
+      if (BOX_ELEMENTS_0 (args) < 3 || BOX_ELEMENTS (args) > 4)
+	return 0;
+      if (!sqlo_vvec_metric_string_p (args[0]))
+	return 0;
+      if (!ST_COLUMN (args[1], COL_DOTTED) || STAR == args[1]->_.col_ref.name || !args[1]->_.col_ref.prefix)
+	return 0;
+
+      ot = sqlo_cname_ot_1 (so, args[1]->_.col_ref.prefix, 0);
+      if (!ot || !ot->ot_table)
+	return 0;
+      chosen_key = sqlo_vvec_key_by_name (ot, (const char *) args[0]);
+      query_arg = args[2];
+    }
+  else if (0 == stricmp (call_name, "VECTOR_DISTANCE"))
+    {
+      int metric_filter = 0;
+      int source_matches = 0;
+      int metric_matches = 0;
+
+      if (BOX_ELEMENTS_0 (args) < 2 || BOX_ELEMENTS (args) > 3)
+	return 0;
+      if (!ST_COLUMN (args[0], COL_DOTTED) || STAR == args[0]->_.col_ref.name || !args[0]->_.col_ref.prefix)
+	return 0;
+
+      ot = sqlo_cname_ot_1 (so, args[0]->_.col_ref.prefix, 0);
+      if (!ot || !ot->ot_table)
+	return 0;
+      if (BOX_ELEMENTS (args) > 2 && sqlo_vvec_metric_string_p (args[2]))
+	metric_filter = vvec_parse_metric ((char *) args[2]);
+
+      DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
+	{
+	  const char *pk_name = NULL;
+	  int key_metric = 0;
+	  if (!vvec_key_source_match (key, (const char *) args[0]->_.col_ref.name, &pk_name, &key_metric))
+	    continue;
+	  source_matches++;
+	  if (!chosen_key)
+	    chosen_key = key;
+	  if (metric_filter && key_metric == metric_filter)
+	    {
+	      metric_matches++;
+	      chosen_key = key;
+	    }
+	}
+      END_DO_SET ();
+      if (metric_filter && 1 != metric_matches)
+	return 0;
+      if (!metric_filter && source_matches > 1)
+	return 0;
+      query_arg = args[1];
+    }
+  else
+    return 0;
+
+  if (!chosen_key)
+    return 0;
+
+  *ot_ret = ot;
+  *key_ret = chosen_key;
+  *query_ret = sqlo_vvec_query_text_arg (chosen_key, query_arg);
+  return 1;
+}
+
+
+static void
+sqlo_rewrite_vector_ann_oby_expr (op_table_t *vec_ot, dbe_key_t *vec_key, ST *oby_col)
+{
+  ST **args;
+  const char *pk_name = NULL;
+  int key_metric = 0;
+  dbe_column_t *pk_col;
+  ST *pk_ref;
+
+  if (!vec_ot || !vec_key || !ST_P (oby_col, CALL_STMT))
+    return;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (oby_col->_.call.name))
+    return;
+  if (0 != stricmp ((const char *) oby_col->_.call.name, "VECTOR_DISTANCE"))
+    return;
+  args = oby_col->_.call.params;
+  if (BOX_ELEMENTS_0 (args) < 2 || BOX_ELEMENTS (args) > 3)
+    return;
+  if (!ST_COLUMN (args[0], COL_DOTTED) || STAR == args[0]->_.col_ref.name)
+    return;
+  if (!vvec_key_source_match (vec_key, args[0]->_.col_ref.name, &pk_name, &key_metric))
+    return;
+  pk_col = tb_name_to_column (vec_ot->ot_table, (char *) pk_name);
+  if (!pk_col)
+    return;
+  pk_ref = (ST *) t_listst (3, COL_DOTTED,
+      args[0]->_.col_ref.prefix ? t_box_copy (args[0]->_.col_ref.prefix) : (caddr_t) NULL,
+      t_box_string (pk_col->col_name));
+  if (BOX_ELEMENTS (args) > 2)
+    oby_col->_.call.params = (ST **) t_list (4,
+	t_box_dv_short_string (vec_key->key_name),
+	pk_ref,
+	sqlo_vvec_query_text_arg (vec_key, args[1]),
+	args[2]);
+  else
+    oby_col->_.call.params = (ST **) t_list (3,
+	t_box_dv_short_string (vec_key->key_name),
+	pk_ref,
+	sqlo_vvec_query_text_arg (vec_key, args[1]));
+  oby_col->_.call.name = t_sqlp_box_id_upcase ("__VEC_INDEX_ROW_DISTANCE");
+}
+
+
+static int
+sqlo_try_vector_ann_oby (sqlo_t *so, op_table_t *top_ot, ST **oby, ST *top_exp, dk_set_t *new_tables)
+{
+  ST *spec;
+  op_table_t *vec_ot = NULL;
+  dbe_key_t *vec_key = NULL;
+  ST *query_arg = NULL;
+
+  if (!oby || BOX_ELEMENTS (oby) != 1 || !top_exp || top_ot->ot_oby_dfe->_.setp.top_cnt <= 0)
+    return 0;
+
+  spec = oby[0];
+  if (spec->_.o_spec.order == ORDER_DESC)
+    return 0;
+  if (!sqlo_is_vector_distance_ann_eligible (so, spec->_.o_spec.col, &vec_ot, &vec_key, &query_arg))
+    return 0;
+  if (!vec_ot || !vec_ot->ot_dfe || vec_ot->ot_dfe->dfe_type != DFE_TABLE)
+    return 0;
+
+  vec_ot->ot_vec_index = vec_key;
+  vec_ot->ot_vec_query_text =
+      (IS_BOX_POINTER (spec->_.o_spec.col->_.call.params[1])
+	&& DV_STRING == DV_TYPE_OF (spec->_.o_spec.col->_.call.params[1]))
+      ? spec->_.o_spec.col->_.call.params[1] : NULL;
+  vec_ot->ot_vec_query = vec_ot->ot_vec_query_text ? NULL : query_arg;
+  vec_ot->ot_vec_k = top_exp->_.top.exp;
+  vec_ot->ot_vec_ef_search = NULL;
+  vec_ot->ot_order_dir = ORDER_ASC;
+  vec_ot->ot_dfe->_.table.is_vec_order = 1;
+  vec_ot->ot_dfe->_.table.is_oby_order = 0;
+  sqlo_rewrite_vector_ann_oby_expr (vec_ot, vec_key, spec->_.o_spec.col);
+  {
+    float ann_rows = 0;
+    float ann_cost = 0;
+    int k = (int) top_ot->ot_oby_dfe->_.setp.top_cnt;
+    if (vvec_ann_cost (vec_key, k, k, &ann_rows, &ann_cost))
+      {
+	vec_ot->ot_dfe->dfe_arity = ann_rows;
+	vec_ot->ot_dfe->dfe_unit = ann_cost;
+	top_ot->ot_oby_dfe->dfe_arity = ann_rows;
+	top_ot->ot_oby_dfe->dfe_unit = ann_cost;
+      }
+  }
+  TNCONCF1 (*new_tables, vec_ot);
+  return 1;
+}
+
 
 int
 sqlo_oby_exp_cols (sqlo_t * so, ST * dt, ST** oby)
@@ -171,6 +401,12 @@ sqlo_ot_oby_seq (sqlo_t * so, op_table_t * top_ot)
     }
   END_DO_BOX;
   top_ot->ot_oby_dfe->dfe_tables = tables;
+
+  if (sqlo_try_vector_ann_oby (so, top_ot, oby, top_exp, &new_tables))
+    {
+      top_ot->ot_oby_ots = new_tables;
+      return;
+    }
 
   DO_BOX (ST *, spec, inx, oby)
     {

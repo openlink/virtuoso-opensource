@@ -182,6 +182,7 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BIF_SAMEVALUE			(ptrlong)1178
 #define SPAR_BIF_CONTAINS_TOKEN			(ptrlong)1179
 #define SPAR_BIF_FORMAT_NUMBER			(ptrlong)1180
+#define SPAR_BIF_VECTOR_SEARCH			(ptrlong)1181
 
 #define SPAR_SML_CREATE			(ptrlong)1201
 #define SPAR_SML_DROP			(ptrlong)1202
@@ -1189,6 +1190,13 @@ extern void spar_qm_find_all_conditions (sparp_t *sparp, dk_set_t map_aliases, d
 extern SPART *spar_make_qm_sql (sparp_t *sparp, const char *fname, SPART **fixed, SPART **named);
 extern SPART *spar_make_vector_qm_sql (sparp_t *sparp, SPART **fixed);
 extern SPART *spar_make_topmost_qm_sql (sparp_t *sparp);
+
+/*! Walks a finalized WHERE group-graph-pattern tree of a general (KEY/EMBEDDING/
+   WHERE) SPARQL vector index and returns a flat t-boxed SPART ** array of
+   [graph_iri_1, pred_iri_1, ...] trigger pairs for predicate-precise async
+   maintenance.  Returns an empty list if the pattern is not async-scopable
+   (any triple not inside an explicit GRAPH <iri>).  See sparql_tree.c. */
+extern SPART **spar_vec_extract_trigger_pairs (sparp_t *sparp, SPART *where_gp, caddr_t *default_graphs);
 extern SPART *spar_qm_make_empty_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options);
 extern SPART *spar_qm_make_real_mapping (sparp_t *sparp, caddr_t qm_id, SPART **options);
 

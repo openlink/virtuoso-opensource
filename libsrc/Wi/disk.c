@@ -213,7 +213,12 @@ dbs_reverse_header_func_f dbs_reverse_page_header[DPF_LAST_DPF] =
   /* DPF_DB_HEAD */ dbs_rev_h_head,
   /* DPF_CP_REMAP */ dbs_rev_h_remap,
   /* DPF_BLOB_DIR */ dbs_rev_h_blob_dir,
-  /* DPF_INCBACKUP_SET */ dbs_rev_h_incbackup
+  /* DPF_INCBACKUP_SET */ dbs_rev_h_incbackup,
+  /* DPF_EXTENT_SET */ NULL,
+  /* DPF_EXTENT_MAP */ NULL,
+  /* DPF_HASH */ NULL,
+  /* DPF_COLUMN */ NULL,
+  /* DPF_VEC */ NULL
 };
 
 wi_database_t rev_cfg;
@@ -411,6 +416,8 @@ DBG_NAME (it_allocate) (DBG_PARAMS dbe_storage_t * dbs)
   tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
   memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
   tree->it_lock_release_mtx = mutex_allocate ();
+  tree->it_vvec.vt_graph_rwlock = rwlock_allocate ();
+  dk_mutex_init (&tree->it_vvec.vt_writer_mtx, MUTEX_TYPE_SHORT);
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
       it_map_t * itm = &tree->it_maps[inx];
@@ -589,6 +596,7 @@ it_free (index_tree_t * it)
     }
   if (it->it_lock_release_mtx)
     mutex_free (it->it_lock_release_mtx);
+  vvec_tree_free (&it->it_vvec);
   dk_free ((void*) it->it_maps, sizeof (it_map_t) * IT_N_MAPS);
   box_tag_modify (it, DV_CUSTOM);
   dk_free_box ((void*) it);
@@ -2213,7 +2221,7 @@ buf_disk_read (buffer_desc_t * buf)
   if (dbs_reverse_db)
     {
       DBS_REVERSE_SHORT((db_buf_t)&flags);
-      if (flags >= 0 && flags < DPF_LAST_DPF)
+      if (flags >= 0 && flags < DPF_LAST_DPF && dbs_reverse_page_header[flags])
 	(dbs_reverse_page_header[flags]) (dbs, buf);
     }
 #endif
@@ -5015,14 +5023,21 @@ dbe_key_open_dbs (dbe_key_t * key, dbe_storage_t * dbs)
       dk_free_tree (start_str);
       if (!start_dp)
 	{
-	  it_map_t * itm;
-	  buffer_desc_t * buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
-	  pg_init_new_root (buf);
-	  kf->kf_it->it_root = buf->bd_page;
-	  itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
-	  mutex_enter (&itm->itm_mtx);
-	  page_leave_inner (buf);
-	  mutex_leave (&itm->itm_mtx);
+	  if (vvec_key_p (key))
+	    {
+	      vvec_key_open_init_root (kf->kf_it, key);
+	    }
+	  else
+	    {
+	      it_map_t * itm;
+	      buffer_desc_t * buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
+	      pg_init_new_root (buf);
+	      kf->kf_it->it_root = buf->bd_page;
+	      itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
+	      mutex_enter (&itm->itm_mtx);
+	      page_leave_inner (buf);
+	      mutex_leave (&itm->itm_mtx);
+	    }
 	}
       else
 	{
@@ -5081,6 +5096,11 @@ void
 key_dropped (dbe_key_t * key)
 {
   int inx;
+  if (vvec_key_p (key))
+    {
+      vvec_key_dropped (key);
+      return;
+    }
   if (key->key_supers)
     return; /* is in the tree of its super */
   DO_BOX (dbe_key_frag_t *, kf, inx, key->key_fragments)

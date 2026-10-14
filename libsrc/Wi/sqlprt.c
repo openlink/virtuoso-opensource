@@ -41,6 +41,10 @@ trset_start (caddr_t * qst)
   ctx->tc_buf[0] = '\0';
   ctx->tc_qst = (query_instance_t *) qst;
   ctx->tc_indent = 0;
+  /* Not zeroed by dk_alloc_box: every member has to be set here.  tc_ses left
+     uninitialised sent the whole report into whatever the heap held --
+     silently nowhere at best, a segfault during first-boot at worst. */
+  ctx->tc_ses = NULL;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, ctx);
 
   sbox = (state_slot_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -112,7 +116,13 @@ trset_printf (const char *str, ...)
           memset (copy, ' ', ctx->tc_indent);
           strcpy (copy + ctx->tc_indent, line);
         }
-      bif_result_inside_bif (1, copy);
+      if (ctx->tc_ses)
+	{
+	  SES_PRINT (ctx->tc_ses, copy);
+	  SES_PRINT (ctx->tc_ses, "\n");
+	}
+      else
+	bif_result_inside_bif (1, copy);
       dk_free_box (copy);
     }
   if (eol == NULL)
@@ -127,7 +137,10 @@ trset_printf (const char *str, ...)
   if (length > TRSET_BUF_MAX - EXPLAIN_LINE_MAX)
     {
       caddr_t copy = box_dv_short_string (report_linebuf);
-      bif_result_inside_bif (1, copy);
+      if (ctx->tc_ses)
+	SES_PRINT (ctx->tc_ses, copy);
+      else
+	bif_result_inside_bif (1, copy);
       dk_free_box (copy);
       report_ptr = report_linebuf;
     }

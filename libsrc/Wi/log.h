@@ -48,6 +48,19 @@
 #define LOG_KEY_INSERT 13
 #define LOG_KEY_DELETE 14
 #define LOG_USER_TEXT   15 /* SQL string log'd by an user */
+#define LOG_VEC_PAGE	16 /* native vector index page image: key id, page,
+			      offset, bytes.  The HNSW graph lives in DPF_VEC
+			      pages that no row-level record can describe, so
+			      it is redone as a byte range of one page.  Each
+			      touched page is its own record -- an insert
+			      touches the new node's page and every backlinked
+			      neighbour, and replaying them independently keeps
+			      redo idempotent per page.  NOTE: older servers
+			      reject this record outright (log_check_replay_entry
+			      returns REPL0), so a log containing it will not
+			      replay on a pre-LOG_VEC_PAGE build. */
+#define VVEC_LOG_ROLLBACK_MARK (-2)   /* LOG_VEC_PAGE offset, page 0: a rolled-back trx left changes in this index's graph */
+#define VVEC_LOG_ROLLBACK_RESYNC (-3) /* LOG_VEC_PAGE offset, page 0: images of the rolled-back inserts' pages precede this */
 
 
 #define LOGH_CL_2PC		0 /* string with commit flag and 8 byte lt_trx_no.  If not cluster pc, then null pointer. */

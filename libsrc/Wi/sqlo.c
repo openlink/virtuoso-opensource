@@ -1228,6 +1228,8 @@ sqlo_dt_has_vcol_tables (sqlo_t *so, op_table_t *dot)
 	{
 	  if (nc_strstr ((dtp_t*)"score", (dtp_t*)vc->vc_tree->_.col_ref.name))
 	    continue;
+	  if (ot->ot_vec_rdf_key && (!stricmp (vc->vc_tree->_.col_ref.name, "SIMILARITY") || !stricmp (vc->vc_tree->_.col_ref.name, "DISTANCE")))
+	    continue;
 	  if (box_is_subtree ((caddr_t) dot->ot_dt->_.select_stmt.selection, (caddr_t) vc->vc_tree))
 	    return 1;
 	}
@@ -1545,6 +1547,7 @@ sqlo_spec_predicate_name (ptrlong pred_type)
     case 'p': return "xpath_contains";
     case 'q': return "xquery_contains";
     case 'x': return "xcontains";
+    case 'v': return "knnSimilar";
     }
   return "special predicate (e.g. xcontains)";
 }
@@ -1725,6 +1728,196 @@ sqlo_select_ref_score (ST *tree)
   return 0;
 }
 
+
+static int
+sqlo_select_ref_vec_name (ST *tree, const char *name)
+{
+  if (!tree || DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (ST_COLUMN ((tree), COL_DOTTED))
+    {
+      if (tree->_.col_ref.name != STAR && !CASEMODESTRCMP (name, (tree)->_.col_ref.name))
+	return 1;
+    }
+  else
+    {
+      int inx;
+      _DO_BOX (inx, (ST **) (tree))
+	{
+	  if (sqlo_select_ref_vec_name (((ST **)tree)[inx], name))
+	    return 1;
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
+
+
+/* Mirrors sqlo_implied_columns_of_contains's role for CONTAINS/SCORE, for
+ * X_SIMILAR/SIMILARITY,DISTANCE: pre-creates the virtual columns before the
+ * WHERE clause or SELECT list are scope-resolved, so a bare SIMILARITY or
+ * DISTANCE column reference in the SELECT list finds a real column instead
+ * of failing with "No column SIMILARITY" -- scope resolution happens well
+ * before sqlg_vvec_search_node's codegen, which is where the rest of the
+ * X_SIMILAR-to-leading-ANN machinery (sqlo_rewrite_x_similar_call in
+ * sqldf.c) otherwise creates these lazily.  Unlike
+ * sqlo_implied_columns_of_contains, this walks generically (like
+ * sqlo_select_ref_score above) rather than only through top-level BOP_AND:
+ * X_SIMILAR is always used wrapped in a comparison (X_SIMILAR(col, q) > 0.5),
+ * never bare the way CONTAINS is, so restricting to BOP_AND's specific
+ * _.bin_exp shape isn't enough on its own.
+ *
+ * If X_SIMILAR's column doesn't resolve to exactly one vector index here,
+ * this silently does nothing -- sqlo_rewrite_x_similar_call raises the real,
+ * precise error for that later, when it processes the call for real; this
+ * pass only needs to *try* to get the naming right early, not enforce
+ * correctness. */
+static int
+sqlo_implied_columns_of_x_similar (sqlo_t *so, ST *tree, int want_similarity, int want_distance)
+{
+  if (!tree || DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (ST_P (tree, CALL_STMT) && DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree->_.call.name)
+      && 0 == stricmp ((char *) tree->_.call.name, "X_SIMILAR"))
+    {
+      ST **args = tree->_.call.params;
+      op_table_t *ot;
+      dbe_key_t *chosen_key = NULL;
+      int source_matches = 0;
+      if (BOX_ELEMENTS_0 (args) < 2 || !ST_COLUMN (args[0], COL_DOTTED) || STAR == args[0]->_.col_ref.name)
+	return 1;
+      /* X_SIMILAR's column argument is very often unqualified (bare
+	 "content", not "t.content"), unlike CONTAINS' own resolution needs
+	 to handle the same either way -- sco_is_defd (not sqlo_cname_ot_1,
+	 which only resolves a qualifier/alias name) is what
+	 sqlo_implied_columns_of_contains uses for exactly this, searching
+	 all in-scope tables for a matching real column when there's no
+	 prefix. */
+      ot = sco_is_defd (so->so_scope, args[0],
+	  args[0]->_.col_ref.prefix ? SCO_THIS_QUAL : SCO_UNQUALIFIED, 1);
+      if (!ot || !ot->ot_table)
+	return 1;
+      /* sco_is_defd leaves the tree only partially resolved; normalize the
+	 prefix to the table's canonical internal one, same as
+	 sqlo_implied_columns_of_contains does right after its own
+	 sco_is_defd call, unconditionally, regardless of whether the
+	 X_SIMILAR-specific matching below succeeds. */
+      args[0]->_.col_ref.prefix = ot->ot_prefix;
+      DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
+	{
+	  const char *pk_name = NULL;
+	  int key_metric = 0;
+	  if (!vvec_key_source_match (key, args[0]->_.col_ref.name, &pk_name, &key_metric))
+	    continue;
+	  source_matches++;
+	  if (!chosen_key)
+	    chosen_key = key;
+	}
+      END_DO_SET ();
+      if (1 != source_matches || !chosen_key)
+	return 1;
+      if (want_similarity && !ot->ot_vec_similarity)
+	ot->ot_vec_similarity = sqlo_virtual_col_crr (so, ot, "SIMILARITY", DV_SINGLE_FLOAT, 1);
+      if (want_distance && !ot->ot_vec_distance)
+	ot->ot_vec_distance = sqlo_virtual_col_crr (so, ot, "DISTANCE", DV_SINGLE_FLOAT, 1);
+      return 1;
+    }
+  {
+    int inx, any = 0;
+    _DO_BOX (inx, (ST **) tree)
+      {
+	if (sqlo_implied_columns_of_x_similar (so, ((ST **) tree)[inx], want_similarity, want_distance))
+	  any = 1;
+      }
+    END_DO_BOX;
+    return any;
+  }
+}
+
+/* knnSimilar (O, text [, index] [, k]): the index name and k among its arguments.  Read from the
+   call wherever needed rather than kept on the op_table_t, which a plan may copy without them. */
+void
+sqlo_knn_similar_args (ST ** args, caddr_t * inx_name_ret, ST ** k_ret)
+{
+  int n_args = BOX_ELEMENTS (args);
+  *inx_name_ret = NULL;
+  *k_ret = NULL;
+  if (n_args > 2)
+    {
+      if (DV_STRINGP (args[2]))
+	*inx_name_ret = (caddr_t) args[2];
+      else
+	*k_ret = args[2];
+      if (n_args > 3 && !*k_ret)
+	*k_ret = args[3];
+    }
+}
+
+
+/* The vector index knnSimilar (O, ...) searches, or a compile error. */
+dbe_key_t *
+sqlo_knn_similar_key (sqlo_t *so, ST **args)
+{
+  int n_keys = 0;
+  caddr_t inx_name;
+  ST * k;
+  dbe_key_t * key;
+  sqlo_knn_similar_args (args, &inx_name, &k);
+  key = vvec_rdf_obj_search_key (inx_name, &n_keys);
+  if (!key)
+    {
+      if (inx_name)
+	sqlc_new_error (so->so_sc->sc_cc, "42S12", "VEC95", "No vector index %.200s on DB.DBA.RDF_OBJ.", inx_name);
+      if (!n_keys)
+	sqlc_new_error (so->so_sc->sc_cc, "42S12", "VEC95",
+	    "No vector index on DB.DBA.RDF_OBJ for knnSimilar; create one with DB.DBA.RDF_OBJ_VEC_INDEX_CREATE.");
+      sqlc_new_error (so->so_sc->sc_cc, "42000", "VEC96",
+	  "%d vector indexes on DB.DBA.RDF_OBJ; name one: knnSimilar (O, text, '<index>').", n_keys);
+    }
+  return key;
+}
+
+
+/* knnSimilar (O, text [, index] [, k]) over RDF_QUAD: planned as a text predicate on O,
+   with a vector search on an RDF_OBJ vector index in place of the text node. */
+static void
+sqlo_implied_columns_of_knn_similar (sqlo_t *so, op_table_t *ot, ST **args)
+{
+  int n_args = BOX_ELEMENTS (args);
+  if (!tb_is_rdf_quad (ot->ot_table) || stricmp (args[0]->_.col_ref.name, "O"))
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "VEC94", "knnSimilar applies to the O column of DB.DBA.RDF_QUAD.");
+  if (!tb_text_key (ot->ot_table))
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "VEC94", "%s has no index registered on O in SYS_VT_INDEX.", ot->ot_table->tb_name);
+  if (n_args > 4 || (4 == n_args && !DV_STRINGP (args[2])))
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "VEC94", "knnSimilar takes (O, text [, index name] [, k]).");
+  ot->ot_vec_rdf_key = sqlo_knn_similar_key (so, args);
+  if (!ot->ot_vec_similarity)
+    ot->ot_vec_similarity = sqlo_virtual_col_crr (so, ot, "SIMILARITY", DV_SINGLE_FLOAT, 1);
+  if (!ot->ot_vec_distance)
+    ot->ot_vec_distance = sqlo_virtual_col_crr (so, ot, "DISTANCE", DV_SINGLE_FLOAT, 1);
+}
+
+
+int sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score);
+
+/* Several knnSimilar on different aliases may be ANDed; each needs its key and columns,
+   where only the first contains of a condition is taken. */
+static void
+sqlo_implied_columns_of_knn_rest (sqlo_t *so, ST *tree, int add_score)
+{
+  int ct = 0;
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return;
+  if (sqlc_contains_args (tree, &ct) && 'v' == ct)
+    sqlo_implied_columns_of_contains (so, tree, add_score);
+  else if (ST_P (tree, BOP_AND))
+    {
+      sqlo_implied_columns_of_knn_rest (so, tree->_.bin_exp.left, add_score);
+      sqlo_implied_columns_of_knn_rest (so, tree->_.bin_exp.right, add_score);
+    }
+}
+
+
 int
 sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
 {
@@ -1783,6 +1976,9 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
 	    }
 	  break;
 	}
+	case 'v':
+	  sqlo_implied_columns_of_knn_similar (so, ot, args);
+	  break;
 	case 'p': case 'q':
 	  sqlo_xpath_col (so, ot, args, 2, ctype);
 	  if (BOX_ELEMENTS(args) > 3)
@@ -1797,8 +1993,8 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
     {
       if (!sqlo_implied_columns_of_contains (so, tree->_.bin_exp.left, add_score))
 	return sqlo_implied_columns_of_contains (so, tree->_.bin_exp.right, add_score);
-      else
-	return 1;
+      sqlo_implied_columns_of_knn_rest (so, tree->_.bin_exp.right, add_score);
+      return 1;
     }
   else
     return 0;
@@ -2125,7 +2321,7 @@ sqlo_opt_value (caddr_t * opts, int opt)
   if (!opts)
     return NULL;
   len = BOX_ELEMENTS (opts);
-  for (inx = 0; inx < len; inx += 2)
+  for (inx = 0; inx < len - 1; inx += 2)
     {
       if ((ptrlong) opts[inx] == opt)
 	return (opts[inx + 1]);
@@ -2842,6 +3038,9 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	}
       END_DO_BOX;
       sqlo_implied_columns_of_contains (so, texp->_.table_exp.where, sqlo_select_ref_score ((ST*) tree));
+      sqlo_implied_columns_of_x_similar (so, texp->_.table_exp.where,
+	  sqlo_select_ref_vec_name ((ST*) tree, "SIMILARITY"),
+	  sqlo_select_ref_vec_name ((ST*) tree, "DISTANCE"));
       sqlo_scope (so, &(texp->_.table_exp.where));
       DO_SET (ST *, jc, &res)
 	{

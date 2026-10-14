@@ -1906,6 +1906,15 @@ spar_filter_is_freetext_or_rtree (sparp_t *sparp, SPART *filt, SPART *base_tripl
         || ((2 < argcount) && !sparp_tree_is_global_expn (sparp, args[1])) )
         return NULL;
     }
+  else if ((fname == uname_bif_c_vector_search) || (fname == uname_bif_c_knnSimilar))
+    {
+      if (2 > argcount)
+        spar_error (sparp, "Not enough arguments for vector search function %s", fname);
+      if ((SPAR_VARIABLE != SPART_TYPE (args[0]))
+        || !SPART_VARNAME_IS_PLAIN (args[0]->_.var.vname)
+        || !sparp_tree_is_global_expn (sparp, args[1]) )
+        return NULL;
+    }
   else
     return NULL;
   if (NULL != base_triple)
@@ -2172,7 +2181,9 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
         }
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         spar_tree_is_var_with_forbidden_ft_name (sparp, triple_with_var_obj->_.triple.tr_fields[fld_ctr], 1);
-      if (IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
+      if (uname_bif_c_knnSimilar == ft_pred_name)
+        ;
+      else if (IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
         ((boxint *)(sparp->sparp_env->spare_sql_refresh_free_text))[0] = 1;
       else
         sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
@@ -3994,6 +4005,7 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   SPART *graph_eq_from_option_expn = NULL;
   int graph_can_bring_filters = 0;
   SPART *triple;
+  int is_vector_search_predicate = 0;
   if (NULL == subject)
     subject = (SPART *)t_box_copy_tree ((caddr_t)(env->spare_context_subjects->data));
   if (NULL == predicate)
@@ -4097,45 +4109,103 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
     }
   if (SPAR_QNAME == SPART_TYPE (predicate))
     {
-      caddr_t *spec_pred_names = jso_triple_get_objs (
-        (caddr_t *)(sparp->sparp_sparqre->sparqre_qi),
-        predicate->_.lit.val,
-        uname_virtrdf_ns_uri_isSpecialPredicate );
-      if (0 != BOX_ELEMENTS (spec_pred_names))
+      if ((predicate->_.qname.val == uname_bif_c_vector_search) ||
+        !strcmp (predicate->_.qname.val, OPENLINKSW_BIF_NS_URI "vector_search"))
         {
-          caddr_t pname = spec_pred_names[0];
-          int is_geo = 0;
+          is_vector_search_predicate = 1;
           if (NULL != options)
             {
               int ctr;
               sparp_validate_options_of_tree (sparp, NULL /*no tree*/, options);
               for (ctr = BOX_ELEMENTS (options) - 2; ctr >= 0; ctr -= 2)
                 {
-                  ptrlong option_id = (ptrlong)(options[ctr]);
+                  ptrlong option_key = (ptrlong)(options[ctr]);
                   SPART *option_value = options[ctr+1];
-                  if ((GEO_L == option_id) || (PRECISION_L == option_id))
-                    is_geo = 1;
                   if (SPAR_VARIABLE == SPART_TYPE (option_value))
-                    option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                    {
+                      option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                      if ((SCORE_L == option_key) || (DISTANCE_L == option_key))
+                        option_value->_.var.tr_idx = option_key;
+                    }
                 }
             }
-          if (is_geo)
+        }
+      else if ((predicate->_.qname.val == uname_bif_c_knnSimilar) ||
+        !strcmp (predicate->_.qname.val, OPENLINKSW_BIF_NS_URI "knnSimilar"))
+        {
+          /* Like bif:contains: becomes a filter on the triple that has the subject variable as its object. */
+          if (NULL != options)
             {
-              if (!strcmp ("bif:contains", pname) || !strcmp ("bif:spatial_contains", pname))
-                pname = box_dv_uname_string ("bif:spatial_contains");
-              else
-                spar_error (sparp, "Spatial options can be used only with bif:contains and bif:spatial_contains special predicates, not with %.200s", pname);
+              int ctr;
+              sparp_validate_options_of_tree (sparp, NULL /*no tree*/, options);
+              for (ctr = BOX_ELEMENTS (options) - 2; ctr >= 0; ctr -= 2)
+                {
+                  SPART *option_value = options[ctr+1];
+                  switch ((ptrlong)(options[ctr]))
+                    {
+                    case INDEX_L:
+                      if (SPAR_LIST == SPART_TYPE (option_value))
+                        spar_error (sparp, "bif:knnSimilar searches one index; write option (index <name>)");
+                      break;
+                    case LIMIT_L:
+                      break;
+                    case SCORE_L: case DISTANCE_L:
+                      option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                      break;
+                    default:
+                      spar_error (sparp, "bif:knnSimilar accepts only INDEX <name>, LIMIT, SCORE ?var and DISTANCE ?var options");
+                    }
+                }
             }
           spar_gp_add_filter (sparp,
-            spar_make_funcall (sparp, 0, pname,
+            spar_make_funcall (sparp, 0, uname_bif_c_knnSimilar,
               t_spartlist_concat ((SPART **)t_list (2, subject, object), options) ), 0 );
-          dk_free_tree ((caddr_t)spec_pred_names);
           return NULL;
         }
-      dk_free_tree ((caddr_t)spec_pred_names);
+      else
+        {
+          caddr_t *spec_pred_names = jso_triple_get_objs (
+            (caddr_t *)(sparp->sparp_sparqre->sparqre_qi),
+            predicate->_.lit.val,
+            uname_virtrdf_ns_uri_isSpecialPredicate );
+          if (0 != BOX_ELEMENTS (spec_pred_names))
+            {
+              caddr_t pname = spec_pred_names[0];
+              int is_geo = 0;
+              if (NULL != options)
+                {
+                  int ctr;
+                  sparp_validate_options_of_tree (sparp, NULL /*no tree*/, options);
+                  for (ctr = BOX_ELEMENTS (options) - 2; ctr >= 0; ctr -= 2)
+                    {
+                      ptrlong option_id = (ptrlong)(options[ctr]);
+                      SPART *option_value = options[ctr+1];
+                      if ((GEO_L == option_id) || (PRECISION_L == option_id))
+                        is_geo = 1;
+                      if (SPAR_VARIABLE == SPART_TYPE (option_value))
+                        option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                    }
+                }
+              if (is_geo)
+                {
+                  if (!strcmp ("bif:contains", pname) || !strcmp ("bif:spatial_contains", pname))
+                    pname = box_dv_uname_string ("bif:spatial_contains");
+                  else
+                    spar_error (sparp, "Spatial options can be used only with bif:contains and bif:spatial_contains special predicates, not with %.200s", pname);
+                }
+              spar_gp_add_filter (sparp,
+                spar_make_funcall (sparp, 0, pname,
+                  t_spartlist_concat ((SPART **)t_list (2, subject, object), options) ), 0 );
+              dk_free_tree ((caddr_t)spec_pred_names);
+              return NULL;
+            }
+          dk_free_tree ((caddr_t)spec_pred_names);
+        }
     }
   if (NULL == graph)
     graph = spar_gp_make_graph_field_from_context (sparp, &graph_eq_from_option_expn, &graph_can_bring_filters);
+  if (is_vector_search_predicate)
+    goto mcall_not_found;
   if (!(banned_tricks & SPAR_TRIPLE_TRICK_MACRO))
     {
       int ctr, argctr;
@@ -4233,6 +4303,8 @@ plain_triple_in_ctor:
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options);
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, triple, options);
+  if (is_vector_search_predicate)
+    triple->_.triple.ft_type = uname_bif_c_vector_search;
   spar_gp_add_member (sparp, triple);
   return triple;
 }
@@ -5822,6 +5894,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "uri"		, SPAR_BIF_URI			, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "uuid"             , SPAR_BIF_UUID                 , 'B'   , SSG_SD_SPARQL11_DRAFT , 0     , 0     , SSG_VALMODE_LONG      , { SSG_VALMODE_LONG, NULL, NULL}                       , SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL       },
+  { "vector_search"	, SPAR_BIF_VECTOR_SEARCH	, 'S'	, SSG_SD_VIRTSPECIFIC	, 2	, 2	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_LONG, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "valid"		, SPAR_BIF_VALID		, 'B'	, SSG_SD_VOS_6		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "isTriple"		, SPAR_BIF_ISTRIPLE		, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},

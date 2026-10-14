@@ -11351,12 +11351,31 @@ bif_http_url_cache_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return NO_CADDR_T;
 }
 
+/* The ACL and URL-cache hashes, separated from loading their contents.
+
+   http_acl_set / http_acl_get / http_acl_remove / http_acl_stats and
+   http_url_cache_get / http_url_cache_remove are ordinary BIFs: a DBA can call
+   any of them whether or not this server has an HTTP listener.  They all reach
+   id_hash_get () on these two hashes, which used to be created only once
+   http_init_part_two () had got past "if (!http_port) return 1", so on a
+   server started without an HTTP listener every one of them dereferenced NULL
+   and killed the process.  Creating the hashes is unconditional; only loading
+   their contents from the schema depends on HTTP being configured. */
+static void
+http_init_acl_and_cache_hashes (void)
+{
+  if (!http_acls)
+    http_acls = id_str_hash_create (101);
+  if (!http_url_cache)
+    http_url_cache = id_str_hash_create (101);
+}
+
+
 static void
 http_init_acl_and_cache (void)
 {
   /* INIT the general HTTP ACL */
-  http_acls = id_str_hash_create (101);
-  http_url_cache = id_str_hash_create (101);
+  http_init_acl_and_cache_hashes ();
   ddl_sel_for_effect ("select count(*) from DB.DBA.HTTP_ACL where "
       "http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, HA_RATE, HA_LIMIT)");
   ddl_sel_for_effect ("select count(*) from WS.WS.SYS_CACHEABLE where http_url_cache_set (CA_URI, CA_CHECK)");
@@ -12305,6 +12324,10 @@ http_init_part_two (void)
   dk_session_t *nntp_listen = NULL;
   dk_session_t *ftp_listen = NULL;
 #endif
+  /* Before any early return: the ACL and URL-cache BIFs are reachable from SQL
+     on a server with no HTTP listener, and they dereference these hashes. */
+  http_init_acl_and_cache_hashes ();
+
   if (cluster_enable && cl_no_init)
     return 1;
 

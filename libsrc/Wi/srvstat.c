@@ -4327,6 +4327,24 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
 }
 
 
+/* A vector index has no rows: its HNSW graph is reported as blob pages. */
+static void
+srv_collect_vec_page_stats (buffer_desc_t * buf, dk_hash_t * ht)
+{
+  dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, LONG_REF (buf->bd_buffer + DP_KEY_ID));
+  key_info_t * ki;
+  if (!key)
+    return;
+  ki = key_ki (key, ht, buf->bd_page);
+  /* key_ki () starts an entry at ki_pages = 1, which is right for the arms that
+     create one while looking at a row page and count up from there.  This key
+     has no rows, so assign rather than decrement: this runs once per graph page
+     and a -- would take it negative on the second. */
+  ki->ki_pages = 0;
+  ki->ki_blob_pages++;
+}
+
+
 static caddr_t
 srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 {
@@ -4400,6 +4418,8 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 			}
 		      else if (DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS))
 			srv_collect_col_page_stats (buf, ht);
+		      else if (DPF_VEC == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+			srv_collect_vec_page_stats (buf, ht);
 		    }
 		    }
 		}

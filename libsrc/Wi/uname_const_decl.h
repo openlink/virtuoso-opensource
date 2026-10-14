@@ -150,6 +150,8 @@ extern caddr_t uname_bif_c_st_within;
 extern caddr_t uname_bif_c_xcontains;
 extern caddr_t uname_bif_c_xpath_contains;
 extern caddr_t uname_bif_c_xquery_contains;
+extern caddr_t uname_bif_c_vector_search;
+extern caddr_t uname_bif_c_knnSimilar;
 extern caddr_t uname_bif_ns_uri;
 extern caddr_t uname_opengis_def_function_gs_ns_uri;
 extern caddr_t uname_opengis_def_function_gs_ns_uri_boundary;

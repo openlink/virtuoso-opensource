@@ -193,6 +193,8 @@ backup_key_is_ignored (dk_set_t * ign, dbe_key_t * key)
   return 0;
 } 
 
+int key_is_recoverable (key_id_t key_id);
+
 static void
 walk_db (lock_trx_t * lt, page_func_t func)
 {
@@ -209,6 +211,33 @@ walk_db (lock_trx_t * lt, page_func_t func)
     LEAVE_TXN;
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
+	/* A native vector (HNSW) index is not an ordered B-tree.  Its root is a
+	   DPF_VEC page, which has no content map, so itc_reset () below reaches
+	   it_new_root_image (), dereferences that NULL map and kills the
+	   process -- taking every backup of a database that has ever had a
+	   vector index in it with it.  (sqldf.c and sqlrun.c keep the same key
+	   out of index selection and out of the row-fetch path for the same
+	   reason.)
+
+	   So the tree is not walked, but the graph is still dumped: walk_db is a
+	   *logical* dump -- log_page () emits the rows of each page, and a
+	   DPF_VEC page holds no rows -- so it goes out as the same whole-page
+	   LOG_VEC_PAGE records the crash dump writes, which restore relocates
+	   into the rebuilt database.  func is NULL for db_check (), which walks
+	   to verify and must not log anything. */
+	if (vvec_key_p (it->it_key))
+	  {
+	    const char * vname = it->it_key->key_name ? it->it_key->key_name : "(unnamed)";
+	    if (func && key_is_recoverable (it->it_key->key_id))
+	      {
+		int n_vec = vvec_backup_pages (lt, it);
+		if (n_vec < 0)
+		  log_error ("Could not dump the graph of vector index %s", vname);
+		else
+		  log_info ("Dumped %d page(s) of vector index %s", n_vec, vname);
+	      }
+	    continue;
+	  }
 	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
 	  {
 	    itc = itc_create (NULL , lt);
@@ -1212,13 +1241,13 @@ caddr_t bif_crash_recovery_log_check (caddr_t * qst, caddr_t * err_ret, state_sl
 #endif
 
 int ignore_remap = 0;
-long dpf_count[14];
+long dpf_count[DPF_LAST_DPF + 1];
 
 extern long blob_pages_logged;
 void
 dbs_pages_to_log (dbe_storage_t * storage, char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end_dp)
 {
-  int n_logged = 0, n_non_index = 0, n_bad_dpf = 0;
+  int n_logged = 0, n_vec_logged = 0, n_non_index = 0, n_bad_dpf = 0;
   buffer_desc_t *buf;
   volatile dp_addr_t page_no = 3;
   volatile dp_addr_t end_page;
@@ -1302,6 +1331,39 @@ dbs_pages_to_log (dbe_storage_t * storage, char *mode, volatile dp_addr_t start_
 			  buf->bd_readers = 1;
 			}
 		    }
+		  else if (DPF_VEC == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+		    {
+		      key_id_t key_id = LONG_REF (buf->bd_buffer + DP_KEY_ID);
+		      dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, key_id);
+		      int lte;
+
+		      /* DPF_VEC has no row map, so log_page () cannot represent it.
+			 Emit the same full-page record used for a newly allocated
+			 vector page during normal WAL logging.  Raw crash recovery reserves
+			 the exact page; restore into a rebuilt database relocates the page
+			 and every vector-page reference in the image. */
+		      if (!key || !vvec_key_p (key))
+			{
+			  log_error ("Skipping DPF_VEC page %ld with unknown/non-vector key %ld",
+			      (long) page_no, (long) key_id);
+			  n_bad_dpf++;
+			}
+		      else
+			{
+			  log_vec_page (it->itc_ltrx, key_id, page_no, 0,
+			      buf->bd_buffer, PAGE_SZ);
+			  lte = lt_backup_flush (it->itc_ltrx, 1);
+			  if (LTE_OK != lte)
+			    {
+			      log_error ("Could not write DPF_VEC page %ld to crash dump, error %d",
+				  (long) page_no, lte);
+			      call_exit (-1);
+			    }
+			  n_logged++;
+			  n_vec_logged++;
+			  dpf_count[DPF_VEC]++;
+			}
+		    }
 		  else
 		    {
 		      int fl = SHORT_REF (buf->bd_buffer + DP_FLAGS);
@@ -1331,6 +1393,7 @@ dbs_pages_to_log (dbe_storage_t * storage, char *mode, volatile dp_addr_t start_
   itc_free (it);
   dbg_printf (("%d logged %d non index pages allocated, %d bad dpf.\n",
    n_logged, n_non_index, n_bad_dpf));
+  dbg_printf (("%d DPF_VEC pages logged as full images.\n", n_vec_logged));
   dbg_printf (("%ld FREE_SET pages.\n", dpf_count[DPF_FREE_SET]));
   dbg_printf (("%ld DPF_EXTENSION pages.\n", dpf_count[DPF_EXTENSION]));
   dbg_printf (("%ld DPF_BLOB pages.\n", dpf_count[DPF_BLOB]));
@@ -1339,6 +1402,7 @@ dbs_pages_to_log (dbe_storage_t * storage, char *mode, volatile dp_addr_t start_
   dbg_printf (("%ld DPF_CP_REMAP pages.\n", dpf_count[DPF_CP_REMAP]));
   dbg_printf (("%ld DPF_BLOB_DIR pages.\n", dpf_count[DPF_BLOB_DIR]));
   dbg_printf (("%ld DPF_INCBACKUP_SET pages.\n", dpf_count[DPF_INCBACKUP_SET]));
+  dbg_printf (("%ld DPF_VEC pages.\n", dpf_count[DPF_VEC]));
   dbg_printf (("%ld DPF_LAST_DPF pages.\n", dpf_count[DPF_LAST_DPF]));
 }
 
@@ -1692,4 +1756,3 @@ recovery_init (void)
   bif_define ("crash_recovery_log_check", bif_crash_recovery_log_check);
 #endif
 }
-

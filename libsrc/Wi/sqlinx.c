@@ -44,6 +44,7 @@
 #include "remote.h"
 #include "sqlrcomp.h"
 #include "sqloinv.h"
+#include "wifn.h"
 
 
 
@@ -821,6 +822,15 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
       df_elt_t * text_id_pred = NULL;
       dk_set_t old_cp = tb_dfe->_.table.col_preds;
       index_choice_t ic;
+      /* A native vector (HNSW) index is not an ordered B-tree and has no
+	 samplable page structure, so it must never be considered a candidate
+	 for ordinary predicate-based index selection.  Costing it reaches
+	 sqlo_inx_sample -> itc_local_sample -> itc_reset -> it_new_root_image,
+	 which dereferences a root buffer that has no content map and crashes
+	 the server.  The ANN path picks the vector key explicitly by name
+	 (sqlo_vvec_key_by_name), so it never has to be found here. */
+      if (vvec_key_p (key))
+	continue;
       if (opt_inx_name && !path)
 	{
 	  if (!key_matches_index_opt (key, opt_inx_name))

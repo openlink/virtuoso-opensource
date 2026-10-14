@@ -42,6 +42,7 @@
 #include "xmlnode.h"
 #include "xmltree.h"
 #include "rdfinf.h"
+#include "wifn.h"
 #include "sqlintrp.h"
 
 void sqlg_setp_keys (sqlo_t * so, setp_node_t * setp, int force_gb, long n_rows);
@@ -625,7 +626,11 @@ sqlg_virtual_col_ssl (sqlo_t *so, op_virt_col_t *vc)
   if (vc)
     {
       df_elt_t *vc_dfe = sqlo_df_virt_col (so, vc);
-      return vc_dfe->dfe_ssl;
+      /* Most virtual columns exist before sqlg_make_np_ts allocates their
+	 SSLs.  A producer that is created by the selected physical plan may,
+	 however, add one during code generation (the ANN similarity output is
+	 such a column).  Make the helper safe for both cases. */
+      return sqlg_dfe_ssl (so, vc_dfe);
     }
   else
     return NULL;
@@ -691,6 +696,71 @@ sqlg_geo_index_table (dbe_key_t * text_key, ST ** geo_args)
 }
 
 
+/* knnSimilar (O, ...) on RDF_QUAD, generated in the text node's place.  Driving, it emits
+   the O of each of the k nearest literals; as a check, it passes the rows whose O is one of them. */
+static void
+sqlg_vvec_rdf_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
+{
+  sql_comp_t * sc = so->so_sc;
+  op_table_t * ot = dfe_ot (tb_dfe);
+  df_elt_t * text_pred = tb_dfe->_.table.text_pred;
+  dbe_key_t * text_key = tb_text_key (ot->ot_table);
+  dbe_key_t * vec_key = sqlo_knn_similar_key (so, text_pred->_.text.args);
+  caddr_t inx_name;
+  ST * k;
+  dk_set_t code = NULL;
+  caddr_t metric_box;
+  SQL_NODE_INIT (vvec_search_node_t, vsn, vvec_search_node_input, vvec_search_node_free);
+  /* the plan depends on RDF_OBJ as well, so creating or dropping its vector index recompiles it */
+  sqlc_table_used (sc, vec_key->key_table);
+  vsn->vsn_vec_key = vec_key;
+  vsn->vsn_rdf = 1;
+  vsn->vsn_is_driving = tb_dfe->_.table.is_text_order;
+  vsn->vsn_card = text_pred->dfe_arity;
+  if (vsn->vsn_is_driving && !ic)
+    {
+      state_slot_t * o_ssl = sqlc_new_temp (sc, "ann_o", DV_ANY);
+      tb_dfe->_.table.key = text_key;
+      text_pred->_.text.col = (dbe_column_t *) text_key->key_parts->data;
+      text_pred->_.text.ssl = o_ssl;
+      t_set_push (&tb_dfe->_.table.col_preds, (void *) text_pred);
+      vsn->vsn_pk_id = o_ssl;
+    }
+  else
+    {
+      dbe_column_t * col = (dbe_column_t *) text_key->key_parts->data;
+      df_elt_t * col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name));
+      vsn->vsn_pk_id = sqlg_dfe_ssl (so, col_dfe);
+      if (vsn->vsn_is_driving)
+	col_dfe->dfe_is_placed = DFE_GEN;
+      else
+	vsn->vsn_ro_id = sqlg_rdf_text_check (tb_dfe, NULL, col_dfe, vsn->vsn_pk_id, &code);
+    }
+  vsn->vsn_query_text = scalar_exp_generate (sc, text_pred->_.text.args[1], &code);
+  sqlo_knn_similar_args (text_pred->_.text.args, &inx_name, &k);
+  if (k)
+    vsn->vsn_k = scalar_exp_generate (sc, k, &code);
+  else
+    vsn->vsn_k = ssl_new_constant (sc->sc_cc, (caddr_t) box_num (VEC_SIMILAR_DEFAULT_K));
+  vsn->vsn_ef_search = ssl_new_constant (sc->sc_cc, (caddr_t) box_num (0));
+  vsn->vsn_distance = sqlg_virtual_col_ssl (so, ot->ot_vec_distance);
+  vsn->vsn_similarity = sqlg_virtual_col_ssl (so, ot->ot_vec_similarity);
+  vsn->vsn_results = ssl_new_variable (sc->sc_cc, "ann_results", DV_ARRAY_OF_POINTER);
+  vsn->vsn_pos = ssl_new_variable (sc->sc_cc, "ann_pos", DV_LONG_INT);
+  metric_box = (caddr_t) vvec_opt_value (vec_key->key_options, "mt");
+  vsn->vsn_metric = vvec_parse_metric (vvec_is_string_box (metric_box) ? (char *) metric_box : NULL);
+  vsn->src_gen.src_sets = cc_new_instance_slot (sc->sc_cc);
+  vsn->src_gen.src_out_fill = cc_new_instance_slot (sc->sc_cc);
+  vsn->src_gen.src_batch_size = cc_new_instance_slot (sc->sc_cc);
+  vsn->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
+  if (code)
+    vsn->src_gen.src_pre_code = code_to_cv (sc, code);
+  if (text_pred->_.text.after_test)
+    vsn->src_gen.src_after_test = sqlg_pred_body (so, text_pred->_.text.after_test);
+  tb_dfe->_.table.text_node = (data_source_t *) vsn;
+}
+
+
 void
 sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
 {
@@ -704,6 +774,12 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
   state_slot_t *text_id = NULL;
   dk_set_t code = NULL;
   dbe_key_t * text_key = tb_text_key (ot->ot_table);
+  if ('v' == ctype)
+    {
+      sqlg_vvec_rdf_node (so, tb_dfe, ic);
+      return;
+    }
+  {
   SQL_NODE_INIT (text_node_t, txs, txs_input, txs_free);
   /* make a col predicate to drive the ts, then generate a text node that will instantiate the variable  */
   if ((geo_args = sqlc_geo_args (text_pred->dfe_tree, &gtype)) && BOX_ELEMENTS (geo_args) > 2)
@@ -799,6 +875,7 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     txs->src_gen.src_after_test = sqlg_pred_body (so, tb_dfe->_.table.text_pred->_.text.after_test);
 
   tb_dfe->_.table.text_node = (data_source_t *) txs;
+  }
 }
 
 
@@ -858,6 +935,210 @@ sqlg_xpath_node (sqlo_t * so, df_elt_t * tb_dfe)
 }
 
 
+/* M3: Generate vector ANN search node
+ *
+ * Creates a vvec_search_node_t that drives the table source by
+ * providing PK values from the HNSW graph search.
+ */
+void
+sqlg_vvec_search_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
+{
+  sql_comp_t * sc = so->so_sc;
+  op_table_t *ot = dfe_ot (tb_dfe);
+  dk_set_t code = NULL;
+  dbe_key_t *vec_key = ot->ot_vec_index;
+  SQL_NODE_INIT (vvec_search_node_t, vsn, vvec_search_node_input, vvec_search_node_free);
+
+  if (!vec_key)
+    return;
+
+  vsn->vsn_vec_key = vec_key;
+  vsn->vsn_is_driving = tb_dfe->_.table.is_vec_order;
+
+  /* Generate the query vector expression.  When the rewrite in sqldf.c wrapped
+     a text query as __VEC_INDEX_QUERY_TEXT_VECTOR (key, text) -- see
+     sqlo_rewrite_x_similar_call -- unwrap it here and compile only the raw
+     text argument into vsn_query_text: the node embeds it itself, once, on
+     first touch (vvec_search_node_input), rather than compiling the wrapper
+     as an ordinary Precode call whose vector result then has to be threaded
+     back into the node via an SSL_REF.  That also means the node never goes
+     through __VEC_INDEX_QUERY_TEXT_VECTOR's own global, single-slot,
+     mutex-guarded cache, which only ever helps one caller at a time and
+     serializes/thrashes under any concurrent mix of distinct text queries. */
+  if (ot->ot_vec_query_text)
+    vsn->vsn_query_text = scalar_exp_generate (sc, ot->ot_vec_query_text, &code);
+  else if (ot->ot_vec_query)
+    {
+      ST * q = ot->ot_vec_query;
+      if (ST_P (q, CALL_STMT) && DV_ARRAY_OF_POINTER != DV_TYPE_OF (q->_.call.name)
+	  && 0 == stricmp ((char *) q->_.call.name, "__VEC_INDEX_QUERY_TEXT_VECTOR")
+	  && 2 == BOX_ELEMENTS_0 (q->_.call.params))
+	vsn->vsn_query_text = scalar_exp_generate (sc, q->_.call.params[1], &code);
+      else
+	vsn->vsn_query_vec = scalar_exp_generate (sc, q, &code);
+    }
+  else
+    vsn->vsn_query_vec = ssl_new_variable (sc->sc_cc, "vec_query", DV_ARRAY_OF_FLOAT);
+
+  /* Generate k and ef_search parameters.  Both paths that set ot_vec_index --
+     the ORDER BY VECTOR_DISTANCE rewrite in sqloby.c and the X_SIMILAR rewrite
+     in sqldf.c -- set ot_vec_k with it, and the caller only gets here when
+     ot_vec_index is set, so the fallback below is unreachable.  It stays as a
+     defence, not as a policy: a k invented here would silently truncate the
+     result, which is exactly what the hardcoded 10 in sqldf.c used to do. */
+  if (ot->ot_vec_k)
+    vsn->vsn_k = scalar_exp_generate (sc, ot->ot_vec_k, &code);
+  else
+    vsn->vsn_k = ssl_new_constant (sc->sc_cc, (caddr_t) box_num (10));
+
+  if (ot->ot_vec_ef_search)
+    vsn->vsn_ef_search = scalar_exp_generate (sc, ot->ot_vec_ef_search, &code);
+  else
+    vsn->vsn_ef_search = ssl_new_constant (sc->sc_cc, (caddr_t) box_num (0)); /* 0 means use k */
+
+  /* Set up the PK output slot - matches the table's PK type */
+  {
+    dbe_key_t *pk = ot->ot_table->tb_primary_key;
+    dbe_column_t *pk_col = (dbe_column_t *) pk->key_parts->data;
+    vsn->vsn_pk_id = ssl_new_variable (sc->sc_cc, "ann_pk", pk_col->col_sqt.sqt_dtp);
+  }
+
+	  /* Distance and similarity output columns.  Named literally DISTANCE and
+	     SIMILARITY, and always created (not gated on anything referencing
+	     them), so ordinary column-reference resolution finds them from the
+	     SELECT list exactly the way CONTAINS' SCORE is found (sqlo.c,
+	     ot_text_score) -- no need to call X_SIMILAR()/VECTOR_DISTANCE()
+	     again with the same arguments just to read the value a leading-ANN
+	     search already computed for this row.  This only works now that
+	     vvec_search_node_input is a registered vectorized node type
+	     (sqlg_new_vec_ssls / qn_vec_slots in sqlvec.c): sqlg_virtual_col_ssl's
+	     cross-node resolution needs that registration to find these two
+	     ssls' defining node at all, regardless of when they're created. */
+	  if (!ot->ot_vec_distance)
+	    ot->ot_vec_distance = sqlo_virtual_col_crr (so, ot, "DISTANCE", DV_SINGLE_FLOAT, 1);
+	  vsn->vsn_distance = sqlg_virtual_col_ssl (so, ot->ot_vec_distance);
+
+	  if (!ot->ot_vec_similarity)
+	    ot->ot_vec_similarity = sqlo_virtual_col_crr (so, ot, "SIMILARITY", DV_SINGLE_FLOAT, 1);
+	  vsn->vsn_similarity = sqlg_virtual_col_ssl (so, ot->ot_vec_similarity);
+
+	  /* ot_vec_row_calls holds X_SIMILAR()-derived predicates recorded by
+	     sqlo_rewrite_x_similar_call as candidates to consume vsn_similarity
+	     instead of independently re-fetching the row and recomputing via
+	     __VEC_INDEX_ROW_SIMILARITY.  Rewriting them is deliberately done
+	     HERE, inside this function's own real codegen, rather than during
+	     table placement (sqlo_tb_col_preds): that function can also run
+	     speculatively, via sqlo_hash_filler's hash-join-filler cost
+	     estimation, for a plan alternative that may be discarded --
+	     rewiring the predicate there let a consumer resolve against a
+	     definition that was never actually registered by a real codegen
+	     pass, which is exactly the "ssl refd before set" (VECSL) failure
+	     this construction avoids: sqlg_vvec_search_node only ever runs at
+	     all, at most once, when ot_vec_index has survived to mean this plan
+	     is real, so nothing here can act on a discarded alternative.  If
+	     leading ANN was instead suppressed during placement (a secondary
+	     predicate/PK-eq was found; see the ot_vec_index reset in
+	     sqlo_tb_col_preds), this function never runs, so ot_vec_row_calls is
+	     simply never consumed and the recorded predicates are left exactly
+	     as sqlo_rewrite_x_similar_call unconditionally left them: safe,
+	     plain __VEC_INDEX_ROW_SIMILARITY calls, no rewrite pending, nothing
+	     to clean up. */
+	  if (ot->ot_vec_row_calls)
+	    {
+	      DO_SET (ST *, call_tree, &ot->ot_vec_row_calls)
+		{
+		  df_elt_t *call_dfe = sqlo_df (so, call_tree);
+		  ST * sim_ref = (ST *) t_box_copy_tree ((caddr_t) ot->ot_vec_similarity->vc_tree);
+		  call_tree->_.call.name = t_sqlp_box_id_upcase ("__VEC_IDENTITY");
+		  call_tree->_.call.params = (ST **) t_list (1, sim_ref);
+		  /* sqlo_df built this DFE before physical-plan code generation.
+		     Replacing only the syntax tree leaves its old row-similarity
+		     arguments live, which needlessly generates the text-embedding
+		     BIF in Precode.  Keep the DFE and tree representations in sync. */
+		  call_dfe->_.call.args = (df_elt_t **) t_list (1, sqlo_df (so, sim_ref));
+		}
+	      END_DO_SET ();
+	      ot->ot_vec_row_calls = NULL;
+	    }
+
+	  vsn->vsn_results = ssl_new_variable (sc->sc_cc, "ann_results", DV_ARRAY_OF_POINTER);
+	  vsn->vsn_pos = ssl_new_variable (sc->sc_cc, "ann_pos", DV_LONG_INT);
+
+  /* Set cardinality estimate from the ic */
+  if (ic && ic->ic_arity > 0)
+    vsn->vsn_card = ic->ic_arity;
+  else
+    vsn->vsn_card = 10.0; /* default k */
+
+  /* Set metric from the vector index options */
+  if (vec_key->key_options)
+    {
+      caddr_t metric_box = (caddr_t) vvec_opt_value (vec_key->key_options, "mt");
+      vsn->vsn_metric = vvec_parse_metric (vvec_is_string_box (metric_box) ? (char *) metric_box : NULL);
+    }
+  else
+    vsn->vsn_metric = VVEC_METRIC_COSINE;
+
+  vsn->src_gen.src_sets = cc_new_instance_slot (sc->sc_cc);
+  vsn->src_gen.src_out_fill = cc_new_instance_slot (sc->sc_cc);
+  vsn->src_gen.src_batch_size = cc_new_instance_slot (sc->sc_cc);
+
+  if (code)
+    vsn->src_gen.src_pre_code = code_to_cv (sc, code);
+
+	  tb_dfe->_.table.vvec_search_node = (data_source_t *) vsn;
+	}
+
+
+	static void
+	sqlg_vvec_move_start_specs_to_row_specs (key_source_t *ks)
+	{
+	  search_spec_t *tail;
+	  if (!ks || !ks->ks_spec.ksp_spec_array)
+	    return;
+	  tail = ks->ks_spec.ksp_spec_array;
+	  while (tail->sp_next)
+	    tail = tail->sp_next;
+	  tail->sp_next = ks->ks_row_spec;
+	  ks->ks_row_spec = ks->ks_spec.ksp_spec_array;
+	  ks->ks_spec.ksp_spec_array = NULL;
+	}
+
+
+	static void
+	sqlg_vvec_pk_lookup_spec (sqlo_t *so, df_elt_t *tb_dfe, key_source_t *ks)
+	{
+	  vvec_search_node_t *vsn;
+	  dbe_key_t *pk;
+	  dbe_column_t *pk_col;
+	  dbe_col_loc_t *cl;
+
+	  if (!tb_dfe->_.table.is_vec_order || !tb_dfe->_.table.vvec_search_node || !ks)
+	    return;
+	  vsn = (vvec_search_node_t *) tb_dfe->_.table.vvec_search_node;
+	  pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
+	  if (!pk || ks->ks_key != pk || !pk->key_parts)
+	    return;
+	  pk_col = (dbe_column_t *) pk->key_parts->data;
+	  cl = key_find_cl (ks->ks_key, pk_col->col_id);
+	  if (!cl)
+	    return;
+
+	  sqlg_vvec_move_start_specs_to_row_specs (ks);
+	  NEW_VARZ (search_spec_t, spec);
+	  spec->sp_col = pk_col;
+	  spec->sp_collation = pk_col->col_sqt.sqt_collation;
+	  spec->sp_min_op = CMP_EQ;
+	  spec->sp_max_op = CMP_NONE;
+	  spec->sp_min_ssl = vsn->vsn_pk_id;
+	  spec->sp_cl = *cl;
+	  ks->ks_spec.ksp_spec_array = spec;
+	  tb_dfe->_.table.is_unique = 1;
+	  ksp_cmp_func (&ks->ks_spec, &ks->ks_spec_nth);
+	  sqlg_ks_vec (so, tb_dfe, ks);
+	}
+
+
 void
 sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts)
 {
@@ -865,6 +1146,8 @@ sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts)
 
   text_node_t * txs = (text_node_t *) tb_dfe->_.table.text_node;
   key_source_t * order_ks = ts->ts_order_ks;
+  if (IS_QN (txs, vvec_search_node_input))
+    return;
   if (!ts->ts_main_ks
       && !ts->ts_order_ks->ks_row_spec && !tb_dfe->_.table.xpath_node && !order_ks->ks_key->key_distinct && !txs->txs_is_rdf)
     {
@@ -1101,6 +1384,18 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 	  dk_set_push (&sc->sc_cc->cc_query->qr_nodes, (void*)ts);
 	}
     }
+  /* M3: Generate vector ANN search node if this table has ANN ordering */
+	  if (tb_dfe->_.table.is_vec_order && ot->ot_vec_index)
+	    {
+	      sqlg_vvec_search_node (so, tb_dfe, NULL);
+	      order_key = main_key;
+	      if (tb_dfe->_.table.is_vec_order)
+		{
+		  /* the ts is after the ANN node.  Set the order in qr_nodes to reflect this */
+		  dk_set_delete (&sc->sc_cc->cc_query->qr_nodes, (void*)ts);
+	  dk_set_push (&sc->sc_cc->cc_query->qr_nodes, (void*)ts);
+	}
+    }
   if (tb_dfe->_.table.xpath_pred || tb_dfe->_.table.is_xcontains)
     sqlg_xpath_node (so, tb_dfe);
 
@@ -1111,10 +1406,11 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
       ts->ts_inx_op = sqlg_inx_op (so, tb_dfe, tb_dfe->_.table.inx_op, NULL);
     }
   else
-    {
-      ts->ts_order_ks = sqlg_key_source_create (so, tb_dfe, order_key);
-      ts->ts_order_ks->ks_descending = ot->ot_order_dir == ORDER_DESC && tb_dfe->_.table.is_oby_order;
-    }
+	    {
+	      ts->ts_order_ks = sqlg_key_source_create (so, tb_dfe, order_key);
+	      sqlg_vvec_pk_lookup_spec (so, tb_dfe, ts->ts_order_ks);
+	      ts->ts_order_ks->ks_descending = ot->ot_order_dir == ORDER_DESC && tb_dfe->_.table.is_oby_order;
+	    }
   if (!sc->sc_no_current_of)
     {
       char ct_id[MAX_NAME_LEN * 2 + 10];
@@ -1162,6 +1458,14 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
     }
   if (tb_dfe->_.table.xpath_node)
     sql_node_append ((data_source_t**) &ts, tb_dfe->_.table.xpath_node);
+  /* M3: Vector ANN search node - append to table source like text_node */
+  if (tb_dfe->_.table.vvec_search_node)
+    {
+      if (tb_dfe->_.table.is_vec_order)
+	sql_node_append (&tb_dfe->_.table.vvec_search_node, (data_source_t*) ts);
+      else
+	sql_node_append ((data_source_t**) &ts, tb_dfe->_.table.vvec_search_node);
+    }
 #endif
   sqlg_non_index_ins (tb_dfe);
   ts->src_gen.src_after_test = sqlg_pred_body (so, tb_dfe->_.table.join_test);
@@ -5589,14 +5893,18 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		      sqlg_pred_merge (so, dfe, &pre_code);
 		      last_qn = qn = sqlg_make_ts (so, dfe, &pre_code);
 		    }
-		  if (dfe->_.table.text_node && (dfe->_.table.is_text_order || dfe->_.table.text_only))
-		    qn = dfe->_.table.text_node;
-		  if (dfe->_.table.text_only)
-		    last_qn = dfe->_.table.text_node;
-		  else if (dfe->_.table.xpath_node)
-		    last_qn = dfe->_.table.xpath_node;
-		  else if (dfe->_.table.text_node && !dfe->_.table.is_text_order)
-		    last_qn = dfe->_.table.text_node;
+			  if (dfe->_.table.text_node && (dfe->_.table.is_text_order || dfe->_.table.text_only))
+			    qn = dfe->_.table.text_node;
+			  if (dfe->_.table.vvec_search_node && dfe->_.table.is_vec_order)
+			    qn = dfe->_.table.vvec_search_node;
+			  if (dfe->_.table.text_only)
+			    last_qn = dfe->_.table.text_node;
+			  else if (dfe->_.table.xpath_node)
+			    last_qn = dfe->_.table.xpath_node;
+			  else if (dfe->_.table.text_node && !dfe->_.table.is_text_order)
+			    last_qn = dfe->_.table.text_node;
+			  else if (dfe->_.table.vvec_search_node && !dfe->_.table.is_vec_order)
+			    last_qn = dfe->_.table.vvec_search_node;
 		}
 	      else if (DFE_DT == dfe->dfe_type)
 		{

@@ -5655,6 +5655,8 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
   quad_map_t *qm;
   if (SPART_TRIPLE_FIELDS_COUNT <= field_idx)
     return t_box_dv_short_string (simple_vname);
+  if (triple->_.triple.ft_type == uname_bif_c_vector_search)
+    return t_box_dv_short_string (simple_vname);
   qm = triple->_.triple.tc_list[0]->tc_qm;
   if ((0 != triple->_.triple.ft_type) || (NULL == qm->qmTableName) || (NULL == strstr (qm->qmTableName, "DB.DBA.RDF_QUAD")))
     {
@@ -9007,6 +9009,41 @@ ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pr
   args = ft_pred->_.funcall.argtrees;
   ft_arg1 = args[1];
   argcount = BOX_ELEMENTS (args);
+  if (uname_bif_c_knnSimilar == ft_type)
+    {
+      SPART *idx = NULL, *lim = NULL;
+      for (argctr = 2; argctr + 1 < argcount; argctr += 2)
+        {
+          if (INDEX_L == (ptrlong)(args[argctr]))
+            idx = args[argctr+1];
+          else if (LIMIT_L == (ptrlong)(args[argctr]))
+            lim = args[argctr+1];
+        }
+      ssg_puts ("knnSimilar (");
+      ssg_prin_id (ssg, ft_alias);
+      ssg_puts (".");
+      ssg_prin_id (ssg, qmft->qmvftColumnName);
+      ssg_puts (", ");
+      if (DV_STRING == DV_TYPE_OF (ft_arg1))
+        ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
+      else
+        ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+      if (NULL != idx)
+        {
+          const char *iri = (const char *)(SPAR_LIT_OR_QNAME_VAL (idx));
+          if (NULL == iri)
+            spar_error (ssg->ssg_sparp, "The INDEX option of bif:knnSimilar should be an IRI naming the index");
+          ssg_puts (", ");
+          ssg_print_box_as_sql_atom (ssg, t_box_dv_short_string (iri), SQL_ATOM_UTF8_ONLY);
+        }
+      if (NULL != lim)
+        {
+          ssg_puts (", ");
+          ssg_print_scalar_expn (ssg, lim, SSG_VALMODE_SQLVAL, NULL);
+        }
+      ssg_puts (")");
+      return;
+    }
   contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
     !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
   if (!ft_type_is_geo)
@@ -9125,7 +9162,9 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
               SPART *val = tree->_.triple.options[optctr+1];
               switch ((ptrlong)(tree->_.triple.options[optctr]))
                 {
-                case OFFBAND_L: case SCORE_L:
+                case OFFBAND_L: case SCORE_L: case DISTANCE_L:
+                  if ((DISTANCE_L == (ptrlong)(tree->_.triple.options[optctr])) && (uname_bif_c_knnSimilar != tree->_.triple.ft_type))
+                    break;
                   if (NULL != colcodes)
                     ssg_puts (", ");
                   else
@@ -9133,6 +9172,12 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
                       ssg_puts (" (SELECT ");
                       if (NULL != lim)
                         ssg_print_limofs_expn (ssg, lim, NULL);
+                    }
+                  if (uname_bif_c_knnSimilar == tree->_.triple.ft_type)
+                    {
+                      /* knnSimilar's outputs are the SIMILARITY and DISTANCE virtual columns of the quad alias */
+                      ssg_prin_id (ssg, sub_tabid);
+                      ssg_puts ((SCORE_L == (ptrlong)(tree->_.triple.options[optctr])) ? ".SIMILARITY AS " : ".DISTANCE AS ");
                     }
                   ssg_prin_id (ssg, val->_.var.vname);
                 }
@@ -9330,6 +9375,230 @@ from_printed:
 }
 
 static void
+ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int pass)
+{
+  caddr_t tabid = tree->_.triple.tabid;
+  SPART *graph = tree->_.triple.tr_graph;
+  SPART *subject = tree->_.triple.tr_subject;
+  SPART *object = tree->_.triple.tr_object;
+  SPART **options = tree->_.triple.options;
+  caddr_t subject_alias = NULL;
+  caddr_t index_iri = NULL;
+  SPART *index_list = NULL;
+  int index_all = 0;
+  int index_opt_count = 0;
+  caddr_t ranking_mode = NULL;
+  int ranking_opt_count = 0;
+  ccaddr_t required_graph_iri = NULL;
+  SPART *score_var = NULL;
+  SPART *distance_var = NULL;
+  SPART *score_limit_expn = NULL;
+  SPART *distance_limit_expn = NULL;
+  SPART *limit_expn = NULL;
+  SPART *ef_search_expn = NULL;
+  int graph_spart_type;
+  int print_score_limit_arg, print_distance_limit_arg, print_required_graph_arg;
+  int multi;
+  int opt_ctr;
+  (void) gp;
+  graph_spart_type = (NULL == graph) ? 0 : spar_plain_const_value_of_tree (graph, &required_graph_iri);
+  if (SPAR_VARIABLE != SPART_TYPE (subject))
+    spar_error (ssg->ssg_sparp, "bif:vector_search requires a variable subject");
+  if (NULL != options)
+    {
+      for (opt_ctr = BOX_ELEMENTS (options) - 2; opt_ctr >= 0; opt_ctr -= 2)
+        {
+          ptrlong key = (ptrlong)(options[opt_ctr]);
+          SPART *val = options[opt_ctr + 1];
+          switch (key)
+            {
+            case INDEX_L:
+              /* One IRI, or the parenthesised list.  Counted rather than just
+                 assigned: the option list is a commalist, so a repeated bare
+                 `index` parses, and this loop runs BACKWARDS -- the first one
+                 written is the last one processed and used to be the only one
+                 searched.  Silently discarding an index the caller named is the
+                 bug this count turns into an error. */
+              index_opt_count++;
+              if (SPAR_LIST == SPART_TYPE (val))
+                index_list = val;
+              else
+                index_iri = SPAR_LIT_OR_QNAME_VAL (val);
+              break;
+            case INDEX_ALL_L: index_opt_count++; index_all = 1; break;
+            case RANKING_L: ranking_opt_count++; ranking_mode = (caddr_t)val; break;
+            case SCORE_L: score_var = val; break;
+            case DISTANCE_L: distance_var = val; break;
+            case SCORE_LIMIT_L: score_limit_expn = val; break;
+            case DISTANCE_LIMIT_L: distance_limit_expn = val; break;
+            case LIMIT_L: limit_expn = val; break;
+            case EF_SEARCH_L: ef_search_expn = val; break;
+            default: break;
+            }
+        }
+    }
+  if (index_opt_count > 1)
+    spar_error (ssg->ssg_sparp,
+      "bif:vector_search accepts one INDEX option; to search several indexes write them as one list, option (index (<a>, <b>)), or all of them with option (index *)");
+  if (ranking_opt_count > 1)
+    spar_error (ssg->ssg_sparp, "bif:vector_search accepts one RANKING option");
+  if (NULL != ranking_mode)
+    {
+      if (strcasecmp (ranking_mode, "raw") && strcasecmp (ranking_mode, "relevance"))
+        spar_error (ssg->ssg_sparp,
+          "Unsupported RANKING option \"%.100s\" for bif:vector_search; expected raw or relevance",
+          ranking_mode );
+    }
+  /* A single named index takes the path it has always taken, byte for byte.
+     RANKING is accepted there and needs no separate implementation: with one
+     index, ordering by rank within that index and ordering by raw score are the
+     same sequence. */
+  multi = (index_all || (NULL != index_list));
+  print_required_graph_arg = (SPAR_QNAME == graph_spart_type);
+  print_distance_limit_arg = ((NULL != distance_limit_expn) || print_required_graph_arg);
+  print_score_limit_arg = ((NULL != score_limit_expn) || print_distance_limit_arg);
+  if (SSG_TABLE_SELECT_PASS == pass)
+    {
+      quad_map_t *qm = tree->_.triple.tc_list[0]->tc_qm;
+      qm_value_t *subject_qmv = SPARP_FIELD_QMV_OF_QM (qm, SPART_TRIPLE_SUBJECT_IDX);
+      ccaddr_t subject_alias_name = subject->_.var.vname;
+      if ((NULL != subject_qmv) && (0 != BOX_ELEMENTS_0 (subject_qmv->qmvColumns)))
+        subject_alias_name = subject_qmv->qmvColumns[0]->qmvcColumnName;
+      subject_alias = ssg_triple_retval_alias (ssg, tree, SPART_TRIPLE_SUBJECT_IDX, 0, subject_alias_name);
+      ssg_puts (" (SELECT ");
+      ssg->ssg_indent++;
+      ssg_puts ("ann.result_entity_iid AS ");
+      ssg_prin_id (ssg, subject_alias);
+      if (NULL != score_var)
+        {
+          ssg_puts (", ann.result_score AS ");
+          ssg_prin_id (ssg, score_var->_.var.vname);
+        }
+      if (NULL != distance_var)
+        {
+          ssg_puts (", ann.result_distance AS ");
+          ssg_prin_id (ssg, distance_var->_.var.vname);
+        }
+      ssg_newline (0);
+      if (multi)
+        {
+          /* A second table function rather than a widened first argument, so
+             the single-index statement above is emitted exactly as it was.
+             The list is resolved, checked for a shared model and metric, and
+             merged inside it -- and `*` is expanded there too, at EXECUTION
+             time: a compiled SPARQL plan is cached by query text, so a
+             wildcard expanded here would bake the first caller's set of
+             indexes into the plan every other caller then reuses. */
+          ssg_puts (" FROM DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (idx_list, ranking_mode, query_text, limit_count, ef_search");
+        }
+      else
+        ssg_puts (" FROM DB.DBA.VEC_INDEX_SEARCH_ROWS (idx_iri, query_text, limit_count, ef_search");
+      if (print_score_limit_arg)
+        ssg_puts (", score_limit");
+      if (print_distance_limit_arg)
+        ssg_puts (", distance_limit");
+      if (print_required_graph_arg)
+        ssg_puts (", required_graph_iri");
+      ssg_puts (") ");
+      ssg_puts ("(result_entity_iid any, result_distance double precision, result_score double precision) ann");
+      ssg_newline (0);
+      if (multi)
+        {
+          ssg_puts (" WHERE idx_list = ");
+          if (index_all)
+            ssg_puts ("'*'");
+          else
+            {
+              int iri_ctr, iri_count = BOX_ELEMENTS_0 (index_list->_.list.items);
+              ssg_puts ("vector (");
+              for (iri_ctr = 0; iri_ctr < iri_count; iri_ctr++)
+                {
+                  if (iri_ctr)
+                    ssg_puts (", ");
+                  ssg_print_box_as_sql_atom (ssg,
+                    SPAR_LIT_OR_QNAME_VAL (index_list->_.list.items[iri_ctr]), SQL_ATOM_UTF8_ONLY);
+                }
+              ssg_puts (")");
+            }
+          ssg_puts (" AND ranking_mode = ");
+          /* `*` orders by relevance rank unless told otherwise -- deliberately
+             not adaptively, and deliberately not by raw score.  The author of a
+             wildcard has chosen no indexes, so the set is whatever exists when
+             the query runs; rank is comparable across models by construction
+             and raw score is not.  An explicit list keeps raw score, which is
+             what one index already means. */
+          if (NULL != ranking_mode)
+            ssg_print_box_as_sql_atom (ssg, ranking_mode, SQL_ATOM_UTF8_ONLY);
+          else if (index_all)
+            ssg_puts ("'relevance'");
+          else
+            ssg_puts ("'raw'");
+        }
+      else
+        {
+          ssg_puts (" WHERE idx_iri = ");
+          if (NULL != index_iri)
+            ssg_print_box_as_sql_atom (ssg, index_iri, SQL_ATOM_UTF8_ONLY);
+          else
+            ssg_puts ("DB.DBA.VEC_INDEX_INFER_SEARCH_INDEX (NULL)");
+        }
+      ssg_puts (" AND query_text = ");
+      if (SPAR_LIT == SPART_TYPE (object))
+        ssg_print_box_as_sql_atom (ssg, SPAR_LIT_VAL (object), SQL_ATOM_UTF8_ONLY);
+      else
+        ssg_print_scalar_expn (ssg, object, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (" AND limit_count = ");
+      if (NULL != limit_expn)
+        ssg_print_scalar_expn (ssg, limit_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+      else
+        ssg_puts ("10");
+      ssg_puts (" AND ef_search = ");
+      if (NULL != ef_search_expn)
+        ssg_print_scalar_expn (ssg, ef_search_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+      else
+        ssg_puts ("100");
+      /* A limit the query does not give gets no predicate at all, and the
+         procedure table passes NULL for it -- "no limit".  It is in the
+         argument list above only when an argument after it is.  Writing it
+         as `score_limit IS NULL` passed 0 instead: a procedure table takes an
+         argument from the other side of any predicate on the parameter
+         (sqlg_proc_table_params), and IS NULL has none.  Inside
+         GRAPH <g> { } that made distance_limit 0, and only exact matches
+         came back. */
+      if (NULL != score_limit_expn)
+        {
+          ssg_puts (" AND score_limit = ");
+          ssg_print_scalar_expn (ssg, score_limit_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+        }
+      if (NULL != distance_limit_expn)
+        {
+          ssg_puts (" AND distance_limit = ");
+          ssg_print_scalar_expn (ssg, distance_limit_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+        }
+      if (print_required_graph_arg)
+        {
+          ssg_puts (" AND required_graph_iri = ");
+          ssg_print_box_as_sql_atom (ssg, SPAR_LIT_OR_QNAME_VAL (graph), SQL_ATOM_UTF8_ONLY);
+        }
+      if (NULL != score_limit_expn)
+        {
+          ssg_puts (" AND ann.result_score >= ");
+          ssg_print_scalar_expn (ssg, score_limit_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+        }
+      if (NULL != distance_limit_expn)
+        {
+          ssg_puts (" AND ann.result_distance <= ");
+          ssg_print_scalar_expn (ssg, distance_limit_expn, SSG_VALMODE_NUM, NULL_ASNAME);
+        }
+      ssg->ssg_indent--;
+      ssg_newline (0);
+      ssg_puts (") AS ");
+      ssg_prin_id (ssg, tabid);
+      t_set_push (&(ssg->ssg_valid_ret_tabids), tabid);
+    }
+}
+
+static void
 ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass)
 {
   SPART *tree = trees[0];
@@ -9344,6 +9613,11 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_table_exp(): qm_list does not contain exactly one qm");
 #endif
   qm = tc_list[0]->tc_qm;
+  if (tree->_.triple.ft_type == uname_bif_c_vector_search)
+    {
+      ssg_print_vector_search_table_exp (ssg, gp, tree, pass);
+      return;
+    }
   if (( 1 != tree_count) ||		/* IF fake self-join on pk or */
     (NULL == qm->qmTableName) ||	/* single table of non-plain triples or */
     (0 != tree->_.triple.ft_type) ||	/* triple with free-text predicate or */

@@ -41,6 +41,8 @@ create procedure DB.DBA.L_O_LOOK (inout val_str varchar, inout dt_lang int, inou
       insert into DB.DBA.RDF_OBJ index RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG, RO_LONG) values (id, val_str, flags, dt_lang, lng);
       if (1 = is_text)
         insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+      if (__vec_rdf_obj_is_string_dt (dt_lang) and __vec_rdf_obj_active ())
+        insert soft DB.DBA.RDF_OBJ_VEC_LOG option (no cluster) (RVL_RO_ID) values (id);
       if (2 = is_text)
 	{
 	  declare geo any;
@@ -144,6 +146,8 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
   inout app_env any )
 {
   connection_set ('g_iid', g_iid);
+  if (DB.DBA.VEC_INDEX_HAS_ACTIVE_ASYNC ())
+    DB.DBA.VEC_INDEX_ENQUEUE_RDF_CHANGE (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1));
   dpipe_input (app_env[1], s_uri, p_uri, o_uri, null);
   if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
     DB.DBA.RL_SEND (app_env, g_iid);
@@ -232,6 +236,8 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 {
   declare is_text int;
   connection_set ('g_iid', g_iid);
+  if (DB.DBA.VEC_INDEX_HAS_ACTIVE_ASYNC ())
+    DB.DBA.VEC_INDEX_ENQUEUE_RDF_CHANGE (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1));
   if (__rdf_obj_ft_rule_check (g_iid, p_uri))
     is_text := 1;
   if (o_type or o_lang)
@@ -407,6 +413,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE (
 {
   declare dp any;
   connection_set ('g_iid', g_iid);
+  if (DB.DBA.VEC_INDEX_HAS_ACTIVE_ASYNC ())
+    DB.DBA.VEC_INDEX_ENQUEUE_RDF_CHANGE (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1));
  dp := app_env[1];
   dpipe_input (dp, s_uri, p_uri, o_uri, null, g_iid);
   if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz')) 
@@ -426,6 +434,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
   if (isstring (g_iid))
     g_iid := __i2id (g_iid);
   connection_set ('g_iid', g_iid);
+  if (DB.DBA.VEC_INDEX_HAS_ACTIVE_ASYNC ())
+    DB.DBA.VEC_INDEX_ENQUEUE_RDF_CHANGE (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1));
   if (__rdf_obj_ft_rule_check (g_iid, p_uri))
     is_text := 1;
   if (o_type or o_lang)

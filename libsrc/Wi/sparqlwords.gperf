@@ -64,10 +64,14 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DESC",			DESC_L			, 0
 "DESCRIBE",		DESCRIBE_L		, 0
 "DETACH",		DETACH_L		, 0
+"DISTANCE",		DISTANCE_L		, 0
+"DISTANCE_LIMIT",	DISTANCE_LIMIT_L		, 0
 "DISTINCT",		DISTINCT_L		, 0
 "DROP",			DROP_L			, 0
 "EBV",			SPARQL_BIF		, SPAR_BIF_EBV
 "EBV_INT",		SPARQL_BIF		, SPAR_BIF_EBV_INT
+"EF_SEARCH",		EF_SEARCH_L		, 0
+"EMBEDDING",		EMBEDDING_L		, 0
 "ELSE",			ELSE_L			, 0
 "ENCODE_FOR_URI",	SPARQL_BIF		, SPAR_BIF_ENCODE_FOR_URI
 "END",			END_L			, 0
@@ -75,6 +79,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "EXISTS",		EXISTS_L		, 0
 "FALSE",		false_L			, 0
 "FILTER",		FILTER_L		, 0
+"FOR",			FOR_L			, 0
 "FLOOR",		SPARQL_BIF		, SPAR_BIF_FLOOR
 "FROM",			FROM_L			, 0
 "FUNCTION",		FUNCTION_L		, 0
@@ -101,6 +106,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "ISNUMERIC",		SPARQL_BIF		, SPAR_BIF_ISNUMERIC
 "ISREF",		SPARQL_BIF		, SPAR_BIF_ISREF
 "ISURI",		SPARQL_BIF		, SPAR_BIF_ISURI
+"KEY",			KEY_L			, 0
 "hasLANG",		SPARQL_BIF		, SPAR_BIF_HASLANG
 "hasLANGDIR",		SPARQL_BIF		, SPAR_BIF_HASLANGDIR
 "LANG",			LANG_L			, 0
@@ -113,6 +119,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "LITERAL",		LITERAL_L		, 0
 "LOCAL",		LOCAL_L			, 0
 "LOAD",			LOAD_L			, 0
+"MAINTENANCE",		MAINTENANCE_L		, 0
 "MACRO",		MACRO_L			, 0
 "MAKE",			MAKE_L			, 0
 "MAP",			MAP_L			, 0
@@ -120,6 +127,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "MD5",			SPARQL_BIF		, SPAR_BIF_MD5
 "MIN",			MIN_L			, 0
 "MINUS",		MINUS_L			, 0
+"MODEL",			MODEL_L			, 0
 "MINUTES",		SPARQL_BIF		, SPAR_BIF_MINUTES
 "MODIFY",		MODIFY_L		, 0
 "MONTH",		SPARQL_BIF		, SPAR_BIF_MONTH
@@ -133,6 +141,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "OF",			OF_L			, 0
 "OFFBAND",		OFFBAND_L		, 0
 "OFFSET",		OFFSET_L		, 0
+"ON",			ON_L			, 0
 "OPTIONAL",		OPTIONAL_L		, 0
 "OPTION",		OPTION_L		, 0
 "OR",			_BAR_BAR		, 0
@@ -141,8 +150,10 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "PREFIX",		PREFIX_L		, 0
 "QUAD",			QUAD_L			, 0
 "RAND",			SPARQL_BIF		, SPAR_BIF_RAND
+"RANKING",		RANKING_L		, 0
 "REGEX",		SPARQL_BIF		, SPAR_BIF_REGEX
 "REDUCED",		REDUCED_L		, 0
+"REFRESH",		REFRESH_L		, 0
 "REMOVE_UNICODE3_ACCENTS",	SPARQL_BIF	, SPAR_BIF_REMOVE_UNICODE3_ACCENTS
 "REPLACE",		SPARQL_BIF		, SPAR_BIF_REPLACE
 "RETURNS",		RETURNS_L		, 0
@@ -221,8 +232,10 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "URI",			IRI_L			, 0
 "USING",		USING_L			, 0
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
+"VECTOR_SEARCH",		SPARQL_BIF		, SPAR_BIF_VECTOR_SEARCH
 "VALID",		SPARQL_BIF		, SPAR_BIF_VALID
 "VALUES",		VALUES_L		, 0
+"VECTOR",		VECTOR_L		, 0
 "VERSION",		VERSION_L		, 0
 "WHEN",			WHEN_L			, 0
 "WHERE",		WHERE_L			, 0

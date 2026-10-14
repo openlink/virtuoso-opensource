@@ -687,6 +687,7 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       --log_text ('__rdf_twobyte_cache_zap()');
       delete from DB.DBA.VTLOG_DB_DBA_RDF_OBJ;
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS;
+      DB.DBA.RDF_OBJ_VEC_INDEX_RESET_ALL ();
       sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
       sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
       sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()), 0);
@@ -1356,6 +1357,7 @@ new_long:
           values (id, chksm, v, dt_and_lang);
           set triggers on;
         }
+      DB.DBA.RDF_OBJ_VEC_LOG_ADD (id, dt_and_lang);
       if (ro_id_dict is not null)
 	{
 	  dict_put (ro_id_dict, id, 1);
@@ -1410,6 +1412,7 @@ new_short:
           values (id, v, 0, dt_and_lang);
           set triggers on;
         }
+      DB.DBA.RDF_OBJ_VEC_LOG_ADD (id, dt_and_lang);
       insert into DB.DBA.RO_START (RS_START, RS_DT_AND_LANG, RS_RO_ID)
         values (subseq (v, 0, case when length (v) > 10 then 10 else length (v) end), dt_and_lang, rdf_box (0, 257, 257, id, 0));
       if (ro_id_dict is not null)
@@ -8857,6 +8860,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 80000);
       DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode);
+      DB.DBA.VEC_INDEX_ENQUEUE_RDF_BATCH (graph_iri, triples, 0);
       ins_count := ins_count + length (triples);
     }
   if (isiri_id (graph_iri))
@@ -8890,6 +8894,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
       DB.DBA.RDF_DELETE_TRIPLES_AGG (graph_iri, triples, log_mode);
+      DB.DBA.VEC_INDEX_ENQUEUE_RDF_BATCH (graph_iri, triples, 0);
       del_count := del_count + length (triples);
     }
   if (isiri_id (graph_iri))
@@ -9591,6 +9596,7 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
           g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
           __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1 INSERT');
           DB.DBA.RDF_INSERT_TRIPLES (g, g_group, log_mode);
+          DB.DBA.VEC_INDEX_ENQUEUE_RDF_BATCH (g, g_group, 1);
           g_ins_count := length (g_group);
           ins_count := ins_count + g_ins_count;
           ins_grp_count := ins_grp_count + 1;
@@ -9646,6 +9652,7 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
       declare all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv any;
       -- dbg_obj_princ ('__rgs_prepare_del_or_ins (', quads, uid, dflt_graph_iri, ') formed the following:');
       __rgs_prepare_del_or_ins (quads, uid, dflt_graph_iri, all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv);
+      DB.DBA.VEC_INDEX_ENQUEUE_RDF_BATCH (dflt_graph_iri, quads, 1);
       for vectored (in a_s any array := all_sv, in a_p any array := all_pv, in a_o any array := all_ov, in a_g any array := all_gv)
         {
           if (not isinteger (a_g))
@@ -15675,7 +15682,31 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_STAR_TT_VALUE_EQ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_IRI to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_REIFIER_IRI to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI to SPARQL_SELECT' );
+    'grant execute on DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI to SPARQL_SELECT',
+    -- Vector index (bif:vector_search) ACL helpers.  These must be granted here,
+    -- after the SPARQL_SELECT role is created, NOT in sparql_vec_index.sql: that
+    -- file loads before this role exists, so its bare grants failed at boot
+    -- (SR137 Bad user name) and non-DBA bif:vector_search then hit SR186 (no
+    -- permission to execute VEC_INDEX_SEARCH_ROWS).
+    -- Embedding a query needs the model row behind the index, and the lookup
+    -- (vvec.c, vvec_embed_text_for_index) runs a plain
+    --   select model_name, model_type, handle from DB.DBA.ONNX_MODELS
+    --      where model_id = ?
+    -- on the CALLER's client, so without this a non-DBA bif:vector_search
+    -- failed with SQ033 naming model_id -- on the single-index path too, which
+    -- is to say non-DBA SPARQL vector search did not work at all.  Column-level
+    -- on purpose: these four are what that lookup reads, and they say nothing
+    -- about provider endpoints, API-key names or model file paths.
+    'grant select (model_id, model_name, model_type, handle) on DB.DBA.ONNX_MODELS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_GRAPH_READABLE to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_INFER_SEARCH_INDEX to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_VALIDATE_SEARCH_OPTIONS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_HIT_READABLE to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_HITS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_EXPAND_SEARCH_INDEXES to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_HIT_BETTER to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS to SPARQL_SELECT' );
 
   foreach (varchar cmd in cmds) do
     {
