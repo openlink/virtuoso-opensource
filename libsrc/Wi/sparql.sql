@@ -16720,6 +16720,15 @@ create function DB.DBA.RDF_STAR_ORDER_VALUE (in v any) returns any
   -- Compare date/dateTime values without ordering by their internal subtypes.
   if (__tag (v) = __tag of datetime)
     return cast (v as datetime);
+  -- Normalize boxed partial dates to the same comparison type as native dates.
+  if (is_rdf_box (v) and DB.DBA.RDF_DATATYPE_OF_OBJ (v) in (
+        UNAME'http://www.w3.org/2001/XMLSchema#gYear',
+        UNAME'http://www.w3.org/2001/XMLSchema#gYearMonth'))
+    {
+      -- Keep an invalid lexical form sortable without aborting the query.
+      declare exit handler for sqlstate '22007' { return cast (v as varchar); };
+      return cast (rdf_box_data (v, 1) as datetime);
+    }
   return v;
 }
 ;

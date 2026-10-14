@@ -278,6 +278,14 @@ then
     exit 1
 fi
 
+# Check partial-date normalization independently of ordinary literal ordering.
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfpartialdate.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: RDF partial dates -- trdfpartialdate.sql"
+    exit 1
+fi
+
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
