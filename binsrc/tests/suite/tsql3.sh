@@ -262,6 +262,14 @@ then
 fi
 
 
+# Check native RDF value ordering on the RDF-star ordering path.
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdforder.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: RDF ordering -- trdforder.sql"
+    exit 1
+fi
+
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
