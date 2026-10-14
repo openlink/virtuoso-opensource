@@ -51,6 +51,17 @@ START_SERVER $PORT 1000 $NO_CP_OPT
 RUN $INS $DSN 100000  100
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo_norefs.sql
 
+# Put a vector index into the database before the first backup_online () below.
+# backup_online copies page images, so unlike the logical dumps the HNSW graph
+# travels verbatim and has to come back from each of the three restores without
+# a rebuild.  The fixture checkpoints itself.
+LOG + running sql script tvvec_recov
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvvec_recov.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: obackup.sh: vector index fixture"
+fi
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup0.sql
 
 RUN $ISQL $DSN '"EXEC=shutdown();"' ERRORS=STDOUT
@@ -71,6 +82,16 @@ RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "nwdemo_i_#" $OBACKUP_DIRS_OP
 
 START_SERVER $PORT 1000 $NO_CP_OPT
 
+# After the 1st restore.  Safe to run before obackup1.sql's backup_pages () = 0
+# assertion: reading a healthy index writes nothing -- vvec_epoch_reconcile only
+# sets in-memory health when the epochs already agree.
+LOG + running sql script recovck_vec "(after 1st restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: obackup.sh: vector index check after 1st restore"
+fi
+
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup1.sql
 
 while test -f "$LOCKFILE" 
@@ -86,6 +107,15 @@ RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "nwdemo_i_#" $OBACKUP_DIRS_OP
 START_SERVER $PORT 1000 $NO_CP_OPT
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackupck.sql
+
+# After the 2nd restore, and after obackupck.sql so its backup_pages () = 0
+# assertion still sees an untouched database.
+LOG + running sql script recovck_vec "(after 2nd restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: obackup.sh: vector index check after 2nd restore"
+fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup_userck.sql
 
@@ -105,6 +135,14 @@ RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "vvv"
 START_SERVER $PORT 1000 $NO_CP_OPT
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup_userck2.sql
+
+# After the 3rd restore, from the separate 'vvv' backup set.
+LOG + running sql script recovck_vec "(after 3rd restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: obackup.sh: vector index check after 3rd restore"
+fi
 
 # comment these to enable huge tpcc test.
 SHUTDOWN_SERVER

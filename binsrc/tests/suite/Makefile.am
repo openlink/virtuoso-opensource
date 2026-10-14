@@ -26,6 +26,7 @@ TOP=@TOP@
 check_SCRIPTS = \
 	bpel.sh \
 	byteorder.sh \
+	check_test_registration.sh \
 	clean.sh \
 	epilog.sh \
 	go_functions.sh \
@@ -89,6 +90,44 @@ check_SCRIPTS = \
 	tupgrade_recov.sh \
 	tvad.sh \
 	tvad2.sh \
+	tlongany.sh \
+	tvvec.sh \
+	tvvec_crash_recovery.sh \
+	tvvec_chunked_replay.sh \
+	tvvec_chunked_replay_crash.sh \
+	tvvec_rebuild_durable.sh \
+	tvvec_rebuild_option.sh \
+	tvvec_filter_mode.sh \
+	tvvec_hidden_guard.sh \
+	tvvec_memguard.sh \
+	tvvec_concurrency.sh \
+	tvvec_onnx_lifecycle.sh \
+	tvvec_onnx_tensor.sh \
+	tvvec_onnx_tokenizer.sh \
+	tvvec_onnx_summarize.sh \
+	tvvec_onnx_export_tool.sh \
+	tvvec_passthrough_column.sh \
+	tvvec_vector_math.sh \
+	tvvec_ann_topk.sh \
+	tvvec_backup.sh \
+	tvvec_page_log.sh \
+	tvvec_recovery_graph.sh \
+	tvvec_explain_ctx.sh \
+	tvvec_obsolete_plugin.sh \
+	tvvec_space.sh \
+	tvvec_literal_ids.sh \
+	tvvec_redo_after_create.sh \
+	tvvec_refresh_ops.sh \
+	tvvec_rebuild_guard.sh \
+	tvvec_packed_insert.sh \
+	tvvec_onnx_padding.sh \
+	tvvec_onnx_batching.sh \
+	tvvec_simd.sh \
+	tvvec_refresh_log_limit.sh \
+	tvvec_refresh_threads.sh \
+	tvvec_onnx_bpe.sh \
+	tvvec_rollback_undo.sh \
+	tvvec_rdf_quad.sh \
 	tvsp.sh \
 	tvspx.sh \
 	tvspxex.sh \
@@ -135,6 +174,7 @@ EXTRA_DIST= \
 	$(srcdir)/*.nq \
 	$(srcdir)/*.pem \
 	$(srcdir)/*.sql \
+	$(srcdir)/onnx_embedding_mock.py \
 	$(srcdir)/*.ttl \
 	$(srcdir)/*.txt \
 	$(srcdir)/*.vsp \

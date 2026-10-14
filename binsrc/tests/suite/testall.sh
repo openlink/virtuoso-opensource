@@ -137,7 +137,45 @@ rtest \
 trepl_rdf \
 tsoap12 \
 tvspxex \
-tgraphql "
+tgraphql \
+tlongany \
+tvvec \
+tvvec_crash_recovery \
+tvvec_chunked_replay \
+tvvec_chunked_replay_crash \
+tvvec_rebuild_durable \
+tvvec_rebuild_option \
+tvvec_filter_mode \
+tvvec_hidden_guard \
+tvvec_memguard \
+tvvec_concurrency \
+tvvec_onnx_lifecycle \
+tvvec_onnx_tensor \
+tvvec_onnx_tokenizer \
+tvvec_onnx_summarize \
+tvvec_onnx_export_tool \
+tvvec_passthrough_column \
+tvvec_vector_math \
+tvvec_ann_topk \
+tvvec_backup \
+tvvec_page_log \
+tvvec_recovery_graph \
+tvvec_explain_ctx \
+tvvec_obsolete_plugin \
+tvvec_space \
+tvvec_literal_ids \
+tvvec_redo_after_create \
+tvvec_refresh_ops \
+tvvec_rebuild_guard \
+tvvec_packed_insert \
+tvvec_onnx_padding \
+tvvec_onnx_batching \
+tvvec_simd \
+tvvec_refresh_log_limit \
+tvvec_refresh_threads \
+tvvec_onnx_bpe \
+tvvec_rollback_undo \
+tvvec_rdf_quad "
 
 QUICKTEST=1
 TPCDMODE=local
