@@ -1,0 +1,591 @@
+#!/usr/bin/env python3
+#
+#  virtuoso-export-embedding-model
+#
+#  Export a HuggingFace sentence-embedding model to the ONNX form Virtuoso's
+#  embedding path expects.
+#
+#  A stock HuggingFace ONNX export cannot be used here, for two reasons that
+#  have nothing to do with each other:
+#
+#    * it takes three inputs (input_ids, attention_mask, token_type_ids) and
+#      the out-of-process helper binds exactly two;
+#    * its output is last_hidden_state -- one vector per token, not one per
+#      sentence.  Pooling happens in the library, outside the graph.
+#
+#  So this script wraps the transformer in pooling (and normalisation, if the
+#  model asks for it), folds token_type_ids away as a constant, and exports a
+#  graph that takes input_ids and attention_mask and returns pooled_output.
+#
+#  The helper tokenizes in C, with one of two tokenizers: WordPiece (BERT,
+#  vocab.txt) or byte-level BPE (RoBERTa and GPT-2, vocab.json with merges.txt
+#  beside it).  The tokenizer is read from the model too, and the files it
+#  needs are copied beside the export.
+#
+#  The pooling mode is READ from the model's own sentence-transformers
+#  configuration, never assumed.  This matters more than it looks: pooling a
+#  CLS-pooled model with mean does not fail, it returns plausible embeddings
+#  that rank badly.  An early MiniLM export of ours had that defect --
+#  correcting it moved FAQ hit@1 from 33% to 56%.  A tool that assumed mean
+#  would hand that same defect to everyone with a CLS-pooled model.
+#
+#  Usage:
+#      virtuoso-export-embedding-model <model> <outdir> [options]
+#      virtuoso-export-embedding-model <model> /dev/null --dry-run
+#
+#  <model> is a HuggingFace id or a local directory.
+#
+#  --dry-run prints what would be exported and exits.  It reads configuration
+#  only, and deliberately does not import torch, so it works anywhere python3
+#  does.
+#
+#  --bf16-weights stores every weight whose values are all exact bfloat16
+#  numbers as bfloat16, behind a Cast that ONNX Runtime folds back to the same
+#  fp32 weights when it loads the model.  It loses nothing by construction and
+#  the tool checks the outputs are identical.  A model published in bf16 and
+#  exported in fp32 -- the bundled granite one -- halves; a model trained in
+#  fp32 has almost no such weights and comes out as it was.
+#
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#
+#  Copyright (C) 1998-2026 OpenLink Software
+#
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
+
+import argparse
+import json
+import os
+import shutil
+import sys
+
+INPUT_IDS = "input_ids"
+ATTENTION_MASK = "attention_mask"
+POOLED_OUTPUT = "pooled_output"
+
+
+def log(msg):
+    print(msg, file=sys.stderr)
+
+
+def local_dir_for(model):
+    """The model's directory on disk, or None if it is a hub id we have not
+    resolved yet.  Reading config is a filesystem operation, so a hub id has to
+    be resolved to a snapshot first -- but only when we actually need it."""
+    if os.path.isdir(model):
+        return model
+    return None
+
+
+def resolve_from_hub(model):
+    """Resolve a hub id to a local snapshot directory without importing torch.
+
+    huggingface_hub is a dependency of transformers, so it is present wherever
+    an export could work.  Honours HF_HUB_OFFLINE, so a cached model resolves
+    with no network.
+
+    Returns (path, reason).  The reason is carried out rather than swallowed:
+    "not cached", "no network" and "no such model" need different responses from
+    whoever ran this, and collapsing them into None tells them nothing."""
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError as exc:
+        return None, "huggingface_hub is not installed (%s)" % exc
+    try:
+        return snapshot_download(model), None
+    except Exception as exc:
+        return None, "%s: %s" % (type(exc).__name__, exc)
+
+
+def pre_tokenizer_types(pre):
+    """The types in a tokenizer.json pre_tokenizer, which may be a Sequence."""
+    if not isinstance(pre, dict):
+        return []
+    types = [str(pre.get("type", ""))]
+    for inner in pre.get("pretokenizers") or []:
+        types.extend(pre_tokenizer_types(inner))
+    return types
+
+
+def read_tokenizer(model_dir):
+    """Which of the helper's tokenizers the model needs.
+
+    tokenizer.json says so outright; without one, the vocabulary files do.
+    'wordpiece' (vocab.txt) and 'bpe' (byte-level: vocab.json + merges.txt) are
+    the two the helper implements.  Anything else -- SentencePiece, a BPE
+    without the byte-level pre-tokenizer or with add_prefix_space -- is
+    'unsupported', so that it is refused here rather than exported into a
+    model the server cannot feed."""
+    tj = os.path.join(model_dir, "tokenizer.json")
+    if os.path.isfile(tj):
+        try:
+            with open(tj) as fh:
+                cfg = json.load(fh)
+            kind = str((cfg.get("model") or {}).get("type", ""))
+            pre = cfg.get("pre_tokenizer") or {}
+            if kind == "WordPiece":
+                return "wordpiece"
+            if kind == "BPE":
+                if "ByteLevel" in pre_tokenizer_types(pre) and not pre.get("add_prefix_space", False):
+                    return "bpe"
+                return "unsupported"
+            if kind:
+                return "unsupported"
+        except (OSError, ValueError, AttributeError):
+            pass
+    if os.path.isfile(os.path.join(model_dir, "vocab.txt")):
+        return "wordpiece"
+    if os.path.isfile(os.path.join(model_dir, "vocab.json")) and os.path.isfile(
+            os.path.join(model_dir, "merges.txt")):
+        return "bpe"
+    for f in ("spiece.model", "sentencepiece.bpe.model", "tokenizer.model"):
+        if os.path.isfile(os.path.join(model_dir, f)):
+            return "unsupported"
+    return "none"
+
+
+def read_plan(model_dir, max_seq_len=None):
+    """Work out how this model turns token vectors into a sentence vector.
+
+    sentence-transformers records its pipeline in modules.json, in order: a
+    Transformer, then a Pooling, then optionally a Normalize.  1_Pooling's own
+    config says which pooling.  Everything here is read; nothing is guessed
+    unless there is no configuration at all, and then it is reported as
+    inferred so the caller knows the difference."""
+    plan = {
+        "pooling": "mean",
+        "normalize": True,
+        "inferred": True,
+        "max_seq_len": max_seq_len or 256,
+        "dimension": None,
+        "tokenizer": read_tokenizer(model_dir),
+    }
+
+    modules_path = os.path.join(model_dir, "modules.json")
+    if not os.path.isfile(modules_path):
+        return plan
+
+    try:
+        with open(modules_path) as fh:
+            modules = json.load(fh)
+    except (OSError, ValueError):
+        return plan
+
+    types = [str(m.get("type", "")) for m in modules]
+    plan["normalize"] = any("Normalize" in t for t in types)
+    plan["inferred"] = False
+
+    pool_rel = None
+    for m in modules:
+        if "Pooling" in str(m.get("type", "")):
+            pool_rel = m.get("path") or "1_Pooling"
+            break
+
+    if pool_rel is None:
+        #  A pipeline with no Pooling module at all: the transformer's own
+        #  output is the sentence vector.  Rare, but it is a statement, not an
+        #  omission, so honour it rather than pooling anyway.
+        plan["pooling"] = "none"
+        return plan
+
+    pool_cfg = os.path.join(model_dir, pool_rel, "config.json")
+    if os.path.isfile(pool_cfg):
+        try:
+            with open(pool_cfg) as fh:
+                cfg = json.load(fh)
+            if cfg.get("pooling_mode_cls_token"):
+                plan["pooling"] = "cls"
+            elif cfg.get("pooling_mode_max_tokens"):
+                plan["pooling"] = "max"
+            elif cfg.get("pooling_mode_mean_tokens"):
+                plan["pooling"] = "mean"
+            plan["dimension"] = cfg.get("word_embedding_dimension")
+        except (OSError, ValueError):
+            pass
+
+    if max_seq_len is None:
+        st_cfg = os.path.join(model_dir, "sentence_bert_config.json")
+        if os.path.isfile(st_cfg):
+            try:
+                with open(st_cfg) as fh:
+                    plan["max_seq_len"] = int(json.load(fh).get("max_seq_length", 256))
+            except (OSError, ValueError, TypeError):
+                pass
+
+    return plan
+
+
+def print_plan(plan):
+    print(
+        "plan: pooling=%s normalize=%d inferred=%d inputs=%s,%s output=%s max_seq_len=%d tokenizer=%s"
+        % (
+            plan["pooling"],
+            1 if plan["normalize"] else 0,
+            1 if plan["inferred"] else 0,
+            INPUT_IDS,
+            ATTENTION_MASK,
+            POOLED_OUTPUT,
+            plan["max_seq_len"],
+            plan["tokenizer"],
+        )
+    )
+
+
+def build_wrapper(model_dir, plan):
+    """The exported graph: transformer -> pooling -> optional L2.
+
+    token_type_ids is not an input.  BERT-family models accept it and every
+    sentence-transformers model passes zeros, so folding a constant in keeps the
+    graph at the two inputs the helper binds instead of exporting a third that
+    nothing would ever set."""
+    import torch
+    from transformers import AutoModel
+
+    pooling = plan["pooling"]
+    normalize = plan["normalize"]
+
+    class Embedder(torch.nn.Module):
+        def __init__(self, inner):
+            super().__init__()
+            self.inner = inner
+
+        def forward(self, input_ids, attention_mask):
+            out = self.inner(input_ids=input_ids, attention_mask=attention_mask)
+            hidden = out[0]
+            mask = attention_mask.unsqueeze(-1).to(hidden.dtype)
+            if pooling == "cls":
+                pooled = hidden[:, 0]
+            elif pooling == "max":
+                #  Masked positions must not win the max, and -inf would make
+                #  an all-masked row NaN, so use a large finite floor.
+                pooled = (hidden + (mask - 1.0) * 1e9).max(dim=1).values
+            elif pooling == "none":
+                pooled = hidden[:, 0]
+            else:
+                summed = (hidden * mask).sum(dim=1)
+                counts = mask.sum(dim=1).clamp(min=1e-9)
+                pooled = summed / counts
+            if normalize:
+                pooled = torch.nn.functional.normalize(pooled, p=2.0, dim=1)
+            return pooled
+
+    inner = AutoModel.from_pretrained(model_dir)
+    inner.eval()
+    return Embedder(inner).eval()
+
+
+def export(model_dir, outdir, plan, opset):
+    import torch
+
+    wrapper = build_wrapper(model_dir, plan)
+
+    os.makedirs(outdir, exist_ok=True)
+    model_path = os.path.join(outdir, "model.onnx")
+
+    seq = min(plan["max_seq_len"], 16)
+    ids = torch.ones(1, seq, dtype=torch.int64)
+    mask = torch.ones(1, seq, dtype=torch.int64)
+
+    torch.onnx.export(
+        wrapper,
+        (ids, mask),
+        model_path,
+        input_names=[INPUT_IDS, ATTENTION_MASK],
+        output_names=[POOLED_OUTPUT],
+        #  Both axes dynamic: the helper pads to its own max_seq_len and batches
+        #  up to max_batch, and a fixed axis would refuse both.  The shipped
+        #  out-of-process mode accepts symbolic axes; in-process does not.
+        dynamic_axes={
+            INPUT_IDS: {0: "batch", 1: "sequence"},
+            ATTENTION_MASK: {0: "batch", 1: "sequence"},
+            POOLED_OUTPUT: {0: "batch"},
+        },
+        opset_version=opset,
+        do_constant_folding=True,
+    )
+    return model_path
+
+
+def copy_vocab(model_dir, outdir, tokenizer):
+    """Copy what the C tokenizer reads beside the model, and return the path to
+    give as vocab=.
+
+    WordPiece reads vocab.txt.  Byte-level BPE reads vocab.json, and merges.txt
+    from the same directory.  Any other tokenizer cannot be fed by the helper --
+    say so plainly rather than writing an export that will fail confusingly at
+    load."""
+    if tokenizer == "wordpiece":
+        src = os.path.join(model_dir, "vocab.txt")
+        if os.path.isfile(src):
+            dst = os.path.join(outdir, "vocab.txt")
+            shutil.copyfile(src, dst)
+            return dst
+        log("ERROR: no vocab.txt in %s -- Virtuoso needs one beside the model." % model_dir)
+        return None
+    if tokenizer == "bpe":
+        for f in ("vocab.json", "merges.txt"):
+            if not os.path.isfile(os.path.join(model_dir, f)):
+                log("ERROR: no %s in %s -- byte-level BPE needs vocab.json and merges.txt."
+                    % (f, model_dir))
+                return None
+        for f in ("vocab.json", "merges.txt"):
+            shutil.copyfile(os.path.join(model_dir, f), os.path.join(outdir, f))
+        return os.path.join(outdir, "vocab.json")
+    log(
+        "ERROR: this model's tokenizer is neither WordPiece nor byte-level BPE,\n"
+        "       the two Virtuoso implements, so the server cannot tokenise for\n"
+        "       it.  The model itself exports fine; there is no way to feed it\n"
+        "       text today."
+    )
+    return None
+
+
+def verify(model_path, model_dir, plan):
+    """Compare the exported graph against the library it came from.
+
+    A shape check would pass with the wrong pooling.  Running both and comparing
+    is what shows the graph does what the model says it does."""
+    try:
+        import numpy as np
+        import onnxruntime as ort
+        import torch
+        from transformers import AutoTokenizer
+    except ImportError:
+        log("note: onnxruntime not available, skipping verification")
+        return None
+
+    tok = AutoTokenizer.from_pretrained(model_dir)
+    enc = tok(["the quick brown fox", "a second sentence, of a different length"],
+              padding=True, truncation=True, max_length=plan["max_seq_len"],
+              return_tensors="pt")
+
+    wrapper = build_wrapper(model_dir, plan)
+    with torch.no_grad():
+        ref = wrapper(enc["input_ids"], enc["attention_mask"]).numpy()
+
+    sess = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+    got = sess.run([POOLED_OUTPUT], {
+        INPUT_IDS: enc["input_ids"].numpy(),
+        ATTENTION_MASK: enc["attention_mask"].numpy(),
+    })[0]
+
+    return float(np.max(np.abs(ref - got)))
+
+
+def store_bf16_weights(src_path, dst_path, min_values=1024):
+    """Write SRC_PATH to DST_PATH with each fp32 weight of at least MIN_VALUES
+    values that are all exact bfloat16 numbers stored as bfloat16, and a Cast
+    back to float producing the weight's original name.
+
+    A weight is converted only when the low 16 bits of every value are zero,
+    so widening the stored half back gives the same float, bit for bit.
+    Smaller weights are left alone: the space is negligible and each one would
+    cost a node.  Returns (converted, fp32 weights, values converted, values in
+    fp32 weights)."""
+    import numpy as np
+    import onnx
+    from onnx import helper, numpy_helper, TensorProto
+
+    m = onnx.load(src_path)
+    g = m.graph
+    used = {t.name for t in g.initializer} | {i.name for i in g.input} \
+        | {o for n in g.node for o in n.output}
+    graph_inputs = {i.name for i in g.input}
+
+    def fresh(name):
+        cand, k = name, 0
+        while cand in used:
+            k += 1
+            cand = "%s_%d" % (name, k)
+        used.add(cand)
+        return cand
+
+    keep, casts = [], []
+    converted = weights = values = values_all = 0
+    for t in g.initializer:
+        if t.data_type != TensorProto.FLOAT:
+            keep.append(t)
+            continue
+        a = numpy_helper.to_array(t).astype("<f4")
+        weights += 1
+        values_all += a.size
+        bits = a.view("<u4")
+        if a.size < min_values or t.name in graph_inputs or np.any(bits & 0xFFFF):
+            keep.append(t)
+            continue
+        high = (bits >> 16).astype("<u2")
+        if not np.array_equal((high.astype("<u4") << 16).view("<f4"), a):
+            keep.append(t)
+            continue
+        bf = TensorProto()
+        bf.name = fresh(t.name + "_bf16")
+        bf.data_type = TensorProto.BFLOAT16
+        bf.dims.extend(a.shape)
+        bf.raw_data = high.tobytes()
+        keep.append(bf)
+        casts.append(helper.make_node("Cast", [bf.name], [t.name], to=TensorProto.FLOAT,
+                                      name=fresh(t.name + "_bf16_cast")))
+        converted += 1
+        values += a.size
+
+    del g.initializer[:]
+    g.initializer.extend(keep)
+    #  The Casts read only initializers, so they go first and the node list
+    #  stays in topological order.
+    nodes = list(g.node)
+    del g.node[:]
+    g.node.extend(casts + nodes)
+    onnx.checker.check_model(m)
+    onnx.save(m, dst_path)
+    return converted, weights, values, values_all
+
+
+def same_outputs(path_a, path_b, model_dir, plan):
+    """How many output values differ between two exports of the same model on
+    the verification texts, or None without onnxruntime to run them."""
+    try:
+        import numpy as np
+        import onnxruntime as ort
+        from transformers import AutoTokenizer
+    except ImportError:
+        return None
+
+    tok = AutoTokenizer.from_pretrained(model_dir)
+    enc = tok(["the quick brown fox", "a second sentence, of a different length"],
+              padding=True, truncation=True, max_length=plan["max_seq_len"],
+              return_tensors="np")
+    feed = {INPUT_IDS: enc["input_ids"].astype("int64"),
+            ATTENTION_MASK: enc["attention_mask"].astype("int64")}
+    outs = [ort.InferenceSession(p, providers=["CPUExecutionProvider"]).run([POOLED_OUTPUT], feed)[0]
+            for p in (path_a, path_b)]
+    return int(np.count_nonzero(outs[0] != outs[1]))
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Export a HuggingFace embedding model to the ONNX form "
+                    "Virtuoso's embedding path expects.")
+    ap.add_argument("model", help="HuggingFace model id or a local directory")
+    ap.add_argument("outdir", help="directory to write model.onnx and the tokenizer files into")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print what would be exported and exit; does not need torch")
+    ap.add_argument("--max-seq-len", type=int, default=None,
+                    help="override the sequence length read from the model")
+    ap.add_argument("--opset", type=int, default=17, help="ONNX opset (default 17)")
+    ap.add_argument("--name", default=None,
+                    help="model_name to suggest for DB.DBA.ONNX_MODELS")
+    ap.add_argument("--bf16-weights", action="store_true",
+                    help="store weights that are exact bfloat16 values as bfloat16 "
+                         "(lossless; halves a model published in bf16)")
+    args = ap.parse_args()
+
+    if args.bf16_weights and args.opset < 13:
+        log("ERROR: --bf16-weights needs --opset 13 or later (Cast to and from bfloat16).")
+        return 2
+
+    model_dir = local_dir_for(args.model)
+    if model_dir is None:
+        model_dir, reason = resolve_from_hub(args.model)
+        if model_dir is None:
+            log("ERROR: %s is neither a directory nor a resolvable HuggingFace model."
+                % args.model)
+            log("       %s" % reason)
+            return 2
+
+    plan = read_plan(model_dir, args.max_seq_len)
+    print_plan(plan)
+
+    if plan["inferred"]:
+        log("")
+        log("WARNING: %s has no sentence-transformers configuration, so how it" % args.model)
+        log("         pools is not recorded anywhere we can read.  Assuming mean")
+        log("         pooling with L2 normalisation, which is the common case but")
+        log("         is an assumption about someone else's model.  If the model")
+        log("         card says CLS pooling, the embeddings this produces will")
+        log("         look reasonable and rank badly.")
+        log("")
+
+    if args.dry_run:
+        return 0
+
+    try:
+        model_path = export(model_dir, args.outdir, plan, args.opset)
+    except ImportError as exc:
+        log("ERROR: this export needs torch and transformers installed (%s)." % exc)
+        return 2
+
+    vocab_path = copy_vocab(model_dir, args.outdir, plan["tokenizer"])
+    if vocab_path is None:
+        return 2
+
+    if args.bf16_weights:
+        bf16_path = model_path + ".bf16"
+        try:
+            converted, weights, values, values_all = store_bf16_weights(model_path, bf16_path)
+        except ImportError as exc:
+            log("ERROR: --bf16-weights needs onnx and numpy installed (%s)." % exc)
+            return 2
+        before, after = os.path.getsize(model_path), os.path.getsize(bf16_path)
+        print("bf16 weights: %d of %d fp32 weights (%d of %d values) stored as bfloat16, "
+              "%d -> %d bytes" % (converted, weights, values, values_all, before, after))
+        if converted == 0:
+            os.remove(bf16_path)
+            log("note: no weight is made only of bfloat16 values; the fp32 export is kept.")
+        else:
+            differing = same_outputs(model_path, bf16_path, model_dir, plan)
+            if differing is None:
+                log("note: onnxruntime not available; the outputs were not compared "
+                    "(the stored weights are the same values either way).")
+            elif differing:
+                os.remove(bf16_path)
+                log("ERROR: the bf16 export gives %d output values that differ from the "
+                    "fp32 export; keeping the fp32 export." % differing)
+                return 2
+            else:
+                print("bf16 weights: outputs identical to the fp32 export")
+            os.replace(bf16_path, model_path)
+
+    diff = verify(model_path, model_dir, plan)
+    if diff is not None:
+        print("verified: max abs difference vs the source model = %.3e" % diff)
+        if diff > 1e-3:
+            log("WARNING: that is larger than expected; the export may not match "
+                "the model.")
+
+    name = args.name or os.path.basename(os.path.normpath(args.model)).lower()
+    print("")
+    print("Put both files where the server can read them -- under [ONNX] ModelRoot,")
+    print("the plugin LoadPath, or a DirsAllowed directory -- then, as the DBA:")
+    print("")
+    print("  SELECT ONNX_LOAD_MODEL ('%s',"
+          % os.path.abspath(model_path))
+    print("      'input=%s;input2=%s;output=%s;vocab=%s;max_seq_len=%d');"
+          % (INPUT_IDS, ATTENTION_MASK, POOLED_OUTPUT, os.path.abspath(vocab_path),
+             plan["max_seq_len"]))
+    print("")
+    print("or register it so it survives a restart:")
+    print("")
+    print("  INSERT INTO DB.DBA.ONNX_MODELS (model_name, model_path, model_type,")
+    print("      input_names, output_name, vocab_path, max_seq_len)")
+    print("    VALUES ('%s', '%s', 'text_embedding'," % (name, os.path.abspath(model_path)))
+    print("      '%s,%s', '%s', '%s', %d);"
+          % (INPUT_IDS, ATTENTION_MASK, POOLED_OUTPUT, os.path.abspath(vocab_path),
+             plan["max_seq_len"]))
+    print("  SELECT DB.DBA.ONNX_MODEL_REFRESH ('%s');" % name)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
