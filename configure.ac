@@ -1485,6 +1485,128 @@ AC_SUBST(SHAPEFILEIO_LIBS)
 
 ##########################################################################
 #                                                                        #
+# ONNX Runtime (for onnx plugin)                                         #
+#                                                                        #
+##########################################################################
+
+AC_ARG_ENABLE([onnxruntime],
+  [AS_HELP_STRING([--enable-onnxruntime(=DIR)], [enable the onnx plugin])
+AS_HELP_STRING([--disable-onnxruntime], [disable the onnx plugin (default)])],
+  [
+     case "${enableval}" in
+       yes)	with_onnx="yes" ;;
+       no)	with_onnx="no" ;;
+       /*)	with_onnx="${enableval}" ;;
+       *)	AC_MSG_ERROR([bad value ${enableval} for --enable-onnxruntime]) ;;
+     esac
+  ],
+  [ with_onnx="no" ]
+)
+
+if test "x$with_onnx" != "xno"
+then
+    AC_MSG_CHECKING([ONNX Runtime static library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+
+    if test "x$with_onnx" = "xyes"
+    then
+	#  No prefix given: take the directories from pkg-config
+	onnx_pkg_config="${PKG_CONFIG:-pkg-config}"
+	if $onnx_pkg_config --exists libonnxruntime 2>/dev/null
+	then
+	    onnx_incdir=`$onnx_pkg_config --variable=includedir libonnxruntime`
+	    onnx_libdir=`$onnx_pkg_config --variable=libdir libonnxruntime`
+	else
+	    onnx_incdir=""
+	    onnx_libdir=""
+	fi
+    else
+	#  The prebuilt release archives put the headers in include/, a source
+	#  (cmake) install in include/onnxruntime/.
+	if test -f "$with_onnx/include/onnxruntime/onnxruntime_c_api.h"
+	then
+	    onnx_incdir="$with_onnx/include/onnxruntime"
+	else
+	    onnx_incdir="$with_onnx/include"
+	fi
+	onnx_libdir="$with_onnx/lib"
+    fi
+
+    #
+    #  Link the archive by its path: with -lonnxruntime the linker prefers
+    #  the shared library when both are installed. The archive is C++, so
+    #  also link the C++ runtime and the system libraries it uses.
+    #
+    case "$host_os" in
+      darwin*)
+	onnx_syslibs="-lc++ -framework Foundation" ;;
+      linux*)
+	onnx_syslibs="-lstdc++ -lm -ldl -lrt -lpthread" ;;
+      freebsd*)
+	onnx_syslibs="-lc++ -lm -lpthread" ;;
+      *)
+	onnx_syslibs="-lstdc++ -lm -lpthread" ;;
+    esac
+
+    ONNXRUNTIME_CFLAGS="-I$onnx_incdir"
+    ONNXRUNTIME_LIBS="$onnx_libdir/libonnxruntime.a $onnx_syslibs"
+
+    #
+    #  Keep the abseil, protobuf, re2, ... symbols in the archive out of the
+    #  dynamic symbol table of the plugin, so they cannot clash with other
+    #  copies loaded in the same process.
+    #
+    #  The MLAS assembly objects have no .note.GNU-stack section, which
+    #  makes the linker mark the plugin as needing an executable stack;
+    #  glibc 2.41 and newer refuse to dlopen such a library.
+    #
+    case "$host_os" in
+      linux*|freebsd*)
+	ONNXRUNTIME_LIBS="-Wl,-z,noexecstack -Wl,--exclude-libs,libonnxruntime.a $ONNXRUNTIME_LIBS" ;;
+    esac
+
+    if test -z "$onnx_libdir" || test ! -f "$onnx_libdir/libonnxruntime.a"
+    then
+	AC_MSG_RESULT([not found])
+	with_onnx="no"
+	ONNXRUNTIME_CFLAGS=""
+	ONNXRUNTIME_LIBS=""
+	AC_MSG_WARN([No libonnxruntime.a found, the onnx plugin will not be built])
+    else
+	CPPFLAGS="$CPPFLAGS $ONNXRUNTIME_CFLAGS"
+	LIBS="$LIBS $ONNXRUNTIME_LIBS"
+
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <onnxruntime_c_api.h>
+]], [[
+  const OrtApi* api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+  (void)api;
+]])],
+	[
+	  BUILD_OPTS="$BUILD_OPTS onnx"
+	  AC_MSG_RESULT([good])
+	],
+	[
+	  AC_MSG_RESULT([bad. Check config.log for details])
+	  with_onnx="no"
+	  ONNXRUNTIME_CFLAGS=""
+	  ONNXRUNTIME_LIBS=""
+	  AC_MSG_WARN([The onnx plugin will not be built])
+	])
+    fi
+
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
+fi
+
+AM_CONDITIONAL([WITH_ONNX], [test "x$with_onnx" != "xno"])
+AC_SUBST([ONNXRUNTIME_CFLAGS])
+AC_SUBST([ONNXRUNTIME_LIBS])
+
+##########################################################################
+#                                                                        #
 # graphql  								 #
 #                                                                        #
 ##########################################################################
@@ -2812,6 +2934,19 @@ AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])
   [ with_dbpedia_vad="no" ]
 )
 
+AC_ARG_ENABLE(vvec-vad, [dnl
+AC_HELP_STRING([--enable-vvec-vad], [enable VVec vector-index console vad package])
+AC_HELP_STRING([--disable-vvec-vad], [disable VVec vad package (default)])dnl
+], [
+     case "${enableval}" in
+       yes)	with_vvec_vad="yes";;
+       no)	with_vvec_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-vvec-vad) ;;
+     esac
+  ],
+  [ with_vvec_vad="no" ]
+)
+
 AC_ARG_ENABLE(demo-vad, [dnl
 AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package])
 AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
@@ -2961,6 +3096,7 @@ then
     with_bpel_vad="$with_all_vad"
     with_conductor_vad="$with_all_vad"
     with_dbpedia_vad="$with_all_vad"
+    with_vvec_vad="$with_all_vad"
     with_demo_vad="$with_all_vad"
     with_fct_vad="$with_all_vad"
     with_isparql_vad="$with_all_vad"
@@ -2976,6 +3112,7 @@ fi
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
 AM_CONDITIONAL(WITH_CONDUCTOR_VAD, test "x$with_conductor_vad" = "xyes")
 AM_CONDITIONAL(WITH_DBPEDIA_VAD, test "x$with_dbpedia_vad" = "xyes")
+AM_CONDITIONAL(WITH_VVEC_VAD, test "x$with_vvec_vad" = "xyes")
 AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
 AM_CONDITIONAL(WITH_FCT_VAD, test "x$with_fct_vad" = "xyes")
 AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
@@ -3315,6 +3452,7 @@ AC_CONFIG_FILES([
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/dbpedia/Makefile
+	binsrc/vvec/Makefile
 	binsrc/driver/Makefile
 	binsrc/fct/Makefile
 	binsrc/graphql/Makefile
@@ -3329,6 +3467,7 @@ AC_CONFIG_FILES([
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
 	binsrc/hosting/shapefileio/Makefile
+	binsrc/hosting/onnx/Makefile
 	binsrc/isparql/Makefile
 	binsrc/jena/Makefile
 	binsrc/jena2/Makefile
@@ -3408,6 +3547,7 @@ AC_CONFIG_FILES([
 	libsrc/Thread/Makefile
 	libsrc/Tidy/Makefile
 	libsrc/util/Makefile
+	libsrc/vvec/Makefile
 	libsrc/Wi/Makefile
 	libsrc/Xml.new/Makefile
 	libsrc/zlib/Makefile
