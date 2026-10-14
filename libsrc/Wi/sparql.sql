@@ -15671,6 +15671,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_STAR_TT_GET_P to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_GET_O to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_ORDER_KEY to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_STAR_ORDER_RANK to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_STAR_ORDER_VALUE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_OBJ_EQ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_VALUE_EQ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_IRI to SPARQL_SELECT',
@@ -16671,6 +16673,22 @@ create function DB.DBA.RDF_STAR_TT_GET_O (in node_iri any, in p_val any) returns
 }
 ;
 
+-- Preserve the existing term categories without using lexical numeric values.
+create function DB.DBA.RDF_STAR_ORDER_RANK (in v any) returns integer
+{
+  declare lex varchar;
+  if (v is null) return 0;
+  lex := cast (v as varchar);
+  if (lex is not null and left (lex, 20) = 'urn:rdf-star:triple:') return 4;
+  if (lex is not null and (left (lex, 9) = 'nodeID://' or left (lex, 2) = '_:')) return 1;
+  if (lex is not null and (
+        left (lex, 7) = 'http://' or left (lex, 8) = 'https://' or
+        left (lex, 4) = 'urn:' or left (lex, 7) = 'mailto:' or
+        left (lex, 6) = 'ftp://' or left (lex, 7) = 'file://')) return 2;
+  return 3;
+}
+;
+
 create function DB.DBA.RDF_STAR_ORDER_KEY (in v any) returns varchar
 {
   declare s, p, o, lex varchar;
@@ -16691,6 +16709,27 @@ create function DB.DBA.RDF_STAR_ORDER_KEY (in v any) returns varchar
         left (lex, 6) = 'ftp://' or left (lex, 7) = 'file://'))
     return concat ('2:', lex);
   return concat ('3:', coalesce (lex, ''));
+}
+;
+
+-- Compare ordinary terms by native SQL value, retaining the structural triple key.
+create function DB.DBA.RDF_STAR_ORDER_VALUE (in v any) returns any
+{
+  if (DB.DBA.RDF_STAR_ORDER_RANK (v) = 4)
+    return DB.DBA.RDF_STAR_ORDER_KEY (v);
+  -- Compare date/dateTime values without ordering by their internal subtypes.
+  if (__tag (v) = __tag of datetime)
+    return cast (v as datetime);
+  -- Normalize boxed partial dates to the same comparison type as native dates.
+  if (is_rdf_box (v) and DB.DBA.RDF_DATATYPE_OF_OBJ (v) in (
+        UNAME'http://www.w3.org/2001/XMLSchema#gYear',
+        UNAME'http://www.w3.org/2001/XMLSchema#gYearMonth'))
+    {
+      -- Keep an invalid lexical form sortable without aborting the query.
+      declare exit handler for sqlstate '22007' { return cast (v as varchar); };
+      return cast (rdf_box_data (v, 1) as datetime);
+    }
+  return v;
 }
 ;
 

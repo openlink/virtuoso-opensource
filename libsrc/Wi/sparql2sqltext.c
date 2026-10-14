@@ -10598,18 +10598,22 @@ ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
     ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_SHORT_OR_LONG == native) ||
       (IS_BOX_POINTER (native) &&
         (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql)));
-  if (use_rdf_star_order_key)
+  int key_ctr;
+  /* Keep the term category separate from the native numeric or datetime value. */
+  for (key_ctr = 0; key_ctr < (use_rdf_star_order_key ? 2 : 1); key_ctr++)
     {
-      ssg_puts (" DB.DBA.RDF_STAR_ORDER_KEY (");
+      if (key_ctr)
+        ssg_puts (", ");
+      if (use_rdf_star_order_key)
+        ssg_puts (key_ctr ? " DB.DBA.RDF_STAR_ORDER_VALUE (" : " DB.DBA.RDF_STAR_ORDER_RANK (");
       ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-      ssg_puts (")");
-    }
-  else
-    ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-  switch (oby_itm->_.oby.direction)
-    {
-    case 0: case ASC_L: ssg_puts (" ASC"); break;
-    case DESC_L: ssg_puts (" DESC"); break;
+      if (use_rdf_star_order_key)
+        ssg_puts (")");
+      switch (oby_itm->_.oby.direction)
+        {
+        case 0: case ASC_L: ssg_puts (" ASC"); break;
+        case DESC_L: ssg_puts (" DESC"); break;
+        }
     }
 }
 

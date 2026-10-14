@@ -262,6 +262,30 @@ then
 fi
 
 
+# Check native RDF value ordering on the RDF-star ordering path.
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdforder.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: RDF ordering -- trdforder.sql"
+    exit 1
+fi
+
+# Check datetime parsing through strict CAST and QUIETCAST.
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tquietcast_datetime.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: datetime QUIETCAST -- tquietcast_datetime.sql"
+    exit 1
+fi
+
+# Check partial-date normalization independently of ordinary literal ordering.
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfpartialdate.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: RDF partial dates -- trdfpartialdate.sql"
+    exit 1
+fi
+
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
