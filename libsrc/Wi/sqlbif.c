@@ -10285,6 +10285,24 @@ bif_type_t bt_string = { (bif_type_func_t) bif_string_type, 0, 0, 0};
 caddr_t string_to_dt_box (char * data);
 caddr_t string_to_time_dt_box (char * data);
 
+/* Return parse errors to CAST so its existing QUIETCAST handling can suppress them. */
+static caddr_t
+string_to_dt_box_for_cast (char *data, caddr_t *err_ret)
+{
+  caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  caddr_t err_msg = NULL;
+  *err_ret = NULL;
+  odbc_string_to_any_dt (data, res, &err_msg);
+  if (NULL != err_msg)
+    {
+      *err_ret = srv_make_new_error ("22007", "DT006", "Cannot convert %s to datetime : %s", data, err_msg);
+      dk_free_box (err_msg);
+      dk_free_box (res);
+      return NULL;
+    }
+  return res;
+}
+
 #define NUMCK(rc) \
   if (rc != NUMERIC_STS_SUCCESS) \
   sqlr_new_error ("22015", "SR064", "Conversion overflow from numeric");
@@ -10734,7 +10752,9 @@ do_datetime:
       switch (arg_dtp)
 	{
 	case DV_STRING:
-	  res = string_to_dt_box (data);
+	  res = string_to_dt_box_for_cast (data, &err);
+          if (err)
+            goto inner_error;
           break;
 	case DV_LONG_INT:
 	case DV_SHORT_INT:
@@ -10764,8 +10784,10 @@ do_datetime:
 	case DV_LONG_WIDE:
 	  {
 	    caddr_t narrow = box_wide_string_as_narrow (data, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
-	    res = string_to_dt_box (narrow);
+	    res = string_to_dt_box_for_cast (narrow, &err);
 	    dk_free_box (narrow);
+            if (err)
+              goto inner_error;
             break;
 	  }
 	default:
