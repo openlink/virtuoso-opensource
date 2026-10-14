@@ -1,0 +1,19 @@
+<?vsp
+  -- vvec - heartbeat.
+  --
+  -- Every open console page calls this every 30 seconds (see VVEC_BEAT_JS).
+  -- Reaching the page body at all means VVEC_AUTH found a live session and
+  -- already advanced its VS_BEAT, so there is nothing left to do but say so:
+  -- the work is the request, not the response.
+  --
+  -- Only VS_BEAT is advanced, never VS_SEEN.  A heartbeat proves the page is
+  -- still open; it must not be taken as proof that somebody is still at the
+  -- keyboard, or a forgotten tab would hold a session open indefinitely and
+  -- the idle timeout would never fire.
+  --
+  -- When the session is gone VVEC_AUTH answers 401 instead and this page never
+  -- runs; the caller reads that status and sends the tab to the sign-in page.
+  set http_charset='utf-8';
+  http_header ('Content-Type: text/plain; charset=UTF-8\r\nCache-Control: no-store\r\n');
+  http ('ok');
+?>

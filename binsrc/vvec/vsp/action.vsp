@@ -1,0 +1,106 @@
+<?vsp
+  -- VVec · Action handler : drop / refresh a vector index, then redirect.
+  -- Invoked by POST forms on the dashboard. Runs as the dba vsp_user.
+  set http_charset='utf-8';
+
+  declare _op, _id, _msg, _stat, _emsg varchar;
+  declare _ok integer;
+
+  -- CSRF guard: reject non-POST or a missing/invalid token before any mutation.
+  if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))
+    return;
+
+  _op  := get_keyword ('op', params, '');
+  _id  := trim (get_keyword ('id', params, ''));
+  _ok  := 0;
+  _msg := 'Unknown operation';
+  _stat := '00000';
+
+  declare exit handler for sqlstate '*'
+    { _ok := 0; _msg := __SQL_STATE || ': ' || __SQL_MESSAGE; goto redir; };
+
+  -- Bulk drop / refresh from the catalogue's selection.  The ids arrive as one
+  -- '|'-joined field rather than as repeated parameters, because that is the
+  -- shape the search page already uses for a multi-index selection and there is
+  -- no reason for the catalogue to invent a second one.
+  --
+  -- Each index is validated and run on its own, and one failure does not stop
+  -- the rest: an operator who selected six and got five is better served by
+  -- five plus a named failure than by an all-or-nothing rollback of work that
+  -- was independent to begin with.
+  if (_op = 'bulk_drop' or _op = 'bulk_refresh')
+    {
+      declare _toks any;
+      declare i, _done, _failed integer;
+      declare _first_err, _tok, _tside, _tid varchar;
+      _toks := DB.DBA.VVEC_SPLIT (trim (get_keyword ('ids', params, '')), ascii ('|'));
+      _done := 0; _failed := 0; _first_err := '';
+      for (i := 0; i < length (_toks); i := i + 1)
+        {
+          _tok := _toks[i]; _tside := ''; _tid := '';
+          if (_tok like 'sparql:%')   { _tside := 'sparql'; _tid := subseq (_tok, 7); }
+          else if (_tok like 'sql:%') { _tside := 'sql';    _tid := subseq (_tok, 4); }
+          if (_tside = '' or length (_tid) = 0)
+            goto next_one;
+          _stat := '00000'; _emsg := '';
+          if (_tside = 'sql')
+            {
+              -- Refresh is an RDF operation; a relational index has no selector
+              -- to re-evaluate. Skipping is right, and it is reported.
+              if (_op = 'bulk_refresh')
+                goto next_one;
+              if (DB.DBA.VVEC_IDENT_OK (_tid) = 0 or DB.DBA.VVEC_SQL_INDEX_INFO (_tid) is null)
+                { _failed := _failed + 1; if (_first_err = '') _first_err := 'not a known SQL vector index: ' || _tid; goto next_one; }
+              exec (sprintf ('DROP INDEX "%I"', _tid), _stat, _emsg);
+            }
+          else
+            {
+              if (DB.DBA.VVEC_IRI_OK (_tid) = 0 or not exists (select 1 from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _tid))
+                { _failed := _failed + 1; if (_first_err = '') _first_err := 'not a known SPARQL vector index: ' || _tid; goto next_one; }
+              if (_op = 'bulk_drop')
+                exec (sprintf ('sparql define input:storage "" drop silent vector index <%s>', _tid), _stat, _emsg);
+              else
+                exec (sprintf ('sparql define input:storage "" refresh vector index <%s>', _tid), _stat, _emsg);
+            }
+          if (_stat <> '00000')
+            { _failed := _failed + 1; if (_first_err = '') _first_err := _tid || ': ' || _emsg; }
+          else
+            _done := _done + 1;
+         next_one:;
+        }
+      if (_done = 0 and _failed = 0)
+        { _ok := 0; _msg := 'Nothing to do - the selection held no index this action applies to'; goto redir; }
+      _ok := case when _failed = 0 then 1 else 0 end;
+      _msg := sprintf ('%s %d index(es)', case when _op = 'bulk_drop' then 'Dropped' else 'Refreshed' end, _done);
+      if (_failed > 0)
+        _msg := _msg || sprintf (' - %d failed, first: %s', _failed, _first_err);
+    }
+  else if (_op = 'drop_sql')
+    {
+      if (DB.DBA.VVEC_IDENT_OK (_id) = 0 or DB.DBA.VVEC_SQL_INDEX_INFO (_id) is null)
+        { _ok := 0; _msg := 'Not a known SQL vector index: ' || _id; goto redir; }
+      exec (sprintf ('DROP INDEX "%I"', _id), _stat, _emsg);
+      if (_stat <> '00000') { _ok := 0; _msg := _emsg; }
+      else { _ok := 1; _msg := 'Dropped SQL vector index ' || _id; }
+    }
+  else if (_op = 'drop_sparql')
+    {
+      if (DB.DBA.VVEC_IRI_OK (_id) = 0 or not exists (select 1 from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _id))
+        { _ok := 0; _msg := 'Not a known SPARQL vector index: ' || _id; goto redir; }
+      exec (sprintf ('sparql define input:storage "" drop silent vector index <%s>', _id), _stat, _emsg);
+      if (_stat <> '00000') { _ok := 0; _msg := _emsg; }
+      else { _ok := 1; _msg := 'Dropped SPARQL vector index <' || _id || '>'; }
+    }
+  else if (_op = 'refresh_sparql')
+    {
+      if (DB.DBA.VVEC_IRI_OK (_id) = 0 or not exists (select 1 from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _id))
+        { _ok := 0; _msg := 'Not a known SPARQL vector index: ' || _id; goto redir; }
+      exec (sprintf ('sparql define input:storage "" refresh vector index <%s>', _id), _stat, _emsg);
+      if (_stat <> '00000') { _ok := 0; _msg := _emsg; }
+      else { _ok := 1; _msg := 'Refreshed SPARQL vector index <' || _id || '>'; }
+    }
+
+ redir:;
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (sprintf ('Location: indexes?ok=%d&msg=%U\r\n', _ok, _msg));
+?>

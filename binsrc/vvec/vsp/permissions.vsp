@@ -1,0 +1,244 @@
+<?vsp
+  -- vvec · Permissions : who may do what to a vector index, beyond being DBA.
+  --
+  -- One permission so far: SQL EXECUTE on DB.DBA.VEC_INDEX_SET_METADATA, which
+  -- is what lets a non-DBA account set an index's Name and Description.  The
+  -- page is named Permissions rather than "Metadata Editors" because this is
+  -- the first of several -- who may create indexes, who may drain queues -- and
+  -- the nav item and its URL are cheaper to keep than to rename later.
+  --
+  -- What it administers is the SQL grant itself, read straight out of
+  -- DB.DBA.SYS_GRANTS, not a parallel notion of permission this console invents
+  -- and then has to keep in step with the server.
+  set http_charset='utf-8';
+
+  declare _ok integer;                 -- -1 none, 1 ok, 0 error
+  declare _banner, _detail varchar;
+  declare _op, _who, _err varchar;
+
+  _ok := -1; _banner := ''; _detail := '';
+
+  if (get_keyword ('do', params, '') = 'perm')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any write
+        return;
+      _op  := get_keyword ('op',  params, '');
+      _who := trim (get_keyword ('who', params, ''));
+
+      if (_op = 'grant')
+        {
+          _err := DB.DBA.VVEC_META_GRANT (_who);
+          if (_err <> '')
+            { _ok := 0; _banner := 'Could not grant'; _detail := _err; goto done_proc; }
+          _ok := 1;
+          _banner := sprintf ('%s may now annotate the indexes it owns', _who);
+          _detail := 'EXECUTE on ' || DB.DBA.VVEC_META_PROC ();
+        }
+      else if (_op = 'revoke')
+        {
+          _err := DB.DBA.VVEC_META_REVOKE (_who);
+          if (_err <> '')
+            { _ok := 0; _banner := 'Could not revoke'; _detail := _err; goto done_proc; }
+          _ok := 1;
+          _banner := sprintf ('%s can no longer annotate any index', _who);
+          _detail := 'EXECUTE on ' || DB.DBA.VVEC_META_PROC () || ' was revoked.';
+        }
+      else
+        { _ok := 0; _banner := 'Unknown operation'; _detail := _op; }
+     done_proc:;
+    }
+
+  DB.DBA.VVEC_HEAD ('Permissions', 'permissions');
+?>
+<div class="page-head">
+  <div>
+    <h1>Permissions</h1>
+    <div class="sub">Which accounts may change a vector index&#8217;s <strong>Name</strong> and <strong>Description</strong>.</div>
+  </div>
+  <a class="btn" href="./">&#8592; Overview</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Annotate an index</h3>
+      <div class="sub">SQL <span class="mono">EXECUTE</span> on <span class="mono"><?vsp http (DB.DBA.VVEC_META_PROC ()); ?></span>.</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <p style="margin-top:0">Granting this lets an account set the Name and Description of the indexes
+      <strong>it created</strong> &mdash; and nothing else. It cannot rename an index somebody else made, and it cannot
+      change what any index searches. A <strong>DBA account</strong> can annotate <strong>every</strong> index on the
+      instance, by being DBA.</p>
+    <p class="cell-muted" style="margin-bottom:0">These names are not decoration: the Similarity Search picker shows them
+      where people choose which index to query, so a wrong one sends the next operator at the wrong data. Grant it the way
+      you would grant write access to the thing being described.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Accounts with this permission</h3>
+      <div class="sub">Read from <span class="mono">DB.DBA.SYS_GRANTS</span>, so a grant made from <span class="mono">isql</span> shows here too.</div>
+    </div>
+  </div>
+  <div class="card-body tight"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th>Account</th><th>Kind</th><th>May annotate</th><th></th></tr></thead>
+      <tbody>
+<?vsp
+  declare _g, _d any;
+  declare i integer;
+  declare n integer;
+  n := 0;
+
+  -- DBA accounts first: they are the answer to "who can change this index",
+  -- and leaving them out of a permissions page would make it read as if nobody
+  -- could.  No Revoke button -- the right comes from being DBA, and a button
+  -- that cannot take it away would be a lie.
+  _d := DB.DBA.VVEC_META_DBAS ();
+  for (i := 0; i < length (_d); i := i + 1)
+    {
+      n := n + 1;
+?>
+      <tr>
+        <td class="cell-strong mono"><?= _d[i] ?></td>
+        <td><span class="pill blue">DBA account</span></td>
+        <td class="cell-muted">Every index on this instance</td>
+        <td><span class="note">Always &mdash; by being DBA</span></td>
+      </tr>
+<?vsp
+    }
+
+  _g := DB.DBA.VVEC_META_GRANTEES ();
+  for (i := 0; i < length (_g); i := i + 1)
+    {
+      declare _nm, _kind varchar;
+      _nm := _g[i][1]; _kind := _g[i][2];
+      n := n + 1;
+?>
+      <tr>
+        <td class="cell-strong mono"><?= _nm ?></td>
+        <td>
+<?vsp     if (_kind = 'public')
+            http ('<span class="pill amber">PUBLIC &mdash; every account</span>');
+          else if (_kind = 'role')
+            http ('<span class="pill violet">SQL role</span>');
+          else
+            http ('<span class="pill">Granted</span>');
+?>
+        </td>
+        <td class="cell-muted">Only the indexes it owns</td>
+        <td><div class="row-actions">
+          <form method="post" action="permissions" style="display:inline"
+                data-confirm-title="Revoke this permission?"
+                data-confirm="<?= _nm ?> will no longer be able to set the Name or Description of any index."
+                data-confirm-detail="Nothing already set changes, and the account keeps everything else it can do. Grant it again here at any time."
+                data-confirm-ok="Revoke"
+                data-confirm-note="Takes effect immediately."
+                data-confirm-working="Revoking...">
+            <input type="hidden" name="do" value="perm">
+            <input type="hidden" name="op" value="revoke">
+            <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+            <input type="hidden" name="who" value="<?= _nm ?>">
+            <button class="btn sm danger" type="submit">Revoke</button>
+          </form>
+        </div></td>
+      </tr>
+<?vsp
+    }
+  if (n = 0)
+    http ('<tr><td colspan="4"><div class="empty"><h3>No account can annotate an index</h3><p>Not even a DBA one, which should not be possible &mdash; check that this instance has a DBA account.</p></div></td></tr>');
+  if (length (_g) = 0 and n > 0)
+    http ('<tr><td colspan="4"><div class="empty"><h3>No other account has been granted it</h3><p>That is how a fresh install ships. Add one below when someone needs to name their own indexes.</p></div></td></tr>');
+?>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<div class="stats duo">
+  <div class="card">
+    <div class="card-head"><div><h3>Grant the permission</h3><div class="sub">Pick an existing account &mdash; there is no free-text box on purpose.</div></div></div>
+    <div class="card-body">
+<?vsp
+  declare _c any;
+  _c := DB.DBA.VVEC_META_CANDIDATES ();
+  if (length (_c) = 0)
+    {
+?>
+      <div class="empty">
+        <h3>No account left to grant</h3>
+        <p>Every non-DBA account on this instance already holds it, or there are none. New accounts are created from the Conductor.</p>
+      </div>
+<?vsp
+    }
+  else
+    {
+?>
+      <form method="post" action="permissions" data-working="Granting permission...">
+        <input type="hidden" name="do" value="perm">
+        <input type="hidden" name="op" value="grant">
+        <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="who">Account</label>
+            <select id="who" name="who">
+<?vsp
+      for (i := 0; i < length (_c); i := i + 1)
+        {
+          if (_c[i] = 'nobody')
+            http (sprintf ('<option value="%V">%V &mdash; the identity unauthenticated requests get</option>', _c[i], _c[i]));
+          else
+            http (sprintf ('<option value="%V">%V</option>', _c[i], _c[i]));
+        }
+?>
+            </select>
+            <span class="hint">A typed name would be a typo waiting to happen, and one of the real accounts on every
+              Virtuoso is called <span class="mono">nobody</span> &mdash; granting to it opens this to anonymous requests.</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Grant permission</button>
+        </div>
+      </form>
+<?vsp
+    }
+?>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><h3>What this does not cover</h3><div class="sub">Two gates, and only the outer one is here.</div></div></div>
+    <div class="card-body">
+      <p style="margin-top:0">The grant answers <em>may this account annotate indexes at all</em>.
+        <span class="mono"><?vsp http (DB.DBA.VVEC_META_PROC ()); ?></span> then answers <em>which ones</em>, on its own,
+        by comparing the caller against the index&#8217;s owner. Both have to pass.</p>
+      <p>The same statement from <span class="mono">isql</span> or a script:</p>
+      <div class="mono" style="background:var(--border-soft);padding:12px;border-radius:10px;white-space:pre-wrap">grant execute on <?vsp http (DB.DBA.VVEC_META_PROC ()); ?> to "alice";</div>
+      <p>And the call it enables, from SPARQL:</p>
+      <div class="mono" style="background:var(--border-soft);padding:12px;border-radius:10px;white-space:pre-wrap">SPARQL PREFIX sql: &lt;sql:&gt;
+SELECT (sql:VEC_INDEX_SET_METADATA (
+    'urn:docs:idx', 'Support articles', 'What it covers') AS ?done)
+WHERE { };</div>
+      <p class="cell-muted" style="margin-bottom:0"><strong>Reading</strong> the names is a separate question this page does
+        not answer. They are published as <span class="mono">rdfs:label</span> and <span class="mono">rdfs:comment</span> in
+        <span class="mono">&lt;urn:vvec:indexes&gt;</span>, an RDF view over the index catalogue, and who may read it is
+        decided by SQL <span class="mono">SELECT</span> grants on <span class="mono">DB.DBA.SPARQL_VEC_INDEX</span> &mdash;
+        none by default &mdash; and by which SPARQL endpoint you let see that graph.</p>
+    </div>
+  </div>
+</div>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

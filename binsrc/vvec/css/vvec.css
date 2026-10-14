@@ -1,0 +1,778 @@
+/* ==========================================================================
+   VVec - Virtuoso Vector Index console
+   ------------------------------------------------------------------------
+   Design: "catalogue sheet". The console is drawn like the instrument's own
+   printout rather than an application skin -- ruled, annotated, measured.
+   Structure IS the ornament: hairline rules and a strict grid do the work
+   that shadows, radii and gradients used to do.
+
+   Three rules hold the whole thing together:
+
+   1. Colour is spent only where it carries data. State (ready / creating /
+      error) and measured quantities get colour; navigation, panels, buttons
+      and headings are ink on paper. If something is coloured here, it is
+      because the colour is the information.
+   2. One family, monospaced, everywhere. A vector index is described in
+      identifiers, dimensions, metrics and DDL -- proportional type sets those
+      badly, and the tabular figures keep every column of numbers aligned.
+   3. Size and spacing are fluid, not stepped. Type and gutters interpolate
+      with clamp() so the layout adapts continuously instead of snapping at
+      two breakpoints.
+   ========================================================================== */
+
+:root {
+  /* -- ground and ink ---------------------------------------------------- */
+  --paper:      #fbfbf8;   /* page */
+  --sheet:      #ffffff;   /* panels */
+  --ink:        #000000;   /* headings, rules that matter, measured bars */
+  --ink-2:      #34342f;   /* body text */
+  --graphite:   #6f6f67;   /* annotation, secondary values */
+  --muted:      #8d8d84;   /* least-important text */
+  --rule:       #cfcfc6;   /* hairline */
+  --rule-soft:  #e6e6df;   /* hairline, interior */
+  --wash:       #f3f3ee;   /* flat fill: hover, code, inert controls */
+  --inset:      rgba(255,255,255,.65); /* the statement panel inside a banner */
+  --scrim:      rgba(20,20,18,.42);    /* behind a modal */
+
+  /* Tells the browser which way round its own controls go -- checkboxes,
+     number spinners, native selects and scrollbars are drawn by the platform
+     and ignore every token above this line. */
+  color-scheme: light;
+
+  /* -- state: the only colour in the interface --------------------------- */
+  --ok:         #14622f;  --ok-bg:   #eaf3ec;  --ok-rule:   #b7d3bf;
+  --warn:       #8a4b00;  --warn-bg: #f8f0e4;  --warn-rule: #e0c79c;
+  --stop:       #a11a12;  --stop-bg: #f9ecea;  --stop-rule: #e5b5b0;
+  --live:       #1c3fbf;  --live-bg: #eceffa;  --live-rule: #bcc6ea;
+
+  /* -- type: one family, fluid scale ------------------------------------- */
+  --font: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+          "DejaVu Sans Mono", monospace;
+  --fs-display: clamp(1.375rem, 1.05rem + 1.35vw, 2rem);
+  --fs-title:   clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+  --fs-body:    clamp(0.875rem, 0.84rem + 0.18vw, 0.9375rem);
+  --fs-micro:   clamp(0.75rem,  0.73rem + 0.1vw,  0.8125rem);
+  --fs-value:   clamp(1.75rem,  1.15rem + 2.4vw,  2.75rem);
+
+  /* -- fluid rhythm ------------------------------------------------------ */
+  --pad:   clamp(0.875rem, 0.6rem + 1.1vw, 1.375rem);
+  --gutter:clamp(1rem,     0.5rem + 2vw,   2rem);
+  --gap:   clamp(0.75rem,  0.5rem + 0.9vw, 1.125rem);
+  --sidebar-w: clamp(13rem, 11rem + 6vw, 16rem);
+
+  --t-fast: 90ms;
+  --t-base: 160ms;
+  --ease: cubic-bezier(.2, 0, 0, 1);
+}
+
+* { box-sizing: border-box; }
+
+/* ==========================================================================
+   Dark. Not a second design -- the same catalogue sheet with the ground and
+   the ink exchanged, so every rule at the top of this file still holds:
+   hairlines stay hairlines, colour still appears only where it carries data,
+   and the inverted chips (background: var(--ink); color: var(--sheet)) invert
+   themselves, because they were written in tokens rather than in black.
+
+   Light is the default and dark is opted into, so this keys off an explicit
+   attribute rather than prefers-color-scheme: a dark desktop should not decide
+   what this console looks like.
+
+   The state colours are re-mixed rather than reused. The light set is dark ink
+   on a pale wash, which on a dark ground is unreadable; each becomes a light
+   ink on a deep wash of the same hue, carrying the same meaning at the same
+   relative weight.
+   ========================================================================== */
+:root[data-theme="dark"] {
+  --paper:      #121210;
+  --sheet:      #1a1a17;
+  --ink:        #ffffff;
+  --ink-2:      #e3e3db;
+  --graphite:   #a4a49a;
+  --muted:      #8e8e84;   /* lifted from the light theme's ratio: #7d7d74 measured
+                              4.2:1 on --sheet, and this is small text */
+  --rule:       #3b3b34;
+  --rule-soft:  #2a2a24;
+  --wash:       #24241f;
+  --inset:      rgba(0,0,0,.28);
+  --scrim:      rgba(0,0,0,.62);
+
+  --ok:         #6ec98a;  --ok-bg:   #16251a;  --ok-rule:   #2f5439;
+  --warn:       #e2a44f;  --warn-bg: #2a2013;  --warn-rule: #5c4526;
+  --stop:       #f0837a;  --stop-bg: #2c1817;  --stop-rule: #5e2f2c;
+  --live:       #93a8f6;  --live-bg: #191d2e;  --live-rule: #354168;
+
+  color-scheme: dark;
+}
+
+/* The theme control is the same switch the results table uses for Raw URL /
+   Entity label, at the foot of the navigation where a preference belongs
+   rather than in the header where the console names itself. */
+.nav-theme { padding: var(--gap) var(--pad) 0; }
+/* Driven by the attribute as well as by :checked, so the track is already in
+   the right position at first paint. The head script sets the attribute before
+   the page is drawn; the checkbox is synced afterwards, and without this rule
+   the switch would visibly flick across on every load in dark mode. */
+:root[data-theme="dark"] .switch.theme-switch .track { border-color: var(--ink); }
+:root[data-theme="dark"] .switch.theme-switch .track::after { transform: translateX(14px); background: var(--ink); }
+/* The emphasised side is whichever one is in force. */
+.switch.theme-switch .opt { color: var(--graphite); }
+:root[data-theme="dark"] .switch.theme-switch .opt { color: var(--ink-2); }
+:root[data-theme="dark"] .switch.theme-switch .lit { color: var(--graphite); }
+.switch.theme-switch .lit { color: var(--ink-2); }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* ---- Shell --------------------------------------------------------------
+   Two columns, both ruled. The sidebar is a fixed measure so the navigation
+   never reflows mid-session; the content column takes the rest. */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w); flex: 0 0 var(--sidebar-w);
+  background: var(--sheet);
+  border-right: 1px solid var(--rule);
+  padding: var(--pad) 0 var(--pad);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  /* The extra 36px is the mark that used to sit here -- 26px of it plus the
+     10px gap. The wordmark lines up with the nav labels below it, and removing
+     the mark should not move that column. */
+  padding: 0 var(--pad) var(--pad) calc(var(--pad) + 36px);
+  border-bottom: 1px solid var(--rule);
+}
+.brand .name { font-size: 0.9375rem; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+.brand .name small { display: block; font-size: var(--fs-micro); font-weight: 400; color: var(--muted); }
+
+/* Section labels sit in the rule, not above it: the hairline runs from the
+   label to the edge of the panel, the way a callout does on a drawing. */
+.nav-label {
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(var(--pad) * 0.9) var(--pad) 6px;
+  font-size: var(--fs-micro); color: var(--muted); font-weight: 400;
+}
+.nav-label::after { content: ""; flex: 1; height: 1px; background: var(--rule-soft); }
+
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px var(--pad); color: var(--ink-2); text-decoration: none;
+  border-left: 2px solid transparent;
+}
+.nav a:hover { background: var(--wash); text-decoration: none; }
+.nav a.active { background: var(--wash); color: var(--ink); font-weight: 700; border-left-color: var(--ink); }
+.nav a.active svg { color: var(--ink); }
+.nav a svg { color: var(--graphite); flex: 0 0 16px; width: 16px; height: 16px; }
+
+.sidebar-user { margin-top: auto; padding: 10px var(--pad) 0; border-top: 1px solid var(--rule); }
+.user-btn {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 7px 8px; border: 1px solid transparent; background: none; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-body); color: var(--ink);
+}
+.user-btn:hover { background: var(--wash); }
+.user-btn[aria-expanded="true"] { background: var(--wash); border-color: var(--rule); }
+.avatar {
+  width: 26px; height: 26px; flex: 0 0 26px; border-radius: 0;
+  background: var(--ink); color: var(--sheet);
+  display: grid; place-items: center; font-weight: 700; font-size: var(--fs-micro);
+}
+.user-meta { flex: 1; min-width: 0; display: block; }
+.user-meta .user-name { display: block; font-size: var(--fs-body); font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-meta .user-role { display: block; font-size: var(--fs-micro); color: var(--muted); }
+.user-caret { color: var(--graphite); flex: 0 0 14px; transition: transform var(--t-fast) var(--ease); }
+.user-btn[aria-expanded="true"] .user-caret { transform: rotate(180deg); }
+
+.side-legal { padding: 10px var(--pad) 0; font-size: var(--fs-micro); color: var(--muted); }
+.side-legal a { color: var(--muted); text-decoration: none; }
+.side-legal a:hover { color: var(--ink); text-decoration: underline; }
+
+.user-menu {
+  position: fixed; z-index: 70; background: var(--sheet);
+  border: 1px solid var(--ink); padding: 4px; min-width: 200px;
+}
+.user-menu-head {
+  padding: 7px 9px; font-size: var(--fs-micro); color: var(--muted);
+  border-bottom: 1px solid var(--rule-soft); margin-bottom: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.user-menu-head strong { color: var(--ink); }
+.user-menu-item { display: flex; align-items: center; gap: 9px; padding: 8px 9px; font-size: var(--fs-body); color: var(--ink-2); text-decoration: none; }
+.user-menu-item:hover { background: var(--wash); text-decoration: none; }
+.user-menu-item svg { flex: 0 0 15px; color: var(--graphite); }
+.user-menu-item.danger { color: var(--stop); }
+.user-menu-item.danger:hover { background: var(--stop-bg); }
+.user-menu-item.danger svg { color: var(--stop); }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.content { padding: var(--gutter); }
+
+.standalone { min-height: 100vh; display: grid; place-items: center; padding: var(--gutter); }
+.standalone .card { max-width: 34rem; }
+
+/* ---- Page heading -------------------------------------------------------
+   The rule under the heading is the page's baseline; everything hangs off it. */
+.page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--gap); flex-wrap: wrap;
+  padding-bottom: calc(var(--pad) * 0.7);
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: var(--gutter);
+}
+.page-head h1 { margin: 0; font-size: var(--fs-display); font-weight: 700; color: var(--ink); letter-spacing: -.02em; line-height: 1.1; }
+.page-head .sub { color: var(--graphite); margin-top: 5px; max-width: 68ch; }
+
+/* ---- Controls ----------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px 13px; border: 1px solid var(--rule); background: var(--sheet);
+  color: var(--ink); font-family: var(--font); font-size: var(--fs-body);
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  /* Explicit, because a <button> does not inherit line-height and a browser's
+     own default is tighter than the page's. Without this an <a class="btn">
+     came out 28px tall next to a <button class="btn"> at 24 and a row of mixed
+     controls did not line up. */
+  line-height: 1.3;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.btn:hover { background: var(--wash); border-color: var(--ink); text-decoration: none; }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--sheet); font-weight: 700; }
+.btn.primary:hover { background: var(--ink-2); border-color: var(--ink-2); }
+.btn.danger { color: var(--stop); border-color: var(--stop-rule); background: var(--stop-bg); }
+.btn.danger:hover { background: var(--stop-bg); border-color: var(--stop); }
+.btn.sm { padding: 4px 9px; font-size: var(--fs-micro); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ---- Stat strip ---------------------------------------------------------
+   auto-fit, so the row reflows continuously instead of at a breakpoint. */
+.stats {
+  display: grid; gap: var(--gap); margin-bottom: var(--gutter);
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+}
+.stats.duo { grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); }
+.stat { background: var(--sheet); border: 1px solid var(--rule); padding: var(--pad); }
+.stat .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+/* The stat icons are gone: the label already names the quantity, so the glyph
+   was decoration standing next to the one number that matters. */
+.stat .chip, .chip.blue, .chip.green, .chip.violet, .chip.amber { display: none; }
+.stat .label { color: var(--graphite); font-size: var(--fs-body); }
+.stat .value { font-size: var(--fs-value); font-weight: 700; color: var(--ink); letter-spacing: -.04em; line-height: 1; margin-top: 10px; }
+.stat .foot { color: var(--muted); font-size: var(--fs-micro); margin-top: 7px; }
+
+/* ---- Panels -------------------------------------------------------------- */
+.card { background: var(--sheet); border: 1px solid var(--rule); margin-bottom: var(--gutter); }
+.card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--gap); flex-wrap: wrap;
+  padding: var(--pad); border-bottom: 1px solid var(--rule);
+}
+.card-head h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; color: var(--ink); }
+.card-head .sub { color: var(--graphite); font-size: var(--fs-micro); margin-top: 3px; max-width: 72ch; }
+.card-body { padding: var(--pad); }
+.card-body.tight { padding: 0; }
+.card-body p { max-width: 66ch; }
+
+/* ---- Tables: ruled both ways, like a printed catalogue ------------------- */
+.table-wrap { overflow-x: auto; }
+table.grid { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+/* Cell padding is its own, tighter measure: the page gutter is generous, but a
+   catalogue with eight columns cannot spend that much between each of them. */
+table.grid { --cell: clamp(0.5rem, 0.34rem + 0.5vw, 0.9rem); }
+table.grid th {
+  text-align: left; padding: 8px var(--cell); font-weight: 400; color: var(--muted);
+  font-size: var(--fs-micro); border-bottom: 1px solid var(--ink); white-space: nowrap;
+}
+/* A catalogue row is one line per record: cells do not wrap, the table scrolls
+   inside .table-wrap instead. Ragged multi-line rows destroy the scan down a
+   column, which is the whole point of the ruled grid. */
+table.grid td { padding: 7px var(--cell); border-bottom: 1px solid var(--rule-soft); vertical-align: middle; white-space: nowrap; }
+table.grid th { white-space: nowrap; }
+/* A wide catalogue scrolls sideways, but a record's own controls should not
+   scroll away from it: the action column is pinned to the right edge. */
+table.grid td:last-child, table.grid th:last-child {
+  width: 1%; position: sticky; right: 0; background: var(--sheet);
+  border-left: 1px solid var(--rule);
+}
+table.grid td:last-child { z-index: 1; }
+table.grid th:last-child { z-index: 2; }
+table.grid tr:hover td:last-child { background: var(--wash); }
+table.grid th + th, table.grid td + td { border-left: 1px solid var(--rule-soft); }
+table.grid tr:last-child td { border-bottom: 0; }
+table.grid tr:hover td { background: var(--wash); }
+
+.mono { font-family: var(--font); }
+.cell-strong { font-weight: 700; color: var(--ink); }
+.cell-muted { color: var(--graphite); }
+/* Long identifiers are clipped, not wrapped: the row stays one line and the
+   full value is on the cell's title. 20ch is what keeps the catalogue inside a
+   1440px window without the pinned action column covering State. */
+.truncate { max-width: 20ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Indexed text is prose, not an identifier -- clipping it at one line throws
+   away the part that tells you why the row matched. It wraps to two lines and
+   then ellipses, which is enough to read the match without letting one long
+   document set the height of every row. Needs td specificity to beat the
+   table's blanket nowrap. */
+table.grid td.wrapcell { white-space: normal; max-width: 46ch; }
+.clamp2 {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden; word-break: break-word; line-height: 1.4;
+}
+
+/* A target is a container and a thing inside it. On one line the pair had to
+   be clipped so early that neither half survived; stacked, each gets the
+   column's full width and ellipses only when it is genuinely too long by
+   itself. Same two-line shape the results table already uses for index/model,
+   so the two catalogues read alike. */
+table.grid td.target { white-space: normal; max-width: 20ch; line-height: 1.35; }
+.t-main, .t-sub {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-micro);
+}
+.t-main { color: var(--ink-2); }
+.t-sub  { color: var(--muted); }
+/* The Name cell of the catalogue, same two-line shape as Target. The IRI is
+   the identity and stays on top; the label goes under it because it is what a
+   person recognises, not what anything addresses the index by. An index with
+   no label emits no second line at all, so the column does not grow a blank
+   row of whitespace for every unnamed index. */
+table.grid td.named { white-space: normal; max-width: 34ch; line-height: 1.35; }
+.n-iri, .n-label {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.n-label { color: var(--muted); font-size: var(--fs-micro); }
+/* The way into a query that does not fit in a cell. Styled as the link it is,
+   not as a button, because it opens a reader rather than doing something. */
+.t-query {
+  display: block; border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-micro); color: var(--graphite);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.t-query:hover { color: var(--ink); text-decoration-thickness: 2px; }
+
+/* Stored query text, shown as text: it wraps rather than scrolling sideways,
+   because a selector is read as a whole and a horizontal scrollbar hides the
+   half that explains the other half. */
+pre.code {
+  margin: 0 0 14px; padding: 12px; background: var(--wash);
+  border: 1px solid var(--rule); font-family: var(--font); font-size: var(--fs-micro);
+  color: var(--ink); white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+  max-height: 50vh; overflow-y: auto;
+}
+
+/* ---- Resizing: grips, not chrome ----------------------------------------
+   Both grips are invisible until the pointer is on them. A table that shows
+   eight drag handles at rest reads as a control panel; this one should read as
+   a catalogue that happens to give under the hand. */
+table[data-resizable] th { position: relative; }
+/* The row's grip spans the whole row, so the containing block has to be the
+   row. Positioning the first cell instead -- the obvious thing, since that is
+   where the element lives -- makes that cell the containing block and collapses
+   the grip to the width of the row number: 56px of a 978px row, which is
+   hit-testable and completely unfindable. */
+table[data-resizable] tbody tr { position: relative; }
+.col-grip {
+  position: absolute; top: 0; right: -3px; bottom: 0; width: 7px;
+  cursor: col-resize; z-index: 3;
+}
+.row-grip {
+  position: absolute; left: 0; right: 0; bottom: -4px; height: 9px;
+  cursor: ns-resize; z-index: 3;
+}
+.col-grip::after, .row-grip::after {
+  content: ""; position: absolute; background: var(--ink); opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+.col-grip::after { top: 0; bottom: 0; right: 3px; width: 1px; }
+.row-grip::after { left: 0; right: 0; bottom: 3px; height: 1px; }
+/* A grip nobody can see is a grip nobody uses. The row's shows itself faintly
+   whenever the pointer is anywhere on the row -- that is the moment the reader
+   might want it -- and fully once they are on it. */
+table[data-resizable] tbody tr:hover .row-grip::after { opacity: .3; }
+.col-grip:hover::after, .row-grip:hover::after { opacity: 1; }
+/* While a drag is running the cursor belongs to the drag, not to whatever the
+   pointer happens to be over, and nothing should look selectable. */
+body.resizing-col, body.resizing-col * { cursor: col-resize !important; user-select: none; }
+body.resizing-row, body.resizing-row * { cursor: ns-resize !important; user-select: none; }
+/* A resized row is exactly as tall as it was dragged -- height on a table cell
+   is a minimum, and the text is clamped to fit, so the row settles on the
+   dragged height rather than on the content's. The text moves to the top,
+   because a line of prose floating in the middle of a tall row reads as a
+   mistake. */
+tr[data-h] td { height: var(--row-h); vertical-align: top; }
+tr[data-h] .clamp2 { -webkit-line-clamp: var(--lines); line-clamp: var(--lines); }
+
+/* The selection bar. It appears only when there is a selection, and it sits
+   directly above the table it acts on rather than floating over it -- an
+   operator about to drop six indexes should be able to see all six. */
+.selbar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px var(--pad); margin-bottom: 14px;
+  border: 1px solid var(--ink); background: var(--wash);
+}
+.selbar-count { font-size: var(--fs-micro); color: var(--ink); }
+.selbar-count strong { font-size: var(--fs-body); }
+.selbar-note { font-size: var(--fs-micro); color: var(--graphite); flex: 1; min-width: 12rem; max-width: 60ch; }
+.selbar .row-actions { margin-left: auto; }
+/* A link cannot be disabled, so it is made to look and behave like one. */
+.btn.disabled { opacity: .45; pointer-events: none; }
+
+table.grid td input[type=checkbox], table.grid th input[type=checkbox] {
+  width: 14px; height: 14px; margin: 0; accent-color: var(--ink); cursor: pointer; display: block;
+}
+
+/* ---- Queue controls -----------------------------------------------------
+   A number and the button that consumes it are one control, not two things
+   that happen to be adjacent. Each pair is grouped and carries a label saying
+   what the number is: "1000" next to "Drain" tells the reader nothing about
+   whether it is rows, seconds or batches. Buttons that take no argument sit in
+   their own group on the same baseline. */
+.ctlbar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--gap) var(--pad);
+}
+/* The bar's buttons take the input's vertical box rather than the small
+   button's, so a control and the button that runs it are the same height.
+   .btn.sm is 4px of padding against the input's 8px, which reads as the button
+   sitting in a dip beside the field it belongs to. Horizontal padding stays
+   small: it is the height that has to agree, not the width. */
+.ctlbar .btn.sm { padding-top: 8px; padding-bottom: 8px; }
+.ctl { display: flex; flex-direction: column; gap: 5px; }
+.ctl > .lbl { font-size: var(--fs-micro); color: var(--graphite); white-space: nowrap; }
+.ctl > form, .ctl > .ctl-row { display: flex; gap: 6px; align-items: stretch; }
+.ctl input[type="number"] {
+  /* 7ch clipped: "1000" needed 69px of a 57px content box and even "100" was
+     3px over, because the spinner takes room the character count does not
+     account for. Sized so five digits and the spinner fit, and kept uniform so
+     the bar reads as one set of controls. */
+  width: 10ch; padding: 8px 10px;
+  border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+  font-family: var(--font); font-size: var(--fs-body); outline: none;
+}
+.ctl input[type="number"]:focus { border-color: var(--ink); }
+
+/* The queue counters. Were inline px and are now on the type scale, which is
+   also what makes them follow the theme. */
+.stat-line { display: flex; gap: 28px; margin-bottom: 18px; align-items: flex-start; }
+.stat-line .k { font-size: var(--fs-micro); color: var(--graphite); }
+.stat-line .v { font-size: 1.875rem; font-weight: 700; letter-spacing: -.03em; color: var(--ink); line-height: 1.15; }
+.stat-line .spacer { flex: 1; display: flex; align-items: center; justify-content: flex-end; }
+.note-line { font-size: var(--fs-micro); color: var(--graphite); margin-bottom: 4px; }
+.note-line.bad { color: var(--stop); }
+hr.rule-soft { border: 0; border-top: 1px solid var(--rule-soft); margin: 18px 0; }
+
+/* ---- State: the one place colour is allowed ------------------------------ */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 2px 8px; font-size: var(--fs-micro); font-weight: 700;
+  border: 1px solid var(--rule); background: var(--sheet); color: var(--graphite);
+}
+.pill.green  { color: var(--ok);   background: var(--ok-bg);   border-color: var(--ok-rule); }
+.pill.amber  { color: var(--warn); background: var(--warn-bg); border-color: var(--warn-rule); }
+.pill.red    { color: var(--stop); background: var(--stop-bg); border-color: var(--stop-rule); }
+.pill.blue   { color: var(--live); background: var(--live-bg); border-color: var(--live-rule); }
+.pill.violet { color: var(--ink);  background: var(--wash);    border-color: var(--rule); }
+.pill.gray   { color: var(--muted);background: var(--wash);    border-color: var(--rule); }
+.pill .dot { width: 5px; height: 5px; background: currentColor; }
+
+/* ---- Forms --------------------------------------------------------------
+   Field labels are annotations, not headings: small, graphite, sitting tight
+   above the value they name. Inputs are boxes with a rule, nothing more. */
+.form-grid { display: grid; gap: var(--gap) var(--pad); grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: var(--fs-micro); color: var(--graphite); }
+.field .hint { font-size: var(--fs-micro); color: var(--muted); max-width: 60ch; }
+.field input, .field textarea {
+  padding: 8px 10px; border: 1px solid var(--rule); background: var(--sheet);
+  color: var(--ink); font-family: var(--font); font-size: var(--fs-body); outline: none;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.field input:focus, .field textarea:focus { border-color: var(--ink); }
+.field input:disabled { background: var(--wash); color: var(--graphite); }
+.field textarea { resize: vertical; min-height: 6rem; line-height: 1.5; }
+
+select {
+  padding: 8px 10px; border: 1px solid var(--rule); background: var(--sheet);
+  color: var(--ink); font-family: var(--font); font-size: var(--fs-body);
+  appearance: none; -webkit-appearance: none; outline: none;
+}
+select:hover { border-color: var(--graphite); }
+select:focus { border-color: var(--ink); }
+select:disabled { background: var(--wash); color: var(--muted); }
+select::-ms-expand { display: none; }
+select option { background: var(--sheet); color: var(--ink); }
+select option:disabled { color: var(--muted); }
+
+.segmented { display: inline-flex; border: 1px solid var(--rule); background: var(--sheet); }
+.segmented button {
+  border: 0; background: none; padding: 7px 12px; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-micro); color: var(--graphite);
+}
+.segmented button + button { border-left: 1px solid var(--rule); }
+.segmented button.active { background: var(--ink); color: var(--sheet); font-weight: 700; }
+.segmented button:disabled { color: var(--muted); cursor: not-allowed; }
+.segmented button:disabled:hover { background: none; }
+
+.search-hero { display: flex; gap: var(--gap); align-items: stretch; flex-wrap: wrap; }
+.search-hero .q {
+  flex: 1 1 22rem; display: flex; align-items: center; gap: 9px;
+  background: var(--sheet); border: 1px solid var(--rule); padding: 9px 12px; color: var(--graphite);
+}
+.search-hero .q:focus-within { border-color: var(--ink); }
+.search-hero .q input { border: 0; outline: 0; flex: 1; min-width: 0; font-family: var(--font); font-size: var(--fs-body); background: transparent; color: var(--ink); }
+.search-hero select { min-width: 14rem; }
+
+/* ---- Banners: a rule down the left, the way a margin note is marked ------ */
+.banner {
+  display: flex; gap: 12px; padding: var(--pad);
+  border: 1px solid var(--rule); border-left-width: 3px;
+  margin-bottom: var(--gutter); align-items: flex-start;
+}
+.banner.ok  { background: var(--ok-bg);   border-color: var(--ok-rule);   border-left-color: var(--ok);   color: var(--ok); }
+.banner.err { background: var(--stop-bg); border-color: var(--stop-rule); border-left-color: var(--stop); color: var(--stop); }
+.banner.warn{ background: var(--warn-bg); border-color: var(--warn-rule); border-left-color: var(--warn); color: var(--warn); }
+.banner strong { color: inherit; }
+/* The statement the console actually ran is the point, not a footnote. */
+.banner .mono {
+  display: block; margin-top: 8px; padding: 9px 11px;
+  background: var(--inset); border: 1px solid currentColor;
+  color: var(--ink-2); white-space: pre-wrap; word-break: break-word;
+  font-size: var(--fs-micro); line-height: 1.55;
+}
+
+.empty { text-align: left; padding: calc(var(--pad) * 1.8) var(--pad); color: var(--graphite); }
+.empty svg { color: var(--rule); margin-bottom: 10px; }
+.empty h3 { margin: 0 0 4px; color: var(--ink); font-size: var(--fs-title); }
+.empty p { max-width: 60ch; }
+
+.row-actions { display: flex; gap: 5px; flex-wrap: nowrap; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: var(--pad); padding-top: var(--pad); border-top: 1px solid var(--rule-soft); }
+.hidden { display: none !important; }
+
+/* ---- Measured quantity ---------------------------------------------------
+   A score is data, so it is drawn as a bar against its full range: the track
+   shows what 1.0 would look like, the fill shows what was measured. */
+.score-bar { height: 8px; background: var(--sheet); border: 1px solid var(--rule); width: 8rem; display: inline-block; vertical-align: middle; }
+.score-bar > i { display: block; height: 100%; background: var(--ink); }
+
+.switch { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-micro); color: var(--graphite); cursor: pointer; user-select: none; white-space: nowrap; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .track { width: 30px; height: 16px; background: var(--sheet); border: 1px solid var(--rule); position: relative; transition: background var(--t-fast) var(--ease); flex: 0 0 30px; }
+.switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; background: var(--graphite); transition: transform var(--t-fast) var(--ease); }
+.switch input:checked + .track { border-color: var(--ink); }
+.switch input:checked + .track::after { transform: translateX(14px); background: var(--ink); }
+.switch .opt { color: var(--ink-2); }
+
+.ord { display: inline-flex; align-items: center; gap: 8px; }
+.ord-label { font-size: var(--fs-micro); color: var(--muted); white-space: nowrap; }
+.ord .segmented button { font-size: var(--fs-micro); padding: 6px 10px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-filter {
+  display: inline-flex; align-items: baseline; gap: 7px; max-width: 22rem;
+  padding: 5px 10px; border: 1px solid var(--rule); background: var(--sheet);
+  font-family: var(--font); font-size: var(--fs-micro); color: var(--ink-2); cursor: pointer;
+}
+.chip-filter:hover { border-color: var(--ink); }
+.chip-filter.on { background: var(--ink); border-color: var(--ink); color: var(--sheet); }
+.chip-filter .cf-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-filter .cf-meta { color: var(--muted); white-space: nowrap; }
+.chip-filter.on .cf-meta { color: var(--rule); }
+
+.results .ix-name { display: block; font-size: var(--fs-micro); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results .ix-sub { display: block; font-size: var(--fs-micro); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subj-linked { display: none; }
+.results.link-mode .subj-raw { display: none; }
+.results.link-mode .subj-linked { display: inline; }
+
+/* ---- Custom dropdown (JS enhancement of <select>) ------------------------
+   The native popup cannot be themed, so VVEC_SELECT_JS keeps the <select>
+   as the form value and draws this. The panel is position:fixed and placed
+   from the button's rect so a panel opening past a panel edge is not clipped. */
+.vd-select { position: relative; display: block; }
+select.vd-native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; margin: 0; padding: 0; border: 0; }
+.vd-select-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  padding: 8px 30px 8px 10px; border: 1px solid var(--rule);
+  font-family: var(--font); font-size: var(--fs-body); color: var(--ink);
+  background-color: var(--sheet); cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236f6f67' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center; background-size: 14px 14px;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.vd-select-btn:hover { border-color: var(--graphite); }
+.vd-select.disabled > .vd-select-btn {
+  background-color: var(--wash); border-color: var(--rule); color: var(--muted); cursor: not-allowed;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d8d84' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+.vd-select.disabled > .vd-select-btn:hover { border-color: var(--rule); }
+.vd-select-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.vd-select.open > .vd-select-btn { border-color: var(--ink); }
+.vd-select-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vd-select-label.placeholder { color: var(--muted); }
+.vd-select-panel {
+  display: none; position: fixed; z-index: 60; background: var(--sheet);
+  border: 1px solid var(--ink); padding: 3px; max-height: 18rem; overflow-y: auto;
+}
+.vd-select.open > .vd-select-panel { display: block; }
+.vd-optgroup { padding: 8px 9px 4px; font-size: var(--fs-micro); color: var(--muted); }
+.vd-optgroup + .vd-opt, .vd-opt { padding: 7px 9px; font-size: var(--fs-body); color: var(--ink-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vd-opt.active, .vd-opt:hover { background: var(--wash); }
+.vd-opt.sel { color: var(--ink); font-weight: 700; }
+.vd-opt.disabled { color: var(--muted); cursor: not-allowed; background: none; }
+.search-hero .vd-select { flex: 0 1 16rem; min-width: 12rem; }
+.search-hero .vd-select-btn { height: 100%; }
+
+.label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.label-row label { margin: 0; }
+.linkbtn {
+  border: 0; background: none; padding: 0; margin: 0; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-micro); color: var(--ink);
+  display: inline-flex; align-items: center; gap: 5px; line-height: 1.2;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.linkbtn:hover { text-decoration-thickness: 2px; }
+.linkbtn svg { flex: 0 0 13px; }
+
+/* ---- Modal ---------------------------------------------------------------
+   Motion here answers an action -- it shows where the panel came from -- so it
+   is short and only on the way in. */
+.modal-back { position: fixed; inset: 0; z-index: 80; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: var(--gutter); }
+.modal {
+  background: var(--sheet); border: 1px solid var(--ink);
+  width: 100%; max-width: 44rem; max-height: 84vh; display: flex; flex-direction: column; overflow: hidden;
+  animation: vd-panel var(--t-base) var(--ease);
+}
+@keyframes vd-panel { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: var(--pad); border-bottom: 1px solid var(--rule); }
+.modal-head h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; color: var(--ink); }
+.modal-head .sub { color: var(--graphite); font-size: var(--fs-micro); margin-top: 3px; max-width: 66ch; }
+.modal-close { border: 0; background: none; cursor: pointer; color: var(--graphite); font-size: 1.25rem; line-height: 1; padding: 0 2px; font-family: var(--font); }
+.modal-close:hover { color: var(--ink); }
+.modal-tools { padding: var(--pad) var(--pad) 0; }
+.modal-tools input { width: 100%; padding: 8px 10px; border: 1px solid var(--rule); font-family: var(--font); font-size: var(--fs-body); color: var(--ink); background: var(--sheet); outline: 0; }
+.modal-tools input:focus { border-color: var(--ink); }
+.modal-body { padding: var(--pad); overflow-y: auto; flex: 1; }
+.modal-body p { max-width: 66ch; }
+.modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: var(--pad); border-top: 1px solid var(--rule); background: var(--wash); flex-wrap: wrap; }
+.modal-foot .note { font-size: var(--fs-micro); color: var(--muted); }
+/* The confirmation dialog asks one question, so it is sized to the question
+   rather than to the widest thing the modal shell can hold. */
+.modal.cf { max-width: 30rem; }
+.modal.cf .modal-body p { font-size: var(--fs-body); color: var(--ink); }
+
+/* A field the browser would have bubbled over: flagged where the reader is
+   already looking, in this sheet's own red, and captioned under the input
+   beside its hint. */
+.field input.invalid, .field textarea.invalid, select.invalid, input.invalid {
+  border-color: var(--stop);
+}
+.field-err {
+  display: block; font-size: var(--fs-micro); color: var(--stop); max-width: 60ch;
+}
+
+.sec-ack { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-micro); color: var(--graphite); cursor: pointer; user-select: none; }
+.sec-ack input { width: 14px; height: 14px; margin: 0; accent-color: var(--ink); }
+
+/* ---- Pickable rows (prefixes, graphs, predicates, indexes) --------------- */
+.ns-list { display: block; }
+.ns-row {
+  display: flex; align-items: baseline; gap: 12px; width: 100%; text-align: left;
+  padding: 7px 9px; border: 0; background: none; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-body); color: var(--ink-2);
+}
+.ns-row:hover { background: var(--wash); }
+.ns-row .pfx { font-weight: 700; color: var(--ink); flex: 0 0 9rem; overflow: hidden; text-overflow: ellipsis; }
+.ns-row .uri { color: var(--graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-empty { padding: var(--pad); text-align: left; color: var(--muted); }
+.ns-row.stack { display: block; }
+.ns-row .qname { display: block; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-row .full { display: block; font-size: var(--fs-micro); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ix-group { padding: 12px 9px 4px; font-size: var(--fs-micro); color: var(--muted); }
+.ix-row { display: flex; align-items: flex-start; gap: 9px; padding: 7px 9px; cursor: pointer; }
+.ix-row:hover { background: var(--wash); }
+.ix-row input { flex: 0 0 14px; width: 14px; height: 14px; margin: 2px 0 0; accent-color: var(--ink); }
+.ix-row .ix-meta { min-width: 0; }
+.ix-row .ix-name { display: block; font-weight: 700; font-size: var(--fs-body); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ix-row .ix-sub { display: block; font-size: var(--fs-micro); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The index description. Unlike the lines above it this one WRAPS -- it is a
+   sentence, and clipping it at the column edge would hide the half that says
+   what the index is actually for. Two lines is enough to tell two indexes
+   apart and few enough that a long description cannot push the rest of the
+   list off the modal. */
+.ix-row .ix-desc {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; margin-top: 2px;
+  font-size: var(--fs-micro); color: var(--muted); line-height: 1.4;
+}
+.ix-row.disabled { opacity: .5; cursor: not-allowed; }
+.ix-row.disabled:hover { background: none; }
+
+/* ---- Work in progress ----------------------------------------------------
+   Creating or rebuilding an index takes real seconds: it embeds every row.
+   Saying so, and showing the work continuing, is more honest than a frozen
+   button -- and unlike similarity search, which is fast and gets no
+   indicator at all, here the wait is the thing being reported. */
+/* The far end of the feedback loop. A result that is simply present when the
+   page arrives leaves the reader working out whether it is new; one that
+   settles into place in front of them does not. The marker rule lands last --
+   it comes in heavy and narrows to its resting weight, which is the beat that
+   says the outcome is this one, now. Once, on arrival, and never again: the
+   banner is still just a banner a second later.
+   The reduced-motion block below collapses this to 1ms, which is the right
+   answer -- the banner is still there and still says the same thing. */
+.banner.landed { animation: vd-landed 320ms var(--ease) both; }
+@keyframes vd-landed {
+  from { opacity: 0; transform: translateY(-6px); border-left-width: 14px; }
+  to   { opacity: 1; transform: none;             border-left-width: 3px; }
+}
+/* The dialog's own progress rule sits flush at its foot rather than under a
+   field, so it does not carry the form spacing the class was written for. A
+   hairline that reads fine inside a form is too quiet at the edge of a dialog
+   that is standing in the way of something irreversible, so it is given a
+   third pixel and the foot's own rule colour to sit against. */
+#cf-work { margin-top: 0; height: 3px; background: var(--rule); }
+
+/* Said only while the work is running, under the rule that shows it running.
+   It is the answer to "can I leave?", which is the question a progress bar with
+   no end in sight always provokes. */
+.work-note {
+  margin-top: 9px; font-size: var(--fs-micro); color: var(--graphite);
+  max-width: 66ch; line-height: 1.5;
+}
+
+.work-rule { height: 2px; background: var(--rule-soft); overflow: hidden; margin-top: var(--pad); }
+.work-rule > i { display: block; height: 100%; width: 35%; background: var(--ink); animation: vd-work 1.1s var(--ease) infinite; }
+@keyframes vd-work { 0% { transform: translateX(-100%); } 100% { transform: translateX(385%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  .work-rule > i { width: 100%; animation: none; }
+}
+
+/* One breakpoint remains, for the single thing that cannot interpolate: the
+   sidebar stops being a column and becomes a band above the content. */
+@media (max-width: 46rem) {
+  .app { flex-direction: column; }
+  .sidebar { width: auto; flex: none; height: auto; position: static; overflow: visible; border-right: 0; border-bottom: 1px solid var(--ink); }
+  .sidebar-user { margin-top: var(--pad); }
+}

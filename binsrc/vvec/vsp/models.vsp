@@ -1,0 +1,434 @@
+<?vsp
+  -- VVec · Embedding Models : inspect ONNX_MODELS, register HTTP providers,
+  -- store API keys, refresh local models, and test embeddings.
+  set http_charset='utf-8';
+
+  declare _ok integer;                 -- -1 none, 1 ok, 0 error
+  declare _banner, _detail varchar;
+  declare _op varchar;
+  declare _sel_model varchar;          -- model preselected in the test form
+  declare _test_dim integer;
+  declare _test_prev varchar;          -- vector preview after a test embed
+
+  _ok := -1; _banner := ''; _detail := '';
+  _test_dim := -1; _test_prev := '';
+  _sel_model := get_keyword ('test', params, '');
+
+  if (get_keyword ('do', params, '') = 'model')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard (register/set-key/etc.)
+        return;
+      _op := get_keyword ('op', params, '');
+
+      if (_op = 'set_key')
+        {
+          declare _kname, _kval varchar;
+          _kname := trim (get_keyword ('key_name', params, ''));
+          _kval  := get_keyword ('api_key', params, '');
+          if (DB.DBA.VVEC_NAME_OK (_kname) = 0)
+            { _ok := 0; _banner := 'Invalid key registry name'; _detail := 'Use letters, digits, dot, dash or underscore.'; goto done_proc; }
+          if (length (_kval) = 0)
+            { _ok := 0; _banner := 'API key value is required'; _detail := ''; goto done_proc; }
+          DB.DBA.ONNX_API_KEY_SET (_kname, _kval);
+          _ok := 1; _banner := 'API key stored'; _detail := sprintf ('Registered under name "%s". Reference this name when registering a provider.', _kname);
+        }
+      else if (_op = 'register_model')
+        {
+          declare _name, _prov, _rmodel, _ep, _kname, _desc, _keyval, _keynote varchar;
+          declare _dims, _timeout integer;
+          _name   := trim (get_keyword ('m_name',   params, ''));
+          _prov   := lower (trim (get_keyword ('m_provider', params, '')));
+          _rmodel := trim (get_keyword ('m_remote', params, ''));
+          _ep     := trim (get_keyword ('m_endpoint', params, ''));
+          _kname  := trim (get_keyword ('m_keyname',  params, ''));
+          _desc   := trim (get_keyword ('m_desc',     params, ''));
+          _keyval := get_keyword ('m_apikey',   params, '');
+          _dims   := atoi (get_keyword ('m_dims',    params, '0'));
+          _timeout:= atoi (get_keyword ('m_timeout', params, '30'));
+          _keynote := '';
+
+          if (DB.DBA.VVEC_NAME_OK (_name) = 0)
+            { _ok := 0; _banner := 'Invalid model name'; _detail := 'Use letters, digits, dot, dash or underscore.'; goto done_proc; }
+          if (_prov not in ('openai', 'ollama', 'lmstudio', 'openai_compatible'))
+            { _ok := 0; _banner := 'Invalid provider'; _detail := _prov; goto done_proc; }
+          if (length (_rmodel) = 0)
+            { _ok := 0; _banner := 'Provider model name is required'; _detail := ''; goto done_proc; }
+          if (_dims <= 0)
+            { _ok := 0; _banner := 'Dimensions must be a positive integer'; _detail := ''; goto done_proc; }
+          if (_timeout <= 0) _timeout := 30;
+          -- An API key typed here is stored in the secure registry under the
+          -- name this model will reference, so the two cannot drift apart. With
+          -- the name left blank we use the provider's conventional one, which is
+          -- what ONNX_REGISTER_HTTP_EMBED_MODEL would have picked anyway.
+          if (length (_keyval) > 0 and length (_kname) = 0)
+            _kname := DB.DBA.ONNX_PROVIDER_API_KEY_NAME (_prov);
+          if (length (_kname) > 0 and DB.DBA.VVEC_NAME_OK (_kname) = 0)
+            { _ok := 0; _banner := 'Invalid API key registry name';
+              _detail := 'Use letters, digits, dot, dash or underscore.'; goto done_proc; }
+          if (length (_keyval) > 0)
+            {
+              DB.DBA.ONNX_API_KEY_SET (_kname, _keyval);
+              _keynote := sprintf (', key stored as %s', _kname);
+            }
+          if (length (_ep) = 0)    _ep := null;
+          if (length (_kname) = 0) _kname := null;
+          if (length (_desc) = 0)  _desc := null;
+
+          DB.DBA.ONNX_REGISTER_HTTP_EMBED_MODEL (_name, _prov, _rmodel, _dims, _ep, _kname, _timeout, _desc);
+          _ok := 1;
+          _banner := sprintf ('Saved model "%s"', _name);
+          _detail := sprintf ('%s, %s, %d dimensions%s', _prov, _rmodel, _dims, _keynote);
+        }
+      else if (_op = 'refresh_model')
+        {
+          declare _name varchar; declare _h integer;
+          _name := trim (get_keyword ('m_name', params, ''));
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _name))
+            { _ok := 0; _banner := 'Unknown model'; _detail := _name; goto done_proc; }
+          _h := DB.DBA.ONNX_MODEL_REFRESH (_name);
+          if (_h is null or _h = 0)
+            { _ok := 0; _banner := 'Model reload failed'; _detail := sprintf ('%s did not return a valid handle.', _name); goto done_proc; }
+          _ok := 1; _banner := sprintf ('Reloaded model "%s"', _name); _detail := sprintf ('New handle: %d', _h);
+        }
+      else if (_op = 'test_embed')
+        {
+          declare _name, _text varchar; declare vec any; declare k integer;
+          _name := trim (get_keyword ('t_model', params, ''));
+          _text := get_keyword ('t_text', params, '');
+          _sel_model := _name;
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _name))
+            { _ok := 0; _banner := 'Unknown model'; _detail := _name; goto done_proc; }
+          if (length (trim (_text)) = 0)
+            { _ok := 0; _banner := 'Enter some text to embed'; _detail := ''; goto done_proc; }
+          vec := DB.DBA.ONNX_EMBED_TEXT_FOR_MODEL (_name, _text);
+          if (vec is null)
+            { _ok := 0; _banner := 'Embedding returned no vector'; _detail := ''; goto done_proc; }
+          _test_dim := length (vec);
+          _test_prev := ''; k := 0;
+          while (k < _test_dim and k < 8)
+            {
+              if (_test_prev <> '') _test_prev := _test_prev || ', ';
+              _test_prev := _test_prev || sprintf ('%.4f', cast (vec[k] as double precision));
+              k := k + 1;
+            }
+          if (_test_dim > 8) _test_prev := _test_prev || ', ...';
+          _ok := 1; _banner := sprintf ('Embedded with "%s"', _name); _detail := sprintf ('%d-dimensional vector', _test_dim);
+        }
+     done_proc:;
+    }
+
+  DB.DBA.VVEC_HEAD ('Embedding Models', 'models');
+?>
+<div class="page-head">
+  <div>
+    <h1>Embedding Models</h1>
+    <div class="sub">Models in <span class="mono">DB.DBA.ONNX_MODELS</span> that vector indexes can bind to.</div>
+  </div>
+  <a class="btn" href="./">&#8592; Overview</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<?vsp
+  if (_test_dim >= 0) {
+?>
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head"><div><h3>Embedding preview</h3><div class="sub"><?= _test_dim ?>-dimensional vector</div></div></div>
+  <div class="card-body"><div class="mono" style="word-break:break-all">[ <?= _test_prev ?> ]</div></div>
+</div>
+<?vsp } ?>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div><h3>Registered models</h3><div class="sub">In-process ONNX models are loaded at startup; HTTP providers are called per query.</div></div>
+  </div>
+  <div class="card-body tight"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th>Model</th><th>Type</th><th>Dims</th><th>Status</th><th>Endpoint</th><th></th></tr></thead>
+      <tbody>
+<?vsp
+  declare nmodels integer; nmodels := 0;
+  for (select model_name as mn, model_type as mt, handle as hh, provider_endpoint as ep,
+              coalesce (provider_consecutive_failures, 0) as pcf, provider_last_error as ple,
+              coalesce (model_path, '') as pmodel, coalesce (provider_dimensions, 0) as pdim,
+              coalesce (provider_endpoint, '') as pep,
+              coalesce (provider_api_key_name, '') as pkey, coalesce (provider_timeout, 30) as ptmo,
+              coalesce (description, '') as pdesc
+         from DB.DBA.ONNX_MODELS order by model_name) do
+    {
+      declare dm integer; declare is_remote integer;
+      nmodels := nmodels + 1;
+      dm := DB.DBA.VVEC_MODEL_DIM (mn);
+      is_remote := case when lower (coalesce (mt, '')) in ('openai', 'ollama', 'lmstudio', 'openai_compatible') then 1 else 0 end;
+?>
+      <tr>
+        <td class="cell-strong mono"><?= mn ?></td>
+        <td><span class="pill <?vsp http (case when is_remote = 1 then 'blue' else 'violet' end); ?>"><?= mt ?></span></td>
+        <td><?vsp if (dm > 0) http (sprintf ('%d', dm)); else http ('&mdash;'); ?></td>
+        <td>
+<?vsp
+      if (is_remote = 1 and pcf >= 3)
+        http (sprintf ('<span class="pill red" title="%s"><span class="dot"></span>degraded (%d fails)</span>',
+            DB.DBA.VVEC_DISP (coalesce (ple, 'provider request failing')), pcf));
+      else if (is_remote = 1)
+        http ('<span class="pill gray"><span class="dot"></span>remote</span>');
+      else if (hh is not null and hh <> 0)
+        http ('<span class="pill green"><span class="dot"></span>loaded</span>');
+      else
+        http ('<span class="pill amber"><span class="dot"></span>not loaded</span>');
+?>
+        </td>
+        <td class="mono cell-muted truncate"><?vsp
+      -- An ONNX model has no endpoint because it is not called over the
+      -- network at all: it runs inside this server process.  That is a fact
+      -- about the model, not a value we failed to find, and an em-dash reads
+      -- as "unknown".  Say why the cell is empty rather than where the model
+      -- is -- "local" would not discriminate, since a provider on
+      -- 127.0.0.1 is every bit as local as this.
+      if (is_remote = 1)
+        http (DB.DBA.VVEC_DISP (ep));
+      else
+        http ('in-process');
+?></td>
+        <td><div class="row-actions">
+          <a class="btn sm" href="models?test=<?/ mn ?>">Test</a>
+<?vsp
+      if (is_remote = 1)
+        {
+?>
+          <button type="button" class="btn sm" onclick="vdMdlEdit(this)"
+                  data-name="<?= mn ?>" data-prov="<?= mt ?>" data-remote="<?= pmodel ?>"
+                  data-dims="<?= pdim ?>" data-ep="<?= pep ?>"
+                  data-key="<?= pkey ?>" data-tmo="<?= ptmo ?>" data-desc="<?= pdesc ?>">Edit</button>
+<?vsp
+        }
+      if (is_remote = 0)
+        {
+?>
+          <form method="post" action="models" style="display:inline" data-working="Reloading...">
+            <input type="hidden" name="do" value="model"><input type="hidden" name="op" value="refresh_model"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+            <input type="hidden" name="m_name" value="<?= mn ?>">
+            <button class="btn sm" type="submit">Reload</button>
+          </form>
+<?vsp
+        }
+?>
+        </div></td>
+      </tr>
+<?vsp
+    }
+  if (nmodels = 0)
+    http ('<tr><td colspan="6"><div class="empty"><h3>No models registered</h3></div></td></tr>');
+?>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<div class="stats duo">
+  <!-- Register HTTP provider -->
+  <div class="card">
+    <div class="card-head"><div><h3>Register HTTP provider</h3><div class="sub">OpenAI, Ollama, LM Studio, or any OpenAI-compatible API. Keys are listed and replaced on the <a href="apikeys">API Keys</a> page.</div></div></div>
+    <div class="card-body">
+      <form method="post" action="models" data-working="Registering model..." data-beat>
+        <input type="hidden" name="do" value="model"><input type="hidden" name="op" value="register_model"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <div class="form-grid">
+          <div class="field"><label>Model name</label><input name="m_name" placeholder="openai-small" autocomplete="off"><span class="hint">Alias used in CREATE VECTOR INDEX.</span></div>
+          <div class="field"><label>Provider</label>
+            <select name="m_provider" id="reg-prov"><option value="openai">openai</option><option value="ollama">ollama</option><option value="lmstudio">lmstudio</option><option value="openai_compatible">openai_compatible</option></select>
+          </div>
+          <div class="field"><label>Provider model</label><input name="m_remote" placeholder="text-embedding-3-small" autocomplete="off"></div>
+          <div class="field"><label>Dimensions</label><input name="m_dims" type="number" min="1" placeholder="1536"></div>
+          <div class="field full"><label>Endpoint <span class="hint">(filled in for named providers &mdash; change it if yours is elsewhere)</span></label><input name="m_endpoint" id="reg-ep" placeholder="https://host/v1/embeddings" autocomplete="off"></div>
+          <div class="field"><label>API key <span class="hint">(optional)</span></label><input name="m_apikey" type="password" placeholder="sk-&hellip;" autocomplete="new-password"><span class="hint">Stored in the secure registry, never displayed back. Leave blank to keep an existing key.</span></div>
+          <div class="field"><label>API key registry name <span class="hint">(optional)</span></label><input name="m_keyname" placeholder="ONNX_API_KEY_OPENAI" autocomplete="off"><span class="hint">Blank uses the provider default, shared by every model of that provider.</span></div>
+          <div class="field"><label>Timeout (s)</label><input name="m_timeout" type="number" min="1" value="30"></div>
+          <div class="field full"><label>Description <span class="hint">(optional)</span></label><input name="m_desc" autocomplete="off"></div>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">Register model</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Test embedding -->
+  <div class="card">
+      <div class="card-head"><div><h3>Test embedding</h3><div class="sub">Verify a model produces a vector.</div></div></div>
+      <div class="card-body">
+        <form method="post" action="models" data-working="Embedding...">
+          <input type="hidden" name="do" value="model"><input type="hidden" name="op" value="test_embed"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div class="field"><label>Model</label>
+              <select name="t_model">
+<?vsp
+  for (select model_name as mn from DB.DBA.ONNX_MODELS order by model_name) do
+    {
+?>
+                <option value="<?= mn ?>"<?vsp if (_sel_model = mn) http (' selected'); ?>><?= mn ?></option>
+<?vsp
+    }
+?>
+              </select>
+            </div>
+            <div class="field"><label>Text</label><input name="t_text" placeholder="hello world" autocomplete="off"></div>
+          </div>
+          <div class="form-actions"><button class="btn primary" type="submit">Embed text</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ================= edit an HTTP provider ================= -->
+<div id="mdl-modal" class="modal-back hidden" onclick="vdMdlBackdrop(event)">
+  <div class="modal">
+    <form method="post" action="models" data-working="Saving provider...">
+      <div class="modal-head">
+        <div>
+          <h3>Edit HTTP provider</h3>
+          <div class="sub" id="mdl-sub">Saving re-registers the provider under the same name.</div>
+        </div>
+        <button type="button" class="modal-close" onclick="vdMdlClose()" title="Close">&#215;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="do" value="model">
+        <input type="hidden" name="op" value="register_model">
+        <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <input type="hidden" name="m_name" id="mdl-name">
+        <div class="form-grid">
+          <div class="field">
+            <label>Model name</label>
+            <input id="mdl-name-view" disabled>
+            <span class="hint">Fixed &mdash; indexes bind to it.</span>
+          </div>
+          <div class="field">
+            <label>Provider</label>
+            <select name="m_provider" id="mdl-prov">
+              <option value="openai">openai</option><option value="ollama">ollama</option>
+              <option value="lmstudio">lmstudio</option><option value="openai_compatible">openai_compatible</option>
+            </select>
+          </div>
+          <div class="field"><label>Provider model</label><input name="m_remote" id="mdl-remote" autocomplete="off"></div>
+          <div class="field"><label>Dimensions</label><input name="m_dims" id="mdl-dims" type="number" min="1"><span class="hint">Changing this does not re-embed existing indexes.</span></div>
+          <div class="field full"><label>Endpoint</label><input name="m_endpoint" id="mdl-ep" autocomplete="off" placeholder="https://host/v1/embeddings"></div>
+          <div class="field"><label>API key <span class="hint">(leave blank to keep)</span></label><input name="m_apikey" id="mdl-apikey" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"><span class="hint">Never displayed back; type a new one only to replace it.</span></div>
+          <div class="field"><label>API key registry name</label><input name="m_keyname" id="mdl-key" autocomplete="off" placeholder="ONNX_API_KEY_OPENAI"></div>
+          <div class="field"><label>Timeout (s)</label><input name="m_timeout" id="mdl-tmo" type="number" min="1"></div>
+          <div class="field full"><label>Description</label><input name="m_desc" id="mdl-desc" autocomplete="off"></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span class="note">Failure counters reset on save.</span>
+        <div class="row-actions">
+          <button type="button" class="btn sm" onclick="vdMdlClose()">Cancel</button>
+          <button type="submit" class="btn primary sm">Save provider</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<?vsp
+  -- The endpoint each named provider defaults to, emitted from the very
+  -- function the server infers with (ONNX_HTTP_PROVIDER_DEFAULT_ENDPOINT in
+  -- libsrc/Wi/users.sql).  Reading it from there rather than restating the
+  -- host and port in JavaScript means the value the form fills in is, by
+  -- construction, the one the request would have used had the field been left
+  -- blank -- a second copy here would be free to drift from the first.
+  declare _provs any;
+  declare _pi integer;
+  declare _pdef varchar;
+  _provs := vector ('openai', 'ollama', 'lmstudio', 'openai_compatible');
+  http ('<script>window.vvecProviderEndpoint = {');
+  for (_pi := 0; _pi < length (_provs); _pi := _pi + 1)
+    {
+      _pdef := DB.DBA.ONNX_HTTP_PROVIDER_DEFAULT_ENDPOINT (_provs[_pi]);
+      if (_pi > 0)
+        http (',');
+      http (sprintf ('"%s":', DB.DBA.VVEC_JSON_ESC (_provs[_pi])));
+      if (_pdef is null or not isstring (_pdef))
+        http ('null');
+      else
+        http (sprintf ('"%s"', DB.DBA.VVEC_JSON_ESC (_pdef)));
+    }
+  http ('};</' || 'script>');
+?>
+<script>
+(function(){
+  function el(id){ return document.getElementById(id); }
+  function put(id, v){ var e = el(id); if(e) e.value = v || ""; }
+
+  // Fill the Endpoint field with the selected provider's default.
+  //
+  // The field is optional -- blank means "let the server infer it" -- but
+  // blank also hides which host is about to be called, and for Ollama and
+  // LM Studio that is a localhost port somebody needs to see, and fairly often
+  // needs to change (a remote box, a second instance on another port). Showing
+  // the default makes it editable instead of implicit.
+  //
+  // Only an empty field, or one still holding one of the known defaults, is
+  // overwritten: switching provider must never discard an endpoint somebody
+  // typed themselves.
+  var DEFAULTS = window.vvecProviderEndpoint || {};
+  var KNOWN = [];
+  for (var k in DEFAULTS) { if (DEFAULTS[k]) KNOWN.push(DEFAULTS[k]); }
+  function untouched(v){ return !v || KNOWN.indexOf(v) !== -1; }
+
+  // Set while the edit dialog is populating itself: it assigns the stored
+  // endpoint and then fires a synthetic "change" to sync the custom select
+  // (see VVEC_SELECT_JS), and that must not be mistaken for the user picking a
+  // provider. isTrusted cannot tell them apart, because a real click on the
+  // custom control dispatches a synthetic event too.
+  var quiet = false;
+
+  function bind(selId, epId){
+    var sel = el(selId), ep = el(epId);
+    if (!sel || !ep) return function(){};
+    function fill(){
+      if (!untouched(ep.value)) return;
+      ep.value = DEFAULTS[sel.value] || "";
+    }
+    sel.addEventListener("change", function(){ if (!quiet) fill(); });
+    return fill;
+  }
+
+  // The register form starts on a provider, so show its endpoint from the
+  // outset rather than only after the first change.
+  bind("reg-prov", "reg-ep")();
+  bind("mdl-prov", "mdl-ep");
+  window.vdMdlEdit = function(btn){
+    var d = function(k){ return btn.getAttribute("data-" + k) || ""; };
+    put("mdl-name", d("name"));
+    put("mdl-name-view", d("name"));
+    put("mdl-remote", d("remote"));
+    put("mdl-dims", d("dims"));
+    put("mdl-ep", d("ep"));
+    put("mdl-key", d("key"));
+    put("mdl-tmo", d("tmo"));
+    put("mdl-desc", d("desc"));
+    put("mdl-apikey", "");
+    var sel = el("mdl-prov");
+    sel.value = d("prov");
+    // the native <select> is hidden behind a custom control; 'change' is what
+    // syncs that control's visible label (see VVEC_SELECT_JS). Quiet, so the
+    // endpoint just loaded from the row is not treated as a provider pick and
+    // rewritten.
+    quiet = true;
+    sel.dispatchEvent(new Event("change", {bubbles: true}));
+    quiet = false;
+    el("mdl-sub").textContent = "Saving re-registers " + d("name") + " under the same name.";
+    el("mdl-modal").classList.remove("hidden");
+  };
+  window.vdMdlClose = function(){ el("mdl-modal").classList.add("hidden"); };
+  window.vdMdlBackdrop = function(ev){ if(ev.target && ev.target.id === "mdl-modal") window.vdMdlClose(); };
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Escape") window.vdMdlClose(); });
+})();
+</script>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

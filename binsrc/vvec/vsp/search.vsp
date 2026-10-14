@@ -1,0 +1,627 @@
+<?vsp
+  -- VVec · Similarity Search : embed a query and rank matches from one or
+  -- more vector indexes.
+  --
+  -- Several indexes of the SAME surface can be searched at once; their hits are
+  -- merged into a single ranking rather than shown per index (see
+  -- VVEC_SEARCH_ONE / VVEC_TOP_BY_SCORE).  Mixing SQL and SPARQL indexes
+  -- in one search is not offered yet -- the surface control in the picker is
+  -- what enforces it, and the parse below refuses a hand-built URL that mixes
+  -- them rather than silently searching half of it.
+  set http_charset='utf-8';
+
+  declare _idx, _q, _side varchar;
+  declare _k integer;
+  declare sqlx, e, _ids, _hits, _one, _models, _mm any;
+  declare _mode, _sig varchar;
+  declare _comparable integer;
+  declare i, j integer;
+  declare _did_search, _ok, _mixed integer;
+  declare _labels any;
+  declare _err, _warn varchar;
+  declare v, _tok, _tside, _tid, _e1 varchar;
+  declare kopts any;
+
+  _idx  := get_keyword ('idx', params, '');
+  _side := lower (trim (get_keyword ('side', params, '')));
+  _q    := trim (get_keyword ('q', params, ''));
+  _k    := atoi (get_keyword ('k', params, '10'));
+  if (_k <= 0) _k := 10;
+  if (_k > 100) _k := 100;
+
+  _did_search := 0; _ok := 0; _mixed := 0; _comparable := 1; _mode := 'score';
+  _err := ''; _warn := ''; _hits := vector (); _ids := vector ();
+
+  -- Each entry is "sql:<name>" or "sparql:<iri>", joined with '|'. That
+  -- separator is safe: VVEC_IRI_OK rejects '|' inside an IRI, and a SQL index
+  -- name is word characters only. A single unprefixed-list value still parses,
+  -- so the dashboard's search.vsp?idx=sql:NAME links keep working.
+  {
+    declare _parts any;
+    _parts := DB.DBA.VVEC_SPLIT (_idx, ascii ('|'));
+    for (i := 0; i < length (_parts); i := i + 1)
+      {
+        _tok := _parts[i];
+        _tside := ''; _tid := '';
+        if (_tok like 'sparql:%')  { _tside := 'sparql'; _tid := subseq (_tok, 7); }
+        else if (_tok like 'sql:%'){ _tside := 'sql';    _tid := subseq (_tok, 4); }
+        if (_tside = '' or length (_tid) = 0)
+          goto next_tok;
+        if (_side = '')
+          _side := _tside;
+        if (_tside <> _side)
+          { _mixed := 1; goto next_tok; }
+        _ids := vector_concat (_ids, vector (_tid));
+       next_tok:;
+      }
+  }
+  sqlx := DB.DBA.VVEC_SQL_INDEXES ();
+
+  -- With no surface given and nothing chosen, open on the surface that actually
+  -- has something to search.
+  if (_side not in ('sql', 'sparql'))
+    {
+      if (length (sqlx) > 0)
+        _side := 'sql';
+      else if (exists (select 1 from DB.DBA.SPARQL_VEC_INDEX where SVI_STATE = 'active'))
+        _side := 'sparql';
+      else
+        _side := 'sql';
+    }
+
+  if (_mixed = 1)
+    {
+      _did_search := 1; _ok := 0;
+      _err := 'A search cannot combine SQL and SPARQL indexes yet. Pick one surface in the index picker.';
+    }
+  else if (length (_q) > 0 and length (_ids) > 0)
+    {
+      -- Query each chosen index for its own top _k, then keep the best _k of
+      -- everything returned. An index that fails is reported without losing the
+      -- results from the others.
+      _did_search := 1;
+      for (i := 0; i < length (_ids); i := i + 1)
+        {
+          _e1 := '';
+          _one := DB.DBA.VVEC_SEARCH_ONE (_side, _ids[i], _q, _k, _e1);
+          if (_e1 <> '')
+            _warn := _warn || case when _warn = '' then '' else '  ' end || _ids[i] || ': ' || _e1;
+          for (j := 0; j < length (_one); j := j + 1)
+            _hits := vector_concat (_hits, vector (_one[j]));
+        }
+      -- Raw scores are the same measurement only when every index in the
+      -- merge shares a model AND a metric; otherwise they sit on different
+      -- baselines and ranking by them favours whichever model scores high by
+      -- default. So the initial order is by score when they agree and by
+      -- per-index rank when they do not. The toggle on the results card flips
+      -- it either way, client-side.
+      _comparable := 1; _sig := ''; _models := vector ();
+      for (i := 0; i < length (_ids); i := i + 1)
+        {
+          _mm := DB.DBA.VVEC_INDEX_MODEL (_side, _ids[i]);
+          if (_mm is null)
+            _mm := vector ('', '');
+          _models := vector_concat (_models, vector (_mm));
+          if (_sig = '')
+            _sig := _mm[0] || '/' || _mm[1];
+          else if (_sig <> (_mm[0] || '/' || _mm[1]))
+            _comparable := 0;
+        }
+      _mode := case when _comparable = 1 then 'score' else 'rank' end;
+      _hits := DB.DBA.VVEC_TOP_HITS (_hits, _k, _mode);
+      if (length (_hits) = 0 and _warn <> '')
+        { _ok := 0; _err := _warn; _warn := ''; }
+      else
+        _ok := 1;
+    }
+  else if (length (_q) > 0)
+    {
+      _did_search := 1; _ok := 0;
+      _err := 'Pick at least one vector index to search - open the index picker and tick the ones to cover.';
+    }
+
+  DB.DBA.VVEC_HEAD ('Similarity Search', 'search');
+?>
+<div class="page-head">
+  <div>
+    <h1>Similarity Search</h1>
+    <div class="sub">Type a natural-language query &mdash; it is embedded with each index's model and ranked by meaning.</div>
+  </div>
+  <a class="btn" href="./">&#8592; Overview</a>
+</div>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-body">
+    <form method="get" action="search" class="search-hero">
+      <div class="q">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input name="q" value="<?= _q ?>" placeholder="e.g. how do I reset my password" autocomplete="off" autofocus>
+      </div>
+      <input type="hidden" name="idx"  id="ix-value" value="<?= _idx ?>">
+      <input type="hidden" name="side" id="ix-side"  value="<?= _side ?>">
+      <div class="vd-select">
+        <button type="button" class="vd-select-btn" id="ix-trigger" onclick="vdIxOpen()" aria-haspopup="dialog">
+          <span class="vd-select-label<?vsp if (length (_ids) = 0) http (' placeholder'); ?>" id="ix-label"><?vsp
+            if (length (_ids) = 0)
+              http ('Select vector indexes&hellip;');
+            else if (length (_ids) = 1)
+              http (sprintf ('%V', _ids[0]));
+            else
+              http (sprintf ('%d indexes selected', length (_ids)));
+          ?></span>
+        </button>
+      </div>
+      <select name="k" title="Result count">
+<?vsp
+  kopts := vector (5, 10, 20, 50, 100);
+  j := 0;
+  while (j < length (kopts))
+    {
+?>
+        <option value="<?= kopts[j] ?>"<?vsp if (_k = kopts[j]) http (' selected'); ?>>Top <?= kopts[j] ?></option>
+<?vsp
+      j := j + 1;
+    }
+?>
+      </select>
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<?vsp
+  if (_did_search = 1 and _ok = 0)
+    {
+?>
+<div class="banner err"><div><strong>Search failed</strong><span class="mono"><?= _err ?></span></div></div>
+<?vsp
+    }
+  if (_warn <> '')
+    {
+?>
+<div class="banner warn"><div><strong>Some indexes could not be searched</strong><span class="mono"><?= _warn ?></span>
+  <div style="margin-top:8px">The ranking below is from the indexes that answered.</div></div></div>
+<?vsp
+    }
+
+  if (_did_search = 1 and _ok = 1)
+    {
+      declare nrows, nidx integer;
+      nrows := length (_hits);
+      nidx  := length (_ids);
+?>
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h3>Results</h3>
+      <div class="sub"><span id="res-count"><?= nrows ?></span> match<?vsp if (nrows <> 1) http ('es'); ?>, ranked across <?= nidx ?> index<?vsp if (nidx <> 1) http ('es'); ?></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="ord">
+        <span class="ord-label">Order by</span>
+        <div class="segmented">
+          <button type="button" id="ord-rank"  onclick="vdOrder('rank')"  title="Each hit's position within its own index first - comparable across models">Relevance rank</button>
+          <button type="button" id="ord-score" onclick="vdOrder('score')" title="Highest raw similarity score first">Raw score</button>
+        </div>
+      </div>
+<?vsp
+      if (_side = 'sparql')
+        {
+?>
+      <label class="switch" title="How to display the Subject column">
+        <span>Raw URL</span>
+        <input type="checkbox" checked onchange="document.getElementById('resTable').classList.toggle('link-mode', this.checked);">
+        <span class="track"></span>
+        <span class="opt">Entity label</span>
+      </label>
+<?vsp
+        }
+?>
+      <span class="pill <?vsp http (case when _side = 'sql' then 'blue' else 'violet' end); ?>"><?vsp http (upper (_side)); ?></span>
+    </div>
+  </div>
+<?vsp
+      if (nidx > 1)
+        {
+?>
+  <div class="card-body" style="padding-bottom:0">
+<?vsp
+          if (_comparable = 0)
+            {
+?>
+    <div class="banner warn" style="margin-bottom:14px">
+      <div><strong>These indexes do not share a model</strong>
+        <span class="mono">Raw scores from different models sit on different baselines, so a higher number does not reliably mean a closer match. Ordered by each hit's rank within its own index instead - flip to Raw score to see the numbers ordered as they are.</span></div>
+    </div>
+<?vsp
+            }
+?>
+    <div class="chips" id="res-chips">
+      <button type="button" class="chip-filter on" data-ix="" onclick="vdChip(this)">All</button>
+<?vsp
+          i := 0;
+          while (i < length (_ids))
+            {
+              _mm := _models[i];
+?>
+      <button type="button" class="chip-filter" data-ix="<?= _ids[i] ?>" onclick="vdChip(this)"><span class="cf-name"><?= _ids[i] ?></span><span class="cf-meta"><?vsp http (sprintf ('%V', _mm[0])); ?> &middot; <span class="cf-n">0</span></span></button>
+<?vsp
+              i := i + 1;
+            }
+?>
+    </div>
+  </div>
+<?vsp
+        }
+?>
+<?vsp
+      -- Entity-label mode names each subject rather than quoting what was
+      -- indexed, and those are rarely the same string: an index built over
+      -- schema:description matches on the description, but the row should still
+      -- be labelled with the entity's name.  One query for the whole page, and
+      -- only on the RDF side -- a relational key has no label to look up.
+      _labels := vector ();
+      if (_side = 'sparql' and nrows > 0)
+        {
+          declare _ks any;
+          declare _j integer;
+          _ks := make_array (nrows, 'any');
+          _j := 0;
+          while (_j < nrows)
+            {
+              declare _hr any;
+              _hr := _hits[_j];
+              aset (_ks, _j, cast (_hr[1] as varchar));
+              _j := _j + 1;
+            }
+          _labels := DB.DBA.VVEC_LABELS (_ks);
+        }
+?>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="grid results<?vsp if (_side = 'sparql') http (' link-mode'); ?>" id="resTable" data-order="<?= _mode ?>" data-resizable>
+        <thead><tr>
+          <th style="width:56px">#</th>
+          <th style="width:200px">Index</th>
+          <th><?vsp http (case when _side = 'sql' then 'Key' else 'Subject' end); ?></th>
+          <th>Indexed text</th>
+          <th style="width:64px" title="Position within its own index">Rank</th>
+          <th style="width:190px">Score</th>
+          <th style="width:110px">Distance</th>
+        </tr></thead>
+        <tbody id="resBody">
+<?vsp
+      if (nrows = 0)
+        http ('<tr><td colspan="7"><div class="empty"><h3>No matches</h3><p>Try a different query, a higher Top-N, or refresh the index.</p></div></td></tr>');
+      i := 0;
+      while (i < nrows)
+        {
+          declare r any; declare sc, ds double precision; declare pct, rk integer;
+          declare _key, _txt, _mdl varchar;
+          r := _hits[i];
+          _key := cast (r[1] as varchar);
+          _txt := cast (r[2] as varchar);
+          sc := coalesce (r[3], 0);
+          ds := coalesce (r[4], 0);
+          rk := coalesce (r[5], 0);
+          _mdl := cast (coalesce (r[6], '') as varchar);
+          pct := cast (sc * 100 as integer);
+          if (pct < 0) pct := 0; if (pct > 100) pct := 100;
+?>
+          <tr data-ix="<?= r[0] ?>" data-score="<?= sprintf ('%.6f', sc) ?>" data-rank="<?= rk ?>">
+            <td class="cell-muted res-n"><?= (i + 1) ?></td>
+            <td class="truncate">
+              <span class="ix-name mono" title="<?= r[0] ?>"><?= r[0] ?></span>
+              <span class="ix-sub"><?vsp if (_mdl <> '') http (sprintf ('%V', _mdl)); else http ('&mdash;'); ?></span>
+            </td>
+<?vsp
+          if (_side = 'sql')
+            {
+?>
+            <td class="mono cell-strong"><?= _key ?></td>
+<?vsp
+            }
+          else
+            {
+?>
+<?vsp
+            declare _lbl varchar;
+            -- The label if the data gives one, then the indexed text, then the
+            -- IRI.  The IRI is always a true answer and never a useful name, so
+            -- it is the last resort rather than the first.
+            _lbl := cast (get_keyword (_key, _labels, '') as varchar);
+            if (_lbl = '') _lbl := _txt;
+            if (_lbl = '') _lbl := _key;
+?>
+            <td class="mono truncate">
+              <a class="subj-raw" href="<?= _key ?>" target="_blank" rel="noopener"><?= _key ?></a>
+              <a class="subj-linked" href="<?= _key ?>" target="_blank" rel="noopener" title="<?= _key ?>"><?= _lbl ?></a>
+            </td>
+<?vsp
+            }
+?>
+            <td class="mono cell-muted wrapcell" title="<?= _txt ?>"><span class="clamp2"><?vsp if (_txt <> '') http (sprintf ('%V', _txt)); else http ('&mdash;'); ?></span></td>
+            <td class="mono cell-muted"><?= rk ?></td>
+            <td>
+              <span class="score-bar"><i style="width:<?= pct ?>%"></i></span>
+              <span class="mono" style="margin-left:8px"><?= sprintf ('%.4f', sc) ?></span>
+            </td>
+            <td class="mono cell-muted"><?= sprintf ('%.4f', ds) ?></td>
+          </tr>
+<?vsp
+          i := i + 1;
+        }
+?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var table = document.getElementById("resTable");
+  var tbody = document.getElementById("resBody");
+  if(!table || !tbody) return;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-ix]"));
+  var mode = table.getAttribute("data-order") === "rank" ? "rank" : "score";
+  var only = {};                       // index id -> true; empty means everything
+  function chips(){ return document.querySelectorAll("#res-chips .chip-filter"); }
+  function anyFilter(){ for(var k in only){ if(only[k]) return true; } return false; }
+  function apply(){
+    var filtered = anyFilter();
+    var vis = [], i;
+    for(i = 0; i < rows.length; i++){
+      if(!filtered || only[rows[i].getAttribute("data-ix")]) vis.push(rows[i]);
+    }
+    vis.sort(function(a, b){
+      if(mode === "rank"){
+        var ra = +a.getAttribute("data-rank"), rb = +b.getAttribute("data-rank");
+        if(ra !== rb) return ra - rb;          // own-index position first
+      }
+      return (+b.getAttribute("data-score")) - (+a.getAttribute("data-score"));
+    });
+    for(i = 0; i < rows.length; i++) rows[i].classList.add("hidden");
+    for(i = 0; i < vis.length; i++){
+      vis[i].classList.remove("hidden");
+      vis[i].querySelector(".res-n").textContent = i + 1;
+      tbody.appendChild(vis[i]);                // re-order in place
+    }
+    var c = document.getElementById("res-count");
+    if(c) c.textContent = vis.length;
+    var cs = chips(), j;
+    for(j = 0; j < cs.length; j++){
+      var id = cs[j].getAttribute("data-ix");
+      cs[j].classList.toggle("on", id === "" ? !filtered : !!only[id]);
+    }
+    document.getElementById("ord-rank").classList.toggle("active", mode === "rank");
+    document.getElementById("ord-score").classList.toggle("active", mode === "score");
+  }
+  window.vdOrder = function(m){ mode = m; apply(); };
+  window.vdChip = function(btn){
+    var id = btn.getAttribute("data-ix");
+    if(id === "") only = {};                    // the All chip clears the filter
+    else only[id] = !only[id];
+    apply();
+  };
+  // per-index hit counts on the chips
+  (function(){
+    var n = {}, i;
+    for(i = 0; i < rows.length; i++){
+      var k = rows[i].getAttribute("data-ix");
+      n[k] = (n[k] || 0) + 1;
+    }
+    var cs = chips();
+    for(i = 0; i < cs.length; i++){
+      var el = cs[i].querySelector(".cf-n");
+      if(el) el.textContent = n[cs[i].getAttribute("data-ix")] || 0;
+    }
+  })();
+  apply();
+})();
+</script>
+<?vsp
+    }
+
+  if (_did_search = 0)
+    {
+?>
+<div class="card"><div class="card-body"><div class="empty">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <h3>Search your vector indexes</h3>
+  <p>Enter a query above and pick one or more indexes to see the nearest matches.</p>
+</div></div></div>
+<?vsp
+    }
+?>
+
+<!-- ===================== index picker ===================== -->
+<div id="ix-modal" class="modal-back hidden" onclick="vdIxBackdrop(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>Choose vector indexes</h3>
+        <div class="sub">Tick any number on one surface &mdash; their hits are merged into a single ranking.</div>
+      </div>
+      <button type="button" class="modal-close" onclick="vdIxClose()" title="Close">&#215;</button>
+    </div>
+    <div class="modal-tools">
+      <div class="segmented">
+        <button type="button" id="ix-seg-sql"    onclick="vdIxSide('sql')">SQL</button>
+        <button type="button" id="ix-seg-sparql" onclick="vdIxSide('sparql')">SPARQL</button>
+        <button type="button" id="ix-seg-all" disabled title="Searching both surfaces at once is not available yet">All &mdash; coming soon</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="ix-group" data-grp="sql">SQL indexes</div>
+<?vsp
+  i := 0;
+  while (i < length (sqlx))
+    {
+      e := sqlx[i];
+      v := 'sql:' || e[0];
+?>
+      <label class="ix-row" data-grp="sql">
+        <input type="checkbox" value="<?= v ?>" data-side="sql" onchange="vdIxCount()"<?vsp if (DB.DBA.VVEC_IN_LIST (_idx, v, ascii ('|')) = 1) http (' checked'); ?>>
+        <span class="ix-meta">
+          <span class="ix-name"><?= e[0] ?></span>
+          <span class="ix-sub"><?= e[1] ?>.<?= e[2] ?> &middot; <?= e[4] ?></span>
+        </span>
+      </label>
+<?vsp
+      i := i + 1;
+    }
+  if (length (sqlx) = 0)
+    http ('<div class="ns-empty" data-grp="sql">No relational vector index on this instance.</div>');
+?>
+      <div class="ix-group" data-grp="sparql">SPARQL indexes</div>
+<?vsp
+  declare n_sp integer; n_sp := 0;
+  for (select SVI_IRI, SVI_STATE, SVI_MODEL_NAME, SVI_LABEL, SVI_COMMENT
+         from DB.DBA.SPARQL_VEC_INDEX order by SVI_IRI) do
+    {
+      declare _lbl, _cmt varchar;
+      n_sp := n_sp + 1;
+      v := 'sparql:' || SVI_IRI;
+      -- This picker is the one place a description genuinely earns its room:
+      -- someone choosing between six indexes is exactly who needs to know what
+      -- each one covers.  A named index leads with its name and keeps the IRI
+      -- underneath as the identity; an unnamed one reads as it always has.
+      _lbl := trim (coalesce (SVI_LABEL, ''));
+      _cmt := trim (coalesce (SVI_COMMENT, ''));
+      if (SVI_STATE = 'active')
+        {
+?>
+      <label class="ix-row" data-grp="sparql">
+        <input type="checkbox" value="<?= v ?>" data-side="sparql" onchange="vdIxCount()"<?vsp if (DB.DBA.VVEC_IN_LIST (_idx, v, ascii ('|')) = 1) http (' checked'); ?>>
+        <span class="ix-meta">
+<?vsp     if (_lbl <> '')
+            {
+              http (sprintf ('<span class="ix-name">%V</span>', _lbl));
+              http (sprintf ('<span class="ix-sub mono">%V</span>', SVI_IRI));
+              http (sprintf ('<span class="ix-sub">%V</span>', SVI_MODEL_NAME));
+            }
+          else
+            {
+              http (sprintf ('<span class="ix-name">%V</span>', SVI_IRI));
+              http (sprintf ('<span class="ix-sub">%V</span>', SVI_MODEL_NAME));
+            }
+          if (_cmt <> '')
+            http (sprintf ('<span class="ix-desc">%V</span>', _cmt));
+?>
+        </span>
+      </label>
+<?vsp
+        }
+      else
+        {
+?>
+      <label class="ix-row disabled" data-grp="sparql">
+        <input type="checkbox" disabled>
+        <span class="ix-meta">
+<?vsp     if (_lbl <> '')
+            {
+              http (sprintf ('<span class="ix-name">%V</span>', _lbl));
+              http (sprintf ('<span class="ix-sub mono">%V</span>', SVI_IRI));
+            }
+          else
+            http (sprintf ('<span class="ix-name">%V</span>', SVI_IRI));
+?>
+          <span class="ix-sub"><?= SVI_STATE ?> &mdash; not searchable</span>
+        </span>
+      </label>
+<?vsp
+        }
+    }
+  if (n_sp = 0)
+    http ('<div class="ns-empty" data-grp="sparql">No RDF vector index on this instance.</div>');
+?>
+    </div>
+    <div class="modal-foot">
+      <span class="note" id="ix-count">Nothing selected</span>
+      <div class="row-actions">
+        <button type="button" class="btn sm" id="ix-all" onclick="vdIxAll()">Select all</button>
+        <button type="button" class="btn primary sm" onclick="vdIxApply()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function el(id){ return document.getElementById(id); }
+  function boxes(){ return document.querySelectorAll("#ix-modal .ix-row input[type=checkbox]:not([disabled])"); }
+  function side(){ return el("ix-side").value === "sparql" ? "sparql" : "sql"; }
+  function chosen(){
+    var b = boxes(), out = [], i;
+    for(i = 0; i < b.length; i++){ if(b[i].checked && b[i].getAttribute("data-side") === side()) out.push(b[i].value); }
+    return out;
+  }
+  function label(){
+    var c = chosen();
+    var lab = el("ix-label");
+    if(!c.length){ lab.textContent = "Select vector indexes\u2026"; lab.classList.add("placeholder"); }
+    else if(c.length === 1){ lab.textContent = c[0].replace(/^(sql|sparql):/, ""); lab.classList.remove("placeholder"); }
+    else { lab.textContent = c.length + " indexes selected"; lab.classList.remove("placeholder"); }
+  }
+  // Every tickable box on the surface currently shown.
+  function surfaceBoxes(){
+    var b = boxes(), out = [], i;
+    for(i = 0; i < b.length; i++){ if(b[i].getAttribute("data-side") === side()) out.push(b[i]); }
+    return out;
+  }
+  function allTicked(){
+    var sb = surfaceBoxes(), i;
+    if(!sb.length) return false;
+    for(i = 0; i < sb.length; i++){ if(!sb[i].checked) return false; }
+    return true;
+  }
+  window.vdIxAll = function(){
+    var sb = surfaceBoxes(), on = !allTicked(), i;
+    for(i = 0; i < sb.length; i++){ sb[i].checked = on; }
+    window.vdIxCount();
+  };
+  window.vdIxCount = function(){
+    var n = chosen().length, btn = el("ix-all"), sb = surfaceBoxes();
+    el("ix-count").textContent = n
+      ? (n + (n === 1 ? " index selected" : " indexes selected"))
+      : "Nothing selected";
+    btn.disabled = (sb.length === 0);
+    btn.textContent = allTicked() ? "Clear" : "Select all";
+  };
+  // Switching surface clears the other side's ticks: a search cannot combine
+  // SQL and SPARQL indexes yet, and leaving stale ticks hidden would submit
+  // a mix the server then has to refuse.
+  window.vdIxSide = function(s){
+    var prev = side();
+    el("ix-side").value = s;
+    // Actually changing surface drops the committed selection as well as the
+    // ticks: leaving "sql:X" in the hidden field while side says sparql would
+    // submit a mix the server has to refuse. Called with the current surface on
+    // load, where prev === s, so the server-rendered selection survives.
+    if(s !== prev) el("ix-value").value = "";
+    var b = boxes(), i;
+    for(i = 0; i < b.length; i++){ if(b[i].getAttribute("data-side") !== s) b[i].checked = false; }
+    var rows = document.querySelectorAll("#ix-modal [data-grp]");
+    for(i = 0; i < rows.length; i++){ rows[i].classList.toggle("hidden", rows[i].getAttribute("data-grp") !== s); }
+    el("ix-seg-sql").classList.toggle("active", s === "sql");
+    el("ix-seg-sparql").classList.toggle("active", s === "sparql");
+    window.vdIxCount();
+    label();
+  };
+  window.vdIxOpen = function(){ el("ix-modal").classList.remove("hidden"); window.vdIxCount(); };
+  window.vdIxClose = function(){ el("ix-modal").classList.add("hidden"); };
+  window.vdIxBackdrop = function(ev){ if(ev.target && ev.target.id === "ix-modal") window.vdIxClose(); };
+  window.vdIxApply = function(){
+    el("ix-value").value = chosen().join("|");
+    label();
+    window.vdIxClose();
+  };
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Escape") window.vdIxClose(); });
+  window.addEventListener("DOMContentLoaded", function(){
+    window.vdIxSide(side());
+    label();
+  });
+})();
+</script>
+<?vsp DB.DBA.VVEC_FOOT (); ?>
