@@ -47,7 +47,7 @@ NOT_A_TEST="check_test_registration clean epilog go_functions lowerall prepare_t
 #  (Tcl, JDBC, OLE DB, MS DTC), very long benchmarks, or platform-specific.
 #  Moving one of these into testall.sh is a decision, not an oversight -- which
 #  is exactly the distinction this list records.
-NOT_RUN_BY_DEFAULT="bpel byteorder gtkbench inprocess large_db oledb
+NOT_RUN_BY_DEFAULT="bpel gtkbench inprocess large_db oledb
                     tblob_recode tcl tclstart tclstop tdatetime tdbp tdconv
                     tdrop test_cluster test_fn test_ldp test_run tjdbc
                     toptiremote tp tproviders treplh tsqllite tstriping tsxml

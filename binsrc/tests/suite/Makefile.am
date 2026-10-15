@@ -25,7 +25,6 @@ TOP=@TOP@
 
 check_SCRIPTS = \
 	bpel.sh \
-	byteorder.sh \
 	check_test_registration.sh \
 	clean.sh \
 	epilog.sh \
