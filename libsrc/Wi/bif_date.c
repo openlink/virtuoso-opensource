@@ -876,34 +876,44 @@ bif_dt_set_tz (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-string_to_dt_box (char * str)
+string_to_dt_box_1 (char * str, caddr_t * err_ret)
 {
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   caddr_t err_msg = NULL;
+  if (err_ret)
+    *err_ret = NULL;
   odbc_string_to_any_dt (str, res, &err_msg);
   if (NULL != err_msg)
     {
       caddr_t err = srv_make_new_error ("22007", "DT006", "Cannot convert %s to datetime : %s", str, err_msg);
       dk_free_box (err_msg);
       dk_free_box (res);
-      sqlr_resignal (err);
+      if (!err_ret)
+	sqlr_resignal (err);
+      *err_ret = err;
+      return NULL;
     }
   return res;
 }
 
 
 caddr_t
-string_to_time_dt_box (char * str)
+string_to_time_dt_box_1 (char * str, caddr_t * err_ret)
 {
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   caddr_t err_msg = NULL;
+  if (err_ret)
+    *err_ret = NULL;
   odbc_string_to_time_dt (str, res, &err_msg);
   if (NULL != err_msg)
     {
       caddr_t err = srv_make_new_error ("22007", "DT011", "Cannot convert %s to time : %s", str, err_msg);
       dk_free_box (err_msg);
       dk_free_box (res);
-      sqlr_resignal (err);
+      if (!err_ret)
+	sqlr_resignal (err);
+      *err_ret = err;
+      return NULL;
     }
   return res;
 }

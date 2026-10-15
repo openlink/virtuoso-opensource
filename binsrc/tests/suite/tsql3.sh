@@ -269,6 +269,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tquietcast_datetime
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tquietcast_datetime.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: QUIETCAST of datetime -- tquietcast_datetime.sql"
+    exit 1
+fi
+
 
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
