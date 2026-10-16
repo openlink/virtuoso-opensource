@@ -2889,7 +2889,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (inout ses any, in 
           http ('"', ses);
           return;
         }
-      http_nt_object (val, ses, 1);
+      http_rdf_object (val, ses, 21, 1);
       return;
     }
   s_val := rdf_triple_subject_impl (tt_iri);
@@ -2925,7 +2925,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (inout ses any, in 
           http ('"', ses);
           return;
         }
-      http_nt_object (val, ses, 1);
+      http_rdf_object (val, ses, 21, 1);
       return;
     }
 emit_tt:
@@ -2963,14 +2963,14 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW (inout ses any, inout metas
       val := row[varctr];
       if (varctr > 0)
         http('\t', ses);
-      -- http_nt_object tells a literal from an IRI by its type, where
-      -- SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM guesses it from the text of the
-      -- components of a triple term; it leaves a triple term or a TRIPLE()
-      -- vector (flag 256, returns 2) to the latter.  Inline: a procedure
+      -- http_rdf_object tells a literal from an IRI by its type and escapes it
+      -- for TSV (21), where SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM guesses it from
+      -- the text of the components of a triple term; it leaves a triple term or
+      -- a TRIPLE() vector (flag 256, returns 2) to the latter.  Inline: a procedure
       -- call per value would double the cost of a row.
       if (val is not null)
         {
-          if (2 = http_nt_object (val, ses, 257))
+          if (2 = http_rdf_object (val, ses, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
         }
     }
@@ -3805,7 +3805,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_STREAM_ROW (inout ses any, inout meta
       -- As in SPARQL_RESULTS_TSV_WRITE_ROW
       if (val is not null)
         {
-          if (2 = http_nt_object (val, ses, 257))
+          if (2 = http_rdf_object (val, ses, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
         }
     }

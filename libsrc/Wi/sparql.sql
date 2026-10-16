@@ -5065,7 +5065,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
       http ('\t', ses);
       http_nt_object(triples[tctr][1], ses);
       http ('\t', ses);
-      http_nt_object(triples[tctr][2], ses, 1);
+      http_rdf_object(triples[tctr][2], ses, 21, 1);
       http ('\n', ses);
     }
 }
@@ -7094,7 +7094,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
       -- As in DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW
       if (val is not null)
         {
-          if (2 = http_nt_object (val, _env, 257))
+          if (2 = http_rdf_object (val, _env, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (_env, val);
         }
     }
