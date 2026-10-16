@@ -4275,3 +4275,120 @@ ECHO BOTH ": bug#19667 row-by-row TOP through a cursor over many fetches: got " 
 __dbf_set ('enable_vec', 1);
 
 ECHO BOTH "COMPLETED: bug#19667 row-by-row GROUP BY, DISTINCT and TOP without a sort WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- Sibling subqueries sharing a call on an outer column.
+--
+-- A call such as ABS (V) that two subqueries of one query both use must be
+-- computed by each subquery, or once by the enclosing query.  A value one
+-- subquery computes for itself is not valid inside another: in a vectored
+-- plan the second read the first one's slot with the wrong rows, and two
+-- NOT EXISTS dropped every row.  Arithmetic (V + 0) is regenerated in every
+-- subquery and was never affected; the guards at the end are right before
+-- and after the fix.
+--
+-- Each check returns one tagged value, so a single $IF decides it ($LIF
+-- follows only the topmost $IF) and a failed statement cannot pass on the
+-- previous check's $LAST[1].
+--
+
+ECHO BOTH "\nSTARTED: sibling subqueries sharing a call on an outer column\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE SSC_A IF EXISTS;
+DROP TABLE SSC_B IF EXISTS;
+DROP TABLE SSC_P1 IF EXISTS;
+DROP TABLE SSC_P2 IF EXISTS;
+CREATE TABLE SSC_A (ID INT PRIMARY KEY, V INT);
+CREATE TABLE SSC_B (ID INT PRIMARY KEY, V ANY);
+CREATE TABLE SSC_P1 (K INT PRIMARY KEY);
+CREATE TABLE SSC_P2 (K INT PRIMARY KEY);
+INSERT INTO SSC_A VALUES (1, 1);
+INSERT INTO SSC_A VALUES (2, 2);
+INSERT INTO SSC_A VALUES (3, 3);
+INSERT INTO SSC_A VALUES (4, 4);
+INSERT INTO SSC_B VALUES (1, 5);
+INSERT INTO SSC_P1 VALUES (1);
+INSERT INTO SSC_P2 VALUES (1);
+INSERT INTO SSC_P2 VALUES (6);
+
+-- V is 1..4; P1 holds 1, P2 holds 1 and 6.
+
+SELECT SPRINTF ('ne2_%d', COUNT (*)) FROM SSC_A
+ WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V))
+   AND NOT EXISTS (SELECT 1 FROM SSC_P2 WHERE K = ABS (V));
+ECHO BOTH $IF $EQU $LAST[1] ne2_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": two NOT EXISTS on ABS (V): got " $LAST[1] ", expected ne2_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('same2_%d', COUNT (*)) FROM SSC_A
+ WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V))
+   AND NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V));
+ECHO BOTH $IF $EQU $LAST[1] same2_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": the same NOT EXISTS twice: got " $LAST[1] ", expected same2_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('or_%d', COUNT (*)) FROM SSC_A
+ WHERE NOT (EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V))
+            OR EXISTS (SELECT 1 FROM SSC_P2 WHERE K = ABS (V)));
+ECHO BOTH $IF $EQU $LAST[1] or_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NOT (EXISTS OR EXISTS) on ABS (V): got " $LAST[1] ", expected or_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('exne_%d', COUNT (*)) FROM SSC_A
+ WHERE EXISTS (SELECT 1 FROM SSC_P2 WHERE K = ABS (V) + 5)
+   AND NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V));
+ECHO BOTH $IF $EQU $LAST[1] exne_0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": EXISTS and NOT EXISTS on ABS (V): got " $LAST[1] ", expected exne_0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('notin2_%d', COUNT (*)) FROM SSC_A
+ WHERE ABS (V) NOT IN (SELECT K FROM SSC_P1)
+   AND ABS (V) NOT IN (SELECT K FROM SSC_P2);
+ECHO BOTH $IF $EQU $LAST[1] notin2_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": two NOT IN on ABS (V): got " $LAST[1] ", expected notin2_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('scalar_%d_%d', COUNT (*), COALESCE (SUM (C), -1)) FROM
+  (SELECT V, (SELECT COUNT (*) FROM SSC_P2 WHERE K = ABS (V)) AS C FROM SSC_A
+    WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V))) X;
+ECHO BOTH $IF $EQU $LAST[1] scalar_3_0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NOT EXISTS, then a scalar subquery on ABS (V): got " $LAST[1] ", expected scalar_3_0 (rows, sum) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('union_%d_%d', COUNT (*), COALESCE (SUM (N), -1)) FROM
+  (SELECT DISTINCT DT.N AS N FROM
+     (SELECT V AS N FROM SSC_A UNION ALL SELECT V AS N FROM SSC_B) DT
+    WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (DT.N))
+      AND NOT EXISTS (SELECT 1 FROM SSC_P2 WHERE K = ABS (DT.N))) X;
+ECHO BOTH $IF $EQU $LAST[1] union_4_14 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": DISTINCT over UNION ALL, two NOT EXISTS: got " $LAST[1] ", expected union_4_14 (rows, sum) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- Guards: right before the fix, and must stay right.
+
+SELECT SPRINTF ('ne1_%d', COUNT (*)) FROM SSC_A
+ WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V));
+ECHO BOTH $IF $EQU $LAST[1] ne1_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": guard, one NOT EXISTS on ABS (V): got " $LAST[1] ", expected ne1_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('artm2_%d', COUNT (*)) FROM SSC_A
+ WHERE NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = V + 0)
+   AND NOT EXISTS (SELECT 1 FROM SSC_P2 WHERE K = V + 0);
+ECHO BOTH $IF $EQU $LAST[1] artm2_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": guard, two NOT EXISTS on V + 0: got " $LAST[1] ", expected artm2_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- The enclosing query computes ABS (V) before the subquery and reads it
+-- again after: the subquery must not replace the enclosing query's value.
+SELECT SPRINTF ('outer_%d_%d', COUNT (*), COALESCE (SUM (V), -1)) FROM SSC_A
+ WHERE ABS (V) <> 3
+   AND NOT EXISTS (SELECT 1 FROM SSC_P1 WHERE K = ABS (V))
+   AND ABS (V) <> 4;
+ECHO BOTH $IF $EQU $LAST[1] outer_1_2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": guard, the enclosing query's ABS (V) around a subquery: got " $LAST[1] ", expected outer_1_2 (rows, sum) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: sibling subqueries sharing a call on an outer column WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
