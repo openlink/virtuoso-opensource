@@ -4428,3 +4428,35 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": correlated outer join subquery in HAVING NOT BETWEEN, no crash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: correlated subquery in BETWEEN WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- An OR term after an unknown one was emitted a second time and read the
+-- slots of its first emission, which the unknown rows never set.
+--
+
+ECHO BOTH "\nSTARTED: OR after an unknown term\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE ORU_T IF EXISTS;
+CREATE TABLE ORU_T (V1 INTEGER PRIMARY KEY, V2 INTEGER);
+INSERT INTO ORU_T VALUES (1, 5);
+INSERT INTO ORU_T VALUES (2, 50);
+INSERT INTO ORU_T VALUES (3, 500);
+
+SELECT COUNT (*) FROM ORU_T WHERE (SELECT MAX (V2) FROM ORU_T T1 WHERE T1.V1 = ORU_T.V1 AND T1.V2 > 1000) < 16 OR (SELECT MAX (V2) FROM ORU_T T1 WHERE T1.V1 = ORU_T.V1) > 10;
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": unknown OR correlated subquery in WHERE: got " $LAST[1] ", expected 2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT V1 FROM ORU_T GROUP BY V1 HAVING (SELECT MAX (V2) FROM ORU_T T1 WHERE T1.V1 = ORU_T.V1 AND T1.V2 > 1000) < 16 OR (SELECT MAX (V2) FROM ORU_T T1 WHERE T1.V1 = ORU_T.V1) > 100;
+ECHO BOTH $IF $EQU $ROWCNT 1 $IF $EQU $LAST[1] 3 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": unknown OR correlated subquery in HAVING: " $ROWCNT " rows, last " $LAST[1] ", expected 1 row, 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT COUNT (*) FROM ORU_T WHERE NOT ((SELECT MAX (V2) FROM ORU_T T1 WHERE T1.V1 = ORU_T.V1 AND T1.V2 > 1000) < 16 OR V2 < 10);
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NOT (unknown OR false) stays unknown: got " $LAST[1] ", expected 0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: OR after an unknown term WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

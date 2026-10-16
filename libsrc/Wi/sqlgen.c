@@ -2996,12 +2996,13 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx != n_terms - 1)
 	    {
 	      jmp_label_t temp_fail = sqlc_new_label (sc);
-	      jmp_label_t term_unkn = sqlc_new_label (sc);
+	      jmp_label_t term_unkn = fail == unk ? temp_fail : sqlc_new_label (sc); /* a re-emitted term reads slots its path never set */
 	      if (inx == 2)
 		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, term_unkn);
 	      cv_label (code, temp_fail);
-	      t_set_push (&unkn_labels, (void *)(ptrlong) term_unkn);
+	      if (term_unkn != temp_fail)
+		t_set_push (&unkn_labels, (void *)(ptrlong) term_unkn);
 	    }
 	  else
 	    {
