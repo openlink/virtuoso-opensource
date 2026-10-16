@@ -917,14 +917,28 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
       else if (DV_DATETIME == cha->cha_sqt[nth_col].sqt_dtp)
 	{
 	  if (!is_null)
-	  GB_HAS_VALUE (ha, row, nth_col);
-	  row[nth_col + 1] = (ptrlong) cha_dt (cha, (db_buf_t) val);
+	    {
+	      GB_HAS_VALUE (ha, row, nth_col);
+	      row[nth_col + 1] = (ptrlong) cha_dt (cha, (db_buf_t) val);
+	    }
+	  else
+	    {
+	      GB_NO_VALUE (ha, row, nth_col);
+	      row[nth_col + 1] = 0;
+	    }
 	}
       else
 	{
 	  if (!is_null)
-	  GB_HAS_VALUE (ha, row, nth_col);
-	  row[nth_col + 1] = val;
+	    {
+	      GB_HAS_VALUE (ha, row, nth_col);
+	      row[nth_col + 1] = val;
+	    }
+	  else
+	    {
+	      GB_NO_VALUE (ha, row, nth_col);
+	      row[nth_col + 1] = 0;
+	    }
 	}
     }
   return row;
