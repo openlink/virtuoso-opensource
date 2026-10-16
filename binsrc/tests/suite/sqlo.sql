@@ -3852,3 +3852,426 @@ ECHO BOTH ": case sinv-exists - a declared IN variable is still passed from the 
 drop function DB.DBA.SQLO_SINV_SENDS_ITS_VARS;
 
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- bug#19661: EXISTS in a select without FROM.
+--
+-- The enclosing query is single-state, so the EXISTS subquery has no set
+-- number; the vectored EXISTS read it as a NULL slot and crashed once a row
+-- matched.
+--
+
+ECHO BOTH "\nSTARTED: bug#19661 EXISTS in a select without FROM\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE REPRO_EX IF EXISTS;
+CREATE TABLE REPRO_EX (K INT PRIMARY KEY, N VARCHAR);
+INSERT INTO REPRO_EX VALUES (1, 'x');
+
+SELECT SPRINTF ('ex_%d', CASE WHEN EXISTS (SELECT 1 FROM REPRO_EX WHERE K = 1) THEN 1 ELSE 0 END);
+ECHO BOTH $IF $EQU $LAST[1] ex_1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19661 EXISTS matching a row: got " $LAST[1] ", expected ex_1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('noex_%d', CASE WHEN EXISTS (SELECT 1 FROM REPRO_EX WHERE K = 2) THEN 1 ELSE 0 END);
+ECHO BOTH $IF $EQU $LAST[1] noex_0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19661 EXISTS matching no row: got " $LAST[1] ", expected noex_0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('nex_%d', CASE WHEN NOT EXISTS (SELECT 1 FROM REPRO_EX WHERE K = 1) THEN 1 ELSE 0 END);
+ECHO BOTH $IF $EQU $LAST[1] nex_0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19661 NOT EXISTS matching a row: got " $LAST[1] ", expected nex_0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT SPRINTF ('nested_%d', CASE WHEN EXISTS (SELECT 1 FROM REPRO_EX WHERE K = 1 AND EXISTS (SELECT 1 FROM REPRO_EX WHERE N = 'x')) THEN 1 ELSE 0 END);
+ECHO BOTH $IF $EQU $LAST[1] nested_1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19661 nested EXISTS: got " $LAST[1] ", expected nested_1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: bug#19661 EXISTS in a select without FROM WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- bug#19665: a loop, backward GOTO or exception handler in vectored code.
+--
+-- The vectored interpreter ran a handler as an aggregate (a FOR loop over a
+-- query declares handlers), which crashed the server, and ran a loop body or a
+-- backward GOTO once.  Such code is now refused with VEC36.
+--
+
+ECHO BOTH "\nSTARTED: bug#19665 loops and handlers in vectored code\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE VL_T IF EXISTS;
+CREATE TABLE VL_T (ID INTEGER PRIMARY KEY, NAME VARCHAR);
+INSERT INTO VL_T VALUES (1, 'a');
+INSERT INTO VL_T VALUES (2, 'b');
+INSERT INTO VL_T VALUES (3, 'c');
+
+create procedure VL_X1 ()
+{
+  vectored;
+  declare r integer;
+  r := 0;
+  for (select ID as n from VL_T) do r := r + n;
+  return r;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a FOR loop accumulator refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select VL_X1 ();
+ECHO BOTH $IF $EQU $STATE 42001 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 a refused procedure does not exist STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X2 ()
+{
+  vectored;
+  declare i, r integer;
+  i := 0;
+  r := 0;
+  while (i < 3)
+    {
+      r := r + i;
+      i := i + 1;
+    }
+  return r;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a WHILE refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X3 ()
+{
+  vectored;
+  declare exit handler for sqlstate '*' { return -1; };
+  return (select count (*) from VL_T);
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, an exception handler refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X4 ()
+{
+  vectored;
+  declare i integer;
+  i := 0;
+again:
+  i := i + 1;
+  if (i < 3)
+    goto again;
+  return i;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a backward GOTO refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X5 ()
+{
+  vectored;
+  declare r integer;
+  r := 0;
+  foreach (integer x in vector (1, 2, 3)) do r := r + x;
+  return r;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a FOREACH refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X6 ()
+{
+  vectored;
+  declare i, r integer;
+  r := 0;
+  for (i := 0; i < 3; i := i + 1)
+    r := r + i;
+  return r;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a C-style for refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X7 ()
+{
+  declare arr any;
+  arr := vector (1, 2, 3);
+  for vectored (in x integer := arr)
+    {
+      declare continue handler for sqlstate '*' { ; };
+      x := x + 1;
+    }
+  return 1;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 FOR VECTORED with a handler refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_X8 ()
+{
+  declare arr any;
+  arr := vector (1, 2, 3);
+  for vectored (in x integer := arr)
+    {
+      declare i integer;
+      i := 0;
+      while (i < 2)
+        i := i + 1;
+    }
+  return 1;
+}
+;
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 FOR VECTORED with a WHILE refused STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P1 ()
+{
+  vectored;
+  declare r integer;
+  select count (*) into r from VL_T;
+  return r;
+}
+;
+select VL_P1 ();
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, select into: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P2 ()
+{
+  vectored;
+  declare n integer;
+  declare cr cursor for select ID from VL_T order by ID;
+  open cr;
+  fetch cr into n;
+  close cr;
+  return n;
+}
+;
+select VL_P2 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, one fetch from a cursor: got " $LAST[1] ", expected 1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P3 ()
+{
+  vectored;
+  declare r integer;
+  r := 0;
+  not vectored
+    {
+      declare i integer;
+      i := 0;
+      while (i < 3)
+        {
+          r := r + i;
+          i := i + 1;
+        }
+    }
+  return r;
+}
+;
+select VL_P3 ();
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a loop in a not vectored block: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P4 ()
+{
+  declare r, i integer;
+  declare exit handler for sqlstate '*' { return -1; };
+  r := 0;
+  for (select ID as n from VL_T) do r := r + n;
+  i := 0;
+  while (i < 2)
+    {
+      r := r + 1;
+      i := i + 1;
+    }
+  return r;
+}
+;
+select VL_P4 ();
+ECHO BOTH $IF $EQU $LAST[1] 8 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 not vectored, a FOR loop, a handler and a WHILE: got " $LAST[1] ", expected 8 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P5 ()
+{
+  declare arr, r any;
+  arr := vector (1, 2, 3);
+  for vectored (in x integer := arr, out r := y)
+    {
+      declare y integer;
+      y := x + 1;
+    }
+  return r[2];
+}
+;
+select VL_P5 ();
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 FOR VECTORED without a loop: got " $LAST[1] ", expected 4 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P6 ()
+{
+  vectored;
+  declare i integer;
+  i := 1;
+  if (i > 0)
+    goto done;
+  i := 5;
+done:
+  return i;
+}
+;
+select VL_P6 ();
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 vectored, a forward GOTO: got " $LAST[1] ", expected 1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure VL_P7 ()
+{
+  declare arr any;
+  declare i, r integer;
+  arr := vector (1);
+  for vectored (in x integer := arr)
+    {
+      x := x + 1;
+    }
+  i := 0;
+  r := 0;
+  while (i < 3)
+    {
+      r := r + 1;
+      i := i + 1;
+    }
+  return r;
+}
+;
+select VL_P7 ();
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19665 a WHILE after FOR VECTORED: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: bug#19665 loops and handlers in vectored code WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- bug#19667: with vectoring off a GROUP BY or DISTINCT read a chash with the
+-- vectored reader, an inlined derived table needed a cluster set ctr, a
+-- derived TOP without a sort ended with a reset code nobody handled, and a
+-- TOP without a sort sent to a client sent every row.
+-- The table is row-wise: row by row can not read a column-wise index.
+--
+
+ECHO BOTH "\nSTARTED: bug#19667 row-by-row GROUP BY, DISTINCT and TOP without a sort\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE RBR_T IF EXISTS;
+CREATE TABLE RBR_T (K INTEGER, V VARCHAR, PRIMARY KEY (K) NOT COLUMN);
+create procedure RBR_FILL ()
+{
+  declare k integer;
+  for (k := 1; k <= 1000; k := k + 1)
+    insert into RBR_T values (k, sprintf ('v%d', mod (k, 3)));
+}
+;
+RBR_FILL ();
+
+__dbf_set ('enable_vec', 0);
+
+SELECT V, COUNT (*) FROM RBR_T GROUP BY V ORDER BY V;
+ECHO BOTH $IF $EQU $ROWCNT 3 $IF $EQU $LAST[2] 333 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row GROUP BY: " $ROWCNT " rows, last " $LAST[2] ", expected 3 rows, last count 333 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT TOP 3 K FROM RBR_T ORDER BY K;
+ECHO BOTH $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 3 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row TOP without a sort: " $ROWCNT " rows, last " $LAST[1] ", expected 3 rows, last 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT TOP 2, 3 K FROM RBR_T ORDER BY K;
+ECHO BOTH $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 5 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row TOP with a skip, without a sort: " $ROWCNT " rows, last " $LAST[1] ", expected 3 rows, last 5 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT X.K FROM (SELECT TOP 3 K FROM RBR_T ORDER BY K) X;
+ECHO BOTH $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 3 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row a derived table whose TOP needs no sort, its rows: " $ROWCNT " rows, last " $LAST[1] ", expected 3 rows, last 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT COUNT (*) FROM (SELECT V, COUNT (*) AS C FROM RBR_T GROUP BY V) X;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row GROUP BY in a derived table, counted: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT COUNT (*) FROM (SELECT DISTINCT V FROM RBR_T) X;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row DISTINCT in a derived table, counted: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT COUNT (*) FROM (SELECT TOP 3 K FROM RBR_T ORDER BY K) X;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row a derived table whose TOP needs no sort, counted: got " $LAST[1] ", expected 3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure RBR_EXEC (in q varchar) returns varchar
+{
+  declare st, msg varchar;
+  declare md, rows any;
+  st := '00000';
+  exec (q, st, msg, vector (), 0, md, rows);
+  if (st <> '00000')
+    return st;
+  return sprintf ('%d_%d', length (rows), rows[length (rows) - 1][0]);
+}
+;
+
+create procedure RBR_CURSOR () returns varchar
+{
+  declare n, k, last_k integer;
+  declare cr cursor for select top 250 K from RBR_T order by K;
+  n := 0;
+  last_k := 0;
+  whenever not found goto done;
+  open cr;
+  while (1)
+    {
+      fetch cr into k;
+      n := n + 1;
+      last_k := k;
+    }
+done:
+  close cr;
+  return sprintf ('%d_%d', n, last_k);
+}
+;
+
+SELECT RBR_EXEC ('select top 3 K as kk from RBR_T order by K');
+ECHO BOTH $IF $EQU $LAST[1] 3_3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row TOP without a sort through exec (): got " $LAST[1] ", expected 3_3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT RBR_EXEC ('select top 2, 3 K as kk from RBR_T order by K');
+ECHO BOTH $IF $EQU $LAST[1] 3_5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row TOP with a skip through exec (): got " $LAST[1] ", expected 3_5 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT RBR_CURSOR ();
+ECHO BOTH $IF $EQU $LAST[1] 250_250 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": bug#19667 row-by-row TOP through a cursor over many fetches: got " $LAST[1] ", expected 250_250 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+__dbf_set ('enable_vec', 1);
+
+ECHO BOTH "COMPLETED: bug#19667 row-by-row GROUP BY, DISTINCT and TOP without a sort WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
