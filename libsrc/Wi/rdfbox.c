@@ -2329,6 +2329,8 @@ rdf_ebv_int_of_plain_box (caddr_t val)
     }
 }
 
+int32 sparql_strict_langstring_ebv = 0;
+
 caddr_t
 bif_sparql_ebv_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname, int is_pure)
 {
@@ -2363,8 +2365,8 @@ bif_sparql_ebv_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, con
               return rb_new_bool (0);
             return NEW_DB_NULL;
           }
-        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
-        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        /* SPARQL 1.2 makes EBV of rdf:langString / rdf:dirLangString a type error, opt-in only */
+        if (sparql_strict_langstring_ebv && RDF_BOX_DEFAULT_LANG != rb->rb_lang)
           return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rb_ebv_of_plain_box (rb->rb_box);
@@ -2426,8 +2428,8 @@ bif_sparql_ebv_int_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
               return (caddr_t)((ptrlong)(0));
             return NEW_DB_NULL;
           }
-        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
-        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        /* SPARQL 1.2 makes EBV of rdf:langString / rdf:dirLangString a type error, opt-in only */
+        if (sparql_strict_langstring_ebv && RDF_BOX_DEFAULT_LANG != rb->rb_lang)
           return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rdf_ebv_int_of_plain_box (rb->rb_box);

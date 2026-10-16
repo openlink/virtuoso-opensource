@@ -4023,6 +4023,8 @@ sparp_cast_fv_dt_to_bool4way (ccaddr_t fv, ccaddr_t dt)
   return '?';
 }
 
+extern int32 sparql_strict_langstring_ebv;
+
 sparp_bool4way_t
 sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr)
 {
@@ -4032,12 +4034,12 @@ sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr)
     return '?';
   if (rvr->rvrRestrictions & SPART_VARR_IS_REF)
     return 'F'; /* proper EBV would be type error */
-  if (NULL != rvr->rvrLanguage)
-    return 'F'; /* proper EBV would be type error */
+  if ((NULL != rvr->rvrLanguage) && sparql_strict_langstring_ebv)
+    return 'U'; /* SPARQL 1.2 EBV of rdf:langString is type error */
   if (rvr->rvrRestrictions & SPART_VARR_FIXED)
     {
       ccaddr_t fv = SPAR_LIT_OR_QNAME_VAL ((SPART *)(rvr->rvrFixedValue));
-      ccaddr_t dt = rvr->rvrDatatype;
+      ccaddr_t dt = (NULL != rvr->rvrLanguage) ? NULL : rvr->rvrDatatype;
       return sparp_cast_fv_dt_to_bool4way (fv, dt);
     }
   return '?';
@@ -4056,7 +4058,11 @@ sparp_cast_var_or_lit_to_bool4way (sparp_t *sparp, SPART *tree)
       return 'F'; /* proper EBV would be type error */
     case SPAR_LIT:
       if (NULL != tree->_.lit.language)
-        return 'F'; /* proper EBV would be type error */
+        {
+          if (sparql_strict_langstring_ebv)
+            return 'U'; /* SPARQL 1.2 EBV of rdf:langString is type error */
+          return sparp_cast_fv_dt_to_bool4way (tree->_.lit.val, NULL);
+        }
       return sparp_cast_fv_dt_to_bool4way (tree->_.lit.val, tree->_.lit.datatype);
     }
   return '?';
