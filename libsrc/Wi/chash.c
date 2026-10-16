@@ -502,7 +502,6 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
     db_buf_t temp_space, db_buf_t any_temp, int *any_temp_fill, dtp_t * nulls, int clear_nulls)
 {
   /* accumulate hash nos and optionally change col to anies */
-  int dc_temp_anies = 0;
   int64 *temp = NULL;
   int sets[ARTM_VEC_LEN];
   int64 *arr = NULL;
@@ -623,11 +622,8 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
 	  arr = temp;
 	}
       dc_boxes_to_anies (dc, (caddr_t *) arr, last_set - first_set);
-      dc_temp_anies = 1;
     }
   chash_array (arr, hash_no, chdtp, first_set, last_set, elt_sz);
-  if (dc_temp_anies)
-    dc_reset_alloc (dc);
   return arr;
 }
 
