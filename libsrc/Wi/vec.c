@@ -40,7 +40,12 @@
 #include "datesupp.h"
 
 
+#ifdef DEBUG_VEC_SSL
+#define SET_NOS_N(s) (PREDICT_TRUE(s >= 0 && s < set_nos_len) ? set_nos[s] : \
+    GPF_T1 ("SET_NOS_N: ssl ref chain index out of range, bad plan or stale vectorized state, please report query to support"))
+#else
 #define SET_NOS_N(s) (PREDICT_TRUE(s >= 0 && s < set_nos_len) ? set_nos[s] : 0)
+#endif
 
 
 int64

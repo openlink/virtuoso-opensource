@@ -686,6 +686,14 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
       if (SSL_REF == ssl->ssl_type)
 	row_no = sslr_set_no (qst, ssl, row_no);
       dv = ((db_buf_t *)arg->dc_values)[row_no];
+      if (!is_boxes && !dv)
+	{
+	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
+	  if (DCT_BOXES & dc->dc_type)
+	    dc->dc_any_null = 1;
+	  dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
+	  continue;
+	}
       dtp = is_boxes ? DV_TYPE_OF (dv) : dv[0];
       if (DV_RDF_ID == dtp || DV_RDF_ID_8 == dtp
         || (DV_RDF == dtp &&
