@@ -3587,20 +3587,73 @@ sqlo_trans_dt_2_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
 }
 
 
+static int
+sqlo_trans_start_is_outer (df_elt_t * dfe, df_elt_t * pred, dk_set_t trans_cols)
+{
+  /* returns true if eq pred is from outer scope, such should not drive trans direction via __all_eq */
+  op_table_t * trans_parent = dfe->_.sub.ot->ot_super;
+  df_elt_t * trans_start = NULL;
+  if (!trans_parent)
+    return 0;
+  if (!pred || (DFE_BOP_PRED != pred->dfe_type && DFE_BOP != pred->dfe_type))
+    return 0;
+  if (BOP_EQ != pred->_.bin.op)
+    return 0;
+  DO_SET (ST *, col, &trans_cols)
+    {
+      if (!DFE_SHORTCUT (pred->_.bin.left) && box_equal ((cbox_t)col, (cbox_t)pred->_.bin.left->dfe_tree))
+        {
+          trans_start = pred->_.bin.right;
+          break;
+        }
+      if (!DFE_SHORTCUT (pred->_.bin.right) && box_equal ((cbox_t)col, (cbox_t)pred->_.bin.right->dfe_tree))
+        {
+          trans_start = pred->_.bin.left; 
+          break;
+        }
+    }
+  END_DO_SET ();
+  if (DFE_SHORTCUT (trans_start) || !trans_start->dfe_tables)
+    return 0;
+  DO_SET (op_table_t *, ot, &trans_start->dfe_tables)
+    {
+      if (ot->ot_super != trans_parent)
+        return 1;
+    }
+  END_DO_SET ();
+  return 0;
+}
+
 void
 sqlo_place_trans_dt (sqlo_t * so, df_elt_t * dfe, dk_set_t preds)
 {
   /* see whether in given, out given or both.  Make importable pred lists for both.  Fill in trans_layout */
   dk_set_t in_cols, out_cols;
-  dk_set_t in = NULL;
+  dk_set_t in = NULL, all_trans_cols, test_in;
   ST * trans, * save;
   trans = dfe->_.sub.ot->ot_trans;
   in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.in);
   out_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.out);
+  all_trans_cols = dk_set_conc (t_set_copy (in_cols), t_set_copy (out_cols));
+  /* first look at local input cols, only if they do we defer from outer scope, we never empty in/out,
+   * so if can't find local trans start we fail in old behaviour */ 
+  test_in = t_set_copy (in_cols);
   DO_SET (df_elt_t *, join, &preds)
     {
-      sqlo_rm_if_eq (&in_cols, join);
-      sqlo_rm_if_eq (&out_cols, join);
+      if (!sqlo_trans_start_is_outer (dfe, join, all_trans_cols))
+        sqlo_rm_if_eq (&test_in, join);
+    }
+  END_DO_SET ();
+  DO_SET (df_elt_t *, join, &preds)
+    {
+      /* if local start exists we defer from outer scope */
+      if (!test_in && sqlo_trans_start_is_outer (dfe, join, all_trans_cols))
+        ; /* defer to after_join */
+      else
+        {
+          sqlo_rm_if_eq (&in_cols, join);
+          sqlo_rm_if_eq (&out_cols, join);
+        }
     }
   END_DO_SET();
   if (!in_cols && !out_cols)
