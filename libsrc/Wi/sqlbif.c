@@ -3409,6 +3409,9 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 #define DV_STRING_MAYBE_UTF8(a) (BF_UTF8 == box_flags(a) || BF_IRI == box_flags(a))
+/* a date or time literal keeps its typed lexical form through box_cast; a
+   duration is turned into its lexical string in the 1st loop below */
+#define RB_IS_DATE(a) (IS_DATE_DTP (DV_TYPE_OF (((rdf_box_t *)a)->rb_box)))
 
 /* Modified by AK 29-OCT-1997 to skip all NULL arguments (i.e.
    the result being exactly like they were empty strings "") */
@@ -3483,7 +3486,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  a = bif_arg_nochecks (qst, args, inx);
 	  dtp1 = DV_TYPE_OF (a);
-          if (DV_RDF == dtp1)
+          if (DV_RDF == dtp1 && !RB_IS_DATE(a))
             {
               dtp1 = DV_TYPE_OF (((rdf_box_t *)a)->rb_box); /* completed in 1st loop */
               a = (((rdf_box_t *)a)->rb_box);
@@ -3568,7 +3571,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
       is_rdf_box = 0;
-      if (DV_RDF == dtp1)
+      if (DV_RDF == dtp1 && !RB_IS_DATE(a))
         {
           rdf_box_t *rb = (rdf_box_t *)a;
           /* completed in 1st loop */
