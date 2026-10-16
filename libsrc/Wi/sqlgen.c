@@ -2297,7 +2297,8 @@ sqlg_inline_sqs (sql_comp_t * sc, df_elt_t * dfe, subq_source_t * sqs, data_sour
   query_t *sqr = sqs->sqs_query;
   data_source_t *qn;
   if (!IS_QN (sqs, subq_node_input) || !sqs->sqs_query ||
-      !enable_inline_sqs || sqr->qr_select_node->sel_top || dfe->_.sub.ot->ot_is_outer)
+      !enable_inline_sqs || sqr->qr_select_node->sel_top || dfe->_.sub.ot->ot_is_outer
+      || !enable_vec) /* inlined subq set ctr is vectored only */
     return (data_source_t *) sqs;
   for (qn = sqr->qr_head_node; qn; qn = qn_next (qn))
     {

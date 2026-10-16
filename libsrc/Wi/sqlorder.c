@@ -198,7 +198,7 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
     ks->ks_always_null = out_always_null;
     if (sc->sc_grouping)
       ks->ks_grouping = sc->sc_grouping;
-    if (is_gb && enable_chash_gb)
+    if (is_gb && enable_chash_gb && enable_vec) /* chash_read_input is vectored only */
       {
 	ts->src_gen.src_input = (qn_input_fn)chash_read_input;
 	ts->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
