@@ -4392,3 +4392,39 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": guard, the enclosing query's ABS (V) around a subquery: got " $LAST[1] ", expected outer_1_2 (rows, sum) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: sibling subqueries sharing a call on an outer column WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+--
+-- BETWEEN copies its left side; with the parse serials kept, a correlated
+-- subquery there was merged with the copy and the second one read the first
+-- one's unset slots, giving wrong rows or a crash on a null dv.
+--
+
+ECHO BOTH "\nSTARTED: correlated subquery in BETWEEN\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+DROP TABLE BTW_T IF EXISTS;
+CREATE TABLE BTW_T (V1 INTEGER PRIMARY KEY, V2 INTEGER);
+INSERT INTO BTW_T VALUES (1, 5);
+INSERT INTO BTW_T VALUES (2, 50);
+INSERT INTO BTW_T VALUES (3, 500);
+
+SELECT V1 FROM BTW_T GROUP BY V1 HAVING (SELECT MAX (V2) FROM BTW_T T1 WHERE T1.V1 = BTW_T.V1) BETWEEN 16 AND 100;
+ECHO BOTH $IF $EQU $ROWCNT 1 $IF $EQU $LAST[1] 2 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": correlated subquery in HAVING BETWEEN: " $ROWCNT " rows, last " $LAST[1] ", expected 1 row, 2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT COUNT (*) FROM BTW_T WHERE (SELECT MAX (V2) FROM BTW_T T1 WHERE T1.V1 = BTW_T.V1) NOT BETWEEN 16 AND 100;
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": correlated subquery in WHERE NOT BETWEEN: got " $LAST[1] ", expected 2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+DROP TABLE BTW_V0 IF EXISTS;
+CREATE TABLE BTW_V0 (V1 TIMESTAMP PRIMARY KEY UNIQUE, V2 NVARCHAR);
+INSERT INTO BTW_V0 (V1, V1) VALUES (+ 0, 0);
+UPDATE BTW_V0 SET V2 = 91121358.000000 WHERE V2 IN (SELECT 255 X00000000, NTILE (STD ()) AS V4 FROM BTW_V0 AS V5 NATURAL JOIN BTW_V0 GROUP BY V1 HAVING (SELECT NTILE (V2) FROM BTW_V0 T1 LEFT JOIN BTW_V0 R ON BTW_V0.V1 = BTW_V0.V2 NATURAL JOIN BTW_V0 WHERE V2 > -128) NOT BETWEEN 16 AND -1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": correlated outer join subquery in HAVING NOT BETWEEN, no crash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED: correlated subquery in BETWEEN WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

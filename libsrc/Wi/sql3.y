@@ -2479,6 +2479,7 @@ between_predicate
 		{ ST *copy = (ST *) t_box_copy_tree ((caddr_t) $1);
 		  ST *low_test;
 		  ST *high_test;
+		  sqlp_new_serials (copy);
 		  BIN_OP (low_test, BOP_LT, $1, $4);
 		  BIN_OP (high_test, BOP_GT, copy, $6);
 		  BIN_OP ($$, BOP_OR, low_test, high_test);
@@ -2487,6 +2488,7 @@ between_predicate
 		{ ST *copy = (ST *) t_box_copy_tree ((caddr_t) $1);
 		  ST *low_test;
 		  ST *high_test;
+		  sqlp_new_serials (copy);
 		  BIN_OP (low_test, BOP_GTE, $1, $3);
 		  BIN_OP (high_test, BOP_LTE, copy, $5);
 		  BIN_OP ($$, BOP_AND, low_test, high_test);

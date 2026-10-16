@@ -167,6 +167,7 @@ void sqlo_calculate_view_scope (query_instance_t *qi, ST **tree, char *view_name
 extern int sqlo_print_debug_output;
 
 ST * sqlp_in_exp (ST * l, dk_set_t  right, int is_not);
+void sqlp_new_serials (ST * tree);
 
 void sqlp_pl_file (char * text);
 void sqlp_pragma_line (char * text);
