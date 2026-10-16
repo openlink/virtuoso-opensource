@@ -393,14 +393,17 @@ extern int32 rdf_rpid64_mode;
 extern int rb_type__xsd_duration;
 extern int rb_type__xsd_yearMonthDuration;
 extern int rb_type__xsd_dayTimeDuration;
-#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+#define RB_TYPE_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+/* a duration that did not parse keeps its lexical string */
+#define RB_IS_DURATION(rb) (RB_TYPE_IS_DURATION ((rb)->rb_type) && !DV_STRINGP ((rb)->rb_box))
 /* the type a plain duration stands for, as xsd_type_of_box tells it */
 #define RB_DURATION_TWOBYTE(v) ((0 == GENERIC_DURATION_GET_DT (v)) ? rb_type__xsd_yearMonthDuration : rb_type__xsd_duration)
+/* RDF_OBJ keeps a duration serialized (this head, two raw doubles), but one that did not parse as its lexical string */
+extern const unsigned char rb_duration_ser_head[3];
+#define RB_DURATION_RO_VAL_SERIALIZED(t,val) (RB_TYPE_IS_DURATION (t) && DV_STRING == DV_TYPE_OF (val) \
+  && sizeof (rb_duration_ser_head) + 2 * sizeof (double) + 1 == box_length (val) \
+  && !memcmp ((val), rb_duration_ser_head, sizeof (rb_duration_ser_head)))
 
-extern int rb_type__xsd_duration;
-extern int rb_type__xsd_yearMonthDuration;
-extern int rb_type__xsd_dayTimeDuration;
-#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
 int rb_duration_snprintf (char *buf, size_t buf_size, int rb_type, ccaddr_t val);
 extern int32 rdf_geo_use_wkt;
 

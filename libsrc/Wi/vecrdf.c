@@ -299,6 +299,7 @@ void
 dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, caddr_t lng, int64 ro_id)
 {
   int save;
+  int deser;
   rdf_bigbox_t rbbt;
   rdf_box_t *rb = (rdf_box_t *) & rbbt;
   memset (&rbbt, 0, sizeof (rbbt));
@@ -309,7 +310,8 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   rb->rb_lang = dt_lang & 0xffff;
   rb->rb_type = dt_lang >> 16;
   rb->rb_box = DV_DB_NULL == DV_TYPE_OF (lng) ? val : lng;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type || RB_IS_DURATION (rb->rb_type))
+  deser = (RDF_BOX_GEO_TYPE == rb->rb_type || RB_DURATION_RO_VAL_SERIALIZED (rb->rb_type, rb->rb_box));
+  if (deser)
     rb->rb_box = box_deserialize_string (rb->rb_box, INT32_MAX, 0);
   DC_CHECK_LEN (dc, inx);
   DC_FILL_TO (dc, int64, inx);
@@ -317,7 +319,7 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   dc->dc_n_values = inx;
   dc_append_rb (dc, (caddr_t) rb);
   dc->dc_n_values = save;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type || RDF_BOX_INTERVAL == rb->rb_type)
+  if (deser)
     dk_free_box (rb->rb_box);
 }
 
@@ -869,7 +871,7 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
                     dk_free_box (rb);
                     break;
                   }
-                if (RB_IS_DURATION (rb->rb_type))
+                if (RB_IS_DURATION (rb))
                   {
                     char temp[100];
                     if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb->rb_type, rb->rb_box))

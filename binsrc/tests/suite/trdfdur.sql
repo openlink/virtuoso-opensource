@@ -497,4 +497,58 @@ echo both ": RDF_QUAD and POGS counts agree after types : " $last[1] "\n";
 
 sparql clear graph <urn:tdur3>;
 
+-- concat() over an unparsed duration literal
+-- A duration literal whose lexical form does not parse is kept as its string.
+-- concat() must treat it as that string, not reach into the rdf box as if the
+-- box held a parsed value; the latter reads past the string and corrupts memory.
+
+sparql clear graph <urn:tdurc>;
+sparql insert data { graph <urn:tdurc> {
+  <http://example.org/bad> <http://example.org/val> "notaduration"^^xsd:duration } };
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": store unparsed duration STATE=" $state "\n";
+
+select concat ((select O from DB.DBA.RDF_QUAD
+    where G = iri_to_id ('urn:tdurc') and S = iri_to_id ('http://example.org/bad')), 'x');
+echo both $if $equ $last[1] "notadurationx" "PASSED" "***FAILED";
+echo both ": SQL concat over unparsed duration : " $last[1] "\n";
+
+sparql select (concat(?o, "x") as ?c) where { graph <urn:tdurc> { ?s ?p ?o } };
+echo both $if $equ $last[1] "notadurationx" "PASSED" "***FAILED";
+echo both ": SPARQL concat over stored unparsed duration : " $last[1] "\n";
+
+sparql select (concat(strdt("notaduration", xsd:duration), "x") as ?c) where { };
+echo both $if $equ $last[1] "notadurationx" "PASSED" "***FAILED";
+echo both ": SPARQL concat over STRDT unparsed duration : " $last[1] "\n";
+
+sparql select (concat("x", strdt("notaduration", xsd:duration)) as ?c) where { };
+echo both $if $equ $last[1] "xnotaduration" "PASSED" "***FAILED";
+echo both ": SPARQL concat before unparsed duration : " $last[1] "\n";
+
+-- concat() of a parsed duration keeps its lexical form, not the stored number
+
+sparql select (concat(?o, "|z") as ?c) where { bind("P1Y2M3DT4H5M6.5S"^^xsd:duration as ?o) };
+echo both $if $equ $last[1] "P1Y2M3DT4H5M6.5S|z" "PASSED" "***FAILED";
+echo both ": SPARQL concat of generic duration : " $last[1] "\n";
+
+sparql select (concat(?o, "|z") as ?c) where { bind("PT1S"^^xsd:dayTimeDuration as ?o) };
+echo both $if $equ $last[1] "PT1S|z" "PASSED" "***FAILED";
+echo both ": SPARQL concat of dayTimeDuration : " $last[1] "\n";
+
+sparql select (concat(?o, "|z") as ?c) where { bind("P1Y"^^xsd:yearMonthDuration as ?o) };
+echo both $if $equ $last[1] "P1Y|z" "PASSED" "***FAILED";
+echo both ": SPARQL concat of yearMonthDuration : " $last[1] "\n";
+
+-- cast of a parsed duration to string keeps its lexical form
+
+sparql select (xsd:string(?o) as ?c) where { bind("PT1S"^^xsd:dayTimeDuration as ?o) };
+echo both $if $equ $last[1] "PT1S" "PASSED" "***FAILED";
+echo both ": SPARQL xsd:string of dayTimeDuration : " $last[1] "\n";
+
+sparql select (xsd:string(?o) as ?c) where { bind("P1Y"^^xsd:yearMonthDuration as ?o) };
+echo both $if $equ $last[1] "P1Y" "PASSED" "***FAILED";
+echo both ": SPARQL xsd:string of yearMonthDuration : " $last[1] "\n";
+
+sparql clear graph <urn:tdurc>;
+
 echo both "COMPLETED: xsd:duration tests\n";

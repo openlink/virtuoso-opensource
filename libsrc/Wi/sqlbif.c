@@ -3443,6 +3443,18 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           a = rb->rb_box;
           dtp1 = DV_TYPE_OF (a);
           is_rdf_box = 1;
+          if (RB_IS_DURATION (rb))
+            {
+              char dur[100];
+              if (0 <= rb_duration_snprintf (dur, sizeof (dur), rb->rb_type, rb->rb_box))
+                {
+                  if (NULL == cast_args)
+                    cast_args = dk_alloc_list_zero (n_args);
+                  a = cast_args[inx] = box_dv_short_string (dur);
+                  dtp1 = DV_STRING;
+                  is_rdf_box = 0;
+                }
+            }
         }
       switch (dtp1)
 	{
@@ -3488,6 +3500,8 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  dtp1 = DV_TYPE_OF (a);
           if (DV_RDF == dtp1 && !RB_IS_DATE(a))
             {
+              if (cast_args && DV_STRINGP (cast_args[inx]))
+                continue; /* duration lexical form, made in 1st loop */
               dtp1 = DV_TYPE_OF (((rdf_box_t *)a)->rb_box); /* completed in 1st loop */
               a = (((rdf_box_t *)a)->rb_box);
             }
@@ -3578,6 +3592,12 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           a = rb->rb_box;
           dtp1 = DV_TYPE_OF (a);
           is_rdf_box = 1;
+          if (cast_args && DV_STRINGP (cast_args[inx]))
+            { /* duration lexical form, made in 1st loop */
+              a = cast_args[inx];
+              dtp1 = DV_STRING;
+              is_rdf_box = 0;
+            }
         }
       switch (dtp1)
 	{
@@ -10348,6 +10368,12 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
 #endif
       data = rb->rb_box;
       arg_dtp = DV_TYPE_OF (data);
+      if (DV_STRING == dtp->type && RB_IS_DURATION (rb))
+        {
+          char temp[64];
+          if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb->rb_type, data))
+            return box_dv_short_string (temp);
+        }
       switch (arg_dtp)
         {
         case DV_STRING:

@@ -424,7 +424,7 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
         sqlr_new_error ("22023", "SR579", "RDF integrity issue: the type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
-      if (RDF_BOX_GEO == rb->rb_type || RB_IS_DURATION (rb->rb_type))
+      if (RDF_BOX_GEO == rb->rb_type || RB_DURATION_RO_VAL_SERIALIZED (rb->rb_type, val))
 	rb->rb_box = box_deserialize_string (val, box_length (val) - 1, 0);
       else
 	rb->rb_box = box_copy_tree (val);
@@ -2478,10 +2478,13 @@ bif_rdf_duration_twobyte (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return box_num (RB_DURATION_TWOBYTE (val));
 }
 
+/* print_object () of a DV_ARRAY_OF_DOUBLE of 2: its tag, then the count as a DV_SHORT_INT */
+const unsigned char rb_duration_ser_head[3] = { DV_ARRAY_OF_DOUBLE, DV_SHORT_INT, 2 };
+
 int
 rb_duration_snprintf (char *buf, size_t buf_size, int rb_type, ccaddr_t val)
 {
-  if (!RB_IS_DURATION (rb_type))
+  if (!RB_TYPE_IS_DURATION (rb_type))
     return -1;
   if (IS_GENERIC_DURATION (val))
     return snprintf_generic_duration (buf, buf_size, val);
@@ -2531,7 +2534,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (DV_LONG_INT == DV_TYPE_OF (val))
             val = unbox (val) ? uname_true : uname_false;
         }
-      else if (RB_IS_DURATION (rb_type))
+      else if (RB_IS_DURATION (rb))
         {
           char temp[255];
           if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb_type, val))
@@ -6033,7 +6036,7 @@ literal_elt_printed:
                 else
                   SES_PRINT (ses, "false");
               }
-            else if (RB_IS_DURATION (rb->rb_type) && 0 <= (dur_len = rb_duration_snprintf (dur_buf, sizeof (dur_buf), rb->rb_type, rb->rb_box)))
+            else if (RB_IS_DURATION (rb) && 0 <= (dur_len = rb_duration_snprintf (dur_buf, sizeof (dur_buf), rb->rb_type, rb->rb_box)))
               session_buffered_write (ses, dur_buf, dur_len);
             else
               dks_sqlval_esc_write ((caddr_t *)qi, ses, rb->rb_box, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
