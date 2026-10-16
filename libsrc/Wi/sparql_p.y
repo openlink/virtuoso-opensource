@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure-parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 21
+%expect 19
 
 %{
 #include "libutil.h"
@@ -1045,6 +1045,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DIR_LTR_L	/*:: PUNCT_SPAR_LAST("~ltr") ::*/
 %token DIR_RTL_L	/*:: PUNCT_SPAR_LAST("~rtl") ::*/
 %token TILDE_L		/*:: PUNCT_SPAR_LAST("~") ::*/
+%token ANN_OPEN_L	/*:: PUNCT_SPAR_LAST("{|") ::*/
+%token ANN_CLOSE_L	/*:: PUNCT_SPAR_LAST("|}") ::*/
 %token WHERE_L		/*:: PUNCT("WHERE"), SPAR, LAST1("WHERE {"), LAST1("WHERE ("), LAST1("WHERE #cmt\n{"), LAST1("WHERE\r\n("), ERR("WHERE"), ERR("WHERE bad") ::*/
 %token WITH_L		/*:: PUNCT_SPAR_LAST("WITH") ::*/
 %token XML_L	/*:: PUNCT_SPAR_LAST("XML") ::*/
@@ -3020,7 +3022,7 @@ spar_ann_suffixes	/* One or more annotation suffixes ({| |} or ~ reifier) */
 	;
 
 spar_ann_suffix		/* Single annotation block or reifier */
-	: _LBRA _BAR {
+	: ANN_OPEN_L {
 		/* The subject of the block's properties: the reifier of a ~ right before
 		   it (s p o ~ {| ... |}), otherwise a subject of its own, which
 		   spar_object_with_ann makes a reifier of the triple. */
@@ -3040,13 +3042,13 @@ spar_ann_suffix		/* Single annotation block or reifier */
 		sparp_arg->sparp_in_annotation_block++;
 		t_set_push (&(sparp_env()->spare_context_subjects), ann_s);
 		}
-	    spar_props _BAR _RBRA {
+	    spar_props ANN_CLOSE_L {
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		if (sparp_arg->sparp_in_annotation_block > 0)
 		  sparp_arg->sparp_in_annotation_block--;
-		spar_ann_suffix_state_restore (sparp_arg, $<list>3);
+		spar_ann_suffix_state_restore (sparp_arg, $<list>2);
 		}
-	| TILDE_L spar_var_or_term _LBRA _BAR {
+	| TILDE_L spar_var_or_term ANN_OPEN_L {
 		/* Reifier + annotation block: ~reifier {| props |} */
 		SPART *ann_s;
 		t_set_push (&(sparp_arg->sparp_ann_reifier_suffixes), $2);
@@ -3055,11 +3057,11 @@ spar_ann_suffix		/* Single annotation block or reifier */
 		sparp_arg->sparp_in_annotation_block++;
 		t_set_push (&(sparp_env()->spare_context_subjects), ann_s);
 		}
-	    spar_props _BAR _RBRA {
+	    spar_props ANN_CLOSE_L {
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		if (sparp_arg->sparp_in_annotation_block > 0)
 		  sparp_arg->sparp_in_annotation_block--;
-		spar_ann_suffix_state_restore (sparp_arg, $<list>5);
+		spar_ann_suffix_state_restore (sparp_arg, $<list>4);
 		}
 	| TILDE_L spar_var_or_term	{
 		/* Bare reifier suffix: record for rdf:reifies emission in spar_object_with_ann;
