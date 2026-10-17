@@ -499,6 +499,18 @@ then
   exit 1
 fi
 
+#
+#  The RDF 1.2 triple term helpers must honour graph-level security.
+#  Before the graph-level security tests below, which change the
+#  defaults; it removes its own user, graphs and private-graph membership.
+#
+RUN $ISQL $DSN dba dba tsec_rdf_star_graph_security.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+  LOG "***ABORTED: tsec_rdf_star_graph_security.sql -- RDF 1.2 triple term helpers and graph-level security"
+  exit 1
+fi
+
 # XXX
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
 #cat $VIRTUOSO_TEST/../wb/SparqlSec.sql | grep -v "set echo on;" > $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql
