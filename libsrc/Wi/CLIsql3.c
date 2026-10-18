@@ -852,7 +852,14 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
     }
 
   CHARSETW = (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data)) ? cfgdata[oCHARSET].data : NULL;
-  CHARSET = con->con_charset_name = virt_wide_to_ansi (CHARSETW);
+  CHARSET = virt_wide_to_ansi (CHARSETW);
+
+  /* con_charset_name is released with dk_free_box and outlives both CHARSET and
+     the cfgdata array, so it keeps a box of its own */
+  if (con->con_charset_name)
+    dk_free_box ((box_t) con->con_charset_name);
+
+  con->con_charset_name = CHARSET ? box_dv_short_string (CHARSET) : NULL;
 
   if (strchr (HOST, ':') == NULL && strchr(HOST,',') == NULL)
     {
