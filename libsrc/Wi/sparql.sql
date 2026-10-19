@@ -16527,16 +16527,23 @@ create function DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (in v any) returns varchar
 
 create function DB.DBA.RDF_STAR_REIFIER_IRI (in node_iri any) returns any
 {
-  declare node_str, tt_iri varchar;
+  declare node_str, tt_iri, uname varchar;
   node_str := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri);
   if (node_str is null) return null;
   if (left (node_str, 21) = 'urn:rdf-star:reifier:')
     return __uname (node_str);
   if (left (node_str, 20) = 'urn:rdf-star:triple:')
     return __uname (concat ('urn:rdf-star:reifier:', subseq (node_str, 20)));
+  -- This runs with the owner's rights, so count only rdf:reifies quads in
+  -- graphs the session user may read -- the check the SPARQL compiler makes
+  -- for the caller's own quad patterns.  The IRIs are looked up without being
+  -- created, so a lookup does not add to the IRI dictionary.  The same lookup
+  -- is in RDF_STAR_REIFIER_TO_TRIPLE_IRI and RDF_STAR_TT_CHECK, written out
+  -- in each: a shared function cost a call per row.
+  uname := user;
   tt_iri := null;
-  for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-    { tt_iri := id_to_iri ("o"); }
+  for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id_nosignal (node_str, 0) AND "P" = iri_to_id_nosignal ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies', 0) AND __rgs_ack_cbk ("G", uname, 1)) do
+    { tt_iri := id_to_iri ("O"); }
   if (tt_iri is null) return null;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return null;
   return __uname (concat ('urn:rdf-star:reifier:', subseq (tt_iri, 20)));
@@ -16545,16 +16552,18 @@ create function DB.DBA.RDF_STAR_REIFIER_IRI (in node_iri any) returns any
 
 create function DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (in node_iri any) returns any
 {
-  declare node_str, tt_iri varchar;
+  declare node_str, tt_iri, uname varchar;
   node_str := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri);
   if (node_str is null) return null;
   if (left (node_str, 20) = 'urn:rdf-star:triple:')
     return __uname (node_str);
   if (left (node_str, 21) = 'urn:rdf-star:reifier:')
     return __uname (concat ('urn:rdf-star:triple:', subseq (node_str, 21)));
+  -- Graph-level security, no IRI creation: see RDF_STAR_REIFIER_IRI.
+  uname := user;
   tt_iri := null;
-  for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-    { tt_iri := id_to_iri ("o"); }
+  for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id_nosignal (node_str, 0) AND "P" = iri_to_id_nosignal ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies', 0) AND __rgs_ack_cbk ("G", uname, 1)) do
+    { tt_iri := id_to_iri ("O"); }
   if (tt_iri is null) return null;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return null;
   return __uname (tt_iri);
@@ -16565,7 +16574,7 @@ create function DB.DBA.RDF_STAR_TT_CHECK (in node_iri any, in s_val any, in p_va
 {
   declare tt_iri varchar;
   declare got_s, got_p, got_o varchar;
-  declare node_str varchar;
+  declare node_str, uname varchar;
   if (isinteger (s_val) and s_val = 0) s_val := null;
   if (isinteger (p_val) and p_val = 0) p_val := null;
   if (isinteger (o_val) and o_val = 0) o_val := null;
@@ -16575,9 +16584,11 @@ create function DB.DBA.RDF_STAR_TT_CHECK (in node_iri any, in s_val any, in p_va
     tt_iri := node_str;
   else
     {
+      -- Graph-level security, no IRI creation: see RDF_STAR_REIFIER_IRI.
+      uname := user;
       tt_iri := null;
-      for (SELECT "o" FROM DB.DBA.RDF_QUAD WHERE "s" = iri_to_id (node_str) AND "p" = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) do
-        { tt_iri := id_to_iri ("o"); }
+      for (SELECT "O" FROM DB.DBA.RDF_QUAD WHERE "S" = iri_to_id_nosignal (node_str, 0) AND "P" = iri_to_id_nosignal ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies', 0) AND __rgs_ack_cbk ("G", uname, 1)) do
+        { tt_iri := id_to_iri ("O"); }
     }
   if (tt_iri is null) return 0;
   if (left (tt_iri, 20) <> 'urn:rdf-star:triple:') return 0;

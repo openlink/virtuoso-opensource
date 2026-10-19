@@ -262,6 +262,15 @@ then
 fi
 
 
+LOG + running sql script trdfstar
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfstar.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: RDF 1.2 triple terms -- trdfstar.sql"
+    exit 1
+fi
+
+
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
