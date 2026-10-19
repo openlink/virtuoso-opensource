@@ -1929,6 +1929,8 @@ spar_tree_is_var_with_forbidden_ft_name (sparp_t *sparp, SPART *tree, int report
     return 0;
   vname = tree->_.var.vname;
   if (strcasecmp (vname, "SCORE") &&
+    strcasecmp (vname, "DISTANCE") &&
+    strcasecmp (vname, "SIMILARITY") &&
     strcasecmp (vname, "XCONTAINS_MAIN_RANGES") &&
     strcasecmp (vname, "XCONTAINS_ATTR_RANGES") )
     return 0;

@@ -2382,6 +2382,8 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ASG_SSL (res, all_res, txs->txs_main_range_out);
       ASG_SSL (res, all_res, txs->txs_attr_range_out);
       ASG_SSL (res, all_res, txs->txs_score);
+      ASG_SSL (res, all_res, txs->txs_distance);
+      ASG_SSL (res, all_res, txs->txs_similarity);
       asg_ssl_array (res, all_res, txs->txs_offband);
     }
   else if (IS_QN (qn, xn_input))

@@ -1271,6 +1271,16 @@ dc_append_float (data_col_t * dc, float n)
 }
 
 
+void
+dc_append_double (data_col_t * dc, double n)
+{
+  double *ptr;
+  DC_CHECK_LEN (dc, dc->dc_n_values);
+  ptr = (double *) dc->dc_values;
+  ptr[dc->dc_n_values++] = n;
+}
+
+
 int
 dc_elt_size (data_col_t * dc)
 {

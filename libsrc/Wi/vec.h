@@ -125,6 +125,7 @@ void dc_append (data_col_t * target, data_col_t * source, int inx);
 void dc_append_box (data_col_t * dc, caddr_t box);
 void dc_append_null (data_col_t * dc);
 void dc_append_float (data_col_t * dc, float n);
+void dc_append_double (data_col_t * dc, double n);
 int dc_is_nulll (data_col_t * dc, int set);
 /* use as value in inlined num dcs to indicate that null check is to be made. 32 bit and ff at both ends  */
 #define DC_MAY_BE_NULL 0xffabcdff
