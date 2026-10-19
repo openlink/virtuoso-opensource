@@ -349,8 +349,6 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       /* add a page of global free set and backup set */
       buffer_desc_t * last = page_set_extend (dbs, &dbs->dbs_free_set, 0, DPF_FREE_SET);
       page_set_checksum_init (last->bd_buffer + DP_DATA);
-      if (n_allocated)
-	dbs_page_allocated (dbs, ext_first);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
       if (!last->bd_page) GPF_T1 ("0 dp for page set page");
       em->em_n_free_pages--;
@@ -361,6 +359,9 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       em->em_n_free_pages--;
       dbs->dbs_n_pages_in_sets += BITS_ON_PAGE;
     }
+  /* after the free set is stretched, as it may not reach ext_first before */
+  if (n_allocated)
+    dbs_page_allocated (dbs, ext_first);
   if (dbs->dbs_n_pages > dbs->dbs_n_pages_in_extent_set)
     {
       buffer_desc_t * last = page_set_extend (dbs, &dbs->dbs_extent_set, 0, DPF_EXTENT_SET);
@@ -2000,6 +2001,26 @@ dbs_extent_init (dbe_storage_t * dbs)
 }
 
 
+static void
+dbs_sys_em_pages_allocated (dbe_storage_t * dbs)
+{
+  /* dbs_file_extend did not mark its sys em pages in the free set unless the set grew with them; repair those */
+  buffer_desc_t * buf;
+  int n_fixed = 0;
+  for (buf = dbs->dbs_extent_map->em_buf; buf; buf = buf->bd_next)
+    {
+      if (!dbs_is_free_page (dbs, buf->bd_page))
+	continue;
+      IN_DBS (dbs);
+      dbs_page_allocated (dbs, buf->bd_page);
+      LEAVE_DBS (dbs);
+      n_fixed++;
+    }
+  if (n_fixed)
+    log_info ("Marked %d pages of the system extent map as allocated in the free set", n_fixed);
+}
+
+
 void
 dbs_extent_open (dbe_storage_t * dbs)
 {
@@ -2013,5 +2034,6 @@ dbs_extent_open (dbe_storage_t * dbs)
     GPF_T1 ("no system ext map opening existent db");
   dbs->dbs_extent_map = dbs_read_extent_map (dbs, "__sys_ext_map", dp);
   dbs_stretch_sets (dbs);
+  dbs_sys_em_pages_allocated (dbs);
 }
 

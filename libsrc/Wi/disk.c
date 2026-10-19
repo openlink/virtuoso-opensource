@@ -884,6 +884,11 @@ buffer_free (buffer_desc_t * buf)
     GPF_T1 ("buffer_free(): can't find a group of the buffer, was the buffer allocated by buffer_allocate() ?");
   if (0 >= bg->bg_used)
     GPF_T1 ("buffer_free(): the group is empty");
+#ifdef PAGE_SET_CHECKSUM
+  /* the memory goes back to the group and a page set may get it with this stale checksum */
+  if (page_set_checksums)
+    remhash ((void *) (buf->bd_buffer + DP_DATA), page_set_checksums);
+#endif
   buf->bd_buffer = NULL;
   remhash (buf, bg_of_bd);
   bg_free_buffers++;
