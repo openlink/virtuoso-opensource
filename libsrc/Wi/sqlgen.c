@@ -1164,7 +1164,7 @@ sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts)
       dbe_column_t * col;
       dk_set_t cols = order_ks->ks_out_cols;
       /* no other cols except for the text id */
-      if (!tb_dfe->_.table.is_text_order)
+      if (!tb_dfe->_.table.is_text_order || tb_dfe->_.table.join_test || tb_dfe->_.table.after_join_test)
 	return;
       if (!cols)
 	{
