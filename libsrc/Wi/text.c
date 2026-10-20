@@ -3889,7 +3889,9 @@ txs_rdf_fuzzy_metrics (text_node_t *txs, caddr_t *qst, d_id_t *d_id,
   rb = (rdf_box_t *) rbb_from_id (D_ID_NUM_REF (&d_id->id[0]));
   rb_complete (rb, qi->qi_trx, qi);
   literal = rb->rb_box;
-  if (DV_STRING == DV_TYPE_OF (literal))
+  /* An over-long literal keeps the score of the matched word */
+  if (DV_STRING == DV_TYPE_OF (literal)
+      && fuzzy_work_ok (box_length (query), box_length (literal), algo))
     {
       if (txs->txs_similarity)
         sst->sst_best_similarity = fuzzy_similarity ((const char *) query,

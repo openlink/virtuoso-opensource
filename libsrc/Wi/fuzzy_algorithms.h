@@ -146,4 +146,10 @@ fuzzy_distance (const char *s1, const char *s2, int algo_id);
 int
 fuzzy_algo_id_from_name (const char *name);
 
+/* The algorithms are quadratic and cannot be cancelled; cap the steps of one call */
+#define FUZZY_MAX_WORK 100000000
+
+int
+fuzzy_work_ok (long len1, long len2, int algo_id);
+
 #endif /* _FUZZY_ALGORITHMS_H */

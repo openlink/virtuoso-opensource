@@ -50,6 +50,13 @@
  * BIF wrappers
  * ============================================================ */
 
+static void
+fuzzy_check_work (caddr_t s1, caddr_t s2, int algo_id, const char *fname)
+{
+  if (!fuzzy_work_ok (box_length (s1), box_length (s2), algo_id))
+    sqlr_new_error ("22023", "FZ001", "%s: strings too long for a fuzzy comparison", fname);
+}
+
 static caddr_t
 bif_levenshtein (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -60,6 +67,7 @@ bif_levenshtein (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_LEVENSHTEIN, "levenshtein");
 
   /* Optional 3rd arg: if 1/'similarity'/'sim', return similarity instead of distance */
   if (n_args > 2)
@@ -92,6 +100,7 @@ bif_levenshtein_similarity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   caddr_t s2 = bif_string_or_null_arg (qst, args, 1, "levenshtein_similarity");
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_LEVENSHTEIN, "levenshtein_similarity");
   return box_double (levenshtein_similarity (s1, s2));
 }
 
@@ -102,6 +111,7 @@ bif_jaro_winkler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t s2 = bif_string_or_null_arg (qst, args, 1, "jaro_winkler");
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_JARO_WINKLER, "jaro_winkler");
   return box_double (jaro_winkler_similarity (s1, s2));
 }
 
@@ -112,6 +122,7 @@ bif_jaro_winkler_similarity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   caddr_t s2 = bif_string_or_null_arg (qst, args, 1, "jaro_winkler_similarity");
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_JARO_WINKLER, "jaro_winkler_similarity");
   return box_double (jaro_winkler_similarity (s1, s2));
 }
 
@@ -122,6 +133,7 @@ bif_ngram_cosine (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t s2 = bif_string_or_null_arg (qst, args, 1, "ngram_cosine");
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_NGRAM_COSINE, "ngram_cosine");
   return box_double (ngram_cosine_similarity (s1, s2, FUZZY_DEFAULT_N));
 }
 
@@ -133,6 +145,7 @@ bif_ngram_cosine_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   boxint n = bif_long_arg (qst, args, 2, "ngram_cosine_n");
   if (NULL == s1 || NULL == s2)
     return dk_alloc_box (0, DV_DB_NULL);
+  fuzzy_check_work (s1, s2, FUZZY_NGRAM_COSINE, "ngram_cosine_n");
   if (n < 1) n = FUZZY_DEFAULT_N;
   if (n > 7) n = 7;
   return box_double (ngram_cosine_similarity (s1, s2, (int) n));
