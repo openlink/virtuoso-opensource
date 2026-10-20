@@ -155,6 +155,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %type <subtok> insert_mode
 %type <list> column_commalist
 %type <list> index_column_commalist
+%type <list> opt_vector_index_cols
 %type <tree> opt_column_commalist
 %type <tree> priv_opt_column_commalist
 %type <tree> values_or_query_spec
@@ -248,6 +249,10 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %type <box> index_option
 %type <list> index_option_list
 %type <tree> opt_index_option_list
+%type <list> vector_index_option
+%type <list> vector_index_option_list
+%type <list> opt_vector_index_with
+%type <box> opt_using_model
 %type <list> column_def
 %type <tree> column_def_opt
 %type <tree> column_xml_schema_def
@@ -1062,6 +1067,59 @@ create_index_def
 	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list opt_not_exists
 { ST * opts = (ST *) t_box_append_1  ((caddr_t) $2, (caddr_t) t_listst (5, PARTITION_DEF,  NULL, NULL, $11, t_list_to_array ($12)));
 		 $$ = t_listst (6, INDEX_DEF, $4, $6, t_list_to_array ($8), opts, (ptrlong) $13); }
+	| CREATE opt_index_option_list VECTOR_L INDEX index
+		ON q_table_name opt_vector_index_cols opt_using_model opt_vector_index_with opt_not_exists
+		{
+		  /* USING '<model>' is optional: present => model path (option "m");
+		     absent => precomputed-vector column (no model), which the native
+		     layer requires WITH (source_kind = 'vector') to accept.
+
+		     The ('<column>') list is optional too.  When it is omitted the
+		     column array reaches ddl_index_def empty and vvec_prepare_index_opts
+		     infers it, which it will only do when the table leaves no choice --
+		     see the comment there. */
+		  ST * opts = (ST *) box_copy_tree ((box_t) $2);
+		  caddr_t model = (caddr_t) $9;
+		  caddr_t * v_opts;
+		  if (model)
+		    v_opts = (caddr_t *) t_list_to_array (t_CONS (t_box_string ("m"), t_CONS (t_box_string (model), $10)));
+		  else
+		    v_opts = (caddr_t *) t_list_to_array ($10);
+		  opts = (ST *) t_box_append_1 ((caddr_t) opts, (caddr_t) OPT_VECTOR);
+		  opts = (ST *) t_box_append_1 ((caddr_t) opts, (caddr_t) v_opts);
+		  opts = (ST *) t_box_append_1 ((caddr_t) opts, (caddr_t) t_box_string ("no_fill"));
+		  opts = (ST *) t_box_append_1 ((caddr_t) opts, (caddr_t) box_num (1));
+		  $$ = t_listst (6, INDEX_DEF, $5, $7, t_list_to_array ($8), opts, (ptrlong) $11);
+		}
+	;
+
+opt_using_model
+	: /* empty */		{ $$ = NULL; }
+	| USING STRING		{ $$ = $2; }
+	;
+
+opt_vector_index_cols
+	: /* empty */				{ $$ = NULL; }
+	| '(' index_column_commalist ')'	{ $$ = $2; }
+	;
+
+vector_index_option
+	: identifier COMPARISON signed_literal
+		{
+		  if (BOP_EQ != $2)
+		    yyerror (scanner, "'=' expected");
+		  $$ = t_CONS (t_box_string ($1), t_CONS ($3, NULL));
+		}
+	;
+
+vector_index_option_list
+	: vector_index_option { $$ = $1; }
+	| vector_index_option_list ',' vector_index_option { $$ = t_NCONC ($1, $3); }
+	;
+
+opt_vector_index_with
+	: /* empty */ { $$ = NULL; }
+	| WITH '(' vector_index_option_list ')' { $$ = $3; }
 	;
 
 drop_index
@@ -4595,4 +4653,3 @@ partition_def
 	: ALTER INDEX NAME ON q_table_name PARTITION opt_cluster col_part_list
 { $$ = t_listst (5, PARTITION_DEF,  $5, $3, $7, t_list_to_array ($8)); }
 	;
-

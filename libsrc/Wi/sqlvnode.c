@@ -919,6 +919,14 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
   {
     if (!ik)
       continue;
+    /* Phase 7: skip vector index keys — they use DPF_VEC pages with a custom
+       packed/legacy format that the generic B-tree row iterator cannot parse.
+       The vector index is maintained by triggers (VVEC_AD after-delete), not
+       by this path.  Without this skip, deleting rows from a table with a
+       packed vector index GPFs in pg_insert_key_compare because packed pages
+       have no standard row-map entries. */
+    if (vvec_key_p (ik->ik_key))
+      continue;
     itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
     itc_free_owned_params (itc);
       itc_col_free (itc);
@@ -1031,6 +1039,9 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state, int i
   DO_BOX (ins_key_t *, ik, inx, del->del_keys)
     {
       if (!ik)
+	continue;
+      /* Phase 7: skip vector index keys — see cl_local_deletes for rationale. */
+      if (vvec_key_p (ik->ik_key))
 	continue;
     DO_BOX (state_slot_t *, ssl, inx2, ik->ik_del_slots)
     {

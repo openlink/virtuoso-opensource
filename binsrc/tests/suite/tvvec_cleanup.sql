@@ -1,0 +1,44 @@
+create procedure DB.DBA.TVVEC_CLEANUP ()
+{
+  declare state, msg any;
+  exec ('DROP INDEX VVEC_AUTO_IDX', state, msg);
+  exec ('DROP INDEX VVEC_BEGIN_IDX', state, msg);
+  exec ('DROP INDEX VVEC_DROP_IDX', state, msg);
+  exec ('DROP INDEX VVEC_QUEUE_IDX', state, msg);
+  exec ('DROP INDEX VVEC_LONG_IDX', state, msg);
+  exec ('DROP INDEX VVEC_OVERFLOW_IDX', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_AUTO_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_BEGIN_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_DROP_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_QUEUE_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_LONG_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_OVERFLOW_DOCS', state, msg);
+  exec ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = ''VEC_SQL_WORKER''', state, msg);
+  exec ('DROP TABLE DB.DBA.VEC_SQL_QUEUE', state, msg);
+  exec ('DROP TABLE DB.DBA.VEC_SQL_QUEUE_LOCK', state, msg);
+  exec ('DROP TABLE DB.DBA.VEC_SQL_WORKER_STATE', state, msg);
+  exec ('DROP TABLE DB.DBA.ONNX_MODELS', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_OVERFLOW_SEARCH_TOP', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_MAKE_VEC', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_MAKE_DIM_VEC', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_KV_GET', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_INSERT_ONE', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_INSERT_BATCH', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_SEARCH_TOP', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_BEGIN_RAW_SEARCH_TOP', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_S9_HASH_SKIP_TEST', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_S10_DROP_QUEUE_TRIGGERS', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_S10_QUEUE_TEST', state, msg);
+  exec ('DROP FUNCTION DB.DBA.VVEC_ATOMIC_NO_STALE_QUERY', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_ATOMIC_DOCS', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_AUTO_IDX_vec_embeddings', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_BEGIN_IDX_vec_embeddings', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_DROP_IDX_vec_embeddings', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_QUEUE_IDX_vec_embeddings', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_LONG_IDX_vec_embeddings', state, msg);
+  exec ('DROP TABLE DB.DBA.VVEC_OVERFLOW_IDX_vec_embeddings', state, msg);
+}
+;
+DB.DBA.TVVEC_CLEANUP ();
+DROP PROCEDURE DB.DBA.TVVEC_CLEANUP;
+CHECKPOINT;

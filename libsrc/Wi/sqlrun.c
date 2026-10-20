@@ -2656,6 +2656,11 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	    if (key == cr_key || KEY_PRIMARY == key->key_is_primary
 		|| key->key_distinct)
 	      goto next_key;
+	    /* Phase 7: skip vector index keys — DPF_VEC pages are not standard
+	       B-tree leaf pages and cannot be iterated by itc_get_alt_key.
+	       The vector index is maintained by after-delete triggers. */
+	    if (vvec_key_p (key))
+	      goto next_key;
 	    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
 	    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
 	  next_key:;

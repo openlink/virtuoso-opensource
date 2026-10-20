@@ -1,0 +1,41 @@
+The quick brown fox jumps over the lazy dog.
+  leading and trailing spaces  
+	Tab	separated	values	
+It's IT'S we've they'll I'm you'd don't
+Numbers: 1,234.56 and 3.14159, 2026-09-24, 1e-9, 0x1F
+Multiple   spaces    between     words
+Punctuation!!! ??? ... --- (parentheses) [brackets] {braces} <angles>
+Café naïve résumé Ünïcödé Straße Ærø
+Café naïve
+Ελληνικά Ωmega ωμέγα Русский текст
+日本語のテキスト 東京タワー 中文文本
+한국어 텍스트
+مرحبا بالعالم שלום עולם
+Emoji 😀👍🏽 family 👨‍👩‍👧 flags 🇬🇧🇺🇸
+Symbols ™ © ® € £ ¥ ∑ ≤ ≥ ∞ → ← ✓
+no break spaces and　ideographic en em
+zero​width‌joiner‍test﻿bom
+Special tokens <s> </s> <pad> <unk> <mask> inline
+HTML <s>struck</s> <b>bold</b> &amp; entities
+hello <mask> world
+URL https://example.com/path?q=1&x=y#frag and email user@example.org
+code: def f(x): return x**2 # comment; int main() { return 0; }
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Supercalifragilisticexpialidocious antidisestablishmentarianism pneumonoultramicroscopicsilicovolcanoconiosis
+UPPER lower MiXeD CamelCase snake_case kebab-case
+Roman numerals Ⅻ Ⅳ and superscripts x² y³ fractions ½ ¾
+Controlcharsanddel
+
+   
+abc123def456 A1B2C3
+Apostrophes ’curly’ and 'straight' and ‘single’ quotes “double”
+Dashes – — ‒ and ellipsis … bullets • ·
+  nbsp-led text
+Line separator paragraph
+𝐀𝐁𝐂 𝔸𝔹ℂ
+Tamil தமிழ் Hindi हिन्दी Thai ภาษาไทย
+ǅ ǈ ǋ titlecase digraphs
+Currency $100.00 €50 ¥1000 and percents 50%
+trailing ideographic space　
+x
+ word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word

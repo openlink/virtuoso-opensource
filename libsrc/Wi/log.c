@@ -1038,6 +1038,76 @@ log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
 #endif
 }
 
+/* Emit one LOG_VEC_PAGE record: LEN bytes at OFFSET into DPF_VEC page DP of
+   the vector index whose key id is KEY_ID -- see vvec_page_delta ()/
+   vvec_page_release () (vvec.c), which snapshot a page's before-image on
+   first touch and call here with the diffed byte range on release.  Mirrors
+   log_text ()'s shape: one boxed value, same mutex/early-out discipline as
+   every other log_* emitter.  Read side is log_replay_vec_page (), above. */
+void
+log_vec_page_record (dk_session_t * ses, key_id_t key_id, dp_addr_t dp, int offset, db_buf_t bytes, int len)
+{
+  caddr_t box;
+  session_buffered_write_char (LOG_VEC_PAGE, ses);
+  /* print_long (), not print_int (): the reader is read_long (), which reads
+     a raw untagged 4-byte value (LONG_REF_NA), not print_int ()'s tagged
+     DV_SHORT_INT/DV_LONG_INT-prefixed encoding.  Same pairing already used a
+     few lines above for usr_id (log_replay_text_as_user ()/log_text_as_user,
+     print_long () at line 1147, read_long () at line 1943). */
+  print_long ((long) key_id, ses);
+  print_long ((long) dp, ses);
+  print_long ((long) offset, ses);
+  box = dk_alloc_box (len, DV_BIN);
+  if (len)
+    memcpy (box, bytes, len);
+  print_object (box, ses, NULL, NULL);
+  dk_free_box (box);
+}
+
+
+void
+log_vec_page (lock_trx_t * lt, key_id_t key_id, dp_addr_t dp, int offset, db_buf_t bytes, int len)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+  log_vec_page_record (lt->lt_log, key_id, dp, offset, bytes, len);
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+/* LOG_VEC_PAGE records written as a committed entry of their own, outside LT's
+   transaction: graph pages keep a rolled-back transaction's changes. */
+int
+log_vec_page_sync (lock_trx_t * lt, dk_session_t * records)
+{
+  dk_session_t * lt_log;
+  dk_set_t blob_log;
+  int64 old_w_id;
+  char old_log_2pc;
+  int rc;
+  if (!strses_length (records) || lt->lt_replicate == REPL_NO_LOG
+      || cl_non_logged_write_mode || lt->lt_backup)
+    return LTE_OK;
+  mutex_enter (log_write_mtx);
+  lt_log = lt->lt_log;
+  blob_log = lt->lt_blob_log;
+  old_w_id = lt->lt_w_id;
+  old_log_2pc = lt->lt_log_2pc;
+  lt->lt_blob_log = NULL;
+  lt->lt_log = records;
+  lt->lt_w_id = 0;
+  lt->lt_log_2pc = 0;
+  rc = log_commit (lt);
+  lt->lt_log_2pc = old_log_2pc;
+  lt->lt_w_id = old_w_id;
+  lt->lt_log = lt_log;
+  lt->lt_blob_log = blob_log;
+  mutex_leave (log_write_mtx);
+  return rc;
+}
+
 void
 log_delete (lock_trx_t * lt, row_delta_t * rd, int flags)
 {
@@ -1952,6 +2022,58 @@ log_replay_sequence_64 (lock_trx_t * lt, dk_session_t * in)
   return ((caddr_t) SQL_SUCCESS);
 }
 
+/* Redo one native vector index page mutation.  The record carries the index's
+   key id, the page, the offset of the changed range and its bytes; a whole-page
+   image is just the degenerate case offset = 0, len = PAGE_SZ, so there is one
+   code path rather than two.
+
+   Everything in the record is untrusted -- see vvec_replay_page (), which does
+   the bounds, extent and page-role checks before writing anything.  A bad
+   record fails the replay here rather than being skipped, because a vector
+   index that silently absorbed only some of its redo would answer queries with
+   a graph that matches neither the log nor the embeddings. */
+caddr_t
+log_replay_vec_page (lock_trx_t * lt, dk_session_t * in)
+{
+  caddr_t bytes;
+  boxint key_id, dp, offset;
+  int len;
+
+  key_id = read_long (in);
+  dp = read_long (in);
+  offset = read_long (in);
+  bytes = (caddr_t) scan_session (in);
+  /* Never returns an error.  log_replay_entry () rolls the entire transaction
+     back on one, and this record's transaction also carries ordinary row
+     inserts -- among them the embeddings a rebuild reads -- so failing here
+     would discard committed rows to protect a graph derived from them.  The
+     record is reported and skipped instead; see vvec_replay_page (). */
+  if (0 == dp && (VVEC_LOG_ROLLBACK_MARK == offset || VVEC_LOG_ROLLBACK_RESYNC == offset))
+    {
+      vvec_replay_rollback_mark ((key_id_t) key_id, (int) offset);
+      dk_free_box (bytes);
+      return ((caddr_t) SQL_SUCCESS);
+    }
+  if (DV_STRINGP (bytes) || DV_BIN == DV_TYPE_OF (bytes))
+    len = box_length (bytes) - (DV_BIN == DV_TYPE_OF (bytes) ? 0 : 1);
+  else
+    {
+      /* Condemn as well as skip.  The record is unusable either way, so the
+	 graph is missing whatever it carried; leaving the index unmarked would
+	 let it come back reporting health it no longer has. */
+      log_error ("LOG_VEC_PAGE: payload for page %ld of key %ld is not a byte string. "
+	  "Skipping the record and rebuilding the graph from the stored embeddings.",
+	  (long) dp, (long) key_id);
+      vvec_replay_condemn ((key_id_t) key_id);
+      dk_free_box (bytes);
+      return ((caddr_t) SQL_SUCCESS);
+    }
+  vvec_replay_page ((key_id_t) key_id, (dp_addr_t) dp, (int) offset, (db_buf_t) bytes, len);
+  dk_free_box (bytes);
+  return ((caddr_t) SQL_SUCCESS);
+}
+
+
 caddr_t
 log_check_replay_entry (dtp_t op)
 {
@@ -1968,6 +2090,7 @@ log_check_replay_entry (dtp_t op)
       case LOG_USER_TEXT:
       case LOG_SEQUENCE:
       case LOG_SEQUENCE_64:
+      case LOG_VEC_PAGE:
 	  return SQL_SUCCESS;
     }
   return srv_make_new_error ("42000", "REPL0", "Bad record in log replay");
@@ -2017,6 +2140,8 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
       return (log_replay_sequence (lt, in));
     case LOG_SEQUENCE_64:
       return (log_replay_sequence_64 (lt, in));
+    case LOG_VEC_PAGE:
+      return (log_replay_vec_page (lt, in));
     }
   return SQL_SUCCESS;
 }
@@ -3891,4 +4016,7 @@ log_init (dbe_storage_t * dbs)
 	}
       dbs->dbs_current_log_segment = NULL;
     }
+  vvec_replay_rollback_finish ();
+  if (f_read_from_rebuilt_database)
+    vvec_restore_maps_free ();
 }

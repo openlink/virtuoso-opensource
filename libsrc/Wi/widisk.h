@@ -114,8 +114,9 @@ typedef unsigned char * db_buf_t;
 #define DPF_HASH 11
 /* Like a page with rows but temporary hash index */
 #define DPF_COLUMN 12
+#define DPF_VEC 13
 /* fake DPF which indicates max possible value of the DPF */
-#define DPF_LAST_DPF		13
+#define DPF_LAST_DPF		14
 
 
 

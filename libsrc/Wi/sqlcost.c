@@ -1807,6 +1807,15 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
       caddr_t str;
       if (DFE_TEXT_PRED == dfe->dfe_type)
 	{
+	  if ('v' == dfe->_.text.type)
+	    {
+	      caddr_t inx_name;
+	      ST * k;
+	      sqlo_knn_similar_args (dfe->_.text.args, &inx_name, &k);
+	      *text_pred = dfe;
+	      *text_sel_ret = (k && DV_LONG_INT == DV_TYPE_OF (k)) ? (float) unbox ((box_t) k) : (float) VEC_SIMILAR_DEFAULT_K;
+	      return 1;
+	    }
 	  if (dfe->_.text.geo)
 	    {
 	      *text_pred = dfe;
@@ -1956,7 +1965,9 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
       n_text_hits = ot_tbl_size * text_selectivity;
       text_pred->dfe_arity = n_text_hits;
       text_pred->_.text.n_hits = n_text_hits;
-      if (text_pred->_.text.geo)
+      if ('v' == text_pred->_.text.type)
+	text_key_cost = dbe_key_unit_cost (text_key);
+      else if (text_pred->_.text.geo)
 	text_key_cost = dbe_key_unit_cost (text_key->key_geo_table->tb_primary_key);
       else
 	text_key_cost = dbe_key_unit_cost (text_key->key_text_table->tb_primary_key);

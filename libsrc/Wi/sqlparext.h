@@ -308,6 +308,7 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 /* options */
 #define OPT_ORDER  ((ptrlong) 900)
 #define OPT_INDEX_ORDER ((ptrlong)968)
+#define OPT_VECTOR ((ptrlong)969)
 #define OPT_JOIN  ((ptrlong) 901)
 #define OPT_INDEX ((ptrlong) 902)
 #define OPT_SPARQL ((ptrlong) 907)

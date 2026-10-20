@@ -1774,6 +1774,8 @@ lt_transact (lock_trx_t * lt, int op)
   lt_check_stray_locks (lt, 1);
 #endif
   LEAVE_TXN;
+  if (SQL_ROLLBACK == op)
+    vvec_trx_rollback (lt);
   ITC_INIT (itc, NULL, lt);
   lt_hi_transact (lt, op);
   for (;;)

@@ -1,0 +1,77 @@
+<?vsp
+  -- VVec - Overview : how much of what is on this instance.  The catalogue
+  -- and the per-index actions are their own page; this one is read, not worked
+  -- in, so it stays four numbers and the way through to each of them.
+  set http_charset='utf-8';
+  declare n_sql, n_sparql, n_models, n_total integer;
+
+  n_sql    := length (DB.DBA.VVEC_SQL_INDEXES ());
+  n_sparql := (select count (*) from DB.DBA.SPARQL_VEC_INDEX);
+  n_models := (select count (*) from DB.DBA.ONNX_MODELS);
+  n_total  := n_sql + n_sparql;
+
+  declare _amsg varchar; declare _aok varchar;
+  _amsg := get_keyword ('msg', params, '');
+  _aok  := get_keyword ('ok',  params, '');
+
+  DB.DBA.VVEC_HEAD ('Overview', 'overview');
+?>
+<div class="page-head">
+  <div>
+    <h1>Overview</h1>
+    <div class="sub">Native HNSW vector indexes across relational tables and RDF graphs.</div>
+  </div>
+  <div class="row-actions">
+    <a class="btn" href="./">&#8635; Refresh</a>
+    <a class="btn" href="indexes">Manage Indexes &#8594;</a>
+    <a class="btn primary" href="create">+ New Index</a>
+  </div>
+</div>
+
+<?vsp
+  if (length (_amsg) > 0)
+    {
+?>
+<div class="banner <?vsp http (case when _aok = '1' then 'ok' else 'err' end); ?> landed">
+  <div><strong><?vsp http (case when _aok = '1' then 'Success' else 'Action failed' end); ?></strong><span class="mono"><?= _amsg ?></span></div>
+</div>
+<?vsp
+    }
+?>
+
+<div class="stats">
+  <div class="stat">
+    <div class="top">
+      <span class="label">Total Indexes</span>
+      <span class="chip blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg></span>
+    </div>
+    <div class="value"><?= n_total ?></div>
+    <div class="foot"><a href="indexes">Manage indexes &#8594;</a></div>
+  </div>
+  <div class="stat">
+    <div class="top">
+      <span class="label">SQL Indexes</span>
+      <span class="chip green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>
+    </div>
+    <div class="value"><?= n_sql ?></div>
+    <div class="foot"><a href="indexes">Relational column indexes &#8594;</a></div>
+  </div>
+  <div class="stat">
+    <div class="top">
+      <span class="label">SPARQL Indexes</span>
+      <span class="chip violet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7l4 9M17 7l-4 9"/></svg></span>
+    </div>
+    <div class="value"><?= n_sparql ?></div>
+    <div class="foot"><a href="indexes">RDF predicate / graph indexes &#8594;</a></div>
+  </div>
+  <div class="stat">
+    <div class="top">
+      <span class="label">Embedding Models</span>
+      <span class="chip amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></span>
+    </div>
+    <div class="value"><?= n_models ?></div>
+    <div class="foot"><a href="models">Embedding models &#8594;</a></div>
+  </div>
+</div>
+
+<?vsp DB.DBA.VVEC_FOOT (); ?>

@@ -1,0 +1,258 @@
+<?vsp
+  -- VVec · Maintenance : drain queues and drive the SQL / SPARQL background
+  -- workers that keep vector indexes current.
+  set http_charset='utf-8';
+
+  declare _ok integer;
+  declare _banner, _detail, _op varchar;
+  declare st any;
+
+  _ok := -1; _banner := ''; _detail := '';
+
+  if (get_keyword ('do', params, '') = 'maint')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard (queue/worker control)
+        return;
+      _op := get_keyword ('op', params, '');
+      declare n, c integer;
+
+      if (_op = 'sql_drain')
+        {
+          n := atoi (get_keyword ('n', params, '1000')); if (n <= 0) n := 1000;
+          c := DB.DBA.VEC_SQL_QUEUE_DRAIN (n);
+          _ok := 1; _banner := 'SQL queue drained'; _detail := sprintf ('%d item(s) processed.', c);
+        }
+      else if (_op = 'sql_start')
+        {
+          n := atoi (get_keyword ('interval', params, '5')); if (n <= 0) n := 5;
+          DB.DBA.VEC_SQL_WORKER_START (n);
+          _ok := 1; _banner := 'SQL worker started'; _detail := sprintf ('Draining every %d second(s).', n);
+        }
+      else if (_op = 'sql_stop')
+        {
+          DB.DBA.VEC_SQL_WORKER_STOP ();
+          _ok := 1; _banner := 'SQL worker stopped'; _detail := '';
+        }
+      else if (_op = 'rdf_drain')
+        {
+          n := atoi (get_keyword ('n', params, '1000')); if (n <= 0) n := 1000;
+          c := DB.DBA.VEC_INDEX_QUEUE_DRAIN (n);
+          _ok := 1; _banner := 'SPARQL queue drained'; _detail := sprintf ('%d item(s) processed.', c);
+        }
+      else if (_op = 'rdf_runonce')
+        {
+          c := DB.DBA.VEC_INDEX_WORKER_RUN_ONCE ();
+          _ok := 1; _banner := 'Ran one SPARQL batch'; _detail := sprintf ('%d item(s) processed.', c);
+        }
+      else if (_op = 'rdf_start')
+        {
+          DB.DBA.VEC_INDEX_WORKER_START ();
+          _ok := 1; _banner := 'SPARQL worker started'; _detail := '';
+        }
+      else if (_op = 'rdf_stop')
+        {
+          DB.DBA.VEC_INDEX_WORKER_STOP ();
+          _ok := 1; _banner := 'SPARQL worker stopped'; _detail := '';
+        }
+      else if (_op = 'rdf_configure')
+        {
+          declare b, idl integer;
+          b   := atoi (get_keyword ('batch', params, '100')); if (b   <= 0) b := 100;
+          idl := atoi (get_keyword ('idle',  params, '5'));   if (idl <= 0) idl := 5;
+          DB.DBA.VEC_INDEX_WORKER_CONFIGURE (b, idl);
+          _ok := 1; _banner := 'SPARQL worker configured'; _detail := sprintf ('batch = %d, idle = %d s.', b, idl);
+        }
+      else if (_op = 'rdf_suspend')
+        {
+          DB.DBA.VEC_INDEX_QUEUE_SUSPEND ();
+          _ok := 1; _banner := 'SPARQL queue suspended'; _detail := '';
+        }
+      else if (_op = 'rdf_resume')
+        {
+          DB.DBA.VEC_INDEX_QUEUE_RESUME ();
+          _ok := 1; _banner := 'SPARQL queue resumed'; _detail := '';
+        }
+     done_proc:;
+    }
+
+  st := DB.DBA.VVEC_QUEUE_STATS ();
+
+  DB.DBA.VVEC_HEAD ('Maintenance', 'maintenance');
+?>
+<div class="page-head">
+  <div>
+    <h1>Index Maintenance</h1>
+    <div class="sub">Drain pending changes and drive the background workers for both surfaces.</div>
+  </div>
+  <div class="row-actions">
+    <a class="btn" href="maintenance">&#8635; Refresh</a>
+    <a class="btn" href="./">&#8592; Overview</a>
+  </div>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<div class="stats duo">
+
+  <!-- ===================== SQL queue ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <div><h3>SQL queue &amp; worker</h3><div class="sub"><span class="mono">DB.DBA.VEC_SQL_QUEUE</span></div></div>
+      <span class="pill blue">SQL</span>
+    </div>
+    <div class="card-body">
+      <div class="stat-line">
+        <div><div class="k">Pending</div><div class="v"><?= get_keyword ('sql_pending', st, 0) ?></div></div>
+        <div><div class="k">Errors</div><div class="v"><?= get_keyword ('sql_error', st, 0) ?></div></div>
+        <div class="spacer">
+<?vsp
+  if (get_keyword ('sql_running', st, 0) = 1)
+    http (sprintf ('<span class="pill green"><span class="dot"></span>running &middot; every %ds</span>', get_keyword ('sql_interval', st, 0)));
+  else
+    http ('<span class="pill gray"><span class="dot"></span>worker stopped</span>');
+?>
+        </div>
+      </div>
+      <div class="note-line">Last run: <span class="mono"><?vsp http (DB.DBA.VVEC_DISP (get_keyword ('sql_last_run', st, null))); ?></span> &middot; processed <?= get_keyword ('sql_last_count', st, 0) ?></div>
+<?vsp
+  if (get_keyword ('sql_last_error', st, null) is not null)
+    http (sprintf ('<div class="note-line bad">Last error: <span class="mono">%V</span></div>', cast (get_keyword ('sql_last_error', st, null) as varchar)));
+?>
+      <hr class="rule-soft">
+      <div class="ctlbar">
+        <div class="ctl">
+          <span class="lbl">Rows to drain now</span>
+          <form method="post" action="maintenance" data-working="Draining...">
+            <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="sql_drain">
+            <input name="n" type="number" min="1" value="1000">
+            <button class="btn sm primary" type="submit">Drain</button>
+          </form>
+        </div>
+        <div class="ctl">
+          <span class="lbl">Worker interval (seconds)</span>
+          <form method="post" action="maintenance">
+            <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="sql_start">
+            <input name="interval" type="number" min="1" value="5">
+            <button class="btn sm" type="submit">Start worker</button>
+          </form>
+        </div>
+        <div class="ctl">
+          <div class="ctl-row">
+            <form method="post" action="maintenance">
+              <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="sql_stop">
+              <button class="btn sm" type="submit">Stop worker</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SPARQL queue ===================== -->
+  <div class="card">
+    <div class="card-head">
+      <div><h3>SPARQL queue &amp; worker</h3><div class="sub"><span class="mono">DB.DBA.SPARQL_VEC_QUEUE</span></div></div>
+      <span class="pill violet">SPARQL</span>
+    </div>
+    <div class="card-body">
+      <div class="stat-line">
+        <div><div class="k">Pending</div><div class="v"><?= get_keyword ('rdf_pending', st, 0) ?></div></div>
+        <div><div class="k">Errors</div><div class="v"><?= get_keyword ('rdf_error', st, 0) ?></div></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+<?vsp
+  if (get_keyword ('rdf_suspended', st, 0) = 1)
+    http ('<span class="pill amber"><span class="dot"></span>suspended</span>');
+  if (get_keyword ('rdf_enabled', st, 0) = 1)
+    http ('<span class="pill green"><span class="dot"></span>running</span>');
+  else
+    http ('<span class="pill gray"><span class="dot"></span>worker stopped</span>');
+?>
+        </div>
+      </div>
+      <div class="note-line">Batch <?= get_keyword ('rdf_batch', st, 0) ?> &middot; idle <?= get_keyword ('rdf_idle', st, 0) ?>s &middot; processed <?= get_keyword ('rdf_processed', st, 0) ?></div>
+      <div class="note-line">Last run: <span class="mono"><?vsp http (DB.DBA.VVEC_DISP (get_keyword ('rdf_last_run', st, null))); ?></span></div>
+<?vsp
+  if (get_keyword ('rdf_last_error', st, null) is not null)
+    http (sprintf ('<div class="note-line bad">Last error: <span class="mono">%V</span></div>', cast (get_keyword ('rdf_last_error', st, null) as varchar)));
+?>
+      <hr class="rule-soft">
+      <div class="ctlbar">
+        <div class="ctl">
+          <span class="lbl">Rows to drain now</span>
+          <form method="post" action="maintenance" data-working="Draining...">
+            <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_drain">
+            <input name="n" type="number" min="1" value="1000">
+            <button class="btn sm primary" type="submit">Drain</button>
+          </form>
+        </div>
+        <div class="ctl"><div class="ctl-row">
+        <form method="post" action="maintenance" style="display:inline" data-working="Running...">
+          <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_runonce">
+          <button class="btn sm" type="submit">Run once</button>
+        </form>
+        <form method="post" action="maintenance" style="display:inline">
+          <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_start">
+          <button class="btn sm" type="submit">Start</button>
+        </form>
+        <form method="post" action="maintenance" style="display:inline">
+          <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_stop">
+          <button class="btn sm" type="submit">Stop</button>
+        </form>
+<?vsp
+  if (get_keyword ('rdf_suspended', st, 0) = 1)
+    {
+?>
+        <form method="post" action="maintenance" style="display:inline">
+          <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_resume">
+          <button class="btn sm" type="submit">Resume queue</button>
+        </form>
+<?vsp
+    }
+  else
+    {
+?>
+        <form method="post" action="maintenance" style="display:inline">
+          <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_suspend">
+          <button class="btn sm" type="submit">Suspend queue</button>
+        </form>
+<?vsp
+    }
+?>
+        </div></div>
+      </div>
+      <hr class="rule-soft">
+      <form method="post" action="maintenance" class="ctlbar">
+        <input type="hidden" name="do" value="maint"><input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>"><input type="hidden" name="op" value="rdf_configure">
+        <div class="ctl">
+          <span class="lbl">Worker batch size</span>
+          <input name="batch" type="number" min="1" value="100">
+        </div>
+        <div class="ctl">
+          <span class="lbl">Worker idle delay (seconds)</span>
+          <input name="idle" type="number" min="1" value="5">
+        </div>
+        <div class="ctl"><div class="ctl-row"><button class="btn sm" type="submit">Apply</button></div></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:22px">
+  <div class="card-body note-line">
+    <strong style="color:var(--ink)">How maintenance works.</strong>
+    Base-table writes and RDF quad changes enqueue work instead of embedding inline.
+    <em>Draining</em> processes pending items once; a <em>worker</em> drains on a schedule.
+    The SQL and SPARQL queues are independent. Manual-maintenance SPARQL indexes are updated by
+    <span class="mono">REFRESH VECTOR INDEX</span> (use the Refresh action on <a href="indexes">Manage Indexes</a>).
+  </div>
+</div>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

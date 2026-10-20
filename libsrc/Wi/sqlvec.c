@@ -135,6 +135,7 @@ sqlg_new_vec_ssls (sql_comp_t * sc, data_source_t * qn)
   sc->sc_vec_new_ssls = NULL;
   if (IS_TS (qn) || IS_QN (qn, sort_read_input) || IS_QN (qn, chash_read_input) || IS_QN (qn, trans_node_input)
       || IS_QN (qn, query_frag_input) || IS_QN (qn, cl_fref_read_input) || IS_QN (qn, txs_input)
+      || IS_QN (qn, vvec_search_node_input)
       || IS_QN (qn, geo_node_input)
       || IS_QN (qn, remote_table_source_input)
       || IS_QN (qn, in_iter_input) || IS_QN (qn, rdf_inf_pre_input))
@@ -3418,6 +3419,23 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       ASG_SSL (res, all_res, txs->txs_attr_range_out);
       ASG_SSL (res, all_res, txs->txs_score);
       asg_vec_ssl_array (sc, res, all_res, txs->txs_offband);
+    }
+  else if (IS_QN (qn, vvec_search_node_input))
+    {
+      QNCAST (vvec_search_node_t, vsn, qn);
+      REF_SSL (res, vsn->vsn_query_vec);
+      REF_SSL (res, vsn->vsn_query_text);
+      REF_SSL (res, vsn->vsn_k);
+      REF_SSL (res, vsn->vsn_ef_search);
+      if (vsn->vsn_rdf && !vsn->vsn_is_driving)
+	{
+	  REF_SSL (all_res, vsn->vsn_ro_id);
+	  REF_SSL (res, vsn->vsn_ro_id);
+	}
+      else
+	ASG_SSL (res, all_res, vsn->vsn_pk_id);
+      ASG_SSL (res, all_res, vsn->vsn_distance);
+      ASG_SSL (res, all_res, vsn->vsn_similarity);
     }
   else if (IS_QN (qn, xn_input))
     {

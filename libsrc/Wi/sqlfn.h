@@ -635,6 +635,9 @@ caddr_t ddl_col_nullable (char *name);
 /* log.c */
 
 void log_insert (lock_trx_t * lt, row_delta_t * rd, int flag);
+void log_vec_page (lock_trx_t * lt, key_id_t key_id, dp_addr_t dp, int offset, db_buf_t bytes, int len);
+void log_vec_page_record (dk_session_t * ses, key_id_t key_id, dp_addr_t dp, int offset, db_buf_t bytes, int len);
+int log_vec_page_sync (lock_trx_t * lt, dk_session_t * records);
 #define LOG_KEY_ONLY 128 /* or to insert flags to mark that the rd's key only is to be remade at replay */
 #define LOG_SYNC 256  /* with non txn insert, log_insert with this flag writes immediately */
 #define LOG_ANY_AS_STRING 512

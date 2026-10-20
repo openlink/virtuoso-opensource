@@ -421,6 +421,8 @@ int32 c_sqlo_max_layouts = 0;
 extern int sqlo_max_layouts; /* from sqldf.c */
 extern int32 sqlo_compiler_exceeds_run_factor;
 extern size_t sqlo_max_mp_size;
+extern float sqlo_vvec_ann_cost_bias; /* from wifn.h */
+float c_sqlo_vvec_ann_cost_bias = 1.0f;
 extern long mp_sparql_cap;
 int32 c_mp_sparql_cap = -1;
 
@@ -1065,6 +1067,15 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "StopCompilerWhenXOverRunTime", &sqlo_compiler_exceeds_run_factor) == -1)
     sqlo_compiler_exceeds_run_factor = 0;
+
+  /* ANN cost bias: float value, default 1.0. Lower (e.g., 0.01) forces ANN plans for small tables in tests. */
+  {
+    char *cost_bias_str = NULL;
+    if (cfg_getstring (pconfig, section, "VectorANNCostBias", &cost_bias_str) == -1 || !cost_bias_str || sscanf (cost_bias_str, "%f", &c_sqlo_vvec_ann_cost_bias) != 1)
+      c_sqlo_vvec_ann_cost_bias = 1.0f;
+    if (c_sqlo_vvec_ann_cost_bias <= 0)
+      c_sqlo_vvec_ann_cost_bias = 1.0f;
+  }
 
   if (cfg_getsize (pconfig, section, "MaxMemPoolSize", &size_t_helper) == -1)
     sqlo_max_mp_size = 400000000;
@@ -2121,6 +2132,7 @@ new_db_read_cfg (dbe_storage_t * ignore, const char *mode)
   txn_after_image_limit = c_txn_after_image_limit;
   n_fds_per_file = c_n_fds_per_file;
   sqlo_max_layouts = c_sqlo_max_layouts;
+  sqlo_vvec_ann_cost_bias = c_sqlo_vvec_ann_cost_bias;
   sql_proc_use_recompile = c_sql_proc_use_recompile;
 
 

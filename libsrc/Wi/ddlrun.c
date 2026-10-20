@@ -2723,6 +2723,49 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t col, int if_exists)
 #define MIN_FOR_ATOMIC 10000
 #define atomic_mode(q,m,i) if ((i)) srv_global_lock (q,m);
 
+
+/* Dropping a vector index frees its whole HNSW graph, which a concurrent search
+   may be walking: a page latch protects the page a search currently holds, not
+   a reference it has already copied out of one.  That is the hazard the graph
+   gate closes between a search and a rebuild, and a drop has the same one.
+   MIN_FOR_ATOMIC does not cover it -- that threshold is a judgement about how
+   long a B-tree drop takes, not about whether a reader is safe, and at 10,000
+   rows it is far above the size at which a vector index is worth having.  So a
+   vector key's drop is atomic whatever the table's size.
+
+   srv_global_lock () is re-entrant by owning thread, so the nested
+   ddl_drop_index () calls a table drop makes cost nothing once the table drop
+   has taken it. */
+
+static int
+ddl_index_is_vec (query_instance_t * qi, const char *table, const char *name)
+{
+  dbe_schema_t *sc = wi_inst.wi_schema;
+  dbe_key_t *key;
+  if (table)
+    key = sch_table_key (sc, (char *) table, (char *) name, 1);
+  else
+    key = sch_id_to_key (sc, ddl_key_name_to_id (qi, name, NULL));
+  return vvec_key_p (key);
+}
+
+
+static int
+ddl_table_has_vec_key (query_instance_t * qi, const char *name)
+{
+  dbe_table_t *tb = name ? sch_name_to_table (wi_inst.wi_schema, (char *) name) : NULL;
+  int found = 0;
+  if (!tb)
+    return 0;
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      if (vvec_key_p (key))
+	found = 1;
+    }
+  END_DO_SET ();
+  return found;
+}
+
 #define STOP_LOG \
   if (!atomic) \
     { \
@@ -2785,6 +2828,8 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   int is_cluster = 0;
 
   atomic = count_exceed (qi, table, MIN_FOR_ATOMIC, name);
+  if (!atomic && ddl_index_is_vec (qi, table, name))
+    atomic = 1;			/* frees a graph a reader may be walking */
   atomic_mode (qi, 1, atomic);
   STOP_LOG;
   if (!table)
@@ -2832,6 +2877,10 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
 	  atomic_mode (qi, 0, atomic);
 	  sqlr_resignal (err);
 	}
+    }
+  else if (vvec_key_p (key))
+    {
+      vvec_drop_index (qi, key);
     }
   else
     {
@@ -2909,9 +2958,20 @@ ddl_build_index (query_instance_t * qi, char *table, char *name, caddr_t * repl)
 int
 inx_opt_flag (caddr_t * opts, char *name)
 {
-  if (!opts)
+  int inx;
+  if (!opts || DV_ARRAY_OF_POINTER != DV_TYPE_OF (opts))
     return 0;
-  return (box_is_string (opts, name, 0, BOX_ELEMENTS (opts)));
+  DO_BOX (caddr_t, opt, inx, opts)
+    {
+      if (opt && IS_BOX_POINTER (opt))
+	{
+	  dtp_t dtp = DV_TYPE_OF (opt);
+	  if ((DV_STRINGP (opt) || DV_WIDESTRINGP (opt) || DV_C_STRING == dtp) && 0 == strcmp ((char *) opt, name))
+	    return 1;
+	}
+    }
+  END_DO_BOX;
+  return 0;
 }
 
 
@@ -3014,17 +3074,50 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
 {
   int atomic;
   caddr_t *repl = qi->qi_trx->lt_replicate;
+  caddr_t *ddl_cols = cols;
+  caddr_t * ddl_opts = opts;
+  caddr_t vec_key_col_buf[1];
   int is_cluster = 0;
   /* commit, because it will clear up the lt_log */
   ddl_commit_trx (qi);
 
-  ddl_index_def_write_schema (qi, name, table, cols, opts, &is_cluster);
+  if (vvec_index_opts_p (opts))
+    {
+      caddr_t pk_col;
+      caddr_t source_col;
+      ddl_opts = vvec_prepare_index_opts (qi, name, table, cols, opts);
+      source_col = vvec_opt_value (ddl_opts, "sc");
+      if (vvec_source_column_needs_pk_key (qi, table, source_col))
+	{
+	  pk_col = vvec_opt_value (ddl_opts, "pk");
+	  if (!vvec_is_string_box (pk_col))
+	    sqlr_new_error ("42000", "VEC11", "Vector index %s is missing primary-key metadata.", name);
+	  vec_key_col_buf[0] = pk_col;
+	  ddl_cols = vec_key_col_buf;
+	}
+      else if (0 == (int) BOX_ELEMENTS (cols))
+	{
+	  /* ON <table> written without a ('<column>') list: vvec inferred the
+	     source column, and that is what the key has to be built from --
+	     ddl_cols would otherwise still be the empty array the parser made. */
+	  if (!vvec_is_string_box (source_col))
+	    sqlr_new_error ("42000", "VEC11", "Vector index %s is missing source-column metadata.", name);
+	  vec_key_col_buf[0] = source_col;
+	  ddl_cols = vec_key_col_buf;
+	}
+    }
+
+  ddl_index_def_write_schema (qi, name, table, ddl_cols, ddl_opts, &is_cluster);
 
   atomic = count_exceed (qi, table, MIN_FOR_ATOMIC, name);
   atomic_mode (qi, 1, atomic);  /* global lock (log is disabled) */
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      if (qi_name_to_table (qi, table) && !inx_opt_flag (opts, "no_fill"))
+      if (qi_name_to_table (qi, table) && vvec_index_opts_p (ddl_opts))
+	{
+	  vvec_index_post_create (qi, table, name, ddl_opts);
+	}
+      else if (qi_name_to_table (qi, table) && !inx_opt_flag (ddl_opts, "no_fill"))
 	{
 	  ddl_build_index (qi, table, name, repl);
 	}
@@ -3346,6 +3439,8 @@ ddl_drop_table (query_instance_t * qi, char *name, int target_is_view)
     atomic = count_exceed (qi, name, MIN_FOR_ATOMIC, NULL);
   else
     atomic = 0;
+  if (!atomic && ddl_table_has_vec_key (qi, name))
+    atomic = 1;			/* frees a graph a reader may be walking */
 
   ddl_object_is_view = (NULL != sch_view_def (wi_inst.wi_schema, name));
 

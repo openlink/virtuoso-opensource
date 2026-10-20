@@ -4660,6 +4660,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
   int has_tabid = 0;
   int has_ft = 0;
   int has_geo = 0;
+  int has_vector = 0;
   int has_inference = 0;
   int has_transitive = 0;
   int needs_transitive = 0;
@@ -4752,6 +4753,9 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         case SERVICE_L:
           has_service = 1;
           continue;
+        case INDEX_L: case INDEX_ALL_L: case RANKING_L:
+        case DISTANCE_L: case DISTANCE_LIMIT_L: case LIMIT_L: case EF_SEARCH_L:
+          has_vector = 1; continue;
         default: spar_internal_error (sparp, "sparp_" "validate_options_of_tree(): unsupported option");
         }
     }
@@ -4760,7 +4764,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
     case SPAR_GP:
       if (has_inference)
         spar_error (sparp, "Inference options can be specified only for plain triple patterns, not for group patterns");
-      if (has_ft || has_geo)
+      if ((has_ft || has_geo) && !has_vector)
         spar_error (sparp, "%s options can be specified only for triple patterns with special predicates, not for group patterns", (has_ft ? "Free-text" : "Spatial"));
       if (needs_transitive && !has_transitive)
         spar_error (sparp, "Transitive-specific options are used without TRANSITIVE option");
@@ -4768,7 +4772,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
     case SPAR_TRIPLE:
       if (needs_transitive || has_transitive)
         spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triple patterns");
-      if (has_ft || has_geo)
+      if ((has_ft || has_geo) && !has_vector)
         spar_error (sparp, "%s options can be specified only for triple patterns with special predicates, not for plain patterns", (has_ft ? "Free-text" : "Spatial"));
       if (has_service)
         spar_internal_error (sparp, "Triple pattern has SERVICE invocation options, probably due to invalid optimization");
@@ -5748,6 +5752,154 @@ void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt)
 {
   if (!sparp_valmode_is_correct (fmt))
     spar_internal_error (sparp, "sparp_jso_validate_format(): custom format does not have JSO RTTI");
+}
+
+/* ============== Vector-index trigger-pair extraction ============== */
+/* Walks a finalized WHERE group-graph-pattern tree of a general (KEY/EMBEDDING/
+   WHERE) SPARQL vector index and extracts the set of (graph, predicate) pairs
+   that the pattern reads.  The result drives predicate-precise async incremental
+   maintenance: a change to a triple in (G, P) enqueues the changed subject as a
+   candidate key, and the existing processing path re-evaluates the WHERE for
+   that single key (upsert if it still matches, delete if not).
+
+   Rules (matching how RDF works -- the predicate is the unit of schema/dependency):
+   - Every indexed triple must sit inside an explicit GRAPH <iri>; if any triple
+     has a non-constant graph (default graph, variable graph, FROM-derived), the
+     whole extraction returns an EMPTY list and async maintenance is rejected.
+   - A triple with a constant IRI predicate emits a predicate-precise pair (G, P).
+   - A triple with a variable predicate or a property path emits a graph-only
+     fallback pair (G, "") for that graph; "" subsumes any precise pair for the
+     same graph (coarser graph-only scoping is the only permitted fallback).
+   - Pairs are de-duplicated.  FILTER/BIND/VALUES are ignored -- only triples
+     carry (G, P).
+   The returned SPART ** is a flat array of [graph_iri_1, pred_iri_1, ...] boxes
+   (caddr_t), suitable for passing as the `named` argument of spar_make_qm_sql()
+   to DB.DBA.VEC_INDEX_SET_TRIGGERS.  Graph IRI boxes are DV_UNAME (copied from
+   QName values) so they satisfy the named-arg keyword-type check in
+   spar_make_qm_sql(); predicate boxes are DV_UNAME for precise IRIs or a
+   DV_SHORT_STRING "" for the graph-only fallback. */
+
+static int
+spar_vec_push_trigger_pair (dk_set_t *acc, caddr_t graph_box, caddr_t pred_box)
+{
+  int is_graph_only = ('\0' == pred_box[0]);
+  dk_set_t prev = NULL, cur = *acc;
+  while (NULL != cur)
+    {
+      caddr_t eg = (caddr_t)(cur->data);
+      caddr_t ep = (caddr_t)(cur->next->data);
+      int g_match = (0 == strcmp (eg, graph_box));
+      if (g_match)
+        {
+          int ep_is_graph_only = ('\0' == ep[0]);
+          if (is_graph_only)
+            {
+              /* New graph-only subsumes any existing pair for this graph:
+                 drop the existing pair and keep scanning. */
+              dk_set_t after = cur->next->next;
+              if (NULL == prev)
+                *acc = after;
+              else
+                prev->next = after;
+              cur = after;
+              continue;
+            }
+          if (ep_is_graph_only)
+            return 0;	/* existing graph-only subsumes new precise */
+          if (0 == strcmp (ep, pred_box))
+            return 0;	/* exact duplicate */
+        }
+      prev = cur->next;
+      cur = cur->next->next;
+    }
+  t_set_push (acc, (void *) pred_box);
+  t_set_push (acc, (void *) graph_box);
+  return 0;
+}
+
+/* Returns 0 on success, -1 if a non-constant graph is found (the whole
+   extraction must then return an empty list). */
+static int
+spar_vec_collect_trigger_pairs_int (SPART *gp, dk_set_t *acc, caddr_t *default_graphs)
+{
+  SPART **members;
+  int ctr, len;
+  if (NULL == gp)
+    return 0;
+  if (SPAR_GP != SPART_TYPE (gp))
+    return 0;
+  members = gp->_.gp.members;
+  if (NULL == members)
+    return 0;
+  len = BOX_ELEMENTS_0 (members);
+  for (ctr = 0; ctr < len; ctr++)
+    {
+      SPART *memb = members[ctr];
+      int mt = SPART_TYPE (memb);
+      if (SPAR_TRIPLE == mt)
+        {
+          SPART *g = memb->_.triple.tr_graph;
+          SPART *p = memb->_.triple.tr_predicate;
+          caddr_t graph_box, pred_box;
+          if (SPAR_QNAME == SPART_TYPE (p))
+            pred_box = t_box_dv_short_string (p->_.qname.val);
+          else
+            pred_box = t_box_dv_short_string ("");	/* graph-only fallback */
+          if (SPAR_QNAME != SPART_TYPE (g))
+            {
+              /* Not inside an explicit GRAPH <iri>.  A FROM clause on the
+                 selector names the default graph(s) the pattern is read from,
+                 so the triple IS scopable after all -- to each of them, since a
+                 change in any could alter what the selector enumerates.
+                 Without FROM there is nothing to scope it to and async is
+                 rejected, as before. */
+              int gi, gn = default_graphs ? BOX_ELEMENTS_0 (default_graphs) : 0;
+              if (0 == gn)
+                return -1;	/* not graph-scopable -> reject async */
+              for (gi = 0; gi < gn; gi++)
+                spar_vec_push_trigger_pair (acc,
+                    t_box_copy (default_graphs[gi]), t_box_copy (pred_box));
+              continue;
+            }
+          graph_box = t_box_copy (g->_.qname.val);
+          spar_vec_push_trigger_pair (acc, graph_box, pred_box);
+        }
+      else if (SPAR_GP == mt)
+        {
+          int rc;
+          /* A subselect member is a GP with subtype SELECT_L and a SPAR_REQ_TOP
+             subquery; recurse into its WHERE pattern.  All other GPs (plain
+             group, UNION, OPTIONAL, GRAPH group) are recursed directly -- the
+             triples inside a GRAPH group already carry the group's IRI in
+             tr_graph. */
+          if ((SELECT_L == memb->_.gp.subtype) && (NULL != memb->_.gp.subquery)
+              && (SPAR_REQ_TOP == SPART_TYPE (memb->_.gp.subquery)))
+            rc = spar_vec_collect_trigger_pairs_int (memb->_.gp.subquery->_.req_top.pattern, acc, default_graphs);
+          else
+            rc = spar_vec_collect_trigger_pairs_int (memb, acc, default_graphs);
+          if (0 != rc)
+            return rc;
+        }
+      /* else: filters, binds, VALUES, SERVICE, etc. -- ignored */
+    }
+  return 0;
+}
+
+SPART **
+spar_vec_extract_trigger_pairs (sparp_t *sparp, SPART *where_gp, caddr_t *default_graphs)
+{
+  dk_set_t acc = NULL;
+  int rc;
+  rc = spar_vec_collect_trigger_pairs_int (where_gp, &acc, default_graphs);
+  if (0 != rc)
+    return (SPART **)t_list (0);	/* not async-scopable */
+  if (NULL == acc)
+    return (SPART **)t_list (0);	/* no triples in pattern */
+  /* The accumulator holds each pair head-first as (graph, pred) because
+     spar_vec_push_trigger_pair pushes pred then graph.  Use the order-preserving
+     conversion: t_revlist_to_array would reverse each pair to (pred, graph),
+     which VEC_INDEX_SET_TRIGGERS then stores with graph and predicate swapped. */
+  return (SPART **)t_list_to_array (acc);
 }
 
 #if 0

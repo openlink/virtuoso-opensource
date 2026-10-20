@@ -1,0 +1,195 @@
+#!/bin/sh
+#
+#  fetch-onnx-model — verify (and if necessary fetch) the default ONNX model.
+#
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#
+#  Copyright (C) 1998-2026 OpenLink Software
+#
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
+#
+#  The source tree ships the tokenizer files, license and checksums, but not
+#  model.onnx: at ~60 MB it is too large to keep in git.  It is this tree's
+#  own export (see virtuoso-export-embedding-model), published on the OpenLink
+#  Nexus server together with copies of the other files.
+#
+#  Any file listed in SHA256SUMS that is missing or fails its checksum is
+#  fetched from there.  A tree that already holds a good copy only verifies
+#  checksums and never touches the network, so an offline build works once
+#  model.onnx has been placed in the model directory by hand.
+#
+#  Usage:
+#    fetch-onnx-model --dir DIR [--verify-only] [--force-fetch] [--quiet]
+#
+#    --dir DIR       model directory holding SHA256SUMS  (required)
+#    --verify-only   never fetch; fail if files are missing or bad
+#    --force-fetch   re-download every file even if the local copy verifies
+#    --quiet         only report problems
+#
+#  Exit status: 0 verified (or fetched and verified), non-zero otherwise.
+#
+
+set -e
+
+DIR=""
+VERIFY_ONLY=0
+FORCE_FETCH=0
+QUIET=0
+
+#  Download location of the published export.  The directory name under it
+#  matches the model directory's own name.
+BASE_URL="https://nexus.openlinksw.com/repository/onnx-models"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dir)          DIR="$2"; shift 2 ;;
+        --verify-only)  VERIFY_ONLY=1; shift ;;
+        --force-fetch)  FORCE_FETCH=1; shift ;;
+        --quiet)        QUIET=1; shift ;;
+        -h|--help)      sed -n '34,42p' "$0"; exit 0 ;;
+        *)              echo "fetch-onnx-model: unknown argument: $1" >&2; exit 2 ;;
+    esac
+done
+
+if [ -z "$DIR" ]; then
+    echo "fetch-onnx-model: --dir is required" >&2
+    exit 2
+fi
+if [ ! -f "$DIR/SHA256SUMS" ]; then
+    echo "fetch-onnx-model: no SHA256SUMS in $DIR" >&2
+    exit 2
+fi
+#  Absolute, so checks run from the staging directory still find SHA256SUMS.
+DIR=`cd "$DIR" && pwd`
+
+MODEL_URL="$BASE_URL/`basename "$DIR"`"
+
+say () { [ "$QUIET" = "1" ] || echo "$@"; }
+
+#  Pick a checksum tool.  GNU coreutils ships sha256sum; macOS and the BSDs
+#  ship shasum.  If neither exists, say so rather than skipping the check —
+#  silently not verifying is the outcome this script exists to prevent.
+if command -v sha256sum >/dev/null 2>&1; then
+    SUMCHECK="sha256sum -c"
+elif command -v shasum >/dev/null 2>&1; then
+    SUMCHECK="shasum -a 256 -c"
+else
+    echo "fetch-onnx-model: neither sha256sum nor shasum found; cannot verify $DIR" >&2
+    echo "  Install GNU coreutils or Perl's shasum, or verify the model by hand." >&2
+    exit 1
+fi
+
+FILES=`sed -n 's/^[0-9a-fA-F]\{64\} [ *]//p' "$DIR/SHA256SUMS"`
+
+verify () {
+    ( cd "$DIR" && $SUMCHECK SHA256SUMS ) >/dev/null 2>&1
+}
+
+#  verify_file DIR FILE: check one file against the SHA256SUMS in $DIR.
+verify_file () {
+    ( cd "$1" && grep " $2\$" "$DIR/SHA256SUMS" | $SUMCHECK - ) >/dev/null 2>&1
+}
+
+#  Fast path: a good local copy is all the build needs.
+if [ "$FORCE_FETCH" = "0" ] && verify; then
+    say "ONNX model verified in $DIR"
+    exit 0
+fi
+
+if [ "$VERIFY_ONLY" = "1" ]; then
+    #  Distinguish "missing" from "corrupt": they have different remedies, and
+    #  an air-gapped builder needs to know which they are looking at.
+    missing=""
+    for f in $FILES; do
+        [ -f "$DIR/$f" ] || missing="$missing $f"
+    done
+    echo "" >&2
+    if [ -n "$missing" ]; then
+        echo "fetch-onnx-model: missing model file(s) in $DIR:$missing" >&2
+    else
+        echo "fetch-onnx-model: checksum verification FAILED in $DIR" >&2
+        echo "" >&2
+        ( cd "$DIR" && $SUMCHECK SHA256SUMS ) 2>&1 | sed 's/^/    /' >&2 || true
+        echo "" >&2
+        echo "  A wrong model does not fail loudly at runtime — it produces" >&2
+        echo "  confident, wrong embeddings — so the build stops here." >&2
+    fi
+    echo "" >&2
+    echo "  Fetch a verified copy with:" >&2
+    echo "      $0 --dir $DIR" >&2
+    echo "  or download the files by hand from" >&2
+    echo "      $MODEL_URL/" >&2
+    echo "  or build without the plugin: configure --disable-onnxruntime" >&2
+    echo "" >&2
+    exit 1
+fi
+
+if command -v curl >/dev/null 2>&1; then
+    DL="curl -fsSL -o"
+elif command -v wget >/dev/null 2>&1; then
+    DL="wget -q -O"
+else
+    echo "fetch-onnx-model: neither curl nor wget found; cannot fetch." >&2
+    echo "  Download these by hand into $DIR:" >&2
+    for f in $FILES; do
+        echo "    $MODEL_URL/$f" >&2
+    done
+    exit 1
+fi
+
+say "Fetching the ONNX model into $DIR"
+
+tmp="$DIR/.fetch.$$"
+mkdir -p "$tmp"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+#  Download into a staging directory and verify each file there, so a bad
+#  download never overwrites a good local copy.
+fetched=""
+for f in $FILES; do
+    if [ "$FORCE_FETCH" = "0" ] && verify_file "$DIR" "$f"; then
+        continue
+    fi
+    say "  $f"
+    if ! $DL "$tmp/$f" "$MODEL_URL/$f"; then
+        echo "fetch-onnx-model: could not download $MODEL_URL/$f" >&2
+        echo "  Nothing has been overwritten in $DIR." >&2
+        exit 1
+    fi
+    if ! verify_file "$tmp" "$f"; then
+        echo "" >&2
+        echo "fetch-onnx-model: the downloaded $f does not match SHA256SUMS." >&2
+        echo "  Nothing has been overwritten in $DIR." >&2
+        echo "" >&2
+        echo "  The published copy may have changed.  Compare deliberately" >&2
+        echo "  before trusting it: a changed model or tokenizer silently" >&2
+        echo "  changes every vector in every index built with it." >&2
+        echo "" >&2
+        exit 1
+    fi
+    fetched="$fetched $f"
+done
+
+for f in $fetched; do
+    mv "$tmp/$f" "$DIR/$f"
+done
+
+if ! verify; then
+    echo "fetch-onnx-model: $DIR still fails verification after fetching" >&2
+    exit 1
+fi
+say "ONNX model fetched and verified in $DIR"
+exit 0

@@ -162,6 +162,9 @@ endif
 if !WITH_GRAPHQL
 REM_GRAPHQL_C=;
 endif
+if !WITH_ONNX
+REM_ONNX_C=;
+endif
 
 do_subst = \
 	sed -e 's,[@]PREFIX[@],$(prefix),g' \
@@ -181,7 +184,8 @@ do_subst = \
 	    -e 's,[@]REM_PROJ4[@],$(REM_PROJ4_C),g' \
 	    -e 's,[@]REM_GEOS[@],$(REM_GEOS_C),g' \
 	    -e 's,[@]REM_SHAPEFILEIO[@],$(REM_SHAPEFILEIO_C),g' \
-	    -e 's,[@]REM_GRAPHQL[@],$(REM_GRAPHQL_C),g'
+	    -e 's,[@]REM_GRAPHQL[@],$(REM_GRAPHQL_C),g' \
+	    -e 's,[@]REM_ONNX[@],$(REM_ONNX_C),g'
 
 install-data-local:
 	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"

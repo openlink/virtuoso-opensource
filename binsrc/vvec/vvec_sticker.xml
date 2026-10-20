@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+    <caption>
+	<name package="vvec">
+	    <prop name="Title" value="VVec"/>
+	    <prop name="Developer" value="OpenLink Software"/>
+	    <prop name="Copyright" value="(C) 1998-2026 OpenLink Software"/>
+	    <prop name="Download" value="http://virtuoso.openlinksw.com/"/>
+	</name>
+	<version package="$VERSION$">
+	    <prop name="Release Date" value="$PACKDATE$"/>
+	    <prop name="Build" value="Release, optimized"/>
+	</version>
+    </caption>
+    <dependencies>
+    </dependencies>
+    <procedures uninstallation="supported">
+	<sql purpose="pre-install">
+	    <![CDATA[
+	    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION$'))
+	    {
+		result ('ERROR', 'The VVec package requires server version $NEED_VERSION$ or greater');
+		signal ('FATAL', 'The VVec package requires server version $NEED_VERSION$ or greater');
+	    }
+	    ]]>
+	</sql>
+	<sql purpose="post-install">
+	    <![CDATA[
+	    ;
+	    ]]>
+	</sql>
+    </procedures>
+    <ddls>
+	<sql purpose="post-install">
+	    <![CDATA[
+	    set_qualifier ('DB');
+	    registry_set ('_vvec_path_', '$BASE_PATH$/vvec/');
+	    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH$/vvec/sql/vvec_install.sql', 0, 'report', $ISDAV$);
+	    ]]>
+	</sql>
+	<sql purpose='pre-uninstall'>
+	    <![CDATA[
+	    -- Remove the virtual-directory mapping and the clean-URL rules; the DAV
+	    -- resources are removed by the VAD engine.  Each is guarded on its own,
+	    -- so a deploy that never ran, or one from before the rules existed,
+	    -- still uninstalls cleanly.
+	    {
+	      declare exit handler for sqlstate '*' { ; };
+	      DB.DBA.VHOST_REMOVE (lpath => '/vvec/');
+	    }
+	    {
+	      declare exit handler for sqlstate '*' { ; };
+	      delete from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = 'vvec_rule_list';
+	      delete from DB.DBA.URL_REWRITE_RULE where URR_RULE like 'vvec_rule_%';
+	    }
+	    -- Sign-in sessions: stop the sweeper and drop the store.  Sessions are
+	    -- ephemeral by definition, so there is nothing here worth keeping once
+	    -- the console is gone.
+	    {
+	      declare exit handler for sqlstate '*' { ; };
+	      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'VVEC_SESSION_GC';
+	    }
+	    {
+	      declare exit handler for sqlstate '*' { ; };
+	      exec ('drop table DB.DBA.VVEC_SESSION');
+	    }
+	    ]]>
+	</sql>
+    </ddls>
+    <resources>
+	<!-- $f$ = the source basename, so each target is an exact path (no source
+	     subdirectory is appended). -->
+	<file type="$TYPE$" source_uri="vsp/*.vsp" target_uri="vvec/$f$" />
+	<file type="$TYPE$" source_uri="css/*.css" target_uri="vvec/statics/$f$" />
+	<file type="$TYPE$" source_uri="sql/*.sql" target_uri="vvec/sql/$f$" />
+    </resources>
+    <registry>
+    </registry>
+</sticker>

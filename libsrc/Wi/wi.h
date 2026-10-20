@@ -61,6 +61,17 @@
  *  Global features
  */
 typedef struct free_set_cache_s	free_set_cache_t;
+/* Per index tree state of a native vector index. */
+typedef struct vvec_tree_s
+{
+  rwlock_t *	vt_graph_rwlock; /* stable cross-page references during graph replacement */
+  dk_mutex_t	vt_writer_mtx; /* serializes graph writes; guards the fields below */
+  dk_set_t	vt_undo; /* undo items of rolled-back transactions, applied by the next writer */
+  char		vt_rb_marked; /* a rollback marker for this index is in the log */
+  int64		vt_rb_gen; /* bumped by rebuild, voids older undo items */
+  int64		vt_rb_seq; /* orders undo items */
+} vvec_tree_t;
+
 typedef struct index_tree_s	index_tree_t;
 typedef struct search_spec_s	search_spec_t;
 typedef struct placeholder_s	placeholder_t;
@@ -560,6 +571,7 @@ struct index_tree_s
     char		it_is_single_page;
     buffer_desc_t *	it_root_buf;
     dk_mutex_t *	it_lock_release_mtx;
+    vvec_tree_t	it_vvec; /* vector index state, see vvec.c */
     hash_index_t * 	it_hi; /* Ifhash index */
     dp_addr_t	it_hash_first;
     char		it_shared;
@@ -2231,4 +2243,3 @@ void sti_init (sys_timer_t*);
 void sti_cum (sys_timer_t * cum, sys_timer_t * start);
 
 #endif /* _WI_H */
-

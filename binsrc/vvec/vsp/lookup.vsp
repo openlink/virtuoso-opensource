@@ -1,0 +1,17 @@
+<?vsp
+  -- VVec · table-lookup AJAX endpoint.
+  --   GET /vvec/lookup.vsp?name=<table>
+  -- Returns JSON describing whether the named table is a create-eligible target
+  -- (single INTEGER primary key + at least one text column) and, when it is, the
+  -- list of embeddable VARCHAR / LONG VARCHAR columns.  Read-only and idempotent
+  -- (a GET, so no CSRF token is needed), and served behind the same /vvec/
+  -- session guard as every other console page, running as vsp_user 'dba'.
+  -- NOTE: when an executable VSP is hosted from a WebDAV collection (as the whole
+  -- /vvec/ console is), Virtuoso emits Content-Type: text/html for the response
+  -- regardless of this http_header call; the header is the correct idiom and takes
+  -- effect under filesystem hosting.  The body is still valid JSON and the client
+  -- parses it with fetch().json() (which reads the body, not the Content-Type).
+  set http_charset='utf-8';
+  http_header (sprintf ('Content-Type: application/json; charset=UTF-8\r\n'));
+  http (DB.DBA.VVEC_TABLE_LOOKUP_JSON (get_keyword ('name', params, '')));
+?>

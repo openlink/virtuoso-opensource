@@ -603,6 +603,10 @@ sqlc_contains_fn_to_char (const char *name)
       if (0 == stricmp (name, "ext_contains"))
         return 'e';
       break;
+    case 'k': case 'K':
+      if (0 == stricmp (name, "knnSimilar"))
+        return 'v';
+      break;
     case 'x': case 'X':
       if (0 == stricmp (name, "xcontains"))
     return 'x';

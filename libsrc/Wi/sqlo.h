@@ -99,6 +99,16 @@ typedef struct op_table_s
   ST *		ot_geo;
   ST *		ot_geo_rdf;
   ST *		ot_geo_prec;
+  /* Vector ANN search members (M3) */
+  ST *           ot_vec_query;	/*!< Query vector for ANN search */
+  ST *           ot_vec_query_text;	/*!< Raw text for ANN search; embedded by vvec_search_node instead of a query-vector BIF */
+  ST *           ot_vec_k;	/*!< k parameter for ANN */
+  ST *           ot_vec_ef_search;	/*!< ef_search parameter */
+  dbe_key_t *    ot_vec_index;	/*!< Vector index key, if ANN plan chosen */
+  op_virt_col_t *ot_vec_distance;	/*!< Distance output column */
+  op_virt_col_t *ot_vec_similarity;	/*!< Similarity output column, wired to vsn_similarity only inside sqlg_vvec_search_node's real codegen (never during optimize-phase table placement, which can run speculatively via sqlo_hash_filler) */
+  dk_set_t       ot_vec_row_calls;	/*!< X_SIMILAR CALL_STMT trees to rewrite to reference ot_vec_similarity, but only if/when sqlg_vvec_search_node actually runs for this table; if leading ANN is suppressed during placement, sqlg_vvec_search_node never runs and these are left untouched in their safe __VEC_INDEX_ROW_SIMILARITY form */
+  dbe_key_t *    ot_vec_rdf_key;	/*!< knnSimilar (O, ...) on RDF_QUAD: the vector index on DB.DBA.RDF_OBJ */
   /* hash join */
   setp_node_t * 	ot_hash_filler;
   int		ot_fixed_order;
@@ -254,6 +264,7 @@ struct df_elt_s
       bitf_t is_text_order:1;
       bitf_t text_only:1;
       bitf_t is_xcontains:1;
+      bitf_t is_vec_order:1;	/*!< If vector ANN drives the ordering (M3) */
       bitf_t is_locus_first:1;
       bitf_t is_leaf:1;
       bitf_t is_cl_part_first:1;
@@ -266,6 +277,7 @@ struct df_elt_s
       df_elt_t         *xpath_pred;
       data_source_t *	text_node;
       data_source_t *	xpath_node;
+      data_source_t *	vvec_search_node;	/*!< Vector ANN search node (M3) */
 
       /* hash join */
       df_elt_t *	hash_filler;
@@ -674,6 +686,7 @@ int sqlo_oby_exp_cols (sqlo_t * so, ST * dt, ST** oby);
 void sqlo_scope (sqlo_t * so, ST ** ptree);
 df_elt_t * sqlo_df (sqlo_t * so, ST * tree);
 df_elt_t * sqlo_df_virt_col (sqlo_t * so, op_virt_col_t * vc);
+op_virt_col_t * sqlo_virtual_col_crr (sqlo_t * so, op_table_t * ot, const char * name, dtp_t dtp, int is_out);
 op_table_t * sqlo_find_dt (sqlo_t * so, ST * tree);
 op_table_t * sqlo_cname_ot (sqlo_t *, char * cname);
 op_table_t * sqlo_cname_ot_1 (sqlo_t *, char * cname, int gpf_if_not);
@@ -927,6 +940,9 @@ void dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway
 void sqlo_choose_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * col_preds_ret, dk_set_t * after_preds_ret);
 void sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic);
 void sqlg_xpath_node (sqlo_t * so, df_elt_t * tb_dfe);
+void sqlg_vvec_search_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic);
+void sqlo_knn_similar_args (ST ** args, caddr_t * inx_name_ret, ST ** k_ret);
+dbe_key_t * sqlo_knn_similar_key (sqlo_t * so, ST ** args);	/*!< M3: Vector ANN search node */
 inx_op_t * sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * parent_iop);
 key_source_t * sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key);
 void sqlg_non_index_ins (df_elt_t * tb_dfe);

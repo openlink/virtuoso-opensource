@@ -1,0 +1,182 @@
+<?vsp
+  -- VVec · Namespace Prefixes : list, add and remove the persistent SPARQL /
+  -- XML namespace prefixes of this instance (DB.DBA.SYS_XML_PERSISTENT_NS_DECL).
+  -- The same set backs the built-in SPARQL query editor and every SPARQL query
+  -- that uses a qname without declaring a local PREFIX, so a prefix added here
+  -- is immediately usable in a vector-index selector.
+  set http_charset='utf-8';
+
+  declare _ok integer;                 -- -1 none, 1 ok, 0 error
+  declare _banner, _detail varchar;
+  declare _op, _pfx, _uri varchar;
+  declare _r integer;
+
+  _ok := -1; _banner := ''; _detail := '';
+  _pfx := ''; _uri := '';
+
+  if (get_keyword ('do', params, '') = 'ns')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any write
+        return;
+      _op  := get_keyword ('op', params, '');
+      _pfx := trim (get_keyword ('pfx', params, ''));
+      _uri := trim (get_keyword ('uri', params, ''));
+
+      if (_op = 'set')
+        {
+          declare _had integer;
+          if (DB.DBA.VVEC_PREFIX_OK (_pfx) = 0)
+            { _ok := 0; _banner := 'Invalid prefix name';
+              _detail := 'Start with a letter or underscore, then letters, digits, underscore, dot or dash.'; goto done_proc; }
+          if (DB.DBA.VVEC_IRI_OK (_uri) = 0)
+            { _ok := 0; _banner := 'Invalid namespace IRI';
+              _detail := 'No spaces, angle brackets, or control characters allowed.'; goto done_proc; }
+          _had := (select count (*) from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = _pfx);
+          _r := DB.DBA.XML_SET_NS_DECL (_pfx, _uri, 2);
+          _ok := 1;
+          _banner := case when _had > 0 then sprintf ('Updated prefix "%s"', _pfx)
+                          else sprintf ('Added prefix "%s"', _pfx) end;
+          _detail := sprintf ('%s: <%s>', _pfx, _uri);
+          _pfx := ''; _uri := '';
+        }
+      else if (_op = 'del')
+        {
+          if (DB.DBA.VVEC_PREFIX_OK (_pfx) = 0
+              or not exists (select 1 from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = _pfx))
+            { _ok := 0; _banner := 'Not a declared prefix'; _detail := _pfx; goto done_proc; }
+          DB.DBA.XML_REMOVE_NS_BY_PREFIX (_pfx, 2);
+          _ok := 1; _banner := sprintf ('Removed prefix "%s"', _pfx);
+          _detail := 'Prefixes that Virtuoso declares at startup are restored on the next restart.';
+          _pfx := ''; _uri := '';
+        }
+      else
+        { _ok := 0; _banner := 'Unknown operation'; _detail := _op; }
+     done_proc:;
+    }
+
+  DB.DBA.VVEC_HEAD ('Namespace Prefixes', 'prefixes');
+?>
+<div class="page-head">
+  <div>
+    <h1>Namespace Prefixes</h1>
+    <div class="sub">Server-wide SPARQL / XML prefixes in <span class="mono">DB.DBA.SYS_XML_PERSISTENT_NS_DECL</span>.</div>
+  </div>
+  <a class="btn" href="./">&#8592; Overview</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Declared prefixes</h3>
+      <div class="sub">Resolved in every SPARQL request that does not declare its own <span class="mono">PREFIX</span>, including vector-index selectors.</div>
+    </div>
+    <a class="btn sm" href="create">Create Index &#8594;</a>
+  </div>
+  <div class="card-body tight"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th>Prefix</th><th>Namespace IRI</th><th></th></tr></thead>
+      <tbody>
+<?vsp
+  declare nns integer; nns := 0;
+  for (select NS_PREFIX as _p, NS_URL as _u
+         from DB.DBA.SYS_XML_PERSISTENT_NS_DECL order by NS_PREFIX) do
+    {
+      nns := nns + 1;
+?>
+      <tr>
+        <td class="cell-strong mono"><?= _p ?>:</td>
+        <td class="mono cell-muted"><?= _u ?></td>
+        <td><div class="row-actions">
+          <button type="button" class="btn sm" data-pfx="<?= _p ?>" data-uri="<?= _u ?>" onclick="vdPfxEdit(this)">Edit</button>
+          <form method="post" action="prefixes" style="display:inline"
+                data-confirm-title="Remove this prefix?"
+                data-confirm="<?= _p ?>: stops resolving to <?= _u ?>."
+                data-confirm-detail="An index whose selector was written with this prefix keeps the IRI it was expanded to. Only what you write from now on is affected."
+                data-confirm-ok="Remove prefix"
+                data-confirm-note="This cannot be undone."
+                data-confirm-working="Removing prefix...">
+            <input type="hidden" name="do" value="ns">
+            <input type="hidden" name="op" value="del">
+            <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+            <input type="hidden" name="pfx" value="<?= _p ?>">
+            <button class="btn sm danger" type="submit">Remove</button>
+          </form>
+        </div></td>
+      </tr>
+<?vsp
+    }
+  if (nns = 0)
+    http ('<tr><td colspan="3"><div class="empty"><h3>No prefixes declared</h3><p>Add one below to use qnames in SPARQL vector-index selectors.</p></div></td></tr>');
+?>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<div class="stats duo">
+  <div class="card">
+    <div class="card-head"><div><h3>Add or update a prefix</h3><div class="sub">Re-using an existing prefix name rebinds it to the new IRI.</div></div></div>
+    <div class="card-body">
+      <form method="post" action="prefixes" data-working="Saving prefix...">
+        <input type="hidden" name="do" value="ns">
+        <input type="hidden" name="op" value="set">
+        <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <div class="form-grid">
+          <div class="field">
+            <label>Prefix</label>
+            <input id="pfx-name" name="pfx" placeholder="schema" autocomplete="off" value="<?= _pfx ?>">
+            <span class="hint">Without the trailing colon.</span>
+          </div>
+          <div class="field">
+            <label>Namespace IRI</label>
+            <input id="pfx-uri" name="uri" placeholder="http://schema.org/" autocomplete="off" value="<?= _uri ?>">
+            <span class="hint">Usually ends in <span class="mono">/</span> or <span class="mono">#</span>.</span>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Save prefix</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><h3>Where these are used</h3><div class="sub">One set, shared by every SPARQL surface on this instance.</div></div></div>
+    <div class="card-body">
+      <p style="margin-top:0">A prefix declared here is in scope for the built-in <strong>SPARQL query editor</strong>
+        (which lists the same table under <em>Namespace Prefixes</em>), for <span class="mono">bif:vector_search</span>
+        queries, and for the graph and predicate IRIs of a vector index. The Graph IRI and Predicate IRI fields on the
+        <a href="create">Create Index</a> and Edit pages accept a prefixed name such as
+        <span class="mono">schema:name</span> and expand it from this set.</p>
+      <p>A SPARQL query can always override the shared set with its own declaration:</p>
+      <div class="mono" style="background:var(--border-soft);padding:12px;border-radius:10px;white-space:pre-wrap">PREFIX schema: &lt;http://schema.org/&gt;
+SELECT ?s WHERE { ?s a schema:Article }</div>
+      <p>The same pair can be declared from <span class="mono">isql</span>:</p>
+      <div class="mono" style="background:var(--border-soft);padding:12px;border-radius:10px;white-space:pre-wrap">DB.DBA.XML_SET_NS_DECL ('schema', 'http://schema.org/', 2);</div>
+      <p class="cell-muted" style="margin-bottom:0">Prefixes that Virtuoso declares at every startup are re-added on the next
+        restart even after they are removed here.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function vdPfxEdit(btn){
+  var np = document.getElementById("pfx-name"), nu = document.getElementById("pfx-uri");
+  np.value = btn.getAttribute("data-pfx");
+  nu.value = btn.getAttribute("data-uri");
+  np.scrollIntoView({block: "center", behavior: "smooth"});
+  np.focus();
+}
+</script>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

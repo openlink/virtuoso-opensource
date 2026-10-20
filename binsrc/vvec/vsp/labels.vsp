@@ -1,0 +1,182 @@
+<?vsp
+  -- VVec - Labels : which properties count as an entity's name.
+  --
+  -- A SPARQL result names a subject by its IRI, which is an address rather than
+  -- a name.  Every dataset says the name differently, so instead of the console
+  -- holding a list, the properties are declared rdfs:subPropertyOf rdfs:label in
+  -- a rule graph, that graph is registered as an inference rule set, and the
+  -- search page asks for rdfs:label under it.  Editing this page edits the rule.
+  set http_charset='utf-8';
+
+  declare _ok integer;                 -- -1 none, 1 ok, 0 error
+  declare _banner, _detail, _err varchar;
+  declare _op, _prop varchar;
+  declare _props any;
+  declare i integer;
+
+  _ok := -1; _banner := ''; _detail := ''; _prop := '';
+
+  if (get_keyword ('do', params, '') = 'lbl')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any write
+        return;
+      _op   := get_keyword ('op', params, '');
+      _prop := trim (get_keyword ('prop', params, ''));
+
+      if (_op = 'add')
+        {
+          _err := DB.DBA.VVEC_LABEL_ADD (_prop);
+          if (_err <> '')
+            { _ok := 0; _banner := 'Not added'; _detail := _err; goto done_proc; }
+          _ok := 1;
+          _banner := sprintf ('Added %s', DB.DBA.VVEC_EXPAND_QNAME (_prop));
+          _detail := 'The rule set was rebuilt. Searches from now on treat this property as a name.';
+          _prop := '';
+        }
+      else if (_op = 'del')
+        {
+          _err := DB.DBA.VVEC_LABEL_DEL (_prop);
+          if (_err <> '')
+            { _ok := 0; _banner := 'Not removed'; _detail := _err; goto done_proc; }
+          _ok := 1;
+          _banner := sprintf ('Removed %s', _prop);
+          _detail := 'The rule set was rebuilt. Subjects named only by this property fall back to their IRI.';
+          _prop := '';
+        }
+      else if (_op = 'reseed')
+        {
+          DB.DBA.VVEC_LABEL_SEED ();
+          _ok := 1; _banner := 'Restored the default properties';
+          _detail := 'Only properties that were missing were added; nothing was removed.';
+        }
+      else
+        { _ok := 0; _banner := 'Unknown operation'; _detail := _op; }
+     done_proc:;
+    }
+
+  _props := DB.DBA.VVEC_LABEL_PROPS ();
+
+  DB.DBA.VVEC_HEAD ('Labels', 'labels');
+?>
+<div class="page-head">
+  <div>
+    <h1>Labels</h1>
+    <div class="sub">Which properties name an entity, as the inference rule set <span class="mono"><?vsp http (DB.DBA.VVEC_LABEL_RULE ()); ?></span>.</div>
+  </div>
+  <a class="btn" href="./">&#8592; Overview</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Label properties</h3>
+      <div class="sub">Each is declared <span class="mono">rdfs:subPropertyOf rdfs:label</span> in <span class="mono"><?vsp http (DB.DBA.VVEC_LABEL_GRAPH ()); ?></span>.</div>
+    </div>
+    <form method="post" action="labels" style="display:inline"
+          data-working="Restoring..."
+          data-confirm-title="Restore the default properties?"
+          data-confirm="The properties this console ships with are added back. Nothing you added is removed."
+          data-confirm-ok="Restore defaults" data-confirm-safe="1">
+      <input type="hidden" name="do" value="lbl">
+      <input type="hidden" name="op" value="reseed">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <button class="btn sm" type="submit">Restore defaults</button>
+    </form>
+  </div>
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="grid">
+        <thead><tr><th>Property</th><th>IRI</th><th></th></tr></thead>
+        <tbody>
+        <tr>
+          <td class="cell-strong mono">rdfs:label</td>
+          <td class="mono cell-muted">http://www.w3.org/2000/01/rdf-schema#label</td>
+          <td><span class="cell-muted" title="This is the property the others resolve to, so it is always matched">always</span></td>
+        </tr>
+<?vsp
+  i := 0;
+  while (i < length (_props))
+    {
+      declare _p, _q varchar;
+      _p := cast (_props[i] as varchar);
+      _q := DB.DBA.VVEC_QNAME_OF (_p, DB.DBA.VVEC_NS_MAP ());
+?>
+        <tr>
+          <td class="cell-strong mono"><?vsp if (_q <> '' and _q is not null) http (sprintf ('%V', _q)); else http ('&mdash;'); ?></td>
+          <td class="mono cell-muted"><?= _p ?></td>
+          <td>
+            <form method="post" action="labels" style="display:inline"
+                  data-confirm-title="Remove this label property?"
+                  data-confirm="<?= _p ?> stops counting as a name."
+                  data-confirm-detail="Subjects named only by this property fall back to showing their IRI. Nothing in the data is changed."
+                  data-confirm-ok="Remove property"
+                  data-confirm-working="Removing...">
+              <input type="hidden" name="do" value="lbl">
+              <input type="hidden" name="op" value="del">
+              <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+              <input type="hidden" name="prop" value="<?= _p ?>">
+              <button class="btn sm danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+<?vsp
+      i := i + 1;
+    }
+  if (length (_props) = 0)
+    http ('<tr><td colspan="3"><div class="empty"><h3>Only rdfs:label</h3><p>Nothing else counts as a name yet. Add a property, or restore the defaults.</p></div></td></tr>');
+?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="stats duo">
+  <div class="card">
+    <div class="card-head"><div>
+      <h3>Add a property</h3>
+      <div class="sub">A full IRI, or a qname whose prefix is registered.</div>
+    </div></div>
+    <div class="card-body">
+      <form method="post" action="labels" data-working="Adding...">
+        <input type="hidden" name="do" value="lbl">
+        <input type="hidden" name="op" value="add">
+        <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <div class="field full">
+          <label>Property</label>
+          <input id="lbl-prop" name="prop" placeholder="schema:name" autocomplete="off" value="<?= _prop ?>">
+          <span class="hint">Just the property. The console writes the <span class="mono">rdfs:subPropertyOf rdfs:label</span> statement and rebuilds the rule set.</span>
+        </div>
+        <div class="form-actions">
+          <a class="btn" href="prefixes">Manage prefixes</a>
+          <button class="btn primary" type="submit">Add property</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><h3>How this is used</h3></div></div>
+    <div class="card-body">
+      <p style="margin-top:0">On the <a href="search">Similarity Search</a> page, the <strong>Entity label</strong> setting shows each subject by its name rather than by the string that was indexed. Those are rarely the same thing: an index built over <span class="mono">schema:description</span> matches on the description, but the row should still be labelled with the entity's name.</p>
+      <p>The lookup is one query per result page:</p>
+      <pre class="code">DEFINE input:inference &lt;<?vsp http (DB.DBA.VVEC_LABEL_RULE ()); ?>&gt;
+SELECT ?s ?l
+ WHERE { VALUES ?s { ...the subjects on this page... }
+         GRAPH ?g { ?s rdfs:label ?l } }</pre>
+      <p class="cell-muted" style="margin-bottom:0">A subject with no matching property keeps its IRI. Changing this list affects searches run afterwards; a query the engine has already compiled keeps the rule set it was compiled with.</p>
+    </div>
+  </div>
+</div>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

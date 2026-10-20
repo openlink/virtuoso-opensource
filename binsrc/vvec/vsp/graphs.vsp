@@ -1,0 +1,16 @@
+<?vsp
+  -- VVec · named-graph lookup AJAX endpoint.
+  --   GET /vvec/graphs.vsp?q=<substring>&limit=<n>
+  -- Returns JSON listing the instance's named graphs, optionally narrowed by a
+  -- case-insensitive substring of the graph IRI.  Read-only and idempotent (a
+  -- GET, so no CSRF token is needed), and served behind the same /vvec/
+  -- session guard as every other console page, running as vsp_user 'dba'.
+  -- NOTE: as with lookup.vsp, a DAV-hosted executable VSP is served as
+  -- text/html whatever this http_header says; the body is still valid JSON and
+  -- the client parses it with fetch().json(), which reads the body rather than
+  -- the Content-Type.
+  set http_charset='utf-8';
+  http_header (sprintf ('Content-Type: application/json; charset=UTF-8\r\n'));
+  http (DB.DBA.VVEC_GRAPHS_JSON (get_keyword ('q', params, ''),
+                                    atoi (get_keyword ('limit', params, '200'))));
+?>

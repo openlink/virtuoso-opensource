@@ -203,6 +203,8 @@ lt_free (lock_trx_t * lt)
   dk_free_tree ((caddr_t) lt->lt_replicate);
   strses_free (lt->lt_log);
   blob_log_set_free (lt->lt_blob_log);
+  vvec_page_images_free (&lt->lt_vvec_page_images);
+  vvec_trx_undo_free (lt);
   dk_set_delete (&all_trxs, (void *) lt);
   mutex_free (lt->lt_log_mtx);
   dk_mutex_destroy (&lt->lt_locks_mtx);
@@ -263,6 +265,8 @@ lt_clear (lock_trx_t * lt)
 
   dk_free_tree ((caddr_t) lt->lt_replicate);
   blob_log_set_free (lt->lt_blob_log);
+  vvec_page_images_free (&lt->lt_vvec_page_images);
+  vvec_trx_undo_free (lt);
   lt->lt_error = 0;
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)

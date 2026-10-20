@@ -1,0 +1,553 @@
+<?vsp
+  -- VVec · Create Index : build a SQL or SPARQL vector index.
+  set http_charset='utf-8';
+
+  declare _ok integer;
+  declare _made varchar;                -- 'sql:NAME' / 'sparql:IRI' of what was just created                 -- -1 = not submitted, 1 = ok, 0 = error
+  declare _banner, _detail varchar;
+  declare _side varchar;
+  declare targets, e any;
+  declare i integer;
+
+  _ok := -1; _banner := ''; _detail := ''; _made := '';
+  targets := DB.DBA.VVEC_SQL_TARGETS ();
+
+  if (get_keyword ('do', params, '') = 'create')
+    {
+      declare _stat, _emsg, _sql varchar;
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Index creation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any DDL
+        return;
+      _side := get_keyword ('side', params, 'sql');
+      _stat := '00000';
+
+      if (_side = 'sql')
+        {
+          declare _idx, _tbl, _col, _model, _metric, _reduce, _mesc varchar;
+          declare _dims, _hm, _ef integer;
+          _idx    := trim (get_keyword ('idx_name', params, ''));
+          _tbl    := trim (get_keyword ('s_table',  params, ''));
+          _col    := trim (get_keyword ('s_column', params, ''));
+          _model  := trim (get_keyword ('s_model',  params, ''));
+          _metric := lower (trim (get_keyword ('s_metric', params, 'cosine')));
+          _reduce := lower (trim (get_keyword ('s_reduce', params, 'none')));
+          _dims   := atoi (get_keyword ('s_dims',  params, '0'));
+          _hm     := atoi (get_keyword ('s_hnsw',  params, '16'));
+          _ef     := atoi (get_keyword ('s_ef',    params, '200'));
+
+          if (DB.DBA.VVEC_IDENT_OK (_idx) = 0)
+            { _ok := 0; _banner := 'Invalid index name'; _detail := 'Use letters, digits and underscore; must start with a letter or underscore.'; goto done_proc; }
+          if (not exists (select 1 from DB.DBA.SYS_COLS where "TABLE" = _tbl and "COLUMN" = _col))
+            { _ok := 0; _banner := 'Unknown table/column'; _detail := sprintf ('%s (%s) was not found in the catalog.', _tbl, _col); goto done_proc; }
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _model))
+            { _ok := 0; _banner := 'Unknown embedding model'; _detail := _model; goto done_proc; }
+          if (_metric not in ('cosine', 'l2', 'l1'))
+            { _ok := 0; _banner := 'Invalid distance metric'; _detail := _metric; goto done_proc; }
+          if (_reduce not in ('none', 'truncate'))
+            { _ok := 0; _banner := 'Invalid reduce option'; _detail := _reduce; goto done_proc; }
+          if (_dims <= 0)
+            { _ok := 0; _banner := 'Dimensions must be a positive integer'; _detail := ''; goto done_proc; }
+          if (_hm <= 0) _hm := 16;
+          if (_ef <= 0) _ef := 200;
+
+          -- SQL string-literal escaping (double the quote): this DDL is executed
+          -- as SQL.  (The model already passed an ONNX_MODELS existence check, so
+          -- this is defence in depth.)  The SPARQL branch below escapes with a
+          -- backslash instead because there the literal is inside a SPARQL string.
+          _mesc := replace (_model, chr (39), chr (39) || chr (39));
+          _sql := sprintf (
+            'CREATE VECTOR INDEX "%I" ON "%I"."%I"."%I" ("%I") USING ''%s'' WITH (dimensions = %d, distance_metric = ''%s'', hnsw_m = %d, ef_construction = %d, reduce = ''%s'')',
+            _idx, name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2), _col,
+            _mesc, _dims, _metric, _hm, _ef, _reduce);
+          exec (_sql, _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Index creation failed'; _detail := _stat || ': ' || _emsg; goto done_proc; }
+          _ok := 1; _banner := sprintf ('Created SQL vector index %s', _idx); _detail := _sql;
+          _made := 'sql:' || _idx;
+        }
+      else
+        {
+          declare _iri, _seltype, _graph, _pred, _keyv, _embv, _where varchar;
+          declare _model, _dist, _reduce, _maint, _mesc varchar;
+          declare _build, _buildopt varchar;
+          declare _label, _comment, _metaopt varchar;
+          declare _dims, _hm, _ef, _nrows integer;
+          declare _st2, _er2 varchar;
+          _iri     := trim (get_keyword ('p_iri',     params, ''));
+          _seltype := lower (trim (get_keyword ('seltype', params, 'shorthand')));
+          _graph   := trim (get_keyword ('p_graph',   params, ''));
+          _pred    := trim (get_keyword ('p_pred',    params, ''));
+          _keyv    := trim (get_keyword ('p_key',     params, ''));
+          _embv    := trim (get_keyword ('p_embed',   params, ''));
+          _where   := trim (get_keyword ('p_where',   params, ''));
+          _model   := trim (get_keyword ('p_model',   params, ''));
+          _label   := trim (get_keyword ('p_label',   params, ''));
+          _comment := trim (get_keyword ('p_comment', params, ''));
+          _dist    := lower (trim (get_keyword ('p_distance', params, 'cosine')));
+          _reduce  := lower (trim (get_keyword ('p_reduce', params, 'none')));
+          _maint   := lower (trim (get_keyword ('p_maint',  params, 'manual')));
+          _build   := lower (trim (get_keyword ('p_build',  params, 'auto')));
+          _dims    := atoi (get_keyword ('p_dims', params, '0'));
+          _hm      := atoi (get_keyword ('p_hnsw', params, '16'));
+          _ef      := atoi (get_keyword ('p_ef',   params, '200'));
+
+          if (DB.DBA.VVEC_IRI_OK (_iri) = 0)
+            { _ok := 0; _banner := 'Invalid index IRI'; _detail := 'No spaces, angle brackets, or control characters allowed.'; goto done_proc; }
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _model))
+            { _ok := 0; _banner := 'Unknown embedding model'; _detail := _model; goto done_proc; }
+          if (_dist not in ('cosine', 'l2', 'l1'))
+            { _ok := 0; _banner := 'Invalid distance metric'; _detail := _dist; goto done_proc; }
+          if (_reduce not in ('none', 'truncate'))
+            { _ok := 0; _banner := 'Invalid reduce option'; _detail := _reduce; goto done_proc; }
+          if (_maint not in ('manual', 'async'))
+            { _ok := 0; _banner := 'Invalid maintenance option'; _detail := _maint; goto done_proc; }
+          if (_build not in ('auto', 'incremental', 'bulk'))
+            { _ok := 0; _banner := 'Invalid build method'; _detail := _build; goto done_proc; }
+          -- 'auto' is the server's own default, so it is left out of the DDL
+          -- rather than written as an explicit value: an index created here
+          -- then has SVI_BUILD null, exactly as one created without the option.
+          if (_build = 'auto')
+            _buildopt := '';
+          else
+            _buildopt := sprintf (', build = ''%s''', _build);
+          if (_dims <= 0)
+            { _ok := 0; _banner := 'Dimensions must be a positive integer'; _detail := ''; goto done_proc; }
+          -- The same caps VEC_INDEX_SET_OPTIONS enforces, checked here so an
+          -- over-long name is a form error and not a half-finished create.
+          if (length (_label) > 255)
+            { _ok := 0; _banner := 'Name is too long';
+              _detail := sprintf ('%d characters; the limit is 255.', length (_label)); goto done_proc; }
+          if (length (_comment) > 2000)
+            { _ok := 0; _banner := 'Description is too long';
+              _detail := sprintf ('%d characters; the limit is 2000.', length (_comment)); goto done_proc; }
+          -- Unset is written by leaving the option out, not by passing '': an
+          -- empty label would otherwise become an empty rdfs:label literal in
+          -- <urn:vvec:indexes>, which reads worse than no triple at all.
+          _metaopt := '';
+          if (_label <> '')
+            _metaopt := _metaopt || ', label = ' || DB.DBA.VVEC_SPARQL_STR (_label);
+          if (_comment <> '')
+            _metaopt := _metaopt || ', comment = ' || DB.DBA.VVEC_SPARQL_STR (_comment);
+          if (_hm <= 0) _hm := 16;
+          if (_ef <= 0) _ef := 200;
+          -- SPARQL string-literal escaping (backslash the quote): the model name
+          -- goes inside a SPARQL '...' literal in the DDL below, where a quote is
+          -- escaped as \' (unlike the SQL branch above, which doubles it).  The
+          -- model already passed an ONNX_MODELS existence check; this is defence
+          -- in depth.
+          _mesc := replace (_model, chr (39), chr (92) || chr (39));
+
+          if (_seltype = 'shorthand')
+            {
+              -- Accept a prefixed name ("schema:name") as well as a full IRI.
+              -- These two values go into the DDL inside angle brackets, where
+              -- SPARQL reads <schema:name> as an absolute IRI whose scheme is
+              -- "schema" rather than as a qname -- the index would be created,
+              -- go 'active', and match nothing.  Expanding here also puts the
+              -- real IRI in SVI_SELECTOR_*, which is what refresh, search and
+              -- the async triggers compare against.
+              _graph := DB.DBA.VVEC_EXPAND_QNAME (_graph);
+              _pred  := DB.DBA.VVEC_EXPAND_QNAME (_pred);
+              if (DB.DBA.VVEC_IRI_OK (_graph) = 0 or DB.DBA.VVEC_IRI_OK (_pred) = 0)
+                { _ok := 0; _banner := 'Invalid graph or predicate IRI'; _detail := ''; goto done_proc; }
+              _sql := sprintf (
+                'sparql define input:storage "" create vector index <%s> on graph <%s> for predicate <%s> using model ''%s'' with (dimensions = %d, distance = ''%s'', hnsw_m = %d, ef_construction = %d, maintenance = ''%s'', reduce = ''%s''%s%s)',
+                _iri, _graph, _pred, _mesc, _dims, _dist, _hm, _ef, _maint, _reduce, _buildopt, _metaopt);
+            }
+          else
+            {
+              if (DB.DBA.VVEC_IDENT_OK (_keyv) = 0 or DB.DBA.VVEC_IDENT_OK (_embv) = 0)
+                { _ok := 0; _banner := 'Invalid key or embedding variable name'; _detail := 'Use a plain SPARQL variable name, e.g. doc or text.'; goto done_proc; }
+              if (length (_where) = 0)
+                { _ok := 0; _banner := 'A custom selector needs a WHERE pattern'; _detail := ''; goto done_proc; }
+              -- The WHERE pattern is the one free-form input that lands in the DDL
+              -- string; validate it structurally so it cannot close the group and
+              -- append statements/pragmas (see VVEC_SPARQL_PATTERN_OK).
+              if (DB.DBA.VVEC_SPARQL_PATTERN_OK (_where) = 0)
+                { _ok := 0; _banner := 'WHERE pattern rejected';
+                  _detail := 'The pattern must be a single balanced { } group with no comments, statement keywords (INSERT/DELETE/LOAD/DROP/...), or define pragmas.';
+                  goto done_proc; }
+              _sql := sprintf (
+                'sparql define input:storage "" create vector index <%s> key ?%s embedding ?%s where { %s } using model ''%s'' with (dimensions = %d, distance = ''%s'', hnsw_m = %d, ef_construction = %d, maintenance = ''%s'', reduce = ''%s''%s%s)',
+                _iri, _keyv, _embv, _where, _mesc, _dims, _dist, _hm, _ef, _maint, _reduce, _buildopt, _metaopt);
+            }
+
+          exec (_sql, _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Index creation failed'; _detail := _stat || ': ' || _emsg; goto done_proc; }
+
+          -- populate the freshly created index
+          _stat := '00000';
+          exec (sprintf ('sparql define input:storage "" refresh vector index <%s>', _iri), _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Index created but refresh failed'; _detail := _stat || ': ' || _emsg; goto done_proc; }
+          -- Surface a bad end-state (e.g. the embedding variable is not bound by
+          -- the WHERE pattern, which leaves the index in 'error').
+          _st2 := (select SVI_STATE from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _iri);
+          if (_st2 is not null and _st2 <> 'active')
+            {
+              _er2 := (select SVI_LAST_ERROR from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _iri);
+              _ok := 0;
+              _banner := sprintf ('Index created but ended in ''%s'' state', _st2);
+              _detail := coalesce (_er2, 'Check that the EMBEDDING variable is bound by the WHERE pattern.');
+              goto done_proc;
+            }
+          -- A selector that matches nothing still creates cleanly and goes
+          -- 'active'; it is just empty, and every search against it comes back
+          -- with no rows.  Say so instead of reporting an unqualified success.
+          _nrows := DB.DBA.VVEC_SPARQL_INDEX_ROWS (_iri);
+          if (_nrows = 0)
+            {
+              _ok := 2;
+              _banner := sprintf ('Created <%s>, but the selector matched no data', _iri);
+              _detail := _sql;
+              goto done_proc;
+            }
+          _ok := 1;
+          _made := 'sparql:' || _iri;
+          _banner := sprintf ('Created SPARQL vector index <%s>', _iri);
+          if (_nrows > 0)
+            _banner := _banner || sprintf (' - %d subject(s) indexed', _nrows);
+          _detail := _sql;
+        }
+     done_proc:;
+    }
+
+  DB.DBA.VVEC_HEAD ('Create Index', 'create');
+?>
+<div class="page-head">
+  <div>
+    <h1>Create Vector Index</h1>
+    <div class="sub">Define an HNSW index over a relational column or an RDF predicate.</div>
+  </div>
+  <a class="btn" href="indexes">&#8592; Manage Indexes</a>
+</div>
+
+<?vsp
+  if (_ok = 1)
+    {
+?>
+<div class="banner ok landed">
+  <div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span>
+    <div style="margin-top:8px"><a class="btn sm" href="search?side=<?/ subseq (_made, 0, strchr (_made, ascii (':'))) ?>&amp;idx=<?/ _made ?>">Try a similarity search &#8594;</a> <a class="btn sm" href="indexes">View all indexes</a></div>
+  </div>
+</div>
+<?vsp
+    }
+  if (_ok = 2)
+    {
+?>
+<div class="banner warn">
+  <div><strong><?= _banner ?></strong>
+    <span class="mono"><?= _detail ?></span>
+    <div style="margin-top:8px">The index is active but empty &mdash; 0 subjects were indexed, so searches against it return nothing.
+      Check the graph and predicate: a prefixed name such as <span class="mono">schema:name</span> is expanded from
+      <a href="prefixes">the declared prefixes</a>, and one whose prefix is not declared is stored as typed and matches nothing.
+      If the data is not loaded yet, run <strong>Refresh</strong> from the dashboard once it is.</div>
+    <div style="margin-top:8px"><a class="btn sm" href="indexes">View all indexes</a></div>
+  </div>
+</div>
+<?vsp
+    }
+  if (_ok = 0)
+    {
+?>
+<div class="banner err landed">
+  <div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div>
+</div>
+<?vsp
+    }
+?>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h3>Index definition</h3>
+      <div class="sub">Pick a surface, then fill in the target and embedding model.</div>
+    </div>
+    <div class="segmented">
+      <button type="button" id="seg-sql"    class="active" onclick="setSide('sql')">SQL</button>
+      <button type="button" id="seg-sparql"           onclick="setSide('sparql')">SPARQL</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <form method="post" action="create" id="create-form" data-working="Creating index..."
+          data-working-note="Embedding every source row can take minutes on a large source. You do not have to wait here - the build finishes on the server even if you leave, and Manage Indexes shows the index as refreshing until it is ready.">
+      <input type="hidden" name="do" value="create">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="side" id="side-field" value="sql">
+
+      <!-- ============================ SQL ============================ -->
+      <div id="panel-sql">
+        <div class="form-grid">
+          <div class="field">
+            <label>Index name</label>
+            <input name="idx_name" placeholder="DOCS_VEC" autocomplete="off">
+            <span class="hint">SQL identifier (letters, digits, underscore).</span>
+          </div>
+          <div class="field">
+            <label>Embedding model</label>
+            <select id="sql-model" name="s_model" onchange="modelDim(this,'sql-dims')">
+<?vsp
+  for (select model_name as mn, model_type as mt from DB.DBA.ONNX_MODELS order by model_name) do
+    {
+      declare dm integer; dm := DB.DBA.VVEC_MODEL_DIM (mn);
+?>
+              <option value="<?= mn ?>" data-dim="<?= dm ?>"><?= mn ?> (<?= mt ?><?vsp if (dm > 0) http (sprintf (', %dd', dm)); ?>)</option>
+<?vsp
+    }
+?>
+            </select>
+            <span class="hint">In-process ONNX or a registered HTTP provider.</span>
+          </div>
+          <div class="field">
+            <label>Table</label>
+            <input id="sql-table" name="s_table" type="text" list="sql-table-list"
+                   placeholder="DB.DBA.DOCS or DOCS" autocomplete="off"
+                   value="<?= get_keyword ('s_table', params, '') ?>"
+                   data-prevcol="<?= get_keyword ('s_column', params, '') ?>">
+            <datalist id="sql-table-list">
+<?vsp
+  i := 0;
+  while (i < length (targets))
+    {
+      e := targets[i];
+?>
+              <option value="<?= e[0] ?>"></option>
+<?vsp
+      i := i + 1;
+    }
+?>
+            </datalist>
+            <span id="sql-table-status" class="hint">Type a table name; its columns load after you pause typing.</span>
+          </div>
+          <div class="field">
+            <label>Text column</label>
+            <select id="sql-col" name="s_column" data-placeholder="Select a table first"></select>
+            <span class="hint">VARCHAR or LONG VARCHAR column to embed.</span>
+          </div>
+          <div class="field">
+            <label>Dimensions</label>
+            <input id="sql-dims" name="s_dims" type="number" min="1" placeholder="384">
+            <span class="hint">Must match the model output (or reduced dim).</span>
+          </div>
+          <div class="field">
+            <label>Distance metric</label>
+            <select name="s_metric"><option value="cosine">cosine</option><option value="l2">l2</option><option value="l1">l1</option></select>
+          </div>
+          <div class="field">
+            <label>hnsw_m</label>
+            <input name="s_hnsw" type="number" min="1" value="16">
+          </div>
+          <div class="field">
+            <label>ef_construction</label>
+            <input name="s_ef" type="number" min="1" value="200">
+          </div>
+          <div class="field">
+            <label>Dimension reduction</label>
+            <select name="s_reduce"><option value="none">none</option><option value="truncate">truncate (Matryoshka)</option></select>
+            <span class="hint">Only for MRL-trained models.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================== SPARQL ========================== -->
+      <div id="panel-sparql" class="hidden">
+        <div class="segmented">
+          <button type="button" id="seg-sh"  class="active" onclick="setSel('shorthand')">Simple</button>
+          <button type="button" id="seg-gen"           onclick="setSel('general')">Custom</button>
+        </div>
+        <div class="sub" id="sel-help" style="margin:7px 0 18px">Simple indexes one predicate in one graph. Custom takes a SPARQL pattern with joins and filters.</div>
+        <input type="hidden" name="seltype" id="seltype" value="shorthand">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Index IRI</label>
+            <input name="p_iri" placeholder="urn:docs:idx" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label for="p_label">Name <span class="hint" style="display:inline">optional</span></label>
+            <input id="p_label" name="p_label" maxlength="255" placeholder="Support articles" autocomplete="off">
+            <span class="hint">Shown wherever this index is listed, and in the picker on the Similarity Search page.
+              Published as <span class="mono">rdfs:label</span> in <span class="mono">&lt;urn:vvec:indexes&gt;</span>.</span>
+          </div>
+          <div class="field full">
+            <label for="p_comment">Description <span class="hint" style="display:inline">optional</span></label>
+            <textarea id="p_comment" name="p_comment" maxlength="2000" placeholder="Semantic search over the body text of published support articles"></textarea>
+            <span class="hint">What this index is for, for whoever has to choose between it and the next one.
+              Published as <span class="mono">rdfs:comment</span>.</span>
+          </div>
+
+          <!-- shorthand -->
+          <div class="field sh-field" data-grp="sh">
+            <div class="label-row">
+              <label for="p_graph">Graph IRI</label>
+              <button type="button" class="linkbtn" onclick="vdGraphOpen('p_graph')" title="Search the named graphs on this instance">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7l4 9M17 7l-4 9"/></svg>
+                Search graphs
+              </button>
+            </div>
+            <input id="p_graph" name="p_graph" placeholder="urn:docs:g" autocomplete="off">
+            <span class="hint">Pick from the graphs on this instance, or type a full IRI or a prefixed name.</span>
+          </div>
+          <div class="field sh-field" data-grp="sh">
+            <div class="label-row">
+              <label for="p_pred">Predicate IRI</label>
+              <button type="button" class="linkbtn" onclick="vdPredOpen('p_pred','p_graph')" title="List the predicates in this graph that have string values">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+                List predicates
+              </button>
+            </div>
+            <input id="p_pred" name="p_pred" placeholder="urn:doc:text" autocomplete="off">
+            <span class="hint">A full IRI, or a prefixed name such as <span class="mono">schema:name</span> using
+              <a href="prefixes">a declared prefix</a>.</span>
+          </div>
+
+          <!-- general -->
+          <div class="field gen-field hidden" data-grp="gen">
+            <label>Key variable</label>
+            <input name="p_key" placeholder="doc" value="doc" autocomplete="off">
+            <span class="hint">Binds the entity IRI.</span>
+          </div>
+          <div class="field gen-field hidden" data-grp="gen">
+            <label>Embedding variable</label>
+            <input name="p_embed" placeholder="text" value="text" autocomplete="off">
+            <span class="hint">Binds the literal to embed.</span>
+          </div>
+          <div class="field full gen-field hidden" data-grp="gen">
+            <label>WHERE pattern</label>
+            <textarea name="p_where" placeholder="graph &lt;urn:docs:g&gt; { ?doc &lt;urn:doc:text&gt; ?text . ?doc &lt;urn:doc:type&gt; &lt;urn:doc:SupportArticle&gt; . }"></textarea>
+            <span class="hint">For async maintenance every triple must sit inside an explicit GRAPH.</span>
+          </div>
+
+          <div class="field">
+            <label>Embedding model</label>
+            <select id="sparql-model" name="p_model" onchange="modelDim(this,'sparql-dims')">
+<?vsp
+  for (select model_name as mn, model_type as mt from DB.DBA.ONNX_MODELS order by model_name) do
+    {
+      declare dm integer; dm := DB.DBA.VVEC_MODEL_DIM (mn);
+?>
+              <option value="<?= mn ?>" data-dim="<?= dm ?>"><?= mn ?> (<?= mt ?><?vsp if (dm > 0) http (sprintf (', %dd', dm)); ?>)</option>
+<?vsp
+    }
+?>
+            </select>
+          </div>
+          <div class="field">
+            <label>Dimensions</label>
+            <input id="sparql-dims" name="p_dims" type="number" min="1" placeholder="384">
+          </div>
+          <div class="field">
+            <label>Distance metric</label>
+            <select name="p_distance"><option value="cosine">cosine</option><option value="l2">l2</option><option value="l1">l1</option></select>
+          </div>
+          <div class="field">
+            <label>Maintenance</label>
+            <select name="p_maint"><option value="manual">manual</option><option value="async">async</option></select>
+          </div>
+          <div class="field">
+            <label>hnsw_m</label>
+            <input name="p_hnsw" type="number" min="1" value="16">
+          </div>
+          <div class="field">
+            <label>ef_construction</label>
+            <input name="p_ef" type="number" min="1" value="200">
+          </div>
+          <div class="field">
+            <label>Dimension reduction</label>
+            <select name="p_reduce"><option value="none">none</option><option value="truncate">truncate (Matryoshka)</option></select>
+          </div>
+          <div class="field">
+            <label>Build method</label>
+            <select name="p_build">
+              <option value="auto">auto (incremental)</option>
+              <option value="bulk">bulk &mdash; faster, non-deterministic graph</option>
+              <option value="incremental">incremental</option>
+            </select>
+            <span class="hint">Bulk embeds everything first, then derives the graph in one parallel pass &mdash; much faster and smaller on a large first build. The parallel builder is non-deterministic, so on a corpus of near-duplicates an exact match can rank below one.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a class="btn" href="indexes">Cancel</a>
+        <button class="btn primary" type="submit">Create Index</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function qs(id){ return document.getElementById(id); }
+function setSide(s){
+  qs('panel-sql').classList.toggle('hidden', s!=='sql');
+  qs('panel-sparql').classList.toggle('hidden', s!=='sparql');
+  qs('seg-sql').classList.toggle('active', s==='sql');
+  qs('seg-sparql').classList.toggle('active', s==='sparql');
+  qs('side-field').value = s;
+}
+function setSel(t){
+  document.querySelectorAll('[data-grp="sh"]').forEach(function(el){ el.classList.toggle('hidden', t!=='shorthand'); });
+  document.querySelectorAll('[data-grp="gen"]').forEach(function(el){ el.classList.toggle('hidden', t!=='general'); });
+  qs('seg-sh').classList.toggle('active', t==='shorthand');
+  qs('seg-gen').classList.toggle('active', t==='general');
+  qs('seltype').value = t;
+}
+// Debounced table lookup: 1s after the user stops typing, ask lookup.vsp whether
+// the table exists and is eligible, then fill the text-column select from the JSON.
+var lookupTimer = null;
+function tableLookup(selectCol){
+  var inp = qs('sql-table'), col = qs('sql-col'), st = qs('sql-table-status');
+  var name = (inp.value || '').trim();
+  col.innerHTML = '';
+  if(!name){ st.textContent = 'Type a table name; its columns load after you pause typing.'; st.style.color = ''; return; }
+  st.textContent = 'Searching for ' + name + '…'; st.style.color = '';
+  // No Accept header: the /vvec/ pages are DAV-hosted and only produce
+  // text/html, so an "Accept: application/json" would make DAV content-negotiation
+  // answer 406. The body is JSON regardless and is parsed with r.json() below.
+  fetch('lookup?name=' + encodeURIComponent(name), {credentials:'same-origin'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.status === 'ok'){
+        inp.value = d.table;                       // canonical, fully-qualified name
+        (d.columns||[]).forEach(function(cn){
+          var o = document.createElement('option'); o.value = cn; o.textContent = cn; col.appendChild(o);
+        });
+        if(selectCol){ col.value = selectCol; }
+        col.dispatchEvent(new Event('change', {bubbles:true}));   // sync the custom dropdown label
+        st.textContent = d.table + ' — ' + (d.columns||[]).length + ' text column(s), PK ' + d.pk;
+        st.style.color = '#1a7f37';
+      } else if(d.status === 'ineligible'){
+        st.textContent = (d.table ? d.table + ': ' : '') + (d.reason || 'Not an eligible table.');
+        st.style.color = '#b42318';
+      } else if(d.status === 'notfound'){
+        st.textContent = 'No table named “' + name + '” was found.';
+        st.style.color = '#b42318';
+      } else {
+        st.textContent = 'Type a table name; its columns load after you pause typing.'; st.style.color = '';
+      }
+    })
+    .catch(function(){ st.textContent = 'Lookup failed — check the server log.'; st.style.color = '#b42318'; });
+}
+function modelDim(sel, dimId){
+  var o = sel.options[sel.selectedIndex];
+  if(o && o.dataset.dim && +o.dataset.dim > 0) qs(dimId).value = o.dataset.dim;
+}
+window.addEventListener('DOMContentLoaded', function(){
+  var inp = qs('sql-table');
+  inp.addEventListener('input', function(){
+    if(lookupTimer) clearTimeout(lookupTimer);
+    lookupTimer = setTimeout(function(){ tableLookup(null); }, 1000);
+  });
+  // Re-render after a failed submit keeps the typed table: repopulate its columns
+  // and reselect the column the user had chosen.
+  if(inp.value.trim()){ tableLookup(inp.dataset.prevcol || null); }
+  modelDim(qs('sql-model'), 'sql-dims');
+  modelDim(qs('sparql-model'), 'sparql-dims');
+  setSide('<?= case when _side = 'sparql' then 'sparql' else 'sql' end ?>');
+  setSel(qs('seltype').value || 'shorthand');
+});
+</script>
+<?vsp DB.DBA.VVEC_GRAPH_PICKER (); DB.DBA.VVEC_PREDICATE_PICKER (); DB.DBA.VVEC_FOOT (); ?>

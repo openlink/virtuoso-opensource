@@ -205,9 +205,18 @@ upd_recompose_row (caddr_t * state, update_node_t * upd,
       else
 	{
 	  caddr_t new_val_of_col = upd_nth_value (upd, state, nth_val);
+	  dbe_col_loc_t cl_anified;
+	  dbe_col_loc_t * cl_cast = cl;
 	  db_buf_t old_blob = (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp)  && old_found && DV_DB_NULL != DV_TYPE_OF (old_val) && IS_BLOB_DTP (((db_buf_t)old_val)[0]))
 	    ? (db_buf_t)old_val : dummy_blob;
-	  row_insert_cast (new_rd, cl, new_val_of_col, err_ret, old_blob);
+	  /* ssl_insert_cast already anified it; drop the class so it is not serialized twice, as rd_vec_blob does */
+	  if (upd->src_gen.src_sets && cl->cl_sqt.sqt_class && IS_BLOB_DTP (cl->cl_sqt.sqt_dtp))
+	    {
+	      cl_anified = *cl;
+	      cl_anified.cl_sqt.sqt_class = NULL;
+	      cl_cast = &cl_anified;
+	    }
+	  row_insert_cast (new_rd, cl_cast, new_val_of_col, err_ret, old_blob);
 	  if (*err_ret)
 	    goto col_error;
 	  new_val_of_col = new_rd->rd_itc->itc_search_params[new_rd->rd_itc->itc_search_par_fill - 1];

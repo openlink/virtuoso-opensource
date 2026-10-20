@@ -46,6 +46,7 @@
 #include "remote.h"
 #include "sqlrcomp.h"
 #include "sqloinv.h"
+#include "wifn.h"
 #include "mhash.h"
 
 
@@ -97,6 +98,407 @@ int
 st_hashcmp (char *x, char *y)
 {
   return box_equal (*(caddr_t *) x, *(caddr_t *) y);
+}
+
+
+static int
+sqlo_vvec_metric_string_p (ST * tree)
+{
+  if (!IS_BOX_POINTER (tree))
+    return 0;
+  switch (DV_TYPE_OF (tree))
+    {
+    case DV_STRING:
+    case DV_C_STRING:
+    case DV_SYMBOL:
+    case DV_UNAME:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+
+static void
+sqlo_rewrite_vector_distance_call (sqlo_t * so, ST * tree)
+{
+  ST ** args;
+  op_table_t * ot;
+  dbe_key_t * chosen_key = NULL;
+  const char * chosen_pk_name = NULL;
+  int source_matches = 0;
+  int metric_matches = 0;
+  int metric_filter = 0;
+  dbe_column_t * pk_col;
+  ST * pk_ref;
+  ST ** new_params;
+  ST * query_arg;
+
+  if (!tree || !ST_P (tree, CALL_STMT))
+    return;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree->_.call.name))
+    return;
+  if (!sqlo_vvec_metric_string_p ((ST *) tree->_.call.name))
+    return;
+  if (0 != stricmp ((char *) tree->_.call.name, "VECTOR_DISTANCE"))
+    return;
+  args = tree->_.call.params;
+  if (BOX_ELEMENTS_0 (args) < 2 || BOX_ELEMENTS (args) > 3)
+    return;
+  if (!ST_COLUMN (args[0], COL_DOTTED) || STAR == args[0]->_.col_ref.name)
+    return;
+  if (!args[0]->_.col_ref.prefix)
+    return;
+
+  ot = sqlo_cname_ot_1 (so, args[0]->_.col_ref.prefix, 0);
+  if (!ot || !ot->ot_table)
+    return;
+  if (BOX_ELEMENTS (args) > 2 && sqlo_vvec_metric_string_p (args[2]))
+    metric_filter = vvec_parse_metric ((char *) args[2]);
+
+  DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
+    {
+      const char * pk_name = NULL;
+      int key_metric = 0;
+      if (!vvec_key_source_match (key, args[0]->_.col_ref.name, &pk_name, &key_metric))
+	continue;
+      source_matches++;
+      if (!chosen_key)
+	{
+	  chosen_key = key;
+	  chosen_pk_name = pk_name;
+	}
+      if (metric_filter && key_metric == metric_filter)
+	{
+	  metric_matches++;
+	  chosen_key = key;
+	  chosen_pk_name = pk_name;
+	}
+    }
+  END_DO_SET ();
+
+  if (!source_matches)
+    {
+      if (sqlo_vvec_require_ann_for_client (sqlc_client ()))
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "No vector index on %.300s.%.300s; VECTOR_DISTANCE requires a vector-typed column with an ANN index when sqlo_vvec_require_ann is enabled.",
+	    ot->ot_table->tb_name, args[0]->_.col_ref.name);
+      return;
+    }
+  if (source_matches > 1)
+    {
+      if (metric_filter)
+	{
+	  if (!metric_matches)
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+		"VECTOR_DISTANCE on %.300s.%.300s has no vector index using metric %.300s.",
+		ot->ot_table->tb_name, args[0]->_.col_ref.name, (char *) args[2]);
+	  if (metric_matches > 1)
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+		"VECTOR_DISTANCE on %.300s.%.300s is ambiguous because multiple vector indexes use metric %.300s.",
+		ot->ot_table->tb_name, args[0]->_.col_ref.name, (char *) args[2]);
+	}
+      else
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "VECTOR_DISTANCE on %.300s.%.300s is ambiguous because multiple vector indexes cover that column.",
+	    ot->ot_table->tb_name, args[0]->_.col_ref.name);
+    }
+  if (!chosen_key || !chosen_pk_name || !tb_name_to_column (ot->ot_table, (char *) chosen_pk_name))
+    sqlc_error (so->so_sc->sc_cc, "42000",
+	"Vector index %.300s has incomplete source/pk metadata.", chosen_key ? chosen_key->key_name : "<unknown>");
+  if (sqlo_vvec_require_ann_for_client (sqlc_client ()))
+    return;
+  query_arg = args[1];
+  if (IS_BOX_POINTER (query_arg) && DV_STRING == DV_TYPE_OF (query_arg))
+    query_arg = (ST *) t_listst (3, CALL_STMT,
+	t_sqlp_box_id_upcase ("__VEC_INDEX_QUERY_TEXT_VECTOR"),
+	t_list (2, t_box_dv_short_string (chosen_key->key_name), query_arg));
+  pk_col = tb_name_to_column (ot->ot_table, (char *) chosen_pk_name);
+  pk_ref = (ST *) t_listst (3, COL_DOTTED,
+      args[0]->_.col_ref.prefix ? t_box_copy (args[0]->_.col_ref.prefix) : (caddr_t) NULL,
+      t_box_string (pk_col->col_name));
+  if (BOX_ELEMENTS (args) > 2)
+    new_params = (ST **) t_list (4,
+	t_box_dv_short_string (chosen_key->key_name),
+	pk_ref,
+	query_arg,
+	args[2]);
+  else
+    new_params = (ST **) t_list (3,
+	t_box_dv_short_string (chosen_key->key_name),
+	pk_ref,
+	query_arg);
+  tree->_.call.name = t_sqlp_box_id_upcase ("__VEC_INDEX_ROW_DISTANCE");
+  tree->_.call.params = new_params;
+}
+
+
+/* How many candidates a leading ANN has to produce to answer an X_SIMILAR
+   predicate on ot, or NULL when the query states no bound.
+
+   The bound is the enclosing SELECT's TOP.  A leading ANN with k = TOP n is
+   sound even though the predicate is a threshold rather than a rank: the
+   index returns candidates in descending similarity, so if fewer than n of
+   them clear the threshold then fewer than n rows in the table clear it, and
+   the shortfall is the true answer rather than a truncation.
+
+   With no TOP the query is asking for every row above the threshold, which no
+   k can bound; the caller must then leave the filter/rerank plan in place.
+   Answering that with an arbitrary k -- it used to be a hardcoded 10 -- gives
+   wrong results silently: "select count (*) ... where X_SIMILAR (c, q) > 0.6"
+   returned 10 on a table with 60 matching rows.
+
+   ot_super is the ot's enclosing dt and is set in sqlo_df_from, before any
+   predicate is processed.  Requiring it to be the dt being compiled keeps a
+   correlated X_SIMILAR on an outer table from picking up the inner query's
+   TOP.  */
+static ST *
+sqlo_vvec_top_k_arg (sqlo_t * so, op_table_t * ot)
+{
+  op_table_t * dt_ot = so->so_this_dt;
+  ST * top_exp;
+  if (!dt_ot || !dt_ot->ot_dt || !ST_P (dt_ot->ot_dt, SELECT_STMT))
+    return NULL;
+  if (ot->ot_super != dt_ot)
+    return NULL;
+  top_exp = SEL_TOP (dt_ot->ot_dt);
+  if (!top_exp || !top_exp->_.top.exp)
+    return NULL;
+  /* top.exp is how many rows the source has to yield, offset included, which
+     is what the ORDER BY VECTOR_DISTANCE path uses for its k as well. */
+  return top_exp->_.top.exp;
+}
+
+
+/* M4: Rewrite X_SIMILAR(col, query_vec [, k]) calls to use vector index
+ *
+ * X_SIMILAR returns a similarity score in [0, 1] where 1 is identical.
+ * This function detects X_SIMILAR calls on vector-indexed columns and
+ * sets up the ANN search parameters in the enclosing op_table_t.
+ *
+ * X_SIMILAR(col, vec, k) > threshold is rewritten to use ANN search
+ * with k candidates, filtered by the threshold.
+ */
+static void
+sqlo_rewrite_x_similar_call (sqlo_t * so, ST * tree)
+{
+  ST ** args;
+  op_table_t * ot;
+  dbe_key_t * chosen_key = NULL;
+  const char * chosen_pk_name = NULL;
+  int source_matches = 0;
+  int metric_matches = 0;
+  int metric_filter = 0;
+  ST * metric_arg = NULL;
+  dbe_column_t * pk_col;
+  ST * pk_ref;
+  ST ** new_params;
+  ST * query_arg;
+
+  if (!tree || !ST_P (tree, CALL_STMT))
+    return;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree->_.call.name))
+    return;
+  if (0 != stricmp ((char *) tree->_.call.name, "X_SIMILAR"))
+    return;
+
+  args = tree->_.call.params;
+  /* X_SIMILAR(col, vec [, k [, metric]]) - 2 to 4 args */
+  if (BOX_ELEMENTS_0 (args) < 2 || BOX_ELEMENTS (args) > 4)
+    return;
+  if (!ST_COLUMN (args[0], COL_DOTTED) || STAR == args[0]->_.col_ref.name)
+    return;
+  if (!args[0]->_.col_ref.prefix)
+    return;
+
+  ot = sqlo_cname_ot_1 (so, args[0]->_.col_ref.prefix, 0);
+  if (!ot || !ot->ot_table)
+    return;
+
+  /* X_SIMILAR(vector, vector [, metric]) uses the third argument as metric.
+   * Older phase-2 drafts also allowed a k argument before metric for an ANN
+   * predicate path; keep accepting it but only route the metric to row scoring. */
+  if (BOX_ELEMENTS (args) > 2 && sqlo_vvec_metric_string_p (args[2]))
+    metric_arg = args[2];
+  else if (BOX_ELEMENTS (args) > 3 && sqlo_vvec_metric_string_p (args[3]))
+    metric_arg = args[3];
+  if (metric_arg)
+    metric_filter = vvec_parse_metric ((char *) metric_arg);
+
+  /* Find matching vector index */
+  DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
+    {
+      const char * pk_name = NULL;
+      int key_metric = 0;
+      if (!vvec_key_source_match (key, args[0]->_.col_ref.name, &pk_name, &key_metric))
+	continue;
+      source_matches++;
+      if (!chosen_key)
+	{
+	  chosen_key = key;
+	  chosen_pk_name = pk_name;
+	}
+      if (metric_filter && key_metric == metric_filter)
+	{
+	  metric_matches++;
+	  chosen_key = key;
+	  chosen_pk_name = pk_name;
+	}
+    }
+  END_DO_SET ();
+
+  if (!source_matches)
+    {
+      if (IS_BOX_POINTER (args[1]) && DV_STRING == DV_TYPE_OF (args[1]))
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "No vector index on %.300s.%.300s; X_SIMILAR text query requires a vector index with a bound embedding model.",
+	    ot->ot_table->tb_name, args[0]->_.col_ref.name);
+      if (sqlo_vvec_require_ann_for_client (sqlc_client ()))
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "No vector index on %.300s.%.300s; X_SIMILAR requires a vector-typed column with an ANN index when sqlo_vvec_require_ann is enabled.",
+	    ot->ot_table->tb_name, args[0]->_.col_ref.name);
+      return; /* No vector index on this column - will use scalar path */
+    }
+
+  if (source_matches > 1)
+    {
+      if (metric_filter)
+	{
+	  if (!metric_matches)
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+		"X_SIMILAR on %.300s.%.300s has no vector index using metric %.300s.",
+		ot->ot_table->tb_name, args[0]->_.col_ref.name, metric_arg ? (char *) metric_arg : "<unknown>");
+	  if (metric_matches > 1)
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+		"X_SIMILAR on %.300s.%.300s is ambiguous because multiple vector indexes use metric %.300s.",
+		ot->ot_table->tb_name, args[0]->_.col_ref.name, metric_arg ? (char *) metric_arg : "<unknown>");
+	}
+      else
+	sqlc_error (so->so_sc->sc_cc, "42000",
+	    "X_SIMILAR on %.300s.%.300s is ambiguous because multiple vector indexes cover that column.",
+	    ot->ot_table->tb_name, args[0]->_.col_ref.name);
+    }
+
+  if (!chosen_key || !chosen_pk_name || !tb_name_to_column (ot->ot_table, (char *) chosen_pk_name))
+    sqlc_error (so->so_sc->sc_cc, "42000",
+	"Vector index %.300s has incomplete source/pk metadata.", chosen_key ? chosen_key->key_name : "<unknown>");
+  query_arg = args[1];
+  if (IS_BOX_POINTER (query_arg) && DV_STRING == DV_TYPE_OF (query_arg))
+    query_arg = (ST *) t_listst (3, CALL_STMT,
+	t_sqlp_box_id_upcase ("__VEC_INDEX_QUERY_TEXT_VECTOR"),
+	t_list (2, t_box_dv_short_string (chosen_key->key_name), query_arg));
+  pk_col = tb_name_to_column (ot->ot_table, (char *) chosen_pk_name);
+  /* Filter/rerank vs leading-ANN choice (vision Phase 6.2/6.3).  FILTER mode
+     suppresses the leading ANN path so the scalar __VEC_INDEX_ROW_SIMILARITY plan
+     stands: the other predicates filter first and the survivors are reranked by
+     row similarity -- the complete result set, not a top-k ANN slice.  AUTO and
+     ANN keep the leading ANN path here (AUTO's cost-based suppression is added
+     separately). */
+  {
+  int filter_mode = sqlo_vvec_filter_mode_for_client (sqlc_client ());
+  ST * k_arg = NULL;
+  /* An explicit third argument is the caller's own k; otherwise the enclosing
+     TOP is the bound.  No bound at all means the leading ANN cannot answer the
+     predicate (see sqlo_vvec_top_k_arg), so the plan below is not built and
+     the scalar __VEC_INDEX_ROW_SIMILARITY rewrite below stands -- the same
+     filter/rerank plan FILTER mode forces, which returns the whole result. */
+  if (BOX_ELEMENTS (args) > 2 && !sqlo_vvec_metric_string_p (args[2]))
+    k_arg = args[2];
+  if (!k_arg)
+    k_arg = sqlo_vvec_top_k_arg (so, ot);
+  /* SIMILARITY/DISTANCE (sqlo_implied_columns_of_x_similar, sqlo.c) only ever
+     get a value from vvec_search_node's own leading-ANN search -- there is no
+     other producer for them.  can_lead_ann is the exact gate below, evaluated
+     once so this check can never drift out of sync with it (a hand-picked
+     subset of these conditions, like "just check k_arg", misses real cases --
+     e.g. X_SIMILAR() used bare with no comparison gets an implicit test
+     wrapped around it that leaves so_is_top_and false even with an explicit
+     k). Catch every way leading ANN won't happen here, with a real error,
+     rather than let a downstream reference to an ssl nothing ever assigns
+     crash with the internal, non-actionable VECSL "ssl refd before set".
+     (A secondary predicate/PK predicate on this table is *not* one of those
+     ways: sqlo_tb_col_preds, at table placement, folds it into an after-test
+     that runs on the ANN candidates instead of cancelling ANN, so it's
+     deliberately not part of this gate.) */
+  {
+  int can_lead_ann = (VVEC_FILTER_MODE_FILTER != filter_mode && k_arg
+      && so->so_is_top_and && ot->ot_dfe && DFE_TABLE == ot->ot_dfe->dfe_type
+      && !ot->ot_vec_index);
+  if ((ot->ot_vec_similarity || ot->ot_vec_distance) && !can_lead_ann)
+    sqlc_error (so->so_sc->sc_cc, "42000",
+	"SIMILARITY/DISTANCE on %.300s.%.300s require a bounded leading-ANN search: "
+	"add TOP n or LIMIT n to the query, pass an explicit k as X_SIMILAR's third argument, "
+	"don't set sqlo_vvec_filter_mode(1) (FILTER) for this session, use X_SIMILAR(...) as a "
+	"direct comparison (X_SIMILAR(...) > threshold) rather than bare, and make sure it isn't "
+	"combined with another predicate on the same table via AND.",
+	ot->ot_table->tb_name, args[0]->_.col_ref.name);
+  if (can_lead_ann)
+    {
+      float ann_rows = 0;
+      float ann_cost = 0;
+      /* Cost with the k actually asked for.  A non-constant k (a parameter,
+	 say) is costed the way sqlo_select_top_cnt guesses a non-constant
+	 TOP. */
+      int k_est = (DV_LONG_INT == DV_TYPE_OF (k_arg)) ? (int) unbox ((box_t) k_arg) : 200;
+      if (k_est < 1)
+	k_est = 1;
+      ot->ot_vec_index = chosen_key;
+      /* Keep exactly one query representation on the ANN node: raw text for
+	 model-backed indexes, otherwise an already supplied vector expression. */
+      if (IS_BOX_POINTER (args[1]) && DV_STRING == DV_TYPE_OF (args[1]))
+	{
+	  ot->ot_vec_query = NULL;
+	  ot->ot_vec_query_text = args[1];
+	}
+      else
+	{
+	  ot->ot_vec_query = query_arg;
+	  ot->ot_vec_query_text = NULL;
+	}
+      /* Keep the selected ANN predicate's fallback call free of the embedding
+	 wrapper while its DFE is built.  Otherwise the wrapper is classified as
+	 an invariant and emitted into outer Precode before codegen can replace
+	 the predicate with the ANN node's SIMILARITY output.  If table placement
+	 later cancels ANN, sqlo_tb_col_preds restores the wrapper. */
+      if (ot->ot_vec_query_text)
+	query_arg = args[1];
+      ot->ot_vec_k = k_arg;
+      ot->ot_vec_ef_search = NULL;
+      ot->ot_order_dir = ORDER_ASC;
+      ot->ot_dfe->_.table.is_vec_order = 1;
+      ot->ot_dfe->_.table.is_oby_order = 0;
+      if (vvec_ann_cost (chosen_key, k_est, k_est, &ann_rows, &ann_cost))
+	{
+	  ot->ot_dfe->dfe_arity = ann_rows;
+	  ot->ot_dfe->dfe_unit = ann_cost;
+	}
+      /* Recorded for sqlg_vvec_search_node (codegen time) to rewrite to
+	 ot_vec_similarity -- but ONLY from there, never from here or from
+	 table placement: this tentative choice can still be dropped if a
+	 secondary predicate/PK-eq shows up (see the ot_vec_index reset in
+	 sqlo_tb_col_preds), and sqlg_vvec_search_node simply never runs in
+	 that case, leaving this call safely untouched in its plain
+	 __VEC_INDEX_ROW_SIMILARITY form. */
+      t_set_push (&ot->ot_vec_row_calls, (void *) tree);
+    }
+  }
+  }
+  pk_ref = (ST *) t_listst (3, COL_DOTTED,
+      args[0]->_.col_ref.prefix ? t_box_copy (args[0]->_.col_ref.prefix) : (caddr_t) NULL,
+      t_box_string (pk_col->col_name));
+  if (metric_arg)
+    new_params = (ST **) t_list (4,
+	t_box_dv_short_string (chosen_key->key_name),
+	pk_ref,
+	query_arg,
+	metric_arg);
+  else
+    new_params = (ST **) t_list (3,
+	t_box_dv_short_string (chosen_key->key_name),
+	pk_ref,
+	query_arg);
+  tree->_.call.name = t_sqlp_box_id_upcase ("__VEC_INDEX_ROW_SIMILARITY");
+  tree->_.call.params = new_params;
 }
 
 
@@ -629,6 +1031,9 @@ sqlo_is_contains_out_col (sqlo_t *so, df_elt_t *dfe, op_table_t *ot)
        ot->ot_attr_range_out == dfe->_.col.vc ||
        ot->ot_main_range_out == dfe->_.col.vc))
     return 1;
+  if (dfe->_.col.vc && ot->ot_vec_rdf_key
+      && (ot->ot_vec_similarity == dfe->_.col.vc || ot->ot_vec_distance == dfe->_.col.vc))
+    return 1;
   DO_BOX (op_virt_col_t *, vc, inx, ot->ot_text_offband)
     {
       if (dfe->_.col.vc == vc)
@@ -1025,10 +1430,13 @@ sqlo_df (sqlo_t * so, ST * tree)
     case CALL_STMT:
       {
 	df_elt_t * f = NULL;
-	df_elt_t * dfe = sqlo_new_dfe (so, DFE_CALL, tree);
+	df_elt_t * dfe;
 	dk_set_t deps = NULL;
 	int inx;
 	int was_top = so->so_is_top_and;
+	sqlo_rewrite_vector_distance_call (so, tree);
+	sqlo_rewrite_x_similar_call (so, tree);
+	dfe = sqlo_new_dfe (so, DFE_CALL, tree);
 	so->so_is_top_and = 0;
 	if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree->_.call.name) && BOX_ELEMENTS (tree->_.call.name) == 1)
 	  f = sqlo_df (so, ((ST **) tree->_.call.name)[0]);
@@ -3838,6 +4246,15 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     {
       DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
 	{
+	  /* A native vector (HNSW) index is not an ordered B-tree and has no
+	     samplable page structure, so it must never be costed as a candidate
+	     for ordinary predicate-based index selection.  Costing it reaches
+	     sqlo_inx_sample -> itc_local_sample -> itc_reset -> it_new_root_image,
+	     which dereferences a root buffer that has no content map and crashes
+	     the server.  The ANN path picks the vector key explicitly by name
+	     (sqlo_vvec_key_by_name), so it never has to be found here. */
+	  if (vvec_key_p (key))
+	    continue;
 	  if (key->key_no_pk_ref && !opt_inx_name)
 	    continue;
 	  memset (&ic, 0, sizeof (ic));
@@ -3947,6 +4364,21 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
   unsigned surely_option_idx = (('x' == pred->_.text.type) ?
       4 : (('c' == pred->_.text.type) ? 2 : 3));
   sql_comp_t *sc = so->so_sc;
+
+  if ('v' == pred->_.text.type)
+    {
+      op_table_t * ot = tb_dfe->_.table.ot;
+      dbe_key_t *text_key = tb_text_key (ot->ot_table);
+      caddr_t inx_name;
+      ST * k;
+      sqlo_knn_similar_args (pred->_.text.args, &inx_name, &k);
+      sqlo_place_exp (so, tb_dfe, sqlo_df (so, pred->_.text.args[1]));
+      if (k)
+	sqlo_place_exp (so, tb_dfe, sqlo_df (so, k));
+      sqlo_place_exp (so, tb_dfe, sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix,
+	      t_box_string (((dbe_column_t *) text_key->key_parts->data)->col_name))));
+      return;
+    }
 
   /* place the query expression */
   sqlo_place_exp (so, tb_dfe, sqlo_df (so, pred->_.text.args[1]));
@@ -4305,7 +4737,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       else if (DFE_TEXT_PRED == pred->dfe_type && !pred->_.text.geo)
 	{
 	  dk_set_t text_after_preds = NULL;
-	  if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
+	  if (pred->_.text.type == 'c' || pred->_.text.type == 'x' || pred->_.text.type == 'v')
 	    {
 	      if (tb_dfe->_.table.text_pred)
 		sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ040",
@@ -4385,6 +4817,30 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   sqlo_table_locus (so, tb_dfe, col_preds, &after_preds, nj_preds, &vdb_preds);
 
   tb_dfe->_.table.col_preds = col_preds;
+  if (tb_dfe->_.table.is_vec_order && tb_dfe->_.table.ot && tb_dfe->_.table.ot->ot_vec_index && col_preds)
+    {
+      /* A secondary predicate on this table (or one on its primary key,
+	 e.g. an id range/eq alongside X_SIMILAR) does not cancel leading
+	 ANN.  vvec_search_node already drives this table off its PK
+	 (sqlg_vvec_pk_lookup_spec/sqlg_key_source_create, sqlgen.c) with
+	 order_key forced to main_key -- a col_pred on a non-PK column could
+	 never bind a search_spec range there anyway, so instead every
+	 col_pred here is moved to after_preds and runs as an ordinary
+	 per-row filter (after_preds -> join_test -> src_after_test) *after*
+	 the ANN search and its PK-driven row fetch, exactly like
+	 text_node/xpath_node already do for their own leftover predicates.
+	 This keeps vvec_search_node -- SIMILARITY/DISTANCE's only producer
+	 -- alive instead of stranding them with nothing to reference.  The
+	 result is still the top-k ANN candidate set, just narrowed by the
+	 extra condition rather than exhaustively rescanned for it. */
+      DO_SET (df_elt_t *, extra_pred, &col_preds)
+	{
+	  t_set_push (&after_preds, extra_pred);
+	}
+      END_DO_SET ();
+      col_preds = NULL;
+      tb_dfe->_.table.col_preds = NULL;
+    }
   /* save and reset the cond exp flag.  If you do col preds with this flag on, you get the expression calculated AFTER the col is fetched, not before */
   old_cond = so->so_place_code_forr_cond;
   so->so_place_code_forr_cond = 0;

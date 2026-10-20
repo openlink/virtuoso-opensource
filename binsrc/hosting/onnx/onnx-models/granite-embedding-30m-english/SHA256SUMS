@@ -1,0 +1,18 @@
+# SHA-256 checksums for the granite-embedding-30m-english ONNX export.
+#
+# Verified at build time by binsrc/hosting/onnx/Makefile.am (target
+# verify-onnx-model) through fetch-onnx-model, which also downloads any file
+# that is missing, such as model.onnx.  A mismatch fails the build.
+#
+# These guard against a corrupted checkout, a truncated or interrupted
+# download, and a substituted model.  A silently swapped embedding model does not
+# crash anything -- it produces confident, wrong vectors -- so this is a
+# correctness control, not just a packaging one.
+#
+# Verify by hand with:
+#     shasum -a 256 -c SHA256SUMS      (macOS/BSD)
+#     sha256sum -c SHA256SUMS          (GNU coreutils)
+#
+a07c196ffe53ab19a8b68280a9d80b2ab2ba98924e48e5f102b4558b738cfc58  model.onnx
+ed19656ea1707df69134c4af35c8ceda2cc9860bf2c3495026153a133670ab5e  vocab.json
+fe36cab26d4f4421ed725e10a2e9ddb7f799449c603a96e7f29b5a3c82a95862  merges.txt

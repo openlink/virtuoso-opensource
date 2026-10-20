@@ -28,6 +28,8 @@
 #ifndef _LTRX_H
 #define _LTRX_H
 
+#include "../Dk/Dkhash64.h"
+
 #define LT_FREEZE 0
 #define LT_PENDING		1
 #define LT_COMMITTED		2
@@ -246,6 +248,10 @@ typedef struct lock_trx_s
     caddr_t		lt_log_name;
     dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
     dk_set_t	lt_log_merge;
+    dk_hash_64_t *	lt_vvec_page_images; /* per-txn before-image of each DPF_VEC page touched so far, keyed by
+					 (key_id<<32)|dp -- see vvec_page_delta ()/vvec_page_release () in vvec.c.
+					 Lazily allocated, NULL if this trx has not touched a vector index page. */
+    dk_set_t		lt_vvec_undo; /* graph nodes this trx inserted or soft-deleted, undone by the next writer after a rollback */
     char		lt_timestamp[DT_LENGTH];
     char		lt_approx_dt[DT_LENGTH];
     char		lt_mt_waits; /* if branch or main lt of mt txn with writing branches with same rc w id.  Do not remove waits from wait graph, could be waiting on many threads */
@@ -533,6 +539,10 @@ int lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting);
 
 void pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf);
 void pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf);
+/* Defined unconditionally in lock.c but only called from the MTX_DEBUG /
+   PAGE_TRACE blocks in collock.c, so the missing prototype broke exactly those
+   builds ("call to undeclared function 'pl_check_owners'"). */
+void pl_check_owners (page_lock_t * pl);
 void lock_release (gen_lock_t * pl, lock_trx_t * lt);
 page_lock_t * pl_allocate (void);
 void pl_free (page_lock_t * pl);

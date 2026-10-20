@@ -3566,4 +3566,31 @@ ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 0 "PASSED" "***FAILED" "***FAILED"
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case #1464 - VECSL internal error for ANY subquery with chained RIGHT JOINs and a grouped derived table; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+-- --------------------------------------------------------------------------
+-- Case late-proj: a select exp computed before a top/oby and laid out after
+-- it must be recomputed from the sorted row; the pre-sort temp holding it is
+-- not restored by the sort, so reading it gives another row's value
+-- --------------------------------------------------------------------------
+DROP TABLE lateproj_t IF EXISTS;
+
+CREATE TABLE lateproj_t (ID INT PRIMARY KEY, S VARCHAR, N INT);
+INSERT INTO lateproj_t VALUES (1, 'a', 10);
+INSERT INTO lateproj_t VALUES (2, 'b', 20);
+INSERT INTO lateproj_t VALUES (3, 'c', 30);
+INSERT INTO lateproj_t VALUES (4, 'd', 40);
+INSERT INTO lateproj_t VALUES (5, 'e', 50);
+
+-- UPPER (S) is computed for the WHERE before the sort on N, and the derived
+-- table's U is projected after the sort: each U must be its own row's letter
+SELECT COUNT (*) FROM (SELECT TOP 3 ID, UPPER (S) AS U, N FROM lateproj_t WHERE UPPER (S) <> 'Q' ORDER BY N DESC) x
+ WHERE x.U <> UPPER (CHR (96 + x.ID));
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 0 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case late-proj - select exp projected after top/oby reads the sorted row; expected 0 mismatches, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT x.ID, x.U FROM (SELECT TOP 3 ID, UPPER (S) AS U, N FROM lateproj_t WHERE UPPER (S) <> 'Q' ORDER BY N DESC) x;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 3 $IF $EQU $LAST[2] C "PASSED" "***FAILED" "***FAILED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case late-proj - last of the top 3 by N desc is (3, C); got " $ROWCNT " row(s), last (" $LAST[1] ", " $LAST[2] ") STATE=" $STATE "\n";
+
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

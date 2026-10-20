@@ -211,3 +211,27 @@ ImageMagick <http://www.imagemagick.org/>
    ImageMagick is distributed under the terms of the ImageMagick license:
    <http://www.imagemagick.org/script/license.php> which is compatible
    with GPL.
+
+
+ONNX Runtime <https://github.com/microsoft/onnxruntime>
+
+    When built with --enable-onnxruntime, the Virtuoso ONNX plugin and its
+    helper process are statically linked with the Microsoft ONNX Runtime and
+    the third-party libraries it includes.  Its license and the notices for
+    those libraries are installed in the onnxruntime documentation directory.
+
+    ONNX Runtime is Copyright (C) Microsoft Corporation and is distributed
+    under the terms of the MIT License, which is compatible with GPL:
+    <https://github.com/microsoft/onnxruntime/blob/main/LICENSE>
+
+
+granite-embedding-30m-english Model <https://huggingface.co/ibm-granite/granite-embedding-30m-english>
+
+    Virtuoso ships a converted ONNX build of the granite-embedding-30m-english
+    model (model weights, and the byte-level BPE vocabulary and merges) as the
+    default embedding model for its vector search feature.  This is model
+    data loaded at run time, aggregated with -- not linked into -- Virtuoso.
+
+    granite-embedding-30m-english is the work of the Granite Embedding Team,
+    IBM, and is distributed under the terms of the Apache License, Version
+    2.0: <https://www.apache.org/licenses/LICENSE-2.0>

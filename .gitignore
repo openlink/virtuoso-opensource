@@ -83,6 +83,9 @@ docsrc/xmlsource/vspxdoc.xml
 libsrc/Wi/json_l.c
 libsrc/Wi/json_p.c
 libsrc/Wi/json_p.h
+libsrc/Wi/jsonld_p.c
+libsrc/Wi/jsonld_p.h
+libsrc/Wi/jsonld_p.output
 libsrc/Wi/git_head.c
 libsrc/Wi/nquad_p.c
 libsrc/Wi/nquad_p.h
@@ -143,3 +146,32 @@ libsrc/util/getdate.c
 a.out.dSYM
 binsrc/config/ccdefs
 binsrc/config/ccdefs.dSYM/
+
+# macOS Finder metadata
+.DS_Store
+Library/
+
+# Editor / autotools scratch
+*~
+*.loT
+.dirstamp
+
+# Vector-index (vvec/onnx) build outputs, mostly staged into binsrc/hosting
+binsrc/hosting/vonnx.so
+binsrc/hosting/onnx_helper
+binsrc/hosting/onnx/onnx_helper
+binsrc/hosting/onnx-models/
+binsrc/vvec/vvec_dav.vad
+
+# ONNX model directory: keep the tokenizer, license and checksums; ignore the
+# model the build fetches and fetch-onnx-model's temporary download directory.
+binsrc/hosting/onnx/onnx-models/*/model.onnx
+binsrc/hosting/onnx/onnx-models/*/.fetch.*/
+
+# Test-suite run artifacts
+binsrc/tests/suite/*.ro/
+binsrc/tests/suite/*.output.svr
+binsrc/tests/suite/*.output
+binsrc/tests/suite/ident.txt
+binsrc/tests/suite/tvvec.test/
+binsrc/tests/suite/tvvec_crash_recovery.test/

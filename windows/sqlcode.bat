@@ -15,7 +15,7 @@ set SQL_FILES_VDB=vdb.sql
 set SQL_FILES_PLDBG=cov_report.xsl cov_time.xsl
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
 set SQL_FILES_DBP=../../binsrc/ws/common/admin/dbpump/dbpump_root.sql ../../binsrc/ws/common/admin/dbpump/oper_pars.sql ../../binsrc/ws/common/admin/dbpump/components.sql ../../binsrc/ws/common/admin/dbpump/comp_html.sql ../../binsrc/ws/common/admin/dbpump/comp_misc.sql ../../binsrc/ws/common/admin/dbpump/comp_rpath.sql ../../binsrc/ws/common/admin/dbpump/comp_tables.sql ../../binsrc/ws/common/admin/dbpump/pars_init.sql
-set SQL_FILES_SPARQL=sparql.sql sparql_io.sql sparql_ui.sql sparql_qm.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql ttlpv.sql
+set SQL_FILES_SPARQL=ttlpv.sql sparql_vec_onnx.sql sparql_vec_index.sql sparql.sql sparql_io.sql sparql_ui.sql sparql_qm.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql sparql_vec_index_view.sql
 set SQL_FILES_SPARQL_INIT=sparql_init.sql
 
 rm -f sql_code.c sql_code_1.c sql_code_ws.c sql_code_repl.c sql_code_dav.c sql_code_ddk.c sql_code_sys.c sql_code_uddi.c 

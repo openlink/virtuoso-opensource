@@ -1,0 +1,214 @@
+<?vsp
+  -- VVec · API Keys : manage the provider keys HTTP embedding models point at.
+  --
+  -- Keys are not a table -- they live in the SQL registry, and a model
+  -- references one by name through ONNX_MODELS.provider_api_key_name.  This
+  -- page lists the union of the names models reference and any registry entry
+  -- following the ONNX_API_KEY_ convention, so an unused key is still
+  -- manageable and a model pointing at a missing key is still visible.  A key
+  -- value is never read back out for display: only its length is shown.
+  set http_charset='utf-8';
+
+  declare _ok integer;                 -- -1 none, 1 ok, 0 error
+  declare _banner, _detail varchar;
+  declare _op, _kname, _kval varchar;
+  declare _r integer;
+
+  _ok := -1; _banner := ''; _detail := ''; _kname := '';
+
+  if (get_keyword ('do', params, '') = 'key')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Operation failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any write
+        return;
+      _op    := get_keyword ('op', params, '');
+      _kname := trim (get_keyword ('k_name', params, ''));
+      _kval  := get_keyword ('k_value', params, '');
+
+      if (DB.DBA.VVEC_NAME_OK (_kname) = 0)
+        { _ok := 0; _banner := 'Invalid registry name';
+          _detail := 'Use letters, digits, dot, dash or underscore.'; goto done_proc; }
+
+      if (_op = 'set')
+        {
+          declare _had integer;
+          if (length (_kval) = 0)
+            { _ok := 0; _banner := 'A key value is required';
+              _detail := 'To remove a key use Delete instead.'; goto done_proc; }
+          _had := case when isstring (registry_get (_kname)) then 1 else 0 end;
+          DB.DBA.ONNX_API_KEY_SET (_kname, _kval);
+          _ok := 1;
+          _banner := case when _had = 1 then sprintf ('Replaced the key stored as "%s"', _kname)
+                          else sprintf ('Stored a key as "%s"', _kname) end;
+          _detail := 'The value is never read back or displayed.';
+          _kname := '';
+        }
+      else if (_op = 'del')
+        {
+          declare _used varchar;
+          _used := '';
+          for (select model_name as mnx from DB.DBA.ONNX_MODELS
+                where provider_api_key_name = _kname order by model_name) do
+            { if (_used <> '') _used := _used || ', '; _used := _used || mnx; }
+          if (not isstring (registry_get (_kname)))
+            { _ok := 0; _banner := 'No key is stored under that name'; _detail := _kname; goto done_proc; }
+          registry_remove (_kname);
+          _ok := 1;
+          _banner := sprintf ('Deleted the key stored as "%s"', _kname);
+          _detail := case when _used <> ''
+                          then sprintf ('%s still reference this name and will fail to embed until a key is stored again.', _used)
+                          else 'No model referenced it.' end;
+          _kname := '';
+        }
+      else
+        { _ok := 0; _banner := 'Unknown operation'; _detail := _op; }
+     done_proc:;
+    }
+
+  DB.DBA.VVEC_HEAD ('API Keys', 'apikeys');
+?>
+<div class="page-head">
+  <div>
+    <h1>API Keys</h1>
+    <div class="sub">Provider credentials that HTTP embedding models reference by name.</div>
+  </div>
+  <a class="btn" href="models">Embedding Models &#8594;</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Stored keys</h3>
+      <div class="sub">Held in the SQL registry. Write-only from here &mdash; a stored value is never read back.</div>
+    </div>
+  </div>
+  <div class="card-body tight"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th>Registry name</th><th style="width:110px">Status</th><th>Used by</th><th style="width:190px"></th></tr></thead>
+      <tbody>
+<?vsp
+  declare keys, e any;
+  declare i, nk integer;
+  keys := DB.DBA.VVEC_API_KEYS ();
+  nk := length (keys);
+  i := 0;
+  while (i < nk)
+    {
+      e := keys[i];
+?>
+      <tr>
+        <td class="cell-strong mono"><?= e[0] ?></td>
+        <td><?vsp
+          if (e[1] = 1)
+            http ('<span class="pill green"><span class="dot"></span>set</span>');
+          else
+            http ('<span class="pill amber"><span class="dot"></span>not set</span>');
+        ?></td>
+        <td class="cell-muted truncate"><?vsp
+          if (e[2] <> '') http (sprintf ('%V', e[2])); else http ('<span class="cell-muted">&mdash;</span>');
+        ?></td>
+        <td><div class="row-actions">
+          <button type="button" class="btn sm" data-name="<?= e[0] ?>" onclick="vdKeyEdit(this)"><?vsp
+            http (case when e[1] = 1 then 'Replace' else 'Set key' end); ?></button>
+<?vsp
+      if (e[1] = 1)
+        {
+?>
+          <form method="post" action="apikeys" style="display:inline"
+                data-confirm-title="Delete this API key?"
+                data-confirm="The value stored as <?= e[0] ?> is removed from the registry."
+                data-confirm-ok="Delete key"
+                data-confirm-note="This cannot be undone."
+                data-confirm-working="Deleting key..."<?vsp
+      if (e[2] <> '')
+        http (sprintf (' data-confirm-detail="Used by %V. Embedding through it fails until a key is stored again."', e[2]));
+    ?>>
+            <input type="hidden" name="do" value="key">
+            <input type="hidden" name="op" value="del">
+            <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+            <input type="hidden" name="k_name" value="<?= e[0] ?>">
+            <button class="btn sm danger" type="submit">Delete</button>
+          </form>
+<?vsp
+        }
+?>
+        </div></td>
+      </tr>
+<?vsp
+      i := i + 1;
+    }
+  if (nk = 0)
+    http ('<tr><td colspan="4"><div class="empty"><h3>No API keys</h3><p>Register an HTTP embedding model, or add a key below.</p></div></td></tr>');
+?>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<div class="stats duo">
+  <div class="card">
+    <div class="card-head"><div><h3>Add or replace a key</h3><div class="sub">Re-using a name overwrites the value stored under it.</div></div></div>
+    <div class="card-body">
+      <form method="post" action="apikeys" data-working="Storing key..." data-beat>
+        <input type="hidden" name="do" value="key">
+        <input type="hidden" name="op" value="set">
+        <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+        <div class="form-grid">
+          <div class="field">
+            <label>Registry name</label>
+            <input id="k-name" name="k_name" placeholder="ONNX_API_KEY_OPENAI" autocomplete="off" value="<?= _kname ?>">
+            <span class="hint">The name a model's <span class="mono">API key registry name</span> points at.</span>
+          </div>
+          <div class="field">
+            <label>API key</label>
+            <input id="k-value" name="k_value" type="password" placeholder="sk-&hellip;" autocomplete="new-password">
+            <span class="hint">Sent once to store the value; never displayed back. Use HTTPS or a trusted network.</span>
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">Store key</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><h3>How models find a key</h3><div class="sub">One name, referenced by any number of models.</div></div></div>
+    <div class="card-body">
+      <p style="margin-top:0">An HTTP embedding model stores the <em>name</em> of its key, not the key. At embed time the
+        provider reads the value out of the registry under that name, so replacing a key here takes effect immediately
+        for every model referencing it &mdash; no re-registration needed.</p>
+      <p>Registering a provider on the <a href="models">Embedding Models</a> page can store its key in the same step;
+        leaving the name blank there files it under the provider's conventional name, which is what appears in this list.</p>
+      <p>The equivalent from <span class="mono">isql</span>:</p>
+      <div class="mono" style="background:var(--border-soft);padding:12px;border-radius:10px;white-space:pre-wrap">DB.DBA.ONNX_API_KEY_SET ('ONNX_API_KEY_OPENAI', 'sk-...');</div>
+      <p class="cell-muted">Deleting a key that models still reference leaves them registered but
+        unable to embed until a value is stored again.</p>
+      <div id="sec-suppressed" class="hidden banner warn" style="margin-bottom:0">
+        <div><strong>The unencrypted-connection warning is off in this browser</strong>
+          <span class="mono">You chose not to be reminded that an API key submitted from here crosses the network in clear text unless the console is on HTTPS.</span>
+          <div style="margin-top:8px"><button type="button" class="btn sm" onclick="vdSecForget()">Turn the warning back on</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function vdKeyEdit(btn){
+  var n = document.getElementById("k-name"), v = document.getElementById("k-value");
+  n.value = btn.getAttribute("data-name");
+  v.value = "";
+  n.scrollIntoView({block: "center", behavior: "smooth"});
+  v.focus();
+}
+</script>
+<?vsp DB.DBA.VVEC_FOOT (); ?>

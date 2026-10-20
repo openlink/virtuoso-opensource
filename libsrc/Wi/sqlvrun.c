@@ -921,7 +921,10 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		      dc_append_box (target_dc, value);
 		      goto next_row;
 		    }
-		  if (DV_STRING == dtp || DV_BIN == dtp || DV_WIDE == dtp || DV_LONG_WIDE == dtp || DV_XML_ENTITY == dtp || DV_STRING_SESSION == dtp)
+		  /* LONG ANY/UDT stores anified strings too, except row-store log replay, which passes already serialized bytes */
+		  if ((!cl->cl_sqt.sqt_class
+		       || (qi->qi_client->cli_is_log && !rd->rd_key->key_is_col))
+		      && (DV_STRING == dtp || DV_BIN == dtp || DV_WIDE == dtp || DV_LONG_WIDE == dtp || DV_XML_ENTITY == dtp || DV_STRING_SESSION == dtp))
 		    {
 		      dc_append_box (target_dc, value);
 		      goto next_row;

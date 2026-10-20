@@ -87,7 +87,8 @@ it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_fla
       /* log == phys. Free is OK if not remapped in checkpoint */
       if (!DP_CHECKPOINT_REMAP (it->it_storage, logical))
 	{
-	  em_free_dp (IT_COL_EM (it, col_id), logical, (dp_flags == DPF_INDEX || dp_flags == DPF_HASH || dp_flags == DPF_COLUMN) ? EXT_INDEX : EXT_BLOB);
+	  em_free_dp (IT_COL_EM (it, col_id), logical,
+	    (dp_flags == DPF_INDEX || dp_flags == DPF_HASH || dp_flags == DPF_COLUMN || dp_flags == DPF_VEC) ? EXT_INDEX : EXT_BLOB);
 	}
     }
 }

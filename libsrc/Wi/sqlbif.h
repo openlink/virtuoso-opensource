@@ -414,6 +414,8 @@ typedef struct trset_ctx_s
   char *  tc_tail;
   query_instance_t* tc_qst;
   int tc_indent;
+  struct dk_session_s * tc_ses;	/* when set, trset_printf appends lines to
+				   this session instead of pushing result rows */
 } trset_ctx_t;
 
 extern void trset_start (caddr_t *qst);

@@ -58,6 +58,56 @@
 #include "mhash.h"
 
 int32 enable_qr_comment; /* generate query plan comments and warnings */
+
+/* from wifn.h / vvec.c ; forward-declared here so bif_explain.c can print
+ * vector-index annotations for __VEC_INDEX_ROW_DISTANCE calls without pulling
+ * in the full wifn.h dependency chain. */
+int vvec_explain_index_info (const char *index_name, const char *mode, char *buf, int buflen);
+int vvec_explain_row_distance_info (const char *index_name, char *buf, int buflen);
+
+
+static int
+vvec_ssl_is_string_constant (state_slot_t * ssl, const char **ret)
+{
+  caddr_t val;
+  dtp_t dtp;
+  if (!ssl || ssl->ssl_type != SSL_CONSTANT)
+    return 0;
+  val = ssl->ssl_constant;
+  if (!IS_BOX_POINTER (val))
+    return 0;
+  dtp = DV_TYPE_OF (val);
+  if (DV_STRING != dtp && DV_C_STRING != dtp && DV_SYMBOL != dtp && DV_UNAME != dtp)
+    return 0;
+  if (ret)
+    *ret = (const char *) val;
+  return 1;
+}
+
+
+static void
+vvec_explain_maybe_annotate_call (instruction_t * in)
+{
+  const char * proc;
+  const char * index_name = NULL;
+  char info[512];
+  state_slot_t ** params;
+  if (!in || !in->_.call.proc)
+    return;
+  proc = in->_.call.proc;
+  if (0 != stricmp (proc, "__VEC_INDEX_ROW_DISTANCE") && 0 != stricmp (proc, "__VEC_INDEX_ROW_SIMILARITY"))
+    return;
+  params = in->_.call.params;
+  if (!params || BOX_ELEMENTS (params) < 1)
+    return;
+  if (!vvec_ssl_is_string_constant (params[0], &index_name) || !index_name)
+    return;
+  if (!vvec_explain_row_distance_info (index_name, info, (int) sizeof (info)))
+    return;
+  trset_printf ("\n       %s", info);
+}
+
+
 #define MSG_MAX_LEN 100
 #define TA_STAT_COMM 1219
 
@@ -569,6 +619,7 @@ artm_print:
               trset_add_indent (-6);
 	      stmt_printf ((" ) }"));
 	    }
+	  vvec_explain_maybe_annotate_call (in);
 	  break;
 
 	case INS_OPEN:
@@ -1641,12 +1692,32 @@ node_print_0 (data_source_t * node)
 	{
 	  stmt_printf ((" geo prec: "));
 	  ssl_print (txs->txs_precision);
-	}
-      stmt_printf (("\n"));
-    }
-  else if (in == (qn_input_fn) xn_input)
-    {
-      xpath_node_t *xn = (xpath_node_t *) node;
+		}
+	      stmt_printf (("\n"));
+	    }
+		  else if (in == (qn_input_fn) vvec_search_node_input)
+		    {
+		      vvec_search_node_t *vsn = (vvec_search_node_t *) node;
+		      char info[512];
+		      if (vsn->vsn_vec_key && vvec_explain_index_info (vsn->vsn_vec_key->key_name, "ann", info, (int) sizeof (info)))
+			stmt_printf (("vvec_search_node %s", info));
+		      else
+			stmt_printf (("vvec_search_node index=%s mode=ann", vsn->vsn_vec_key ? vsn->vsn_vec_key->key_name : "<unknown>"));
+		      stmt_printf ((" query_%s=", vsn->vsn_query_text ? "text" : "vector"));
+		      ssl_print (vsn->vsn_query_text ? vsn->vsn_query_text : vsn->vsn_query_vec);
+		      stmt_printf ((" k="));
+		      ssl_print (vsn->vsn_k);
+	      stmt_printf ((" ef_search="));
+	      ssl_print (vsn->vsn_ef_search);
+	      stmt_printf ((vsn->vsn_rdf ? " O=" : " pk="));
+	      ssl_print (vsn->vsn_pk_id);
+	      if (vsn->vsn_rdf)
+		stmt_printf ((" rdf_obj %s", vsn->vsn_is_driving ? "driving" : "check"));
+	      stmt_printf (("\n"));
+	    }
+	  else if (in == (qn_input_fn) xn_input)
+	    {
+	      xpath_node_t *xn = (xpath_node_t *) node;
       if ('q' == xn->xn_predicate_type)
 	stmt_printf (("XQUERY_CONTAINS ("));
       else
@@ -2364,12 +2435,30 @@ node_print (data_source_t * node)
 	{
 	  stmt_printf ((" geo prec: "));
 	  ssl_print (txs->txs_precision);
-	}
-      stmt_printf (("\n"));
-    }
-  else if (in == (qn_input_fn) xn_input)
-    {
-      xpath_node_t *xn = (xpath_node_t *) node;
+		}
+	      stmt_printf (("\n"));
+	    }
+		  else if (in == (qn_input_fn) vvec_search_node_input)
+		    {
+		      vvec_search_node_t *vsn = (vvec_search_node_t *) node;
+		      char info[512];
+		      if (vsn->vsn_vec_key && vvec_explain_index_info (vsn->vsn_vec_key->key_name, "ann", info, (int) sizeof (info)))
+			stmt_printf (("vvec_search_node %s", info));
+		      else
+			stmt_printf (("vvec_search_node index=%s mode=ann", vsn->vsn_vec_key ? vsn->vsn_vec_key->key_name : "<unknown>"));
+		      stmt_printf ((" query_%s=", vsn->vsn_query_text ? "text" : "vector"));
+		      ssl_print (vsn->vsn_query_text ? vsn->vsn_query_text : vsn->vsn_query_vec);
+		      stmt_printf ((" k="));
+		      ssl_print (vsn->vsn_k);
+	      stmt_printf ((" ef_search="));
+	      ssl_print (vsn->vsn_ef_search);
+	      if (vsn->vsn_rdf)
+		stmt_printf ((" rdf_obj %s", vsn->vsn_is_driving ? "driving" : "check"));
+	      stmt_printf (("\n"));
+	    }
+	  else if (in == (qn_input_fn) xn_input)
+	    {
+	      xpath_node_t *xn = (xpath_node_t *) node;
       if ('q' == xn->xn_predicate_type)
 	stmt_printf (("XQUERY_CONTAINS ("));
       else
@@ -3418,11 +3507,19 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
       SES_PRINT (s, "</exp>");
       SES_PRINT (s, "<d_id>");
       ssl_print_xml (txs->txs_d_id, s);
-      SES_PRINT (s, "</d_id>");
-      SES_PRINT (s, "</txs>");
-    }
-  else if (IS_QN (qn, xn_input))
-    {
+	      SES_PRINT (s, "</d_id>");
+	      SES_PRINT (s, "</txs>");
+	    }
+	  else if (IS_QN (qn, vvec_search_node_input))
+	    {
+	      QNCAST (vvec_search_node_t, vsn, qn);
+	      ses_sprintf (s, "<vvec_search_node index='%s' mode='%s'>", vsn->vsn_vec_key ? vsn->vsn_vec_key->key_name : "",
+		  !vsn->vsn_rdf ? "ann" : vsn->vsn_is_driving ? "rdf_obj_driving" : "rdf_obj_check");
+	      node_print_code_xml (qi, s, qn);
+	      SES_PRINT (s, "</vvec_search_node>");
+	    }
+	  else if (IS_QN (qn, xn_input))
+	    {
       QNCAST (xpath_node_t, xn, qn);
       ses_sprintf (s, "<xn op='%s'>", 'q' == xn->xn_predicate_type ? "xquery" : "xpath");
       SES_PRINT (s, "<tcol>");
@@ -3565,6 +3662,75 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (qr && !qr->qr_proc_name)
     qr_free (qr);
   return NULL;
+}
+
+
+static caddr_t
+bif_vvec_explain_str (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_t * qr;
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t err = NULL;
+  caddr_t text;
+  caddr_t result;
+  dk_session_t * ses;
+  trset_ctx_t * ctx;
+  trset_ctx_t * prev_ctx;
+
+  text = bif_string_arg (qst, args, 0, "__vvec_explain_str");
+  text = sqlc_text_no_semi (text);
+  qr = sql_compile (text, qi->qi_client, &err, SQLC_DO_NOT_STORE_PROC);
+  dk_free_box (text);
+  if (err)
+    {
+      if (qr && !qr->qr_proc_name)
+	qr_free (qr);
+      sqlr_resignal (err);
+    }
+  ses = strses_allocate ();
+  ctx = (trset_ctx_t *) dk_alloc_box_zero (sizeof (trset_ctx_t), DV_CUSTOM);
+  ctx->tc_buf = dk_alloc_box (TRSET_BUF_MAX + 1, DV_LONG_STRING);
+  ctx->tc_buf[0] = 0;
+  ctx->tc_tail = ctx->tc_buf;
+  ctx->tc_qst = qi;
+  ctx->tc_indent = 0;
+  ctx->tc_ses = ses;
+  prev_ctx = (trset_ctx_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, ctx);
+  QR_RESET_CTX
+    {
+      qr_print_top (qr);
+    }
+  QR_RESET_CODE
+    {
+      caddr_t detail = thr_get_error_code (THREAD_CURRENT_THREAD);
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, prev_ctx);
+      if (ctx->tc_tail > ctx->tc_buf)
+	SES_PRINT (ses, ctx->tc_buf);
+      dk_free_box (ctx->tc_buf);
+      dk_free_box ((caddr_t) ctx);
+      strses_free (ses);
+      if (qr && !qr->qr_proc_name)
+	qr_free (qr);
+      sqlr_resignal (detail);
+    }
+  END_QR_RESET;
+  if (ctx->tc_tail > ctx->tc_buf)
+    {
+      SES_PRINT (ses, ctx->tc_buf);
+      SES_PRINT (ses, "\n");
+    }
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, prev_ctx);
+  dk_free_box (ctx->tc_buf);
+  dk_free_box ((caddr_t) ctx);
+  if (qr && !qr->qr_proc_name)
+    qr_free (qr);
+  if (STRSES_CAN_BE_STRING (ses))
+    result = strses_string (ses);
+  else
+    result = box_dv_short_string ("<explain output too large>");
+  strses_free (ses);
+  return result;
 }
 
 
@@ -4562,11 +4728,9 @@ void
 bif_explain_init (void)
 {
   bif_define ("explain", bif_explain);
+  bif_define ("__vvec_explain_str", bif_vvec_explain_str);
   bif_define ("procedure_cols", bif_procedure_cols);
   bif_define ("sql_parse", bif_sql_parse);
   bif_define ("sql_text", bif_sql_text);
   bif_define ("log_stats", bif_log_stats);
 }
-
-
-

@@ -532,20 +532,46 @@ spar_make_vector_qm_sql (sparp_t *sparp, SPART **fixed)
   return spar_make_qm_sql (sparp, "vector", fixed, NULL);
 }
 
+static int
+spar_qm_sql_funcall_is_vec_index (SPART *op)
+{
+  caddr_t fname;
+  if (SPAR_QM_SQL_FUNCALL != SPART_TYPE (op))
+    return 0;
+  fname = op->_.qm_sql_funcall.fname;
+  return (NULL != fname && 0 == strncmp (fname, "DB.DBA.VEC_INDEX_", 17));
+}
+
+static int
+spar_qm_acc_sqls_are_vec_index_only (dk_set_t acc_sqls)
+{
+  int found = 0;
+  DO_SET (SPART *, op, &acc_sqls)
+    {
+      if (!spar_qm_sql_funcall_is_vec_index (op))
+        return 0;
+      found = 1;
+    }
+  END_DO_SET ();
+  return found;
+}
+
 SPART *
 spar_make_topmost_qm_sql (sparp_t *sparp)
 {
   dk_set_t *acc_ptr = &(sparp->sparp_e4qm->e4qm_acc_sqls);
   SPART **ops;
   int ctr;
-  t_set_push (acc_ptr,
-    spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_APPLY_CHANGES",
-      (SPART **)t_list (2,
-        spar_make_vector_qm_sql (sparp,
-          (SPART **)t_revlist_to_array (sparp->sparp_e4qm->e4qm_deleted)),
-        spar_make_vector_qm_sql (sparp,
-          (SPART **)t_revlist_to_array (sparp->sparp_e4qm->e4qm_affected_jso_iris)) ),
-      NULL ) );
+  /* Vector index DDL has no JSO metadata side effects. */
+  if (!spar_qm_acc_sqls_are_vec_index_only (acc_ptr[0]))
+    t_set_push (acc_ptr,
+      spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_APPLY_CHANGES",
+        (SPART **)t_list (2,
+          spar_make_vector_qm_sql (sparp,
+            (SPART **)t_revlist_to_array (sparp->sparp_e4qm->e4qm_deleted)),
+          spar_make_vector_qm_sql (sparp,
+            (SPART **)t_revlist_to_array (sparp->sparp_e4qm->e4qm_affected_jso_iris)) ),
+        NULL ) );
   ops = (SPART **)t_revlist_to_array (acc_ptr[0]);
   DO_BOX_FAST (SPART *, op, ctr, ops)
     {

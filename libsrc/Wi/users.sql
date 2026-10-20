@@ -1468,3 +1468,618 @@ USERS_GET_DEF_QUAL (in dta varchar)
   return (get_keyword ('Q', dta, ''));
 }
 ;
+
+create procedure DB.DBA.VEC_SQL_QUEUE_INIT ()
+{
+  declare stat, msg any;
+  --  Every row a DML trigger queues comes through here, so once the tables
+  --  exist this has to cost a lookup and no more.  It used to try the three
+  --  CREATE TABLEs below every time -- each compiled afresh, as exec () does
+  --  not cache, and each failing -- which made 10,000 inserts into an indexed
+  --  table take ~40 s against 36 ms without the index.  SYS_KEYS, because a
+  --  static query on the queue tables themselves would not compile before
+  --  they exist.
+  if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.VEC_SQL_QUEUE')
+      and exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.VEC_SQL_QUEUE_LOCK')
+      and exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.VEC_SQL_WORKER_STATE'))
+    return 1;
+  stat := '00000';
+  exec ('create table DB.DBA.VEC_SQL_QUEUE (
+    VQ_INDEX varchar not null,
+    VQ_PK any not null,
+    VQ_OP varchar not null,
+    VQ_ENQ datetime,
+    VQ_STATE varchar,
+    VQ_TRIES integer,
+    VQ_ERROR varchar,
+    primary key (VQ_INDEX, VQ_PK))', stat, msg);
+  stat := '00000';
+  exec ('create table DB.DBA.VEC_SQL_QUEUE_LOCK (
+    VL_INDEX varchar not null primary key,
+    VL_TS datetime)', stat, msg);
+  stat := '00000';
+  exec ('create table DB.DBA.VEC_SQL_WORKER_STATE (
+    VS_ID integer not null primary key,
+    VS_LAST_RUN datetime,
+    VS_LAST_COUNT integer,
+    VS_LAST_ERROR varchar)', stat, msg);
+  stat := '00000';
+  exec ('insert soft DB.DBA.VEC_SQL_WORKER_STATE (VS_ID, VS_LAST_COUNT) values (1, 0)', stat, msg);
+  return 1;
+}
+;
+
+create function DB.DBA.VEC_SQL_INDEX_IS_RDF_BACKING (in _index varchar) returns integer
+{
+  -- True when _index is the backing native vector index of a SPARQL/RDF vector
+  -- index. Those indexes are maintained directly by the RDF layer (refresh /
+  -- SPARQL_VEC_QUEUE via __VEC_INDEX_INSERT_BATCH / __VEC_INDEX_DELETE_ROW) and
+  -- their backing source column (RV_TEXT) is deliberately kept NULL, so they must
+  -- never flow through the relational SQL queue: a drain would read NULL text and
+  -- delete every HNSW node. Defensive against the SPARQL catalog not existing.
+  if (not exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.SPARQL_VEC_INDEX'))
+    return 0;
+  if (exists (select 1 from DB.DBA.SPARQL_VEC_INDEX where SVI_INTERNAL_NAME = _index))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_QUEUE_ENQUEUE (in _index varchar, in _pk any, in _op varchar)
+{
+  -- Never enqueue a SPARQL/RDF vector index's backing table into the relational
+  -- SQL queue (see VEC_SQL_INDEX_IS_RDF_BACKING). The RDF layer owns its HNSW.
+  if (DB.DBA.VEC_SQL_INDEX_IS_RDF_BACKING (_index))
+    return 0;
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  if (_op not in ('upsert', 'delete'))
+    signal ('22023', 'VEC_SQL_QUEUE_ENQUEUE op must be upsert or delete');
+  delete from DB.DBA.VEC_SQL_QUEUE where VQ_INDEX = _index and VQ_PK = _pk;
+  insert into DB.DBA.VEC_SQL_QUEUE
+    (VQ_INDEX, VQ_PK, VQ_OP, VQ_ENQ, VQ_STATE, VQ_TRIES, VQ_ERROR)
+  values (_index, _pk, _op, now (), 'pending', 0, null);
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_INDEX_OPT (in _opts any, in _name varchar)
+{
+  declare inx, jnx integer;
+  if (not isvector (_opts))
+    return null;
+  -- Match key names case-insensitively.  Stored short-name keys (sc/pk/mid/...)
+  -- are lower-case, but a WITH-clause option (e.g. source_kind) may be stored
+  -- under its as-typed spelling/case, so callers pass a lower-case _name and we
+  -- fold both sides.
+  _name := lower (_name);
+  inx := 0;
+  while (inx + 1 < length (_opts))
+    {
+      if (isstring (_opts[inx]) and lower (cast (_opts[inx] as varchar)) = _name)
+        return _opts[inx + 1];
+      inx := inx + 2;
+    }
+  inx := 0;
+  while (inx < length (_opts))
+    {
+      if (isvector (_opts[inx]))
+        {
+          jnx := 0;
+          while (jnx + 1 < length (_opts[inx]))
+            {
+              if (isstring (_opts[inx][jnx]) and lower (cast (_opts[inx][jnx] as varchar)) = _name)
+                return _opts[inx][jnx + 1];
+              jnx := jnx + 2;
+            }
+        }
+      inx := inx + 1;
+    }
+  return null;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_MODEL_REFRESH_BY_ID (in _model_id integer)
+{
+  declare _model_name, _model_type any;
+  whenever not found goto done;
+  select model_name, model_type into _model_name, _model_type
+    from DB.DBA.ONNX_MODELS where model_id = _model_id;
+  if (lower (cast (_model_type as varchar)) not in ('test_embedding', 'vvec_test_embedding', 'unavailable'))
+    DB.DBA.ONNX_MODEL_REFRESH (cast (_model_name as varchar));
+done:
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_QUEUE_FAIL (in _index varchar, in _pk any, in _msg varchar)
+{
+  update DB.DBA.VEC_SQL_QUEUE
+     set VQ_STATE = 'error',
+         VQ_TRIES = coalesce (VQ_TRIES, 0) + 1,
+         VQ_ERROR = substring (_msg, 1, 1000)
+   where VQ_INDEX = _index and VQ_PK = _pk;
+  update DB.DBA.VEC_SQL_WORKER_STATE
+     set VS_LAST_RUN = now (), VS_LAST_ERROR = substring (_msg, 1, 1000)
+   where VS_ID = 1;
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_MAIN_KEY_NAME (in _tbl varchar)
+{
+  declare _main_key varchar;
+  whenever not found goto done;
+  select KEY_NAME into _main_key
+    from DB.DBA.SYS_KEYS
+   where KEY_TABLE = _tbl
+     and KEY_IS_MAIN = 1
+     and KEY_MIGRATE_TO is null;
+  return _main_key;
+done:
+  return null;
+}
+;
+
+-- One batch of the backfill: embed the texts, or take the vectors of a
+-- 'vector' index as they are, and insert them -- or stage them, for a bulk
+-- build.  The texts go with the vectors so every row keeps its SOURCE_HASH, as
+-- a row embedded by the DML queue does.  A failure is raised again naming the
+-- rows of the batch: the CREATE fails, and the index is removed.
+create procedure DB.DBA.VEC_SQL_BACKFILL_BATCH (in _index varchar, in _ids any, in _srcs any,
+    in _source_kind varchar, in _model_name varchar, in _model_handle integer, in _model_type varchar,
+    in _per_call integer, in _stage integer)
+{
+  declare _vecs, _raw, _part any;
+  declare _i, _j, _n, _k integer;
+  declare exit handler for sqlstate '*'
+    {
+      signal ('42000', 'VECQ1', sprintf ('Vector index %s backfill failed in rows %s to %s: %s: %s',
+          _index, cast (_ids[0] as varchar), cast (_ids[length (_ids) - 1] as varchar),
+          __SQL_STATE, __SQL_MESSAGE));
+    };
+  _n := length (_ids);
+  if (_source_kind = 'vector')
+    {
+      -- A stored serialize (vec) reads back as a string or blob; a native
+      -- array is passed through, as VEC_SQL_QUEUE_PROCESS_ITEM does.
+      _vecs := make_array (_n, 'any');
+      for (_i := 0; _i < _n; _i := _i + 1)
+        {
+          _raw := _srcs[_i];
+          aset (_vecs, _i, case when isstring (_raw) or isblob (_raw) then deserialize (_raw) else _raw end);
+        }
+      if (_stage)
+        __VEC_INDEX_STAGE_BATCH (_index, _ids, _vecs);
+      else
+        __VEC_INDEX_INSERT_BATCH (_index, _ids, _vecs);
+      return _n;
+    }
+  if (_per_call >= _n)
+    _vecs := DB.DBA.VEC_INDEX_EMBED_TEXTS (_model_name, _model_handle, _srcs, _model_type);
+  else
+    {
+      _vecs := make_array (_n, 'any');
+      for (_i := 0; _i < _n; _i := _i + _per_call)
+        {
+          _k := case when _i + _per_call < _n then _i + _per_call else _n end;
+          _part := DB.DBA.VEC_INDEX_EMBED_TEXTS (_model_name, _model_handle, subseq (_srcs, _i, _k), _model_type);
+          for (_j := _i; _j < _k; _j := _j + 1)
+            aset (_vecs, _j, _part[_j - _i]);
+        }
+    }
+  if (_stage)
+    __VEC_INDEX_STAGE_BATCH (_index, _ids, _vecs, _srcs);
+  else
+    __VEC_INDEX_INSERT_BATCH (_index, _ids, _vecs, _srcs);
+  return _n;
+}
+;
+
+-- Embed and index the rows of the table a vector index has just been created
+-- on: the backfill of CREATE VECTOR INDEX.
+--
+-- The table is read in key order, a page of 1,000 rows at a time, and each
+-- page is embedded and inserted in batches (VEC_INDEX_EMBED_BATCH_SIZE, 32
+-- unless __vec_embed_batch_size says otherwise), with the model resolved once,
+-- not for every row.  An HTTP provider gets the batch in one request, not one
+-- per row.  A local model still gets one text per call: its helper runs a
+-- request's rows together in sub-batches of up to 16, and on long texts that
+-- halved its rate -- granite on FiQA passages, one thread: 20.8 a second one
+-- at a time, 10.8 in calls of 32.  Its lever is threads (the model's
+-- intra_threads), not batches.  It used to queue every row and embed them
+-- one by one through VEC_SQL_QUEUE_PROCESS_ITEM, which also compiled two
+-- statements and re-ran ONNX_MODEL_REFRESH per row.  A row whose source is
+-- NULL gets no embedding.
+create procedure DB.DBA.VEC_SQL_QUEUE_BACKFILL (in _index varchar)
+{
+  declare _tbl, _pk_col, _source_col, _main_key, _first, _next, _stat, _msg varchar;
+  declare _source_kind, _source_expr, _model_name, _model_type varchar;
+  declare _opts, _meta, _rows, _model, _ids, _srcs, _last any;
+  declare _model_id, _model_handle, _n, _i, _cnt, _bs, _done, _stage, _per_call integer;
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  -- VEC_SQL_QUEUE_ENQUEUE's rule: the backing table of a SPARQL/RDF vector
+  -- index is maintained by the RDF layer, never through here.
+  if (DB.DBA.VEC_SQL_INDEX_IS_RDF_BACKING (_index))
+    return 0;
+  _stat := '00000';
+  exec ('select KEY_TABLE, KEY_OPTIONS from DB.DBA.SYS_KEYS where KEY_NAME = ? and KEY_MIGRATE_TO is null',
+      _stat, _msg, vector (_index), 1, _meta, _rows);
+  if (_stat <> '00000')
+    signal (_stat, _msg);
+  if (_rows is null or length (_rows) = 0)
+    signal ('42S12', sprintf ('No vector index %s', _index));
+  _tbl := cast (_rows[0][0] as varchar);
+  _opts := _rows[0][1];
+  _pk_col := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'pk') as varchar);
+  _source_col := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'sc') as varchar);
+  _main_key := DB.DBA.VEC_SQL_MAIN_KEY_NAME (_tbl);
+  if (_pk_col is null or _source_col is null or _main_key is null)
+    signal ('42000', 'Vector index metadata missing primary-key scan metadata');
+  _source_kind := DB.DBA.VEC_SQL_SOURCE_KIND (_opts);
+  _per_call := 1;
+  -- build = 'bulk': stage every vector, then derive the graph in one pass at
+  -- the end, where 'incremental' (the default; 'auto' means it too) links each
+  -- row in as it is embedded.  Linking costs more the larger the graph, and
+  -- writes one 8 KB page per node; the fast builder works in memory, in
+  -- parallel, and writes packed pages.  It is not deterministic, which is why
+  -- this is opt-in, as on the SPARQL side.  Stored as written: 'build',
+  -- 'build_method' (SPARQL's other spelling) or 'bd'.
+  _stage := case when lower (coalesce (cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'build') as varchar),
+                                       cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'build_method') as varchar),
+                                       cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'bd') as varchar), '')) = 'bulk'
+            then 1 else 0 end;
+  _bs := DB.DBA.VEC_INDEX_EMBED_BATCH_SIZE ();
+  _model_name := null;
+  _model_handle := 0;
+  _model_type := '';
+  if (_source_kind = 'vector')
+    _source_expr := sprintf ('"%I"', _source_col);
+  else
+    {
+      _source_expr := DB.DBA.VEC_SQL_SOURCE_EXPR (_tbl, _source_col, _pk_col, _source_kind);
+      _model_id := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'mid') as integer);
+      _stat := '00000';
+      exec ('select model_name from DB.DBA.ONNX_MODELS where model_id = ?',
+          _stat, _msg, vector (_model_id), 1, _meta, _rows);
+      if (_stat = '00000' and isvector (_rows) and length (_rows) > 0)
+        _model_name := cast (_rows[0][0] as varchar);
+      -- Once per backfill, not per row: reload the model if its handle has
+      -- gone stale, and pick up the registry's current load options.
+      DB.DBA.VEC_SQL_MODEL_REFRESH_BY_ID (_model_id);
+      _model := DB.DBA.VEC_INDEX_RESOLVE_MODEL (_model_name);
+      _model_handle := cast (_model[0] as integer);
+      _model_type := cast (_model[2] as varchar);
+      if (_model_type = '')
+        signal ('42000', 'VEC52', sprintf ('Vector index %s: its model %s is not available', _index, coalesce (_model_name, '(none)')));
+      if (_model_type in ('test_embedding', 'vvec_test_embedding', 'openai', 'ollama', 'lmstudio', 'openai_compatible'))
+        _per_call := _bs;
+    }
+  _first := sprintf ('select top 1000 "%I", %s from "%I"."%I"."%I" table option (index "%I") order by "%I"',
+      _pk_col, _source_expr, name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2), name_part (_main_key, 2), _pk_col);
+  _next := sprintf ('select top 1000 "%I", %s from "%I"."%I"."%I" table option (index "%I") where "%I" > ? order by "%I"',
+      _pk_col, _source_expr, name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2), name_part (_main_key, 2), _pk_col, _pk_col);
+  _done := 0;
+  _last := null;
+  while (1)
+    {
+      _stat := '00000';
+      _rows := null;
+      if (_last is null)
+        exec (_first, _stat, _msg, vector (), 0, _meta, _rows);
+      else
+        exec (_next, _stat, _msg, vector (_last), 0, _meta, _rows);
+      if (_stat <> '00000')
+        signal (_stat, _msg);
+      if (not isvector (_rows) or length (_rows) = 0)
+        goto pages_done;
+      _n := length (_rows);
+      _last := _rows[_n - 1][0];
+      _ids := make_array (_n, 'any');
+      _srcs := make_array (_n, 'any');
+      _cnt := 0;
+      for (_i := 0; _i < _n; _i := _i + 1)
+        if (_rows[_i][1] is not null)
+          {
+            aset (_ids, _cnt, _rows[_i][0]);
+            aset (_srcs, _cnt, _rows[_i][1]);
+            _cnt := _cnt + 1;
+          }
+      for (_i := 0; _i < _cnt; _i := _i + _bs)
+        _done := _done + DB.DBA.VEC_SQL_BACKFILL_BATCH (_index,
+            subseq (_ids, _i, case when _i + _bs < _cnt then _i + _bs else _cnt end),
+            subseq (_srcs, _i, case when _i + _bs < _cnt then _i + _bs else _cnt end),
+            _source_kind, _model_name, _model_handle, _model_type, _per_call, _stage);
+    }
+pages_done:
+  -- No method passed: __VEC_INDEX_REBUILD's own precedence applies, and its
+  -- 'auto' falls back from the fast builder to replay when the estimated
+  -- memory would not fit VVEC_FAST_REBUILD_MAX_BYTES.
+  if (_stage and _done > 0)
+    __VEC_INDEX_REBUILD (_index);
+  return _done;
+}
+;
+
+-- What a SQL vector index reads from its source column: 'text' (embedded by
+-- the index's model), 'vector' (the column holds the embedding) or 'rdf_obj'.
+-- 'sk' is the canonical short key; an index may also carry the as-typed long
+-- spelling 'source_kind' (see vvec_opts_append_val in-place update).
+-- VEC_SQL_INDEX_OPT is case-insensitive; try both spellings.
+create function DB.DBA.VEC_SQL_SOURCE_KIND (in _opts any) returns varchar
+{
+  return lower (coalesce (
+      cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'sk') as varchar),
+      cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'source_kind') as varchar),
+      'text'));
+}
+;
+
+-- The select-list expression for the text a 'text' or 'rdf_obj' index embeds
+-- for a row of its table.
+create function DB.DBA.VEC_SQL_SOURCE_EXPR (in _tbl varchar, in _source_col varchar,
+    in _pk_col varchar, in _source_kind varchar) returns varchar
+{
+  if (_source_kind = 'rdf_obj')
+    return sprintf ('DB.DBA.VEC_INDEX_RO_TEXT ("%I")', _pk_col);
+  if (exists (select 1 from DB.DBA.SYS_COLS
+               where "TABLE" = _tbl
+                 and "COLUMN" = _source_col
+                 and (dv_type_title (COL_DTP) like 'LONG %' or COL_PREC >= 2147483647)))
+    return sprintf ('blob_to_string ("%I")', _source_col);
+  return sprintf ('cast ("%I" as varchar)', _source_col);
+}
+;
+
+-- Apply one queue entry: embed and insert the row, or delete it, then remove
+-- the entry; a failure marks the entry 'error' instead.  The caller chooses
+-- the entry -- VEC_SQL_QUEUE_PROCESS_ONE the oldest pending one -- and has
+-- called VEC_SQL_QUEUE_INIT.
+create procedure DB.DBA.VEC_SQL_QUEUE_PROCESS_ITEM (in _index varchar, in _pk any, in _op varchar)
+{
+  declare _tbl, _source_col, _pk_col, _main_key, _source_expr, _sql, _stat, _msg varchar;
+  declare _opts, _meta, _rows, _text_value any;
+  declare _model_id integer;
+  declare _locked integer;
+  declare _source_kind varchar;
+  declare _raw, _vec any;
+
+  _locked := 0;
+
+  declare exit handler for sqlstate '*'
+  {
+    declare _err varchar;
+    _err := __SQL_STATE || ': ' || __SQL_MESSAGE;
+    if (_locked)
+      delete from DB.DBA.VEC_SQL_QUEUE_LOCK where VL_INDEX = _index;
+    DB.DBA.VEC_SQL_QUEUE_FAIL (_index, _pk, _err);
+    return 1;
+  };
+
+  -- Defensive: an entry belonging to a SPARQL/RDF vector index's backing table
+  -- must never be applied here (it would delete HNSW nodes because RV_TEXT is
+  -- NULL). Enqueue is now suppressed at the source, but drain any stragglers
+  -- left by older builds harmlessly: dequeue without touching the graph.
+  if (DB.DBA.VEC_SQL_INDEX_IS_RDF_BACKING (_index))
+    {
+      delete from DB.DBA.VEC_SQL_QUEUE where VQ_INDEX = _index and VQ_PK = _pk;
+      return 1;
+    }
+
+  insert into DB.DBA.VEC_SQL_QUEUE_LOCK (VL_INDEX, VL_TS) values (_index, now ());
+  _locked := 1;
+
+  _stat := '00000';
+  exec ('select KEY_TABLE, KEY_OPTIONS from DB.DBA.SYS_KEYS where KEY_NAME = ? and KEY_MIGRATE_TO is null',
+      _stat, _msg, vector (_index), 1, _meta, _rows);
+  if (_stat <> '00000')
+    signal (_stat, _msg);
+  if (_rows is null or length (_rows) = 0)
+    signal ('42S12', sprintf ('No vector index %s', _index));
+  _tbl := cast (_rows[0][0] as varchar);
+  _opts := _rows[0][1];
+
+  _source_col := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'sc') as varchar);
+  _pk_col := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'pk') as varchar);
+  _model_id := cast (DB.DBA.VEC_SQL_INDEX_OPT (_opts, 'mid') as integer);
+  _main_key := DB.DBA.VEC_SQL_MAIN_KEY_NAME (_tbl);
+  if (_source_col is null or _pk_col is null)
+    signal ('42000', 'Vector index metadata missing source or primary-key column');
+  if (_main_key is null)
+    signal ('42000', 'Vector index metadata missing main table key');
+
+  if (_op = 'delete')
+    {
+      __VEC_INDEX_DELETE_ROW (_index, _pk);
+      delete from DB.DBA.VEC_SQL_QUEUE where VQ_INDEX = _index and VQ_PK = _pk;
+    }
+  else
+    {
+      -- Precomputed-vector passthrough (source_kind='vector'): the source column
+      -- already holds the embedding, so there is no model.  Read the NATIVE
+      -- column value (never blob_to_string / cast as varchar, which would corrupt
+      -- a serialized or native vector), deserialize a stored blob/string, treat
+      -- NULL as a delete, and hand it to the precomputed-vector insert BIF (which
+      -- validates shape/dimension -- VEC30/VEC31 -- and reaches the hidden table
+      -- through the DBA path).  The model/text branch below is left unchanged.
+      _source_kind := DB.DBA.VEC_SQL_SOURCE_KIND (_opts);
+      if (_source_kind = 'vector')
+        {
+          _sql := sprintf ('select "%I" from "%I"."%I"."%I" table option (index "%I") where "%I" = ?',
+              _source_col, name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2), name_part (_main_key, 2), _pk_col);
+          _stat := '00000';
+          exec (_sql, _stat, _msg, vector (_pk), 1, _meta, _rows);
+          if (_stat <> '00000')
+            signal (_stat, _msg);
+          if (_rows is null or length (_rows) = 0 or _rows[0][0] is null)
+            __VEC_INDEX_DELETE_ROW (_index, _pk);   -- NULL column value == row absent
+          else
+            {
+              _raw := _rows[0][0];
+              -- A stored serialize(vec) reads back as a string/blob; deserialize
+              -- it to the array the BIF requires.  A native array value
+              -- (DV_ARRAY_OF_FLOAT or a vector(...)) is passed through unchanged.
+              if (isstring (_raw) or isblob (_raw))
+                _vec := deserialize (_raw);
+              else
+                _vec := _raw;
+              __VEC_INDEX_INSERT_EMBEDDING (_index, _pk, _vec);
+            }
+          delete from DB.DBA.VEC_SQL_QUEUE where VQ_INDEX = _index and VQ_PK = _pk;
+          goto _upsert_done;
+        }
+      _source_expr := DB.DBA.VEC_SQL_SOURCE_EXPR (_tbl, _source_col, _pk_col, _source_kind);
+      _sql := sprintf ('select %s from "%I"."%I"."%I" table option (index "%I") where "%I" = ?',
+          _source_expr, name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2), name_part (_main_key, 2), _pk_col);
+      _stat := '00000';
+      exec (_sql, _stat, _msg, vector (_pk), 1, _meta, _rows);
+      if (_stat <> '00000')
+        signal (_stat, _msg);
+      if (_rows is null or length (_rows) = 0 or _rows[0][0] is null)
+        __VEC_INDEX_DELETE_ROW (_index, _pk);
+      else
+        {
+          _text_value := _rows[0][0];
+          DB.DBA.VEC_SQL_MODEL_REFRESH_BY_ID (_model_id);
+          __VEC_INDEX_EMBED_AND_INSERT (_index, _pk, cast (_text_value as varchar));
+        }
+      delete from DB.DBA.VEC_SQL_QUEUE where VQ_INDEX = _index and VQ_PK = _pk;
+      _upsert_done:;
+    }
+
+  delete from DB.DBA.VEC_SQL_QUEUE_LOCK where VL_INDEX = _index;
+  update DB.DBA.VEC_SQL_WORKER_STATE
+     set VS_LAST_RUN = now (), VS_LAST_COUNT = coalesce (VS_LAST_COUNT, 0) + 1, VS_LAST_ERROR = null
+   where VS_ID = 1;
+  return 1;
+}
+;
+
+-- Apply the oldest pending entry of any index.  0 when there is none.
+create procedure DB.DBA.VEC_SQL_QUEUE_PROCESS_ONE ()
+{
+  declare _stat, _msg varchar;
+  declare _meta, _rows any;
+
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+
+  _stat := '00000';
+  exec ('select top 1 VQ_INDEX, VQ_PK, VQ_OP from DB.DBA.VEC_SQL_QUEUE
+          where VQ_STATE = ''pending'' and coalesce (VQ_TRIES, 0) < 5
+          order by VQ_ENQ', _stat, _msg, vector (), 0, _meta, _rows);
+  if (_stat <> '00000' or _rows is null or length (_rows) = 0)
+    return 0;
+
+  return DB.DBA.VEC_SQL_QUEUE_PROCESS_ITEM (cast (_rows[0][0] as varchar), _rows[0][1], cast (_rows[0][2] as varchar));
+}
+;
+
+create procedure DB.DBA.VEC_SQL_QUEUE_DRAIN (in _max_items integer := 100)
+{
+  declare done, cnt integer;
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  cnt := 0;
+  while (cnt < _max_items)
+    {
+      done := DB.DBA.VEC_SQL_QUEUE_PROCESS_ONE ();
+      if (done = 0)
+        return cnt;
+      cnt := cnt + 1;
+    }
+  return cnt;
+}
+;
+
+-- One worker pass: the SQL index queue, then new RDF literals for RDF_OBJ vector indexes.
+create procedure DB.DBA.VEC_SQL_WORKER_TICK (in _max_items integer := 100)
+{
+  declare cnt integer;
+  cnt := DB.DBA.VEC_SQL_QUEUE_DRAIN (_max_items);
+  if (__proc_exists ('DB.DBA.RDF_OBJ_VEC_LOG_DRAIN'))
+    cnt := cnt + call ('DB.DBA.RDF_OBJ_VEC_LOG_DRAIN') (_max_items * 10);
+  return cnt;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_WORKER_RUN (in _interval_seconds integer := 1)
+{
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  while (exists (select 1 from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'VEC_SQL_WORKER'))
+    {
+      DB.DBA.VEC_SQL_WORKER_TICK (100);
+      delay (case when _interval_seconds > 0 then _interval_seconds else 1 end);
+    }
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_WORKER_START (in _interval_seconds integer := 1)
+{
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  if (_interval_seconds is null or _interval_seconds < 1)
+    _interval_seconds := 1;
+  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'VEC_SQL_WORKER';
+  insert into DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+    values ('VEC_SQL_WORKER', now (), _interval_seconds, 'DB.DBA.VEC_SQL_WORKER_TICK (100)');
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_WORKER_STOP ()
+{
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = 'VEC_SQL_WORKER';
+  return 1;
+}
+;
+
+create procedure DB.DBA.VEC_SQL_WORKER_STATUS ()
+{
+  declare pending, errors, last_count integer;
+  declare last_run, last_error any;
+  DB.DBA.VEC_SQL_QUEUE_INIT ();
+  pending := (select count (*) from DB.DBA.VEC_SQL_QUEUE where VQ_STATE = 'pending');
+  errors := (select count (*) from DB.DBA.VEC_SQL_QUEUE where VQ_STATE = 'error');
+  select VS_LAST_RUN, coalesce (VS_LAST_COUNT, 0), VS_LAST_ERROR
+    into last_run, last_count, last_error
+    from DB.DBA.VEC_SQL_WORKER_STATE where VS_ID = 1;
+  return vector ('pending', pending, 'error', errors, 'last_run', last_run,
+                 'last_count', last_count, 'last_error', last_error);
+}
+;
+
+--
+--  Vector-index durability catalog.
+--
+--  The HNSW graph lives in DPF_VEC pages that reach disk only at checkpoint;
+--  they carry no transaction-log records, so an unclean shutdown loses every
+--  graph mutation made since the last checkpoint while the logged embedding
+--  rows survive.  VEC_INDEX_EPOCH is the transactional half of the pair that
+--  makes that divergence detectable: the C layer bumps VVEC_META_EPOCH on the
+--  root page and writes the same value here inside the mutating transaction.
+--  At open time the two are compared (see vvec_epoch_reconcile in vvec.c).
+--
+--    VIE_KEY_ID    the dbe_key_t key id of the vector index
+--    VIE_NAME      index name, for operator-facing diagnostics only
+--    VIE_EPOCH     epoch as of the last committed mutation
+--    VIE_STATE     'ok' | 'needs_rebuild'
+--    VIE_DETAIL    why it needs a rebuild, when it does
+--    VIE_CHECKED_AT  last time reconciliation ran for this index
+--
+create procedure DB.DBA.VEC_INDEX_EPOCH_INIT ()
+{
+  declare _stat, _msg varchar;
+  _stat := '00000';
+  exec ('create table DB.DBA.VEC_INDEX_EPOCH (
+    VIE_KEY_ID integer not null,
+    VIE_NAME varchar,
+    VIE_EPOCH integer default 0,
+    VIE_STATE varchar(16) default ''ok'',
+    VIE_DETAIL varchar,
+    VIE_CHECKED_AT datetime,
+    primary key (VIE_KEY_ID))', _stat, _msg);
+  return 1;
+}
+;
+
+DB.DBA.VEC_INDEX_EPOCH_INIT ()
+;

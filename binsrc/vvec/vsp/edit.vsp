@@ -1,0 +1,750 @@
+<?vsp
+  -- VVec · Edit Index : change the definition of an existing vector index.
+  --
+  -- A vector index definition is immutable in the engine -- there is no ALTER
+  -- for it -- so a save here DROPs the index and CREATEs it again from the
+  -- edited form, which discards the stored graph and rebuilds it from the
+  -- source data.  The page therefore also builds the DDL of the *original*
+  -- definition up front: if the new CREATE fails after the DROP has already
+  -- gone through, that statement is replayed to put the index back rather than
+  -- leaving the instance with nothing.
+  --
+  -- The identity of the index (its SQL name / its IRI) and, on the SQL surface,
+  -- its base table are fixed: changing those would be a different index, which
+  -- is what the Create page is for.
+  set http_charset='utf-8';
+
+  declare _idx, _side, _id varchar;
+  declare _ok integer;                      -- -1 not submitted, 1 ok, 0 error
+  declare _banner, _detail, _fatal varchar;
+  declare _newddl, _oldddl, _stat, _emsg varchar;
+  declare _dropped, _restored integer;
+  declare cur, look, e any;
+  declare i integer;
+
+  _ok := -1; _banner := ''; _detail := ''; _fatal := '';
+  _newddl := ''; _oldddl := ''; _dropped := 0; _restored := 0;
+
+  _idx  := get_keyword ('idx', params, '');
+  _side := ''; _id := '';
+  if (_idx like 'sparql:%')  { _side := 'sparql'; _id := subseq (_idx, 7); }
+  else if (_idx like 'sql:%'){ _side := 'sql';    _id := subseq (_idx, 4); }
+
+  -- Resolve the current definition. This runs before any save so the original
+  -- DDL can be rebuilt for the restore path.
+  cur := null;
+  if (_side = 'sql')
+    {
+      if (DB.DBA.VVEC_IDENT_OK (_id) = 0)
+        _fatal := 'Not a valid SQL index name.';
+      else
+        {
+          cur := DB.DBA.VVEC_SQL_INDEX_FULL (_id);
+          if (cur is null)
+            _fatal := sprintf ('No SQL vector index named %s exists on this instance.', _id);
+        }
+    }
+  else if (_side = 'sparql')
+    {
+      if (DB.DBA.VVEC_IRI_OK (_id) = 0)
+        _fatal := 'Not a valid vector index IRI.';
+      else
+        {
+          cur := DB.DBA.VVEC_SPARQL_INDEX_FULL (_id);
+          if (cur is null)
+            _fatal := sprintf ('No SPARQL vector index <%s> exists on this instance.', _id);
+          else if (cur[18] not in ('active', 'error'))
+            _fatal := sprintf ('Index <%s> is in ''%s'' state. Wait for it to settle before editing it.', _id, cur[18]);
+          -- Everything in cur[] is re-emitted into DDL that runs as dba -- both
+          -- for the edited definition and for the restore-on-failure replay of
+          -- the original. The Create page gates these on the way in, but the
+          -- row can also come from isql or a hand edit, so refuse to edit an
+          -- index whose stored definition this console cannot reproduce
+          -- verbatim rather than interpolating it blind.
+          else if (DB.DBA.VVEC_PREFIX_PREAMBLE_OK (cur[6]) = 0)
+            _fatal := 'This index stores a PREFIX preamble this console cannot re-emit safely. Edit it from isql instead.';
+          else if (DB.DBA.VVEC_DATASET_OK (cur[7]) = 0)
+            _fatal := 'This index stores a dataset clause this console cannot re-emit safely. Edit it from isql instead.';
+          else if (cur[0] = 'shorthand'
+                   and (DB.DBA.VVEC_IRI_OK (cur[1]) = 0 or DB.DBA.VVEC_IRI_OK (cur[2]) = 0))
+            _fatal := 'This index stores a graph or predicate IRI this console cannot re-emit safely. Edit it from isql instead.';
+          else if (cur[0] = 'general'
+                   and (DB.DBA.VVEC_IDENT_OK (cur[3]) = 0 or DB.DBA.VVEC_IDENT_OK (cur[4]) = 0
+                        or DB.DBA.VVEC_SPARQL_PATTERN_OK (cur[5]) = 0))
+            _fatal := 'This index stores a selector this console cannot re-emit safely. Edit it from isql instead.';
+        }
+    }
+  else
+    _fatal := 'No index selected. Pick one from the dashboard.';
+
+  if (length (_fatal) = 0 and get_keyword ('do', params, '') = 'save')
+    {
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Rebuild failed'; _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_proc; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))   -- CSRF guard, before any DDL
+        return;
+      _stat := '00000';
+
+      if (_side = 'sql')
+        {
+          declare _col, _model, _metric, _reduce varchar;
+          declare _dims, _hm, _ef, _colok integer;
+          _col    := trim (get_keyword ('s_column', params, ''));
+          _model  := trim (get_keyword ('s_model',  params, ''));
+          _metric := lower (trim (get_keyword ('s_metric', params, 'cosine')));
+          _reduce := lower (trim (get_keyword ('s_reduce', params, 'none')));
+          _dims   := atoi (get_keyword ('s_dims', params, '0'));
+          _hm     := atoi (get_keyword ('s_hnsw', params, '16'));
+          _ef     := atoi (get_keyword ('s_ef',   params, '200'));
+
+          -- The column must still be an embeddable column of the *same* table.
+          _colok := 0;
+          look := DB.DBA.VVEC_TABLE_LOOKUP (cur[0]);
+          if (look[0] = 'ok')
+            {
+              declare _cc any;
+              _cc := look[3];
+              i := 0;
+              while (i < length (_cc))
+                { if (_cc[i] = _col) _colok := 1; i := i + 1; }
+            }
+          if (_colok = 0)
+            { _ok := 0; _banner := 'Unknown text column';
+              _detail := sprintf ('%s is not an embeddable column of %s.', _col, cur[0]); goto done_proc; }
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _model))
+            { _ok := 0; _banner := 'Unknown embedding model'; _detail := _model; goto done_proc; }
+          if (_metric not in ('cosine', 'l2', 'l1'))
+            { _ok := 0; _banner := 'Invalid distance metric'; _detail := _metric; goto done_proc; }
+          if (_reduce not in ('none', 'truncate'))
+            { _ok := 0; _banner := 'Invalid reduce option'; _detail := _reduce; goto done_proc; }
+          if (_dims <= 0)
+            { _ok := 0; _banner := 'Dimensions must be a positive integer'; _detail := ''; goto done_proc; }
+          if (_hm <= 0) _hm := 16;
+          if (_ef <= 0) _ef := 200;
+
+          _newddl := DB.DBA.VVEC_SQL_VEC_DDL (_id, cur[0], _col, _model, _dims, _metric, _hm, _ef, _reduce, cur[9]);
+          _oldddl := DB.DBA.VVEC_SQL_VEC_DDL (_id, cur[0], cur[1], cur[3], cur[4], cur[5], cur[6], cur[7], cur[8], cur[9]);
+
+          exec (sprintf ('DROP INDEX "%I"', _id), _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Could not drop the existing index';
+              _detail := _stat || ': ' || _emsg || ' (the index is unchanged)'; goto done_proc; }
+          _dropped := 1;
+          _stat := '00000';
+          exec (_newddl, _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Rebuild failed'; _detail := _stat || ': ' || _emsg; goto restore_old; }
+          _ok := 1;
+          _banner := sprintf ('Rebuilt SQL vector index %s', _id);
+          _detail := _newddl;
+        }
+      else
+        {
+          declare _seltype, _graph, _pred, _keyv, _embv, _where, _dataset varchar;
+          declare _model, _dist, _reduce, _maint, _build varchar;
+          declare _dims, _hm, _ef, _nrows integer;
+          declare _st2, _er2 varchar;
+          _seltype := lower (trim (get_keyword ('seltype', params, 'shorthand')));
+          _graph   := trim (get_keyword ('p_graph',  params, ''));
+          _pred    := trim (get_keyword ('p_pred',   params, ''));
+          _keyv    := trim (get_keyword ('p_key',    params, ''));
+          _embv    := trim (get_keyword ('p_embed',  params, ''));
+          _where   := trim (get_keyword ('p_where',  params, ''));
+          _dataset := trim (get_keyword ('p_dataset', params, ''));
+          _model   := trim (get_keyword ('p_model',  params, ''));
+          _dist    := lower (trim (get_keyword ('p_distance', params, 'cosine')));
+          _reduce  := lower (trim (get_keyword ('p_reduce', params, 'none')));
+          _maint   := lower (trim (get_keyword ('p_maint',  params, 'manual')));
+          _build   := lower (trim (get_keyword ('p_build',  params, 'auto')));
+          _dims    := atoi (get_keyword ('p_dims', params, '0'));
+          _hm      := atoi (get_keyword ('p_hnsw', params, '16'));
+          _ef      := atoi (get_keyword ('p_ef',   params, '200'));
+
+          if (_seltype not in ('shorthand', 'general'))
+            { _ok := 0; _banner := 'Invalid selector type'; _detail := _seltype; goto done_proc; }
+          if (not exists (select 1 from DB.DBA.ONNX_MODELS where model_name = _model))
+            { _ok := 0; _banner := 'Unknown embedding model'; _detail := _model; goto done_proc; }
+          if (_dist not in ('cosine', 'l2', 'l1'))
+            { _ok := 0; _banner := 'Invalid distance metric'; _detail := _dist; goto done_proc; }
+          if (_reduce not in ('none', 'truncate'))
+            { _ok := 0; _banner := 'Invalid reduce option'; _detail := _reduce; goto done_proc; }
+          if (_maint not in ('manual', 'async'))
+            { _ok := 0; _banner := 'Invalid maintenance option'; _detail := _maint; goto done_proc; }
+          if (_build not in ('auto', 'incremental', 'bulk'))
+            { _ok := 0; _banner := 'Invalid build method'; _detail := _build; goto done_proc; }
+          if (_dims <= 0)
+            { _ok := 0; _banner := 'Dimensions must be a positive integer'; _detail := ''; goto done_proc; }
+          if (_hm <= 0) _hm := 16;
+          if (_ef <= 0) _ef := 200;
+
+          if (_seltype = 'shorthand')
+            {
+              -- Accept a prefixed name as well as a full IRI: these go into the
+              -- DDL inside angle brackets, where <schema:name> is an absolute
+              -- IRI with the scheme "schema", not a qname. See
+              -- VVEC_EXPAND_QNAME.
+              _graph := DB.DBA.VVEC_EXPAND_QNAME (_graph);
+              _pred  := DB.DBA.VVEC_EXPAND_QNAME (_pred);
+              if (DB.DBA.VVEC_IRI_OK (_graph) = 0 or DB.DBA.VVEC_IRI_OK (_pred) = 0)
+                { _ok := 0; _banner := 'Invalid graph or predicate IRI'; _detail := ''; goto done_proc; }
+              _dataset := '';
+            }
+          else
+            {
+              if (DB.DBA.VVEC_IDENT_OK (_keyv) = 0 or DB.DBA.VVEC_IDENT_OK (_embv) = 0)
+                { _ok := 0; _banner := 'Invalid key or embedding variable name';
+                  _detail := 'Use a plain SPARQL variable name, e.g. doc or text.'; goto done_proc; }
+              if (length (_where) = 0)
+                { _ok := 0; _banner := 'A custom selector needs a WHERE pattern'; _detail := ''; goto done_proc; }
+              -- Same structural gate the Create page applies: the pattern is the
+              -- one free-form input that lands in a statement run as dba.
+              if (DB.DBA.VVEC_SPARQL_PATTERN_OK (_where) = 0)
+                { _ok := 0; _banner := 'WHERE pattern rejected';
+                  _detail := 'The pattern must be a single balanced { } group with no comments, statement keywords (INSERT/DELETE/LOAD/DROP/...), or define pragmas.';
+                  goto done_proc; }
+              if (DB.DBA.VVEC_DATASET_OK (_dataset) = 0)
+                { _ok := 0; _banner := 'Dataset clause rejected';
+                  _detail := 'Write only FROM <iri> and FROM NAMED <iri> terms, or leave the field empty.';
+                  goto done_proc; }
+            }
+
+          -- BOTH statements carry the STORED name and description, not anything
+          -- posted: this form edits the definition, and the annotations are
+          -- edited on their own below without a rebuild.  They still have to go
+          -- into the DDL, because this builder is also what the
+          -- restore-on-failure path replays -- an option it does not carry is
+          -- one a failed edit drops on the floor.
+          _newddl := DB.DBA.VVEC_SPARQL_VEC_DDL (_id, _seltype, _graph, _pred, _keyv, _embv,
+                       _where, cur[6], _dataset, _model, _dims, _dist, _hm, _ef,
+                       _maint, _reduce, _build, cur[16], cur[17], cur[19], cur[20]);
+          _oldddl := DB.DBA.VVEC_SPARQL_VEC_DDL (_id, cur[0], cur[1], cur[2], cur[3], cur[4],
+                       cur[5], cur[6], cur[7], cur[8], cur[9], cur[10], cur[11], cur[12],
+                       cur[13], cur[14], cur[15], cur[16], cur[17], cur[19], cur[20]);
+
+          exec (sprintf ('sparql define input:storage "" drop vector index <%s>', _id), _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Could not drop the existing index';
+              _detail := _stat || ': ' || _emsg || ' (the index is unchanged)'; goto done_proc; }
+          _dropped := 1;
+          _stat := '00000';
+          exec (_newddl, _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Rebuild failed'; _detail := _stat || ': ' || _emsg; goto restore_old; }
+
+          -- Populate the freshly recreated index, exactly as the Create page does.
+          _stat := '00000';
+          exec (sprintf ('sparql define input:storage "" refresh vector index <%s>', _id), _stat, _emsg);
+          if (_stat <> '00000')
+            { _ok := 0; _banner := 'Index recreated but the rebuild failed';
+              _detail := _stat || ': ' || _emsg; goto done_proc; }
+          _st2 := (select SVI_STATE from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _id);
+          if (_st2 is not null and _st2 <> 'active')
+            {
+              _er2 := (select SVI_LAST_ERROR from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = _id);
+              _ok := 0;
+              _banner := sprintf ('Index recreated but ended in ''%s'' state', _st2);
+              _detail := coalesce (_er2, 'Check that the EMBEDDING variable is bound by the WHERE pattern.');
+              goto done_proc;
+            }
+          -- A selector that matches nothing rebuilds cleanly and goes 'active';
+          -- it is just empty. Say so rather than reporting a plain success.
+          _nrows := DB.DBA.VVEC_SPARQL_INDEX_ROWS (_id);
+          if (_nrows = 0)
+            {
+              _ok := 2;
+              _banner := sprintf ('Rebuilt <%s>, but the selector matched no data', _id);
+              _detail := _newddl;
+              goto done_proc;
+            }
+          _ok := 1;
+          _banner := sprintf ('Rebuilt SPARQL vector index <%s>', _id);
+          if (_nrows > 0)
+            _banner := _banner || sprintf (' - %d subject(s) indexed', _nrows);
+          _detail := _newddl;
+        }
+      goto done_proc;
+
+      -- The drop went through but the edited definition would not create: put
+      -- the original definition back so the instance is not left without the
+      -- index, and say plainly whether that worked.
+     restore_old:;
+      if (_dropped = 1 and length (_oldddl) > 0)
+        {
+          declare _rs, _rm varchar;
+          _rs := '00000';
+          exec (_oldddl, _rs, _rm);
+          if (_rs = '00000')
+            {
+              _restored := 1;
+              if (_side = 'sparql')
+                { _rs := '00000';
+                  exec (sprintf ('sparql define input:storage "" refresh vector index <%s>', _id), _rs, _rm); }
+              _detail := _detail || ' - the previous definition was restored and rebuilt; nothing was changed.';
+            }
+          else
+            _detail := _detail || sprintf (' - the previous definition could NOT be restored (%s: %s). The index no longer exists; recreate it from the Create page.', _rs, _rm);
+        }
+
+     done_proc:;
+      -- Re-read the catalog: after a save (or a restore) it, not the posted
+      -- form, is the truth the form should show.
+      if (_side = 'sql')
+        cur := DB.DBA.VVEC_SQL_INDEX_FULL (_id);
+      else
+        cur := DB.DBA.VVEC_SPARQL_INDEX_FULL (_id);
+      if (cur is null)
+        _fatal := sprintf ('Vector index %s no longer exists.', _id);
+    }
+
+  -- Name and description, on their own.
+  --
+  -- These describe the index; they are not part of its definition, and there is
+  -- no reason to pay for a rebuild to fix a typo in a label.  The form above
+  -- drops the index and creates it again, which on a real index is minutes of
+  -- re-embedding during which every search against it fails -- so this posts
+  -- somewhere else entirely and calls VEC_INDEX_SET_METADATA, which writes the
+  -- two catalogue columns and touches nothing else.
+  --
+  -- What is in the two boxes is what you get: an empty box clears the value,
+  -- which is why both are passed even when only one was edited.  (The procedure
+  -- reads NULL as "leave this one alone" -- that is for a caller who omits an
+  -- argument, not for a form that always sends both.)
+  if (length (_fatal) = 0 and _side = 'sparql' and get_keyword ('do', params, '') = 'meta')
+    {
+      declare _mlabel, _mcomment varchar;
+      declare exit handler for sqlstate '*'
+        { _ok := 0; _banner := 'Could not save the name and description';
+          _detail := __SQL_STATE || ': ' || __SQL_MESSAGE; goto done_meta; };
+
+      if (0 = DB.DBA.VVEC_CSRF_CHECK (params, lines))
+        return;
+      _mlabel   := trim (get_keyword ('m_label',   params, ''));
+      _mcomment := trim (get_keyword ('m_comment', params, ''));
+      -- The same caps the engine enforces, checked here so an over-long value
+      -- is a form error and not a raised VEC26.
+      if (length (_mlabel) > 255)
+        { _ok := 0; _banner := 'Name is too long';
+          _detail := sprintf ('%d characters; the limit is 255.', length (_mlabel)); goto done_meta; }
+      if (length (_mcomment) > 2000)
+        { _ok := 0; _banner := 'Description is too long';
+          _detail := sprintf ('%d characters; the limit is 2000.', length (_mcomment)); goto done_meta; }
+
+      DB.DBA.VEC_INDEX_SET_METADATA (_id, _mlabel, _mcomment);
+      _ok := 1;
+      _banner := case when _mlabel = '' then sprintf ('Cleared the name of <%s>', _id)
+                      else sprintf ('Renamed <%s> to "%s"', _id, _mlabel) end;
+      _detail := 'The index itself was not touched - no rebuild, no downtime.';
+
+     done_meta:;
+      cur := DB.DBA.VVEC_SPARQL_INDEX_FULL (_id);
+      if (cur is null)
+        _fatal := sprintf ('Vector index %s no longer exists.', _id);
+    }
+
+  DB.DBA.VVEC_HEAD ('Edit Index', 'dashboard');
+?>
+<div class="page-head">
+  <div>
+    <h1>Edit Vector Index</h1>
+    <div class="sub"><span class="mono"><?= _id ?></span></div>
+  </div>
+  <a class="btn" href="indexes">&#8592; Manage Indexes</a>
+</div>
+
+<?vsp
+  if (_ok = 1) {
+?>
+<div class="banner ok landed">
+  <div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span>
+    <div style="margin-top:8px"><a class="btn sm" href="search?idx=<?/ _idx ?>">Try a similarity search &#8594;</a> <a class="btn sm" href="indexes">View all indexes</a></div>
+  </div>
+</div>
+<?vsp } if (_ok = 2) { ?>
+<div class="banner warn">
+  <div><strong><?= _banner ?></strong>
+    <span class="mono"><?= _detail ?></span>
+    <div style="margin-top:8px">The index is active but empty &mdash; 0 subjects were indexed, so searches against it return nothing.
+      Check the graph and predicate: a prefixed name such as <span class="mono">schema:name</span> is expanded from
+      <a href="prefixes">the declared prefixes</a>, and one whose prefix is not declared is stored as typed and matches nothing.</div>
+  </div>
+</div>
+<?vsp } if (_ok = 0) { ?>
+<div class="banner err landed"><div><strong><?= _banner ?></strong><span class="mono"><?= _detail ?></span></div></div>
+<?vsp } ?>
+
+<?vsp
+  if (length (_fatal) > 0)
+    {
+?>
+<div class="card"><div class="card-body">
+  <div class="empty">
+    <h3>Cannot edit this index</h3>
+    <p><?= _fatal ?></p>
+    <a class="btn primary sm" href="indexes">Back to indexes</a>
+  </div>
+</div></div>
+<?vsp
+    }
+  else if (_side = 'sql')
+    {
+      declare _cols any;
+      look  := DB.DBA.VVEC_TABLE_LOOKUP (cur[0]);
+      _cols := case when look[0] = 'ok' then look[3] else vector (cur[1]) end;
+?>
+<div class="banner err landed">
+  <div><strong>Saving rebuilds this index from scratch</strong>
+    <span class="mono">The existing index is dropped and created again from the edited definition, so its HNSW graph is discarded and every row of <?= cur[0] ?> is re-embedded. Searches against it fail until the rebuild finishes.</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h3>Definition</h3>
+      <div class="sub">Relational index over <span class="mono"><?= cur[0] ?></span>. The index name and base table are fixed.</div>
+    </div>
+    <span class="pill blue">SQL</span>
+  </div>
+  <div class="card-body">
+    <form method="post" action="edit" data-working="Rebuilding index..."
+          data-working-note="Re-embedding every source row can take minutes. You do not have to wait here - the rebuild finishes on the server even if you leave."
+          data-confirm-title="Rebuild this index now?"
+          data-confirm="The current graph is discarded and every source row is embedded again."
+          data-confirm-detail="The index answers nothing until the rebuild finishes, which is seconds per thousand rows."
+          data-confirm-ok="Rebuild"
+          data-confirm-working="Rebuilding...">
+      <input type="hidden" name="do" value="save">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="idx" value="<?= _idx ?>">
+      <div class="form-grid">
+        <div class="field">
+          <label>Index name</label>
+          <input value="<?= _id ?>" disabled>
+          <span class="hint">Fixed &mdash; a different name is a different index.</span>
+        </div>
+        <div class="field">
+          <label>Table</label>
+          <input value="<?= cur[0] ?>" disabled>
+          <span class="hint">Primary key <span class="mono"><?= cur[2] ?></span>.</span>
+        </div>
+        <div class="field">
+          <label>Text column</label>
+          <select name="s_column">
+<?vsp
+      i := 0;
+      while (i < length (_cols))
+        {
+          e := _cols[i];
+?>
+            <option value="<?= e ?>"<?vsp if (e = cur[1]) http (' selected'); ?>><?= e ?></option>
+<?vsp
+          i := i + 1;
+        }
+?>
+          </select>
+          <span class="hint">VARCHAR or LONG VARCHAR column to embed.</span>
+        </div>
+        <div class="field">
+          <label>Embedding model</label>
+          <select id="sql-model" name="s_model" onchange="modelDim(this,'sql-dims')">
+<?vsp
+      for (select model_name as mn, model_type as mt from DB.DBA.ONNX_MODELS order by model_name) do
+        {
+          declare dm integer; dm := DB.DBA.VVEC_MODEL_DIM (mn);
+?>
+            <option value="<?= mn ?>" data-dim="<?= dm ?>"<?vsp if (mn = cur[3]) http (' selected'); ?>><?= mn ?> (<?= mt ?><?vsp if (dm > 0) http (sprintf (', %dd', dm)); ?>)</option>
+<?vsp
+        }
+?>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dimensions</label>
+          <input id="sql-dims" name="s_dims" type="number" min="1" value="<?= cur[4] ?>">
+        </div>
+        <div class="field">
+          <label>Distance metric</label>
+          <select name="s_metric">
+            <option value="cosine"<?vsp if (cur[5] = 'cosine') http (' selected'); ?>>cosine</option>
+            <option value="l2"<?vsp if (cur[5] = 'l2') http (' selected'); ?>>l2</option>
+            <option value="l1"<?vsp if (cur[5] = 'l1') http (' selected'); ?>>l1</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>hnsw_m</label>
+          <input name="s_hnsw" type="number" min="1" value="<?= cur[6] ?>">
+        </div>
+        <div class="field">
+          <label>ef_construction</label>
+          <input name="s_ef" type="number" min="1" value="<?= cur[7] ?>">
+        </div>
+        <div class="field">
+          <label>Dimension reduction</label>
+          <select name="s_reduce">
+            <option value="none"<?vsp if (cur[8] = 'none') http (' selected'); ?>>none</option>
+            <option value="truncate"<?vsp if (cur[8] = 'truncate') http (' selected'); ?>>truncate (Matryoshka)</option>
+          </select>
+          <span class="hint">Only for MRL-trained models.</span>
+        </div>
+<?vsp
+      if (cur[9] = 'vector')
+        {
+?>
+        <div class="field full">
+          <label>Source kind</label>
+          <input value="vector (precomputed passthrough)" disabled>
+          <span class="hint">Preserved on rebuild. The column holds vectors already, so the model is not called for it.</span>
+        </div>
+<?vsp
+        }
+?>
+      </div>
+      <div class="form-actions">
+        <a class="btn" href="indexes">Cancel</a>
+        <button class="btn danger" type="submit">Save &amp; rebuild</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?vsp
+    }
+  else
+    {
+?>
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head">
+    <div>
+      <h3>Name and description</h3>
+      <div class="sub">What this index is called and what it is for. Saved on their own &mdash; the index is not rebuilt.</div>
+    </div>
+    <span class="pill green">No downtime</span>
+  </div>
+  <div class="card-body">
+    <form method="post" action="edit" data-working="Saving...">
+      <input type="hidden" name="do" value="meta">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="idx" value="<?= _idx ?>">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="m_label">Name</label>
+          <input id="m_label" name="m_label" maxlength="255" placeholder="Support articles" autocomplete="off" value="<?= cur[19] ?>">
+          <span class="hint">Shown wherever this index is listed, and in the picker on the Similarity Search page.
+            Published as <span class="mono">rdfs:label</span> in <span class="mono">&lt;urn:vvec:indexes&gt;</span>.</span>
+        </div>
+        <div class="field full">
+          <label for="m_comment">Description</label>
+          <textarea id="m_comment" name="m_comment" maxlength="2000" placeholder="Semantic search over the body text of published support articles"><?= cur[20] ?></textarea>
+          <span class="hint">What this index is for, for whoever has to choose between it and the next one.
+            Published as <span class="mono">rdfs:comment</span>. Clearing a box removes the value.</span>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Save name and description</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="banner err landed">
+  <div><strong>Saving the definition below rebuilds this index from scratch</strong>
+    <span class="mono">The existing index is dropped and created again from the edited definition, then refreshed, so its HNSW graph is discarded and every selected subject is re-embedded. Searches against it fail until the rebuild finishes. The name and description above are not part of that and are saved separately.</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h3>Definition</h3>
+      <div class="sub">RDF index. The index IRI is fixed. Simple indexes one predicate in one graph; Custom takes a SPARQL pattern with joins and filters.</div>
+    </div>
+    <div class="segmented">
+      <button type="button" id="seg-sh"  class="<?vsp if (cur[0] = 'shorthand') http ('active'); ?>" onclick="setSel('shorthand')">Simple</button>
+      <button type="button" id="seg-gen" class="<?vsp if (cur[0] = 'general') http ('active'); ?>" onclick="setSel('general')">Custom</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <form method="post" action="edit" data-working="Rebuilding index..."
+          data-working-note="Re-embedding every source row can take minutes. You do not have to wait here - the rebuild finishes on the server even if you leave."
+          data-confirm-title="Rebuild this index now?"
+          data-confirm="The current graph is discarded and every selected subject is embedded again."
+          data-confirm-detail="The index answers nothing until the rebuild finishes, which is seconds per thousand subjects."
+          data-confirm-ok="Rebuild"
+          data-confirm-working="Rebuilding...">
+      <input type="hidden" name="do" value="save">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="idx" value="<?= _idx ?>">
+      <input type="hidden" name="seltype" id="seltype" value="<?= cur[0] ?>">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Index IRI</label>
+          <input value="<?= _id ?>" disabled>
+          <span class="hint">Fixed &mdash; a different IRI is a different index.</span>
+        </div>
+
+        <!-- shorthand -->
+        <div class="field sh-field<?vsp if (cur[0] <> 'shorthand') http (' hidden'); ?>" data-grp="sh">
+          <div class="label-row">
+            <label for="p_graph">Graph IRI</label>
+            <button type="button" class="linkbtn" onclick="vdGraphOpen('p_graph')" title="Search the named graphs on this instance">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7l4 9M17 7l-4 9"/></svg>
+              Search graphs
+            </button>
+          </div>
+          <input id="p_graph" name="p_graph" placeholder="urn:docs:g" autocomplete="off" value="<?= cur[1] ?>">
+          <span class="hint">Pick from the graphs on this instance, or type a full IRI or a prefixed name.</span>
+        </div>
+        <div class="field sh-field<?vsp if (cur[0] <> 'shorthand') http (' hidden'); ?>" data-grp="sh">
+          <div class="label-row">
+            <label for="p_pred">Predicate IRI</label>
+            <button type="button" class="linkbtn" onclick="vdPredOpen('p_pred','p_graph')" title="List the predicates in this graph that have string values">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+              List predicates
+            </button>
+          </div>
+          <input id="p_pred" name="p_pred" placeholder="urn:doc:text" autocomplete="off" value="<?= cur[2] ?>">
+          <span class="hint">A full IRI, or a prefixed name such as <span class="mono">schema:name</span> using
+            <a href="prefixes">a declared prefix</a>.</span>
+        </div>
+
+        <!-- general -->
+        <div class="field gen-field<?vsp if (cur[0] <> 'general') http (' hidden'); ?>" data-grp="gen">
+          <label>Key variable</label>
+          <input name="p_key" placeholder="doc" autocomplete="off" value="<?= cur[3] ?>">
+          <span class="hint">Binds the entity IRI.</span>
+        </div>
+        <div class="field gen-field<?vsp if (cur[0] <> 'general') http (' hidden'); ?>" data-grp="gen">
+          <label>Embedding variable</label>
+          <input name="p_embed" placeholder="text" autocomplete="off" value="<?= cur[4] ?>">
+          <span class="hint">Binds the literal to embed.</span>
+        </div>
+        <div class="field full gen-field<?vsp if (cur[0] <> 'general') http (' hidden'); ?>" data-grp="gen">
+          <label>WHERE pattern</label>
+          <textarea name="p_where" placeholder="graph &lt;urn:docs:g&gt; { ?doc &lt;urn:doc:text&gt; ?text . }"><?= cur[5] ?></textarea>
+          <span class="hint">For async maintenance every triple must sit inside an explicit GRAPH.</span>
+        </div>
+        <div class="field full gen-field<?vsp if (cur[0] <> 'general') http (' hidden'); ?>" data-grp="gen">
+          <label>Dataset clause</label>
+          <input name="p_dataset" placeholder="FROM &lt;urn:docs:g&gt;" autocomplete="off" value="<?= cur[7] ?>">
+          <span class="hint">Optional. Only <span class="mono">FROM &lt;iri&gt;</span> and <span class="mono">FROM NAMED &lt;iri&gt;</span> terms.</span>
+        </div>
+<?vsp
+      if (length (cur[6]) > 0)
+        {
+?>
+        <div class="field full">
+          <label>Inherited PREFIX declarations</label>
+          <input value="<?= cur[6] ?>" disabled>
+          <span class="hint">Captured when the index was created and re-declared on rebuild, so the WHERE pattern still resolves. Not editable here.</span>
+        </div>
+<?vsp
+        }
+?>
+
+        <div class="field">
+          <label>Embedding model</label>
+          <select id="sparql-model" name="p_model" onchange="modelDim(this,'sparql-dims')">
+<?vsp
+      for (select model_name as mn, model_type as mt from DB.DBA.ONNX_MODELS order by model_name) do
+        {
+          declare dm integer; dm := DB.DBA.VVEC_MODEL_DIM (mn);
+?>
+            <option value="<?= mn ?>" data-dim="<?= dm ?>"<?vsp if (mn = cur[8]) http (' selected'); ?>><?= mn ?> (<?= mt ?><?vsp if (dm > 0) http (sprintf (', %dd', dm)); ?>)</option>
+<?vsp
+        }
+?>
+          </select>
+        </div>
+        <div class="field">
+          <label>Dimensions</label>
+          <input id="sparql-dims" name="p_dims" type="number" min="1" value="<?= cur[9] ?>">
+        </div>
+        <div class="field">
+          <label>Distance metric</label>
+          <select name="p_distance">
+            <option value="cosine"<?vsp if (cur[10] = 'cosine') http (' selected'); ?>>cosine</option>
+            <option value="l2"<?vsp if (cur[10] = 'l2') http (' selected'); ?>>l2</option>
+            <option value="l1"<?vsp if (cur[10] = 'l1') http (' selected'); ?>>l1</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Maintenance</label>
+          <select name="p_maint">
+            <option value="manual"<?vsp if (cur[13] = 'manual') http (' selected'); ?>>manual</option>
+            <option value="async"<?vsp if (cur[13] = 'async') http (' selected'); ?>>async</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>hnsw_m</label>
+          <input name="p_hnsw" type="number" min="1" value="<?= cur[11] ?>">
+        </div>
+        <div class="field">
+          <label>ef_construction</label>
+          <input name="p_ef" type="number" min="1" value="<?= cur[12] ?>">
+        </div>
+        <div class="field">
+          <label>Dimension reduction</label>
+          <select name="p_reduce">
+            <option value="none"<?vsp if (cur[14] = 'none') http (' selected'); ?>>none</option>
+            <option value="truncate"<?vsp if (cur[14] = 'truncate') http (' selected'); ?>>truncate (Matryoshka)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Build method</label>
+          <select name="p_build">
+            <option value="auto"<?vsp if (cur[15] = 'auto') http (' selected'); ?>>auto (incremental)</option>
+            <option value="bulk"<?vsp if (cur[15] = 'bulk') http (' selected'); ?>>bulk &mdash; faster, non-deterministic graph</option>
+            <option value="incremental"<?vsp if (cur[15] = 'incremental') http (' selected'); ?>>incremental</option>
+          </select>
+          <span class="hint">Bulk embeds everything first, then derives the graph in one parallel pass &mdash; much faster on a large rebuild, but non-deterministic.</span>
+        </div>
+<?vsp
+      if (cur[17] = 'vector')
+        {
+?>
+        <div class="field full">
+          <label>Source kind</label>
+          <input value="vector (precomputed passthrough)" disabled>
+          <span class="hint">Preserved on rebuild. The selector yields vectors already, so the model is not called for them.</span>
+        </div>
+<?vsp
+        }
+?>
+      </div>
+      <div class="form-actions">
+        <a class="btn" href="indexes">Cancel</a>
+        <button class="btn danger" type="submit">Save &amp; rebuild</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?vsp
+    }
+?>
+
+<script>
+function qs(id){ return document.getElementById(id); }
+function modelDim(sel, dimId){
+  var o = sel.options[sel.selectedIndex];
+  if(o && o.dataset.dim && +o.dataset.dim > 0) qs(dimId).value = o.dataset.dim;
+}
+function setSel(t){
+  document.querySelectorAll('[data-grp="sh"]').forEach(function(el){ el.classList.toggle('hidden', t!=='shorthand'); });
+  document.querySelectorAll('[data-grp="gen"]').forEach(function(el){ el.classList.toggle('hidden', t!=='general'); });
+  var a = qs('seg-sh'), b = qs('seg-gen');
+  if(a) a.classList.toggle('active', t==='shorthand');
+  if(b) b.classList.toggle('active', t==='general');
+  qs('seltype').value = t;
+}
+window.addEventListener('DOMContentLoaded', function(){
+  if(qs('seltype')) setSel(qs('seltype').value || 'shorthand');
+});
+</script>
+<?vsp
+  if (length (_fatal) = 0 and _side = 'sparql')
+    {
+      DB.DBA.VVEC_GRAPH_PICKER ();
+      DB.DBA.VVEC_PREDICATE_PICKER ();
+    }
+  DB.DBA.VVEC_FOOT ();
+?>

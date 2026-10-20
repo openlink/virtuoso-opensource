@@ -1,0 +1,196 @@
+<?vsp
+  -- vvec - Sign in.
+  --
+  -- The console authenticates with a server-side session (see section 7b of
+  -- vvec_install.sql); this page is the only way to open one, and the only page
+  -- under /vvec/ that VVEC_AUTH lets through unauthenticated.
+  --
+  -- The password does not cross the wire.  Every render mints a single-use
+  -- nonce; the browser submits MD5(nonce || password) and blanks the field it
+  -- typed into; the server recomputes the same digest from the stored
+  -- credential and redeems the nonce.  Same challenge the Virtuoso Conductor
+  -- uses (binsrc/conductor/adm_login.vspx with y_sql_user_password_check),
+  -- with the MD5 inlined below rather than pulled from a separate script, so
+  -- signing in needs exactly one request and no unauthenticated asset.
+  set http_charset='utf-8';
+
+  declare _method, _user, _resp, _plain, _nonce, _url, _hdr varchar;
+  declare _sid varchar;
+  declare _failed integer;
+
+  _method := http_request_get ('REQUEST_METHOD');
+  _url    := DB.DBA.VVEC_SAFE_RETURN (get_keyword ('url', params, ''));
+  _user   := '';
+  _failed := 0;
+
+  if (_method = 'POST')
+    {
+      _user  := trim (get_keyword ('username', params, ''));
+      _resp  := get_keyword ('password', params, '');
+      _plain := get_keyword ('password_plain', params, '');
+      _nonce := get_keyword ('nonce', params, '');
+      _sid   := DB.DBA.VVEC_LOGIN (_user, _resp, _nonce, _plain);
+      if (_sid is not null)
+        {
+          http_request_status ('HTTP/1.1 302 Found');
+          DB.DBA.VVEC_SET_COOKIE (_sid, 0);
+          _hdr := http_header_get ();
+          if (_hdr is null)
+            _hdr := '';
+          http_header (_hdr || sprintf ('Location: %s\r\n', _url));
+          return;
+        }
+      -- One message for every kind of failure -- unknown account, wrong
+      -- password, not a DBA, stale nonce.  Saying which would tell an attacker
+      -- which half to keep working on.
+      _failed := 1;
+    }
+
+  -- A fresh nonce on every render: the POST just above consumed the one that
+  -- brought us here, whether or not it was accepted.
+  _nonce := DB.DBA.VVEC_LOGIN_NONCE ();
+
+  http ('<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">');
+  http ('<meta name="viewport" content="width=device-width, initial-scale=1">');
+  http ('<script>try{if(localStorage.getItem("vvec.theme")==="dark")'
+        || 'document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>');
+  http ('<title>Sign in &middot; vvec</title>');
+  http ('<style>');
+  DB.DBA.VVEC_CSS ();
+  http ('</style></head><body>');
+?>
+<div class="standalone">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Sign in to vvec</h3>
+        <div class="sub">Vector index administration. A DBA account is required.</div>
+      </div>
+    </div>
+    <div class="card-body">
+<?vsp
+  if (_failed)
+    {
+?>
+      <div class="banner err landed" role="alert">
+        <div><strong>Sign-in failed</strong><span class="mono">Check the account name and password.</span></div>
+      </div>
+<?vsp
+    }
+?>
+      <form method="post" action="login" id="vvec-login" autocomplete="on">
+        <?vsp http (sprintf ('<input type="hidden" name="nonce" value="%V">', _nonce)); ?>
+        <?vsp http (sprintf ('<input type="hidden" name="url" value="%V">', _url)); ?>
+        <input type="hidden" name="password" id="vvec-pw-hash" value="">
+        <div class="field full">
+          <label for="vvec-user">Account</label>
+          <?vsp http (sprintf ('<input id="vvec-user" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="%V">', _user)); ?>
+        </div>
+        <div class="field full">
+          <label for="vvec-pw">Password</label>
+          <input id="vvec-pw" name="password_plain" type="password" autocomplete="current-password" required>
+          <span class="hint">Sent as a one-time digest, not as the password itself.</span>
+        </div>
+        <noscript>
+          <div class="banner warn">
+            <div><strong>JavaScript is off</strong><span class="mono">The password can only be submitted in clear, which this console accepts over HTTPS only.</span></div>
+          </div>
+        </noscript>
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Sign in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+// Compact MD5 over UTF-8, used only to answer the sign-in challenge so the
+// password itself never leaves the browser. Verified against the server MD5.
+function vvecMd5(s){
+  function rl(n,c){return (n<<c)|(n>>>(32-c));}
+  function au(x,y){var l=(x&0xFFFF)+(y&0xFFFF);return (((x>>16)+(y>>16)+(l>>16))<<16)|(l&0xFFFF);}
+  function cmn(q,a,b,x,t,c){return au(rl(au(au(a,q),au(x,t)),c),b);}
+  function ff(a,b,c,d,x,t,s){return cmn((b&c)|((~b)&d),a,b,x,t,s);}
+  function gg(a,b,c,d,x,t,s){return cmn((b&d)|(c&(~d)),a,b,x,t,s);}
+  function hh(a,b,c,d,x,t,s){return cmn(b^c^d,a,b,x,t,s);}
+  function ii(a,b,c,d,x,t,s){return cmn(c^(b|(~d)),a,b,x,t,s);}
+  function u8(str){
+    var out=[],i,c;
+    for(i=0;i<str.length;i++){
+      c=str.charCodeAt(i);
+      if(c<128){out.push(c);}
+      else if(c<2048){out.push(192|(c>>6),128|(c&63));}
+      else if(c<55296||c>57343){out.push(224|(c>>12),128|((c>>6)&63),128|(c&63));}
+      else{i++;c=65536+(((c&1023)<<10)|(str.charCodeAt(i)&1023));
+        out.push(240|(c>>18),128|((c>>12)&63),128|((c>>6)&63),128|(c&63));}
+    }
+    return out;
+  }
+  var bytes=u8(s),n=bytes.length,i,words=[];
+  for(i=0;i<n;i++){words[i>>2]=(words[i>>2]||0)|(bytes[i]<<((i%4)*8));}
+  words[n>>2]=(words[n>>2]||0)|(0x80<<((n%4)*8));
+  var len=((n+8)>>6)*16+16;
+  for(i=(n>>2)+1;i<len;i++){if(words[i]===undefined)words[i]=0;}
+  words[len-2]=n*8;words[len-1]=0;
+  var a=1732584193,b=-271733879,c=-1732584194,d=271733878,oa,ob,oc,od,j;
+  for(j=0;j<len;j+=16){
+    oa=a;ob=b;oc=c;od=d;
+    a=ff(a,b,c,d,words[j+0],-680876936,7);   d=ff(d,a,b,c,words[j+1],-389564586,12);
+    c=ff(c,d,a,b,words[j+2],606105819,17);   b=ff(b,c,d,a,words[j+3],-1044525330,22);
+    a=ff(a,b,c,d,words[j+4],-176418897,7);   d=ff(d,a,b,c,words[j+5],1200080426,12);
+    c=ff(c,d,a,b,words[j+6],-1473231341,17); b=ff(b,c,d,a,words[j+7],-45705983,22);
+    a=ff(a,b,c,d,words[j+8],1770035416,7);   d=ff(d,a,b,c,words[j+9],-1958414417,12);
+    c=ff(c,d,a,b,words[j+10],-42063,17);     b=ff(b,c,d,a,words[j+11],-1990404162,22);
+    a=ff(a,b,c,d,words[j+12],1804603682,7);  d=ff(d,a,b,c,words[j+13],-40341101,12);
+    c=ff(c,d,a,b,words[j+14],-1502002290,17);b=ff(b,c,d,a,words[j+15],1236535329,22);
+    a=gg(a,b,c,d,words[j+1],-165796510,5);   d=gg(d,a,b,c,words[j+6],-1069501632,9);
+    c=gg(c,d,a,b,words[j+11],643717713,14);  b=gg(b,c,d,a,words[j+0],-373897302,20);
+    a=gg(a,b,c,d,words[j+5],-701558691,5);   d=gg(d,a,b,c,words[j+10],38016083,9);
+    c=gg(c,d,a,b,words[j+15],-660478335,14); b=gg(b,c,d,a,words[j+4],-405537848,20);
+    a=gg(a,b,c,d,words[j+9],568446438,5);    d=gg(d,a,b,c,words[j+14],-1019803690,9);
+    c=gg(c,d,a,b,words[j+3],-187363961,14);  b=gg(b,c,d,a,words[j+8],1163531501,20);
+    a=gg(a,b,c,d,words[j+13],-1444681467,5); d=gg(d,a,b,c,words[j+2],-51403784,9);
+    c=gg(c,d,a,b,words[j+7],1735328473,14);  b=gg(b,c,d,a,words[j+12],-1926607734,20);
+    a=hh(a,b,c,d,words[j+5],-378558,4);      d=hh(d,a,b,c,words[j+8],-2022574463,11);
+    c=hh(c,d,a,b,words[j+11],1839030562,16); b=hh(b,c,d,a,words[j+14],-35309556,23);
+    a=hh(a,b,c,d,words[j+1],-1530992060,4);  d=hh(d,a,b,c,words[j+4],1272893353,11);
+    c=hh(c,d,a,b,words[j+7],-155497632,16);  b=hh(b,c,d,a,words[j+10],-1094730640,23);
+    a=hh(a,b,c,d,words[j+13],681279174,4);   d=hh(d,a,b,c,words[j+0],-358537222,11);
+    c=hh(c,d,a,b,words[j+3],-722521979,16);  b=hh(b,c,d,a,words[j+6],76029189,23);
+    a=hh(a,b,c,d,words[j+9],-640364487,4);   d=hh(d,a,b,c,words[j+12],-421815835,11);
+    c=hh(c,d,a,b,words[j+15],530742520,16);  b=hh(b,c,d,a,words[j+2],-995338651,23);
+    a=ii(a,b,c,d,words[j+0],-198630844,6);   d=ii(d,a,b,c,words[j+7],1126891415,10);
+    c=ii(c,d,a,b,words[j+14],-1416354905,15);b=ii(b,c,d,a,words[j+5],-57434055,21);
+    a=ii(a,b,c,d,words[j+12],1700485571,6);  d=ii(d,a,b,c,words[j+3],-1894986606,10);
+    c=ii(c,d,a,b,words[j+10],-1051523,15);   b=ii(b,c,d,a,words[j+1],-2054922799,21);
+    a=ii(a,b,c,d,words[j+8],1873313359,6);   d=ii(d,a,b,c,words[j+15],-30611744,10);
+    c=ii(c,d,a,b,words[j+6],-1560198380,15); b=ii(b,c,d,a,words[j+13],1309151649,21);
+    a=ii(a,b,c,d,words[j+4],-145523070,6);   d=ii(d,a,b,c,words[j+11],-1120210379,10);
+    c=ii(c,d,a,b,words[j+2],718787259,15);   b=ii(b,c,d,a,words[j+9],-343485551,21);
+    a=au(a,oa);b=au(b,ob);c=au(c,oc);d=au(d,od);
+  }
+  var hex="0123456789abcdef",out="",k,w,arr=[a,b,c,d];
+  for(k=0;k<4;k++){w=arr[k];
+    for(i=0;i<4;i++){out+=hex.charAt((w>>(i*8+4))&15)+hex.charAt((w>>(i*8))&15);}}
+  return out;
+}
+(function(){
+  var form = document.getElementById("vvec-login");
+  var pw   = document.getElementById("vvec-pw");
+  var hash = document.getElementById("vvec-pw-hash");
+  var nonce = form.elements["nonce"].value;
+  form.addEventListener("submit", function(){
+    // Hash, then blank the field the password was typed into. Form data is
+    // gathered after this handler returns, so the request body carries the
+    // digest and an empty password_plain. Constraint validation has already
+    // run by now, so blanking a required field does not block the submit.
+    hash.value = vvecMd5(nonce + pw.value);
+    pw.value = "";
+  });
+  var user = document.getElementById("vvec-user");
+  if (user && !user.value) user.focus(); else pw.focus();
+})();
+</script>
+<?vsp
+  http ('</body></html>');
+?>

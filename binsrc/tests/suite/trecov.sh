@@ -115,6 +115,17 @@ then
     exit 3
 fi
 
+# A vector index joins the rotation below, so the HNSW graph has to survive log
+# roll forward, +backup-dump, backup () and +crash-dump.  recovck_vec.sql checks
+# after each that it came back rather than being rebuilt.
+LOG + running sql script tvvec_recov
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvvec_recov.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: trecov.sh: vector index fixture"
+    exit 3
+fi
+
 STOP_SERVER
 
 rm -f $DBFILE.r1 $DBLOGFILE.r1 $SRVMSGLOGFILE.r1
@@ -130,6 +141,13 @@ if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed after log roll forward"
     exit 3
+fi
+
+LOG + running sql script recovck_vec "(after log roll forward)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: trecov.sh: vector index check after log roll forward"
 fi
 
 RUN $ISQL $DSN USR3 USR3PASS PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC='"select USER"'
@@ -213,6 +231,13 @@ then
     exit 3
 fi
 
+LOG + running sql script recovck_vec "(after +backup-dump restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: trecov.sh: vector index check after +backup-dump restore"
+fi
+
 LOG + running sql script backup
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/backup.sql
 if test $STATUS -ne 0
@@ -267,6 +292,13 @@ then
     exit 3
 fi
 
+LOG + running sql script recovck_vec "(after backup () restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: trecov.sh: vector index check after backup () restore"
+fi
+
 LOG "Again we do a checkpoint and then kill database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
 CHECKPOINT_SERVER
@@ -318,6 +350,13 @@ if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect for USR3 failed after backup restore"
     exit 3
+fi
+
+LOG + running sql script recovck_vec "(after +crash-dump restore)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck_vec.sql
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: trecov.sh: vector index check after +crash-dump restore"
 fi
 
 #LOG + running sql script tbfree

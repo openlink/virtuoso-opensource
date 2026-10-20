@@ -725,3 +725,44 @@ echo both ": 9 rows for ex:Animal by ?o=<Animal>\n";
 sparql define input:inference "animal" select ?s ?p ?o from <urn:animal:data> { ?s ?p ?o . filter (strends(str(?o), 'Animal') ) };
 echo both $if $equ $rowcnt 9 "PASSED" "***FAILED";
 echo both ": 9 rows for ex:Animal by post filer by strends(?o,Animal)\n";
+
+-- RDF 1.2 triple term accessors SUBJECT(), PREDICATE() and OBJECT().
+-- PREDICATE is also a keyword of other statements, and a grammar change can
+-- stop the lexer from returning it as the built-in while SUBJECT and OBJECT
+-- keep working, so each accessor is checked on its own.  The queries are
+-- compiled with sparql_to_sql_text () and not run, so the checks do not
+-- depend on the CaseMode of the server.
+create procedure DB.DBA.TRDF12_COMPILES_TO (in q varchar, in accessor varchar) returns varchar
+{
+  declare sqltext varchar;
+  declare exit handler for sqlstate '*' { return __SQL_STATE || ' ' || __SQL_MESSAGE; };
+  sqltext := cast (sparql_to_sql_text (q) as varchar);
+  if (strstr (sqltext, accessor) is null)
+    return 'compiled without ' || accessor;
+  return 'OK';
+}
+;
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": TRDF12_COMPILES_TO created STATE=" $state " MESSAGE=" $message "\n";
+
+select DB.DBA.TRDF12_COMPILES_TO ('select (SUBJECT(?t) as ?s) where { ?r <urn:rdf12:about> ?t }', 'RDF_STAR_TT_GET_S');
+echo both $if $equ $LAST[1] OK "PASSED" "***FAILED";
+echo both ": SUBJECT(?t) compiles to RDF_STAR_TT_GET_S: " $LAST[1] "\n";
+
+select DB.DBA.TRDF12_COMPILES_TO ('select (PREDICATE(?t) as ?p) where { ?r <urn:rdf12:about> ?t }', 'RDF_STAR_TT_GET_P');
+echo both $if $equ $LAST[1] OK "PASSED" "***FAILED";
+echo both ": PREDICATE(?t) compiles to RDF_STAR_TT_GET_P: " $LAST[1] "\n";
+
+select DB.DBA.TRDF12_COMPILES_TO ('select (OBJECT(?t) as ?o) where { ?r <urn:rdf12:about> ?t }', 'RDF_STAR_TT_GET_O');
+echo both $if $equ $LAST[1] OK "PASSED" "***FAILED";
+echo both ": OBJECT(?t) compiles to RDF_STAR_TT_GET_O: " $LAST[1] "\n";
+
+select DB.DBA.TRDF12_COMPILES_TO ('select ?r where { ?r <urn:rdf12:about> ?t . filter (predicate(?t) = <urn:rdf12:p>) }', 'RDF_STAR_TT_GET_P');
+echo both $if $equ $LAST[1] OK "PASSED" "***FAILED";
+echo both ": predicate(?t) in lower case in a FILTER compiles to RDF_STAR_TT_GET_P: " $LAST[1] "\n";
+
+select DB.DBA.TRDF12_COMPILES_TO ('select (PREDICATE(TRIPLE(<urn:rdf12:s>, <urn:rdf12:p>, <urn:rdf12:o>)) as ?p) {}', 'RDF_STAR_TT_GET_P');
+echo both $if $equ $LAST[1] OK "PASSED" "***FAILED";
+echo both ": PREDICATE(TRIPLE(...)) compiles to RDF_STAR_TT_GET_P: " $LAST[1] "\n";
+
+drop procedure DB.DBA.TRDF12_COMPILES_TO;

@@ -855,14 +855,19 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DESC_L		/*:: PUNCT_SPAR_LAST("DESC") ::*/
 %token DESCRIBE_L	/*:: PUNCT_SPAR_LAST("DESCRIBE") ::*/
 %token DETACH_L		/*:: PUNCT_SPAR_LAST("DETACH") ::*/
+%token DISTANCE_L	/*:: PUNCT_SPAR_LAST("DISTANCE") ::*/
+%token DISTANCE_LIMIT_L	/*:: PUNCT_SPAR_LAST("DISTANCE_LIMIT") ::*/
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
 %token DROP_L		/*:: PUNCT_SPAR_LAST("DROP") ::*/
+%token EF_SEARCH_L	/*:: PUNCT_SPAR_LAST("EF_SEARCH") ::*/
+%token EMBEDDING_L	/*:: PUNCT_SPAR_LAST("EMBEDDING") ::*/
 %token ELSE_L		/*:: PUNCT_SPAR_LAST("ELSE") ::*/
 %token END_L		/*:: PUNCT_SPAR_LAST("END") ::*/
 %token EXCLUSIVE_L	/*:: PUNCT_SPAR_LAST("EXCLUSIVE") ::*/
 %token EXISTS_L		/*:: PUNCT_SPAR_LAST("EXISTS") ::*/
 %token false_L		/*:: PUNCT_SPAR_LAST("false") ::*/
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
+%token FOR_L		/*:: PUNCT_SPAR_LAST("FOR") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
 %token GEO_L		/*:: PUNCT_SPAR_LAST("GEO") ::*/
@@ -876,10 +881,12 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
 %token INF_L		/*:: PUNCT_SPAR_LAST("INF") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
+%token INDEX_ALL_L	/* Fake: never lexed.  Carries `index *` as an option key, so that a wildcard and a named list are told apart by the key rather than by the shape of the value. */
 %token INFERENCE_L	/*:: PUNCT_SPAR_LAST("INFERENCE") ::*/
 %token INSERT_L		/*:: PUNCT_SPAR_LAST("INSERT") ::*/
 %token INTO_L		/*:: PUNCT_SPAR_LAST("INTO") ::*/
 %token IRI_L		/*:: PUNCT_SPAR_LAST("IRI") ::*/
+%token KEY_L		/*:: PUNCT_SPAR_LAST("KEY") ::*/
 %token LANG_L		/*:: PUNCT_SPAR_LAST("LANG") ::*/
 %token LIBRARY_L	/*:: PUNCT_SPAR_LAST("LIBRARY") ::*/
 %token LIKE_L		/*:: PUNCT_SPAR_LAST("LIKE") ::*/
@@ -887,12 +894,14 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token LITERAL_L	/*:: PUNCT_SPAR_LAST("LITERAL") ::*/
 %token LOCAL_L		/*:: PUNCT_SPAR_LAST("LOCAL") ::*/
 %token LOAD_L		/*:: PUNCT_SPAR_LAST("LOAD") ::*/
+%token MAINTENANCE_L	/*:: PUNCT_SPAR_LAST("MAINTENANCE") ::*/
 %token MACRO_L		/*:: PUNCT_SPAR_LAST("MACRO") ::*/
 %token MAKE_L		/*:: PUNCT_SPAR_LAST("MAKE") ::*/
 %token MAP_L		/*:: PUNCT_SPAR_LAST("MAP") ::*/
 %token MAX_L		/*:: PUNCT_SPAR_LAST("MAX") ::*/
 %token MIN_L		/*:: PUNCT_SPAR_LAST("MIN") ::*/
 %token MINUS_L		/*:: PUNCT_SPAR_LAST("MINUS") ::*/
+%token MODEL_L		/*:: PUNCT_SPAR_LAST("MODEL") ::*/
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
 %token MOVE_L		/*:: PUNCT_SPAR_LAST("MOVE") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
@@ -909,6 +918,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token OF_L		/*:: PUNCT_SPAR_LAST("OF") ::*/
 %token OFFBAND_L	/*:: PUNCT_SPAR_LAST("OFFBAND") ::*/
 %token OFFSET_L		/*:: PUNCT_SPAR_LAST("OFFSET") ::*/
+%token ON_L		/*:: PUNCT_SPAR_LAST("ON") ::*/
 %token OPTIONAL_L	/*:: PUNCT_SPAR_LAST("OPTIONAL") ::*/
 %token OPTION_L		/*:: PUNCT_SPAR_LAST("OPTION") ::*/
 %token ORDER_L		/*:: PUNCT_SPAR_LAST("ORDER") ::*/
@@ -916,7 +926,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token PREDICATE_L	/*:: PUNCT_SPAR_LAST("PREDICATE") ::*/
 %token PREFIX_L		/*:: PUNCT_SPAR_LAST("PREFIX") ::*/
 %token QUAD_L		/*:: PUNCT_SPAR_LAST("QUAD") ::*/
+%token RANKING_L	/*:: PUNCT_SPAR_LAST("RANKING") ::*/
 %token REDUCED_L	/*:: PUNCT_SPAR_LAST("REDUCED") ::*/
+%token REFRESH_L	/*:: PUNCT_SPAR_LAST("REFRESH") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
 %token ROLLUP_L		/*:: PUNCT_SPAR_LAST("ROLLUP") ::*/
 %token SAME_AS_L	/*:: PUNCT_SPAR_LAST("SAME_AS") ::*/
@@ -966,6 +978,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token UNNEST_L		/*:: PUNCT_SPAR_LAST("UNNEST") ::*/
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
 %token VALUES_L		/*:: PUNCT_SPAR_LAST("VALUES") ::*/
+%token VECTOR_L		/*:: PUNCT_SPAR_LAST("VECTOR") ::*/
 %token VERSION_L		/*:: PUNCT_SPAR_LAST("VERSION") ::*/
 %token WHEN_L		/*:: PUNCT_SPAR_LAST("WHEN") ::*/
 %token DIR_LTR_L	/*:: PUNCT_SPAR_LAST("~ltr") ::*/
@@ -1129,8 +1142,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <trees> spar_triple_inference_option
 %type <trees> spar_triple_freetext_option
 %type <trees> spar_triple_geo_option
+%type <trees> spar_triple_vector_option
 %type <trees> spar_triple_transit_option
 %type <backstack> spar_triple_option_var_commalist
+%type <backstack> spar_triple_option_iriref_commalist
 %type <token_type> spar_same_as_option
 %type <tree> spar_verb
 %type <tree> spar_object_with_ann
@@ -1231,6 +1246,19 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <token_type> spar_iol
 %type <nothing> spar_qm_create_quad_storage
 %type <nothing> spar_qm_alter_quad_storage
+%type <nothing> spar_vec_create_vector_index
+%type <nothing> spar_vec_refresh_vector_index
+%type <nothing> spar_vec_drop_vector_index
+%type <trees> spar_vec_index_options_opt
+%type <backstack> spar_vec_index_option_commalist
+%type <trees> spar_vec_index_option
+%type <nothing> spar_vec_shorthand_selector
+%type <nothing> spar_vec_general_selector
+%type <list> spar_vec_from_list_opt
+%type <list> spar_vec_from_list
+%type <box> spar_vec_from_clause
+%type <nothing> spar_vec_on_graph_opt
+%type <nothing> spar_vec_using_model_opt
 %type <tree> spar_qm_drop_quad_storage
 %type <tree> spar_qm_drop_quad_map_mapping
 %type <tree> spar_qm_drop_mapping
@@ -3051,6 +3079,9 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
 	| spar_triple_geo_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "geo/spatial option");
 		$$ = $1; }
+	| spar_triple_vector_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "vector search option");
+		$$ = $1; }
 	| spar_triple_transit_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_TRANSIT, "TRANSITIVE and related options");
 		$$ = $1; }
@@ -3087,6 +3118,34 @@ spar_triple_geo_option
 		$$ = (SPART **)t_list (2, (ptrlong)GEO_L, $2); }
 	| PRECISION_L spar_expn		{	/*... | 'PRECISION' Expn	*/
 		$$ = (SPART **)t_list (2, (ptrlong)PRECISION_L, $2); }
+	;
+
+spar_triple_vector_option	/* [Virt]	VectorOption for bif:vector_search	*/
+	: INDEX_L spar_iriref		{	/*... | 'INDEX' IRIref	*/
+		$$ = (SPART **)t_list (2, (ptrlong)INDEX_L, $2); }
+	| INDEX_L _LPAR spar_triple_option_iriref_commalist _RPAR	{	/*... | 'INDEX' '(' IRIref ( ',' IRIref )* ')'	*/
+		/* The parenthesised list, not `index <a>, index <b>`.  A repeated bare
+		   option already parses on every server that has vector search and
+		   quietly searches one of the two, so adopting THAT as the multi-index
+		   spelling would make an old server answer the same query with a subset
+		   of the data, silently.  This form is a syntax error there instead.
+		   It is also how this grammar already spells a list-valued option --
+		   T_IN and T_OUT below. */
+		$$ = (SPART **)t_list (2, (ptrlong)INDEX_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
+	| INDEX_L _STAR			{	/*... | 'INDEX' '*'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)INDEX_ALL_L, (ptrlong)1); }
+	| RANKING_L SPARQL_PLAIN_ID	{	/*... | 'RANKING' ( 'raw' | 'relevance' )	*/
+		$$ = (SPART **)t_list (2, (ptrlong)RANKING_L, $2); }
+	| RANKING_L SPARQL_STRING	{	/*... | 'RANKING' String	*/
+		$$ = (SPART **)t_list (2, (ptrlong)RANKING_L, $2); }
+	| DISTANCE_L spar_var		{	/*... | 'DISTANCE' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)DISTANCE_L, $2); }
+	| DISTANCE_LIMIT_L spar_expn	{	/*... | 'DISTANCE_LIMIT' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)DISTANCE_LIMIT_L, $2); }
+	| LIMIT_L spar_expn		{	/*... | 'LIMIT' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)LIMIT_L, $2); }
+	| EF_SEARCH_L spar_expn		{	/*... | 'EF_SEARCH' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)EF_SEARCH_L, $2); }
 	;
 
 spar_triple_transit_option
@@ -3126,6 +3185,11 @@ spar_triple_transit_option
 spar_triple_option_var_commalist
 	: spar_var	{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_triple_option_var_commalist _COMMA spar_var	{ $$ = $1; t_set_push (&($$), $3); }
+	;
+
+spar_triple_option_iriref_commalist
+	: spar_iriref	{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_triple_option_iriref_commalist _COMMA spar_iriref	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
 spar_same_as_option
@@ -4506,10 +4570,13 @@ spar_qm_stmts		/* ::=  QmStmt ('.' QmStmt)* */
 	    spar_qm_stmt
 	;
 
-spar_qm_stmt		/* [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterStorage	*/
+spar_qm_stmt		/* [Virt]	QmStmt		 ::=  QmSimpleStmt | QmCreateStorage | QmAlterStorage | VecCreateIndex | VecRefreshIndex | VecDropIndex	*/
 	: spar_qm_simple_stmt		{ t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls), $1); }
 	| spar_qm_create_quad_storage
 	| spar_qm_alter_quad_storage
+	| spar_vec_create_vector_index
+	| spar_vec_refresh_vector_index
+	| spar_vec_drop_vector_index
 	;
 
 spar_qm_simple_stmt	/* [Virt]	QmSimpleStmt	 ::=  */
@@ -5109,6 +5176,304 @@ spar_graph_identified_by_opt
 spar_graph_identified_by
 	: GRAPH_L			{}
 	| GRAPH_L IDENTIFIED_L BY_L	{}
+	;
+
+/* PART 3. Vector Index DDL statements */
+
+spar_vec_create_vector_index	/* [Virt]	VecCreateIndex	 ::=  'CREATE' 'VECTOR' 'INDEX' QmIRIrefConst ( VecShorthandSelector | VecGeneralSelector ) VecUsingModel? VecIndexOptions?	*/
+	: CREATE_L VECTOR_L INDEX_L spar_qm_iriref_const_expn {
+		sparp_env()->spare_storage_name = $4;
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of Vector Index %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "Vector Index");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_BEGIN_CREATE",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) ); }
+	    spar_vec_shorthand_selector
+	    spar_vec_using_model_opt
+	    spar_vec_index_options_opt {
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_END_CREATE",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
+		sparp_env()->spare_storage_name = NULL; }
+	| CREATE_L VECTOR_L INDEX_L spar_qm_iriref_const_expn {
+		sparp_env()->spare_storage_name = $4;
+		if (dk_set_get_keyword (sparp_arg->sparp_created_jsos, $4, NULL))
+		  spar_error (sparp_arg, "The identifier of Vector Index %.100s is already used in the previous part of the statement", $4);
+		t_set_push (&(sparp_arg->sparp_created_jsos), "Vector Index");
+		t_set_push (&(sparp_arg->sparp_created_jsos), $4);
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_BEGIN_CREATE",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) ); }
+	    spar_vec_general_selector
+	    spar_vec_using_model_opt
+	    spar_vec_index_options_opt {
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_END_CREATE",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)), NULL ) );
+		sparp_env()->spare_storage_name = NULL; }
+	;
+
+spar_vec_refresh_vector_index	/* [Virt]	VecRefreshIndex	 ::=  'REFRESH' 'VECTOR' 'INDEX' QmIRIrefConst	*/
+	: REFRESH_L VECTOR_L INDEX_L spar_qm_iriref_const_expn {
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_REFRESH",
+		    (SPART **)t_list (1, $4), NULL ) ); }
+	;
+
+spar_vec_drop_vector_index	/* [Virt]	VecDropIndex	 ::=  'DROP' 'SILENT'? 'VECTOR' 'INDEX' QmIRIrefConst	*/
+	: DROP_L spar_silent_opt VECTOR_L INDEX_L spar_qm_iriref_const_expn {
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_DROP",
+		    (SPART **)t_list (2, $5, $2 /* yes, $2 after $5 */), NULL ) ); }
+	;
+
+spar_vec_shorthand_selector	/* [Virt]	VecShorthandSelector	 ::=  VecOnGraph? 'FOR' 'PREDICATE' IRIref	*/
+	: spar_vec_on_graph_opt FOR_L SPARQL_BIF spar_iriref {
+		caddr_t graph_iri;
+		caddr_t pred_iri;
+		/* PREDICATE is lexed as the RDF 1.2 PREDICATE() builtin, so accept
+		   that token here and reject any other builtin name. */
+		if (SPAR_BIF_TRIPLE_PREDICATE != $3)
+		  sparyyerror (sparp_arg, "PREDICATE expected after FOR in a vector index declaration");
+		graph_iri = (caddr_t) spar_qm_get_local (sparp_arg, GRAPH_L, 0);
+		pred_iri = $4->_.lit.val;
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_SET_SELECTOR",
+		    (SPART **)t_list (4,
+		      t_box_copy (sparp_env()->spare_storage_name),
+		      t_box_dv_short_string ("shorthand"),
+		      graph_iri, pred_iri ),
+		    NULL ) ); }
+	;
+
+spar_vec_from_clause	/* [Virt]	VecFromClause	 ::=  'FROM' 'NAMED'? IRIref	*/
+	: FROM_L spar_iriref		{ $$ = (caddr_t) t_list (2, t_box_num (0), t_box_copy ($2->_.lit.val)); }
+	| FROM_L NAMED_L spar_iriref	{ $$ = (caddr_t) t_list (2, t_box_num (1), t_box_copy ($3->_.lit.val)); }
+	;
+
+/*  Right-recursive so the clauses keep source order without a reversal pass. */
+spar_vec_from_list
+	: spar_vec_from_clause				{ $$ = t_cons ($1, NULL); }
+	| spar_vec_from_clause spar_vec_from_list	{ $$ = t_cons ($1, $2); }
+	;
+
+spar_vec_from_list_opt
+	: /* empty */			{ $$ = NULL; }
+	| spar_vec_from_list		{ $$ = $1; }
+	;
+
+spar_vec_general_selector	/* [Virt]	VecGeneralSelector	 ::=  'KEY' Var 'EMBEDDING' Var VecFromClause* 'WHERE' GroupGraphPattern	*/
+	: KEY_L spar_var EMBEDDING_L spar_var spar_vec_from_list_opt WHERE_L _LBRA {
+		spar_gp_init (sparp_arg, WHERE_L); }
+	    spar_group_gp {
+		caddr_t where_text = NULL;
+		caddr_t where_prefixes = NULL;
+		caddr_t dataset_text = NULL;
+		caddr_t *default_graphs = NULL;
+		SPART **trig_pairs;
+		/*  Rebuild the dataset clause from the parsed IRIs rather than
+		    scraping it out of the source: the text is re-parsed at refresh
+		    time as part of the enumeration query, so it has to be
+		    well-formed regardless of how it was spelled here.  The default
+		    graphs are also handed to the trigger extractor, which uses them
+		    for triples that are not inside an explicit GRAPH and would
+		    otherwise make the selector non-async-scopable. */
+		{
+		  dk_set_t iter;
+		  int n_default = 0, total = 0;
+		  /*  Size the buffer EXACTLY: a Virtuoso string box's length is the
+		      string's length, so an over-allocated box carries its padding
+		      as trailing characters -- which then land inside the generated
+		      SPARQL and break it.  "FROM <" + iri + "> " is 8 around the
+		      IRI, "FROM NAMED <" + iri + "> " is 14. */
+		  for (iter = $5; NULL != iter; iter = iter->next)
+		    {
+		      caddr_t *pair = (caddr_t *) iter->data;
+		      int is_named = (0 != unbox (pair[0]));
+		      total += (int) strlen ((char *) pair[1]) + (is_named ? 14 : 8);
+		      if (!is_named)
+		        n_default++;
+		    }
+		  if (NULL != $5)
+		    {
+		      caddr_t buf = t_alloc_box (total + 1, DV_SHORT_STRING);
+		      char *w = buf;
+		      int inx = 0;
+		      if (n_default)
+		        default_graphs = (caddr_t *) t_alloc_box (
+		            sizeof (caddr_t) * n_default, DV_ARRAY_OF_POINTER);
+		      for (iter = $5; NULL != iter; iter = iter->next)
+		        {
+		          caddr_t *pair = (caddr_t *) iter->data;
+		          char *iri = (char *) pair[1];
+		          if (0 == unbox (pair[0]))
+		            {
+		              memcpy (w, "FROM <", 6); w += 6;
+		              default_graphs[inx++] = t_box_copy (iri);
+		            }
+		          else
+		            {
+		              memcpy (w, "FROM NAMED <", 12); w += 12;
+		            }
+		          memcpy (w, iri, strlen (iri)); w += strlen (iri);
+		          memcpy (w, "> ", 2); w += 2;
+		        }
+		      w[0] = 0;
+		      dataset_text = buf;
+		    }
+		}
+		/* Extract raw WHERE clause text from source for later refresh */
+		{
+		  caddr_t src = (caddr_t)(sparp_arg->sparp_text);
+		  caddr_t s;
+		  for (s = src; '\0' != s[0]; s++)
+		    {
+		      if (toupper (s[0]) == 'W' && toupper (s[1]) == 'H' &&
+			  toupper (s[2]) == 'E' && toupper (s[3]) == 'R' &&
+			  toupper (s[4]) == 'E')
+		        {
+			  caddr_t brace = strchr (s, '{');
+			  if (NULL != brace)
+			    {
+			      int depth = 1;
+			      caddr_t q = brace + 1;
+			      while (depth > 0 && '\0' != *q)
+			        {
+				  if ('{' == *q) depth++;
+				  else if ('}' == *q) depth--;
+				  q++;
+			        }
+			      where_text = t_box_dv_short_nchars (s, q - s);
+			      break;
+			    }
+			}
+		    }
+		}
+				{
+		  /* Preserve the namespace prefixes in scope at create time so the
+		     general-selector WHERE text stays resolvable when it is re-parsed
+		     standalone at refresh / async-maintenance time.  Without this a
+		     locally-declared PREFIX resolves during this parse but is absent from
+		     the stored SVI_WHERE_TEXT, so the later re-parse fails with "Undefined
+		     namespace prefix".  The set holds interleaved [prefix, uri, ...] pairs
+		     (see the PrefixDecl rule); an empty set leaves where_prefixes NULL and
+		     behaviour unchanged. */
+		  dk_set_t ns_iter;
+		  int total = 0;
+		  for (ns_iter = sparp_env()->spare_namespace_prefixes;
+		       NULL != ns_iter && NULL != ns_iter->next;
+		       ns_iter = ns_iter->next->next)
+		    {
+		      caddr_t pfx = (caddr_t) ns_iter->data;
+		      caddr_t uri = (caddr_t) ns_iter->next->data;
+		      if (NULL != pfx && NULL != uri)
+		        total += 7 + (int) strlen (pfx) + 3 + (int) strlen (uri) + 2;
+		    }
+		  if (total > 0)
+		    {
+		      caddr_t buf = t_alloc_box (total + 1, DV_SHORT_STRING);
+		      char *w = buf;
+		      for (ns_iter = sparp_env()->spare_namespace_prefixes;
+		           NULL != ns_iter && NULL != ns_iter->next;
+		           ns_iter = ns_iter->next->next)
+		        {
+		          caddr_t pfx = (caddr_t) ns_iter->data;
+		          caddr_t uri = (caddr_t) ns_iter->next->data;
+		          if (NULL != pfx && NULL != uri)
+		            {
+		              int lp = (int) strlen (pfx), lu = (int) strlen (uri);
+		              memcpy (w, "PREFIX ", 7); w += 7;
+		              memcpy (w, pfx, lp); w += lp;
+		              memcpy (w, ": <", 3); w += 3;
+		              memcpy (w, uri, lu); w += lu;
+		              memcpy (w, "> ", 2); w += 2;
+		            }
+		        }
+		      w[0] = 0;
+		      where_prefixes = buf;
+		    }
+		}
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_SET_SELECTOR",
+		    (SPART **)t_list (7,
+		      t_box_copy (sparp_env()->spare_storage_name),
+		      t_box_dv_short_string ("general"),
+		      t_box_dv_short_string ($2->_.var.vname),
+		      t_box_dv_short_string ($4->_.var.vname),
+		      where_text,
+		      where_prefixes,
+		      dataset_text ),
+		    NULL ) );
+		/* Extract the (graph, predicate) dependency set from the finalized
+		   WHERE GP tree and dispatch it to VEC_INDEX_SET_TRIGGERS.  This
+		   enables predicate-precise async maintenance for general selectors:
+		   a change to a triple in (G, P) enqueues the changed subject, and
+		   the existing processing path re-evaluates the WHERE for that key.
+		   The helper returns an empty list when the pattern is not
+		   async-scopable (e.g. a triple not inside an explicit GRAPH <iri>);
+		   SET_TRIGGERS stores nothing in that case and SET_OPTIONS later
+		   rejects maintenance = 'async' with an actionable error. */
+		trig_pairs = spar_vec_extract_trigger_pairs (sparp_arg, $9, default_graphs);
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_SET_TRIGGERS",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+		    trig_pairs ) ); }
+	;
+
+spar_vec_on_graph_opt	/* [Virt]	VecOnGraph	 ::=  ('ON' 'GRAPH' ( 'IDENTIFIED' 'BY' )?)? IRIref	*/
+	: ON_L spar_graph_identified_by spar_iriref {
+		spar_qm_push_local (sparp_arg, GRAPH_L, (SPART *)($3->_.lit.val), 0); }
+	| /* empty */	{}
+	;
+
+spar_vec_using_model_opt	/* [Virt]	VecUsingModel	 ::=  'USING' 'MODEL' STRING	*/
+	: USING_L MODEL_L SPARQL_STRING {
+		caddr_t model_name = $3;
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_SET_MODEL",
+		    (SPART **)t_list (2,
+		      t_box_copy (sparp_env()->spare_storage_name),
+		      model_name ),
+		    NULL ) ); }
+	| /* empty */	{}
+	;
+
+spar_vec_index_options_opt	/* [Virt]	VecIndexOptions	 ::=  'WITH' '(' VecIndexOption ( ',' VecIndexOption )* ')'	*/
+	: /* empty */	{ $$ = (SPART **)t_list (0); }
+	| WITH_L _LPAR _RPAR	{ $$ = (SPART **)t_list (0); }
+	| WITH_L _LPAR spar_vec_index_option_commalist _RPAR {
+		SPART **opts = (SPART **)t_revlist_to_array ($3);
+		t_set_push (&(sparp_arg->sparp_e4qm->e4qm_acc_sqls),
+		  spar_make_qm_sql (sparp_arg, "DB.DBA.VEC_INDEX_SET_OPTIONS",
+		    (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
+		    opts ) );
+		$$ = opts; }
+	;
+
+spar_vec_index_option_commalist	/* ::=  VecIndexOption ( ',' VecIndexOption )*	*/
+	: spar_vec_index_option {
+		$$ = NULL;
+		t_set_push (&($$), $1[0]);
+		t_set_push (&($$), $1[1]); }
+	| spar_vec_index_option_commalist _COMMA spar_vec_index_option {
+		$$ = $1;
+		t_set_push (&($$), $3[0]);
+		t_set_push (&($$), $3[1]); }
+	;
+
+spar_vec_index_option	/* [Virt]	VecIndexOption	 ::=  PLAIN_ID '=' ( INTEGER | STRING )	*/
+	: SPARQL_PLAIN_ID _EQ SPARQL_INTEGER {
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ($1), $3); }
+	| SPARQL_PLAIN_ID _EQ SPARQL_STRING {
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ($1), $3); }
+	| DISTANCE_L _EQ SPARQL_STRING {
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("distance"), $3); }
+	| EF_SEARCH_L _EQ SPARQL_INTEGER {
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("ef_search"), $3); }
+	| MAINTENANCE_L _EQ SPARQL_STRING {
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("maintenance"), $3); }
 	;
 
 spar_opt_dot_and_end

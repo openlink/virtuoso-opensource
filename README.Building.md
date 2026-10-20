@@ -47,13 +47,14 @@ In addition to the core packages, these are recommended:
 
 The following packages are required for specific use-cases:
 
-| Package     | Recommended Version | From                                 |
-| ----------- | ------------------- | ------------------------------------ |
-| openldap    | >= 2.6.8            | https://www.openldap.org/            |
-| proj        | == 4.9.3            | https://proj4.org/                   |
-| geos        | == 3.5.1            | https://www.osgeo.org/projects/geos/ |
-| shapefileio | == 1.6.0            | https://shapelib.maptools.org/       |
-| imagemagick | >= 6.9.13           | https://download.imagemagick.org/    |
+| Package     | Recommended Version | From                                     |
+| ----------- | ------------------- | ---------------------------------------- |
+| openldap    | >= 2.6.8            | https://www.openldap.org/                |
+| proj        | == 4.9.3            | https://proj4.org/                       |
+| geos        | == 3.5.1            | https://www.osgeo.org/projects/geos/     |
+| shapefileio | == 1.6.0            | https://shapelib.maptools.org/           |
+| imagemagick | >= 6.9.13           | https://download.imagemagick.org/        |
+| onnxruntime | >= 1.29.0           | https://github.com/microsoft/onnxruntime |
 
 Virtuoso has support for GeoSPARQL functions which requires the `proj4`, `geos` and `shapefileio` plugins. Building these is the subject of a separate document: [README.GeoSPARQL.md](README.GeoSPARQL.md).
 

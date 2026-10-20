@@ -1,0 +1,47 @@
+<?vsp
+  -- vvec - Signed out.
+  --
+  -- Signing out deletes the session row and expires the cookie.  That is the
+  -- whole of it: the id the browser still holds now matches nothing, so every
+  -- later request is simply unauthenticated.
+  --
+  -- This page used to have to explain itself at length, because under HTTP
+  -- Digest there was no session to end -- signing out could only answer with a
+  -- fresh 401 and hope the browser dropped what it had cached, which is why it
+  -- warned about password prompts and advised closing the window.  None of
+  -- that applies any more.
+  set http_charset='utf-8';
+  DB.DBA.VVEC_LOGOUT (lines);
+
+  http ('<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">');
+  http ('<meta name="viewport" content="width=device-width, initial-scale=1">');
+  http ('<script>try{if(localStorage.getItem("vvec.theme")==="dark")'
+        || 'document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>');
+  http ('<title>Signed out &middot; vvec</title>');
+  http ('<style>');
+  DB.DBA.VVEC_CSS ();
+  http ('</style></head><body>');
+?>
+<div class="standalone">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h3>Signed out of vvec</h3>
+        <div class="sub">Your session has been ended on the server.</div>
+      </div>
+      <span class="logo" style="width:34px;height:34px;background:var(--ink);display:grid;place-items:center;color:var(--sheet);flex:0 0 34px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5"/><path d="M12 12v10"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <p style="margin-top:0">The session record is gone and the cookie has been expired. Any other tab still
+        showing this console will notice within a couple of minutes and return here.</p>
+      <div class="form-actions" style="justify-content:flex-start">
+        <a class="btn primary" href="login">Sign in again &#8594;</a>
+      </div>
+    </div>
+  </div>
+</div>
+<?vsp
+  http ('</body></html>');
+?>

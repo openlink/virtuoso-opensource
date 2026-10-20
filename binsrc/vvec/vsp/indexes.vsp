@@ -1,0 +1,263 @@
+<?vsp
+  -- VVec - Manage Indexes : the combined SQL/SPARQL vector index catalogue,
+  -- and every per-index action.  Split out of the overview because it is the
+  -- page an operator works in, not the one they glance at.
+  set http_charset='utf-8';
+  declare sqlx, e any;
+  declare n_sql, n_sparql, n_total, i integer;
+  declare val varchar;
+
+  sqlx     := DB.DBA.VVEC_SQL_INDEXES ();
+  n_sql    := length (sqlx);
+  n_sparql := (select count (*) from DB.DBA.SPARQL_VEC_INDEX);
+  n_total  := n_sql + n_sparql;
+
+  declare _amsg varchar; declare _aok varchar;
+  _amsg := get_keyword ('msg', params, '');
+  _aok  := get_keyword ('ok',  params, '');
+
+  DB.DBA.VVEC_HEAD ('Manage Indexes', 'indexes');
+?>
+<div class="page-head">
+  <div>
+    <h1>Manage Indexes</h1>
+    <div class="sub"><?= n_total ?> vector <?vsp http (case when n_total = 1 then 'index' else 'indexes' end); ?> on this instance &mdash; <?= n_sql ?> relational, <?= n_sparql ?> RDF.</div>
+  </div>
+  <div class="row-actions">
+    <a class="btn" href="indexes">&#8635; Refresh</a>
+    <a class="btn" href="search">Similarity Search &#8594;</a>
+    <a class="btn primary" href="create">+ New Index</a>
+  </div>
+</div>
+
+<?vsp
+  if (length (_amsg) > 0)
+    {
+?>
+<div class="banner <?vsp http (case when _aok = '1' then 'ok' else 'err' end); ?> landed">
+  <div><strong><?vsp http (case when _aok = '1' then 'Success' else 'Action failed' end); ?></strong><span class="mono"><?= _amsg ?></span></div>
+</div>
+<?vsp
+    }
+?>
+
+<div id="ix-bar" class="selbar hidden">
+  <span class="selbar-count"><strong id="ix-n">0</strong> selected</span>
+  <span class="selbar-note" id="ix-note"></span>
+  <div class="row-actions">
+    <a class="btn sm" id="ix-search" href="#">Search</a>
+    <form method="post" action="action" style="display:inline" id="ix-refresh-form"
+          data-confirm-title="Refresh the selected indexes?"
+          data-confirm="Each one re-evaluates its selector and re-embeds whatever changed."
+          data-confirm-detail="Relational indexes in the selection are skipped: refresh re-evaluates an RDF selector, and a relational index has none."
+          data-confirm-ok="Refresh selected"
+          data-confirm-working="Refreshing...">
+      <input type="hidden" name="op" value="bulk_refresh">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="ids" id="ix-refresh-ids" value="">
+      <button class="btn sm" type="submit" id="ix-refresh">Refresh</button>
+    </form>
+    <form method="post" action="action" style="display:inline" id="ix-drop-form"
+          data-confirm-title="Drop the selected vector indexes?"
+          data-confirm="Every selected index and its graph are removed. The rows they were built from are not touched."
+          data-confirm-detail="Searching any of them again means creating it and re-embedding every source row."
+          data-confirm-ok="Drop selected"
+          data-confirm-note="This cannot be undone."
+          data-confirm-working="Dropping...">
+      <input type="hidden" name="op" value="bulk_drop">
+      <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+      <input type="hidden" name="ids" id="ix-drop-ids" value="">
+      <button class="btn sm danger" type="submit">Drop</button>
+    </form>
+    <button type="button" class="btn sm" onclick="vdSelNone()">Deselect all</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body tight">
+    <div class="table-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th style="width:34px"><input type="checkbox" id="ix-all" title="Select every index" onclick="vdSelAll(this)"></th>
+            <th>Name</th><th>Side</th><th>Target</th><th>Model</th>
+            <th>Dims</th><th>Metric</th><th>State</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+<?vsp
+  if (n_total = 0)
+    {
+?>
+          <tr><td colspan="9">
+            <div class="empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>
+              <h3>No vector indexes yet</h3>
+              <p>Create your first index over a SQL column or an RDF predicate.</p>
+              <a class="btn primary sm" href="create">+ Create Index</a>
+            </div>
+          </td></tr>
+<?vsp
+    }
+
+  -- Relational (SQL) indexes
+  i := 0;
+  while (i < n_sql)
+    {
+      e := sqlx[i];
+      val := 'sql:' || e[0];
+?>
+          <tr>
+            <td><input type="checkbox" class="ix-pick" value="<?= val ?>" data-side="sql" onclick="vdPick()"></td>
+            <td class="cell-strong mono"><?= e[0] ?></td>
+            <td><span class="pill blue">SQL</span></td>
+<?vsp DB.DBA.VVEC_TARGET_CELL (e[1], e[2], null); ?>
+            <td><?= e[4] ?></td>
+            <td><?= e[5] ?></td>
+            <td><?vsp http (e[6]); ?></td>
+            <td><?vsp DB.DBA.VVEC_STATE_PILL (e[7], DB.DBA.VVEC_SQL_INDEX_EMPTY (e[1], e[2])); ?></td>
+            <td>
+              <div class="row-actions">
+                <a class="btn sm" href="search?idx=<?/ val ?>">Search</a>
+                <a class="btn sm ix-edit" href="edit?idx=<?/ val ?>">Edit</a>
+                <form method="post" action="action" style="display:inline"
+                      data-confirm-title="Drop this vector index?"
+                      data-confirm="The index and its graph are removed. The rows it was built from are not touched."
+                      data-confirm-detail="Searching it again means creating it and re-embedding every source row."
+                      data-confirm-ok="Drop index"
+                      data-confirm-note="This cannot be undone."
+                      data-confirm-working="Dropping index...">
+                  <input type="hidden" name="op" value="drop_sql">
+                  <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+                  <input type="hidden" name="id" value="<?= e[0] ?>">
+                  <button class="btn sm danger" type="submit">Drop</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+<?vsp
+      i := i + 1;
+    }
+
+  -- RDF (SPARQL) indexes
+  for (select SVI_IRI, SVI_STATE, SVI_SELECTOR_TYPE, SVI_SELECTOR_GRAPH, SVI_SELECTOR_PRED,
+              SVI_MODEL_NAME, SVI_DIMENSIONS, SVI_DISTANCE, SVI_MAINTENANCE,
+              SVI_DATASET_TEXT, SVI_WHERE_TEXT, SVI_LABEL
+         from DB.DBA.SPARQL_VEC_INDEX order by SVI_IRI) do
+    {
+      val := 'sparql:' || SVI_IRI;
+?>
+          <tr data-iri="<?= SVI_IRI ?>">
+            <td><input type="checkbox" class="ix-pick" value="<?= val ?>" data-side="sparql" onclick="vdPick()"></td>
+            <td class="named">
+              <span class="n-iri cell-strong mono" title="<?= SVI_IRI ?>"><?= SVI_IRI ?></span>
+<?vsp         if (coalesce (SVI_LABEL, '') <> '')
+                http (sprintf ('<span class="n-label" title="%V">%V</span>', SVI_LABEL, SVI_LABEL));
+            ?>
+            </td>
+            <td><span class="pill violet">SPARQL</span></td>
+<?vsp
+              if (SVI_SELECTOR_TYPE = 'shorthand')
+                DB.DBA.VVEC_TARGET_CELL (coalesce (SVI_SELECTOR_GRAPH, ''), coalesce (SVI_SELECTOR_PRED, ''), null);
+              else
+                DB.DBA.VVEC_TARGET_CELL (DB.DBA.VVEC_DATASET_IRIS (SVI_DATASET_TEXT), '',
+                                            trim (coalesce (cast (SVI_WHERE_TEXT as varchar), '(no stored query text)')));
+            ?>
+            <td><?= SVI_MODEL_NAME ?></td>
+            <td><?= SVI_DIMENSIONS ?></td>
+            <td><?vsp http (DB.DBA.VVEC_METRIC_LABEL (SVI_DISTANCE)); ?></td>
+            <td><?vsp DB.DBA.VVEC_STATE_PILL (SVI_STATE, DB.DBA.VVEC_SPARQL_INDEX_EMPTY (SVI_IRI)); ?></td>
+            <td>
+              <div class="row-actions">
+                <a class="btn sm" href="search?idx=<?/ val ?>">Search</a>
+                <a class="btn sm ix-edit" href="edit?idx=<?/ val ?>">Edit</a>
+                <form method="post" action="action" style="display:inline" data-working="Refreshing...">
+                  <input type="hidden" name="op" value="refresh_sparql">
+                  <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+                  <input type="hidden" name="id" value="<?= SVI_IRI ?>">
+                  <button class="btn sm" type="submit">Refresh</button>
+                </form>
+                <form method="post" action="action" style="display:inline"
+                      data-confirm-title="Drop this vector index?"
+                      data-confirm="The index and its graph are removed. The rows it was built from are not touched."
+                      data-confirm-detail="Searching it again means creating it and re-embedding every source row."
+                      data-confirm-ok="Drop index"
+                      data-confirm-note="This cannot be undone."
+                      data-confirm-working="Dropping index...">
+                  <input type="hidden" name="op" value="drop_sparql">
+                  <input type="hidden" name="csrf" value="<?= DB.DBA.VVEC_CSRF_TOKEN() ?>">
+                  <input type="hidden" name="id" value="<?= SVI_IRI ?>">
+                  <button class="btn sm danger" type="submit">Drop</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+<?vsp
+    }
+?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function picks(){ return [].slice.call(document.querySelectorAll(".ix-pick")); }
+  function chosen(){ return picks().filter(function(c){ return c.checked; }); }
+  function el(id){ return document.getElementById(id); }
+
+  window.vdPick = function(){
+    var sel = chosen(), n = sel.length;
+    var sides = {}; sel.forEach(function(c){ sides[c.getAttribute("data-side")] = 1; });
+    var mixed = Object.keys(sides).length > 1;
+    var ids = sel.map(function(c){ return c.value; }).join("|");
+
+    el("ix-bar").classList.toggle("hidden", n === 0);
+    el("ix-n").textContent = n;
+    el("ix-drop-ids").value = ids;
+    el("ix-refresh-ids").value = ids;
+
+    // Editing is a single-index act, so the per-row Edit disappears the moment
+    // the selection stops naming one index.
+    var hide = n > 1;
+    [].slice.call(document.querySelectorAll(".ix-edit")).forEach(function(a){
+      a.classList.toggle("hidden", hide);
+    });
+
+    // One search runs against one surface: the search page does not combine
+    // SQL and SPARQL indexes yet and refuses a mixed set. Say so here rather
+    // than letting the operator find out one click later.
+    var search = el("ix-search"), note = el("ix-note"), nRefreshable = sel.filter(function(c){
+      return c.getAttribute("data-side") === "sparql"; }).length;
+    if(mixed){
+      search.classList.add("disabled");
+      search.removeAttribute("href");
+      note.textContent = "SQL and SPARQL indexes cannot be searched together yet.";
+    } else if(n > 0) {
+      search.classList.remove("disabled");
+      search.href = "search?side=" + sel[0].getAttribute("data-side") + "&idx=" + encodeURIComponent(ids);
+      note.textContent = (nRefreshable === 0 && n > 0)
+        ? "Refresh applies to RDF indexes only; nothing here to refresh."
+        : (nRefreshable < n ? "Refresh applies to the " + nRefreshable + " RDF index(es) in this selection." : "");
+    }
+    el("ix-refresh").disabled = (nRefreshable === 0);
+
+    var all = el("ix-all"), total = picks().length;
+    all.checked = (n > 0 && n === total);
+    all.indeterminate = (n > 0 && n < total);
+  };
+  window.vdSelAll = function(box){
+    picks().forEach(function(c){ c.checked = box.checked; });
+    window.vdPick();
+  };
+  window.vdSelNone = function(){
+    picks().forEach(function(c){ c.checked = false; });
+    window.vdPick();
+  };
+  window.vdPick();
+})();
+</script>
+<?vsp
+  DB.DBA.VVEC_SELECTOR_MODAL ();
+  DB.DBA.VVEC_FOOT ();
+?>
