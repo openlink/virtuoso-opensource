@@ -2678,6 +2678,7 @@ again:
     {
       int new_nesting_level = nesting_level;
       POP_QR_RESET;
+      QI_CHECK_ANYTIME_RST (qi, reset_code);
       if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
 	caddr_t err;

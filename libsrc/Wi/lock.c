@@ -2350,7 +2350,7 @@ the_grim_lock_reaper (void)
       n_lw_threads += lt->lt_lw_threads;
       CHECK_DK_MEM_RESERVE (lt);
       if (lt->lt_started &&
-	  ( (lt->lt_timeout && now - lt->lt_started > lt->lt_timeout) || (process_is_swapping && LT_IS_RUNNING (lt)) ) &&
+	  ( (lt->lt_timeout && now > lt->lt_started && now - lt->lt_started > lt->lt_timeout) || (process_is_swapping && LT_IS_RUNNING (lt)) ) &&
 	  lt->lt_status == LT_PENDING)
 	{
 	  lt->lt_error = LTE_TIMEOUT;
@@ -2364,8 +2364,9 @@ the_grim_lock_reaper (void)
 	  LEAVE_TXN;
 	  goto kill_next_txn;
 	}
+      /* now is sampled once per sweep and lags, a clock started after it must not underflow to a huge elapsed time */
       if (lt->lt_threads && cli && cli->cli_anytime_timeout && cli->cli_anytime_started
-	  && now - cli->cli_anytime_started > cli->cli_anytime_timeout
+	  && now > cli->cli_anytime_started && now - cli->cli_anytime_started > cli->cli_anytime_timeout
 	  && !cli->cli_terminate_requested)
 	{
 	  cli->cli_terminate_requested = CLI_RESULT;

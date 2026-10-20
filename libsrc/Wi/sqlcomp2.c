@@ -1475,6 +1475,8 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
 extern int enable_vec;
 int64 sqlc_cum_memory;
 
+#define SQLC_ANYTIME_RESUME(cli, started, pending) do { if (started) (cli)->cli_anytime_started = (started); if ((pending) && !(cli)->cli_terminate_requested) (cli)->cli_terminate_requested = CLI_RESULT; } while (0)
+
 query_t *
 DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
@@ -1492,6 +1494,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
   volatile int inside_sem = 0;
   volatile int is_ddl = 0;
+  volatile int sig_reset = 0;
+  volatile time_msec_t anytime_started = 0;
+  volatile int anytime_pending = 0;
+  du_thread_t * const self = THREAD_CURRENT_THREAD;
+  jmp_buf_splice * volatile saved_reset_ctx = self->thr_reset_ctx;
   yyscan_t scanner;
   if (!nested_sql_comp)
     {
@@ -1536,6 +1543,15 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       sql_warnings_clear ();
       MP_START();
       mp_comment (THR_TMP_POOL, "compile ", string2);
+      /* the compile does not run against the caller's anytime, an index cursor reset there has no partial result */
+      if (cli)
+	{
+	  anytime_started = cli->cli_anytime_started;
+	  cli->cli_anytime_started = 0;
+	  anytime_pending = (CLI_RESULT == cli->cli_terminate_requested);
+	  if (anytime_pending)
+	    cli->cli_terminate_requested = 0;
+	}
     }
   string = wrap_sql_string (string2);
   if (SQLC_PARSE_ONLY_REC == cr_type)
@@ -1605,6 +1621,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      if (!nested_sql_comp)
 		{
 		  MP_DONE();
+		  SQLC_ANYTIME_RESUME (cli, anytime_started, anytime_pending);
 		}
 	      if (inside_sem)
 		parse_leave ();
@@ -1650,6 +1667,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
+	      SQLC_ANYTIME_RESUME (cli, anytime_started, anytime_pending);
 	    }
 	  SCS_STATE_POP;
 	  qr_free (qr);
@@ -1672,6 +1690,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
+	      SQLC_ANYTIME_RESUME (cli, anytime_started, anytime_pending);
 	    }
 	  sc_free (&sc);
 	  SCS_STATE_POP;
@@ -1693,6 +1712,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  if (!nested_sql_comp)
 	    {
 	      MP_DONE();
+	      SQLC_ANYTIME_RESUME (cli, anytime_started, anytime_pending);
 	    }
 	  sc_free (&sc);
 	  SCS_STATE_POP;
@@ -1700,32 +1720,44 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  POP_CATCH;
 	  return ((query_t*) box_float (score));
 	}
-      sqlc_hook (cli, (caddr_t *)&tree, err);
-      /* TREE_CHECK (tree); */
-      /* dbg_print_box ((caddr_t) tree, stdout); */
-
-    /* dbg_print_box (text, stdout); printf ("\n"); */
-
-      if (parse_pldbg)
+      /* a signal goes through the compilation error cleanup below and is raised again after it, so the MP is freed */
+      QR_RESET_CTX
 	{
-	  qr->qr_brk = -1; /* set a debug flag */
+	  sqlc_hook (cli, (caddr_t *)&tree, err);
+	  /* TREE_CHECK (tree); */
+	  /* dbg_print_box ((caddr_t) tree, stdout); */
+
+	  /* dbg_print_box (text, stdout); printf ("\n"); */
+
+	  if (parse_pldbg)
+	    {
+	      qr->qr_brk = -1; /* set a debug flag */
+	    }
+	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
+	  if (_SQL_CURSOR_FORWARD_ONLY < cr_type
+	    && _SQL_CURSOR_STATIC >= cr_type
+	    && st_is_query_exp (tree))
+	    sqlc_cursor (&sc, &tree, cr_type);
+	  else
+	    {
+	      if (SQLC_UNIQUE_ROWS == cr_type /*&& st_is_query_exp (tree)*/)
+		qr->qr_unique_rows = 1;
+	      sql_stmt_comp (&sc, &tree);
+	    }
+	  qr_set_local_code_and_funref_flag (sc.sc_cc->cc_query);
+	  if (sc.sc_cc->cc_query->qr_proc_vectored || sc.sc_cc->cc_has_vec_subq)
+	    sqlg_vector (&sc, sc.sc_cc->cc_query);
+	  qr_resolve_aliases (qr);
+	  qr_set_freeable (&cc, qr);
 	}
-      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
-      if (_SQL_CURSOR_FORWARD_ONLY < cr_type
-	&& _SQL_CURSOR_STATIC >= cr_type
-	&& st_is_query_exp (tree))
-	sqlc_cursor (&sc, &tree, cr_type);
-    else
-      {
-	if (SQLC_UNIQUE_ROWS == cr_type /*&& st_is_query_exp (tree)*/)
-	  qr->qr_unique_rows = 1;
-	sql_stmt_comp (&sc, &tree);
-      }
-    qr_set_local_code_and_funref_flag (sc.sc_cc->cc_query);
-    if (sc.sc_cc->cc_query->qr_proc_vectored || sc.sc_cc->cc_has_vec_subq)
-      sqlg_vector (&sc, sc.sc_cc->cc_query);
-    qr_resolve_aliases (qr);
-    qr_set_freeable (&cc, qr);
+      QR_RESET_CODE
+	{
+	  POP_QR_RESET;
+	  sig_reset = reset_code;
+	  SET_THR_ATTR (self, TA_SQLC_ERROR, NULL);
+	  lisp_throw (CATCH_LISP_ERROR, 1);
+	}
+      END_QR_RESET;
     qr->qr_instance_length = cc.cc_instance_fill * sizeof (caddr_t);
     /* dk_free_tree ((caddr_t) text); */
     if (parse_pldbg && qr->qr_proc_name)
@@ -1745,6 +1777,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   }
   THROW_CODE
   {
+    self->thr_reset_ctx = saved_reset_ctx; /* a throw from inside a QR_RESET_CTX does not pop it */
 #ifdef QUERY_DEBUG
     qr->qr_text = string2;
     qr->qr_text_is_constant = 1;
@@ -1800,6 +1833,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       db_activity_t tmp;
       sqlc_cum_memory += sqlc_mem = THR_TMP_POOL->mp_bytes;
     MP_DONE();
+    SQLC_ANYTIME_RESUME (cli, anytime_started, anytime_pending);
       CLI_THREAD_TIME (cli);
       tmp = cli->cli_activity;
       da_sub (&tmp, &da_before);
@@ -1808,6 +1842,15 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       cli->cli_compile_activity.da_memory = sqlc_mem;
     }
   sc_free (&sc);
+  if (sig_reset && self->thr_reset_ctx)
+    {
+      if (err)
+	{
+	  dk_free_tree (*err);
+	  *err = NULL;
+	}
+      longjmp_splice (self->thr_reset_ctx, sig_reset);
+    }
 
   if (qr)
     qr->qr_is_complete = 1;
