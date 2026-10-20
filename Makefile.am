@@ -31,6 +31,7 @@ dist_doc_DATA = \
 	$(srcdir)/COPYING.md \
 	$(srcdir)/CREDITS \
 	$(srcdir)/CREDITS.md \
+	$(srcdir)/CONTRIBUTING.md \
 	$(srcdir)/INSTALL \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
@@ -105,6 +106,7 @@ EXTRA_DIST = \
 	$(srcdir)/COPYING \
 	$(srcdir)/COPYING.md \
 	$(srcdir)/CREDITS.md \
+	$(srcdir)/CONTRIBUTING.md \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE.md \
 	$(srcdir)/NEWS.md \

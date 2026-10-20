@@ -23,16 +23,19 @@ $ git clone git://github.com/openlink/virtuoso-opensource.git
 ```
 
 
-At this point, create your own work branch based on any of the branches available, create bugfixes and commit them to your own branch and then use the 'git format-patch' command to generate the appropriate diffs to send to:
+At this point, create your own work branch based on any of the branches available, create bugfixes and commit them to your own branch. You can then submit your changes in either of two ways, whichever you prefer. See the [Contributor Guidelines](CONTRIBUTING.md) for what we expect from a contribution.
 
-    vos.admin@openlinksw.com
+* Use the 'git format-patch' command to generate the appropriate diffs and send them to:
 
+      vos.admin@openlinksw.com
 
-Developers are encouraged to fork the project using GitHub, create their own branches to make enhancements/bugfixes and then send pull requests using the GitHub interface for the OpenLink team to examine and incorporate the fixes into the master tree for an upcoming release.
+* Fork the project on GitHub, push your branch to your fork and send a pull request using the GitHub interface.
+
+Either way, the OpenLink team will examine your changes and incorporate the fixes into the development tree (`develop/7`) for an upcoming release.
 
 GitHub has excellent documentation on how to fork a project, send pull requests, track the project etc. on:
 
-    http://help.github.com/
+    https://docs.github.com/
 
 
 OpenLink Software continues to use sourceforge.net for the source tarball releases and certain binary releases and for completeness also provide read-only Git Archive access.

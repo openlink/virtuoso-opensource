@@ -31,7 +31,7 @@ VOS includes an HTTP(S) Application Server Platform for deploying web applicatio
 
 * [Recent commits](https://github.com/openlink/virtuoso-opensource/commits/develop/7/), [News](NEWS.md) and [ChangeLog](https://raw.githubusercontent.com/openlink/virtuoso-opensource/refs/heads/develop/7/ChangeLog)
 
- ## Documentation
+## Documentation
 
 * [Database Administration Manual](https://docs.openlinksw.com/virtuoso/)
 * [VOS Wiki](https://vos.openlinksw.com/)
@@ -46,9 +46,14 @@ Security vulnerabilities may be reported by following the [instructions in SECUR
 Issues with Virtuoso may be reported by [opening a Github issue](https://github.com/openlink/virtuoso-opensource/issues/),
 providing a summary, description and steps to reproduce.
 
-Assistance is available via our [OpenLink Community forums](https://community.openlinksw.com/), or if covered by a support contract, you can also create a [Support Case through the OpenLink Support Site](https://support.openinksw.com/).
+Assistance is available via our [OpenLink Community forums](https://community.openlinksw.com/), or if covered by a support contract, you can also create a [Support Case through the OpenLink Support Site](https://support.openlinksw.com/).
 
-See our [policy](README.GIT.md) for notes on managing this git repository.
+## Contributing
+
+Contributions are welcome. Please read our [Contributor Guidelines](CONTRIBUTING.md)
+before submitting a pull request. They cover the patch workflow, commit message
+format, tests, licensing, and our policy on AI-assisted contributions.
+For notes on working with the git tree, see [README.GIT.md](README.GIT.md).
 
 ## License
 
