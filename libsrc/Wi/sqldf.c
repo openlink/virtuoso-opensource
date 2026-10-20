@@ -4298,7 +4298,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 
       if (tb_dfe->_.table.text_pred)
 	{
-	  if (!opt_inx_name && !best_ic.ic_is_unique
+	  /* a leading ANN search drives this table; contains then checks its candidates */
+	  if (!opt_inx_name && !best_ic.ic_is_unique && !tb_dfe->_.table.is_vec_order
 	      && sqlo_is_text_order (so, tb_dfe))
 	    {
 	      tb_dfe->_.table.is_text_order = 1;
