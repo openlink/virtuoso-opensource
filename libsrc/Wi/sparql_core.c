@@ -809,7 +809,7 @@ sparp_id_to_iri (sparp_t *sparp, iri_id_t iid)
     }
   else
     {
-      caddr_t t_res = sparp_exec_Narg (sparp, id_to_iri_text, &id_to_iri_cached_qr, &err, 1, box_iri_id (iid));
+      caddr_t t_res = sparp_exec_Narg (sparp, id_to_iri_text, &id_to_iri_cached_qr, &err, 1, t_box_iri_id (iid));
       if (DV_DB_NULL == DV_TYPE_OF (t_res))
         t_res = NULL;
       if (NULL == err)
