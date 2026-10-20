@@ -2095,31 +2095,26 @@ ws_split_ac_header (const caddr_t header)
   return (caddr_t *)list_to_array (dk_set_nreverse (set));
 }
 
+/* not via strses + CATCH_READ_FAIL: `lines' is indeterminate after the longjmp (C99 7.13.2.1) */
 static caddr_t *
 ws_header_line_to_array (caddr_t string)
 {
-  int len;
-  char buf [HTTP_MAX_REQUEST_LEN];
   dk_set_t lines = NULL;
-  caddr_t * headers = NULL;
-  dk_session_t * ses = NULL;
+  const char *pos, *end, *eol;
 
-  ses = strses_allocate ();
-  session_buffered_write (ses, string, box_length (string) - 1);
-  CATCH_READ_FAIL (ses)
+  if (!DV_STRINGP (string))
+    return (caddr_t *) list_to_array (NULL);
+  pos = string;
+  end = string + box_length (string) - 1;	/* the trailing NUL is not part of the block */
+  while (pos < end)
     {
-      for (;;)
-	{
-	  len = dks_read_line (ses, buf, sizeof (buf));
-	  if (0 != len)
-	    dk_set_push (&lines, box_line (buf, len));
-	}
-
+      int len;
+      eol = (const char *) memchr (pos, '\n', end - pos);
+      len = (int) ((NULL != eol ? eol + 1 : end) - pos);
+      dk_set_push (&lines, box_line ((char *) pos, len));
+      pos += len;
     }
-  END_READ_FAIL (ses);
-  dk_free_box ((caddr_t)ses);
-  headers = (caddr_t *) list_to_array (dk_set_nreverse (lines));
-  return headers;
+  return (caddr_t *) list_to_array (dk_set_nreverse (lines));
 }
 
 static const char *
