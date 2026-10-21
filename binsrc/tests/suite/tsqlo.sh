@@ -107,6 +107,14 @@ then
     exit 3
 fi
 
+LOG + running sql script $VIRTUOSO_TEST/sqlo_oj_text_score.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_oj_text_score.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_oj_text_score.sql: free-text SCORE through an ON condition"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

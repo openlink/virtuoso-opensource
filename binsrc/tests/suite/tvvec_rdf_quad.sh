@@ -93,6 +93,17 @@ then
     exit 3
 fi
 
+#  knnSimilar inside OPTIONAL: a score in the optional part compiles, and
+#  the subjects the optional part does not match bind nothing.  Its own
+#  graph, model and index.
+LOG "+ run tvvec_rdf_knn_optional.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_optional.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_optional.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

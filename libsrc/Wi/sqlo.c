@@ -873,6 +873,9 @@ sqlo_with_decl (sqlo_t * so,  ST * tree)
 }
 
 
+static int sqlo_select_ref_score (ST *tree);
+static void sqlo_implied_columns_of_join_cond (sqlo_t *so, ST *tree, int add_score);
+
 void
 sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 {
@@ -1026,6 +1029,9 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	sqlo_add_table_ref (so, &tree->_.join.right, is_jtc ? &res_jt : res);
 	right_ot = (op_table_t *) so->so_tables->data;
 	sqlo_natural_join_cond (so, left_ot, right_ot, tree);
+	/* also the where of a dt inlined into a left outer join */
+	sqlo_implied_columns_of_join_cond (so, tree->_.join.cond,
+	    sqlo_select_ref_score (so->so_this_dt ? so->so_this_dt->ot_dt : NULL));
 	sqlo_scope (so, &(tree->_.join.cond));
 	/* can be that the right subtree in a ij ends with oj in which case the right ot will be flagged outer. The cond in this case goes to to the top where, i.e. res, not to the join cond of the outer (optional) ot */
 if (J_INNER == tree->_.join.type && right_ot->ot_is_outer)
@@ -1998,6 +2004,23 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
     }
   else
     return 0;
+}
+
+
+/* virtual cols of each contains (), knnSimilar etc. ANDed in an ON condition, as for a WHERE */
+static void
+sqlo_implied_columns_of_join_cond (sqlo_t *so, ST *tree, int add_score)
+{
+  int ct = 0;
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return;
+  if (sqlc_contains_args (tree, &ct))
+    sqlo_implied_columns_of_contains (so, tree, add_score);
+  else if (ST_P (tree, BOP_AND))
+    {
+      sqlo_implied_columns_of_join_cond (so, tree->_.bin_exp.left, add_score);
+      sqlo_implied_columns_of_join_cond (so, tree->_.bin_exp.right, add_score);
+    }
 }
 
 void
