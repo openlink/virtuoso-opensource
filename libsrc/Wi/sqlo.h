@@ -255,6 +255,7 @@ struct df_elt_s
       df_elt_t **	after_join_test;
       df_elt_t **	vdb_join_test; /* the part of a remote table's join test that must be done on the vdb */
       dk_set (df_elt_t*)	out_cols;
+      dk_set (df_elt_t*)	vc_out_cols; /* virtual cols read from the probe side of a hash join, carried by the hash */
 
       bitf_t is_being_placed; /* true while laying out preds for this */
       bitf_t is_unique:1;

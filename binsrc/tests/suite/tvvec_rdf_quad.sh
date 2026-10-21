@@ -83,6 +83,16 @@ then
     exit 3
 fi
 
+#  knnSimilar's SIMILARITY and DISTANCE through a hash join: each joined row
+#  keeps its own score.  Its own graph, model and index.
+LOG "+ run tvvec_rdf_knn_hash.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_hash.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_hash.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG
