@@ -978,7 +978,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	  char * pkcs12_file = ctx->hcctx_pkcs12_file;
 	  char * pass = ctx->hcctx_cert_pass;
 	  timeout_t to = {100, 0};
-          int block = 0;
+          int block = 0, n_waits;
 
 	  /*
 	   *  Currently this only works for HTTP/HTTPS based proxies like squid.
@@ -1110,25 +1110,25 @@ http_cli_connect (http_cli_ctx * ctx)
 	    }
           block = 0;
           session_set_control (ctx->hcctx_http_out->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
-	  ssl_err = SSL_connect (ctx->hcctx_ssl);
-          if (1 != ssl_err)
+	  /* the socket is non-blocking: go on with the handshake until done, else a failure shows up as a write error */
+	  for (n_waits = 0; ; n_waits++)
 	    {
-              int con_err;
+	      int con_err;
 	      char err1[2048];
+	      ssl_err = SSL_connect (ctx->hcctx_ssl);
+	      if (1 == ssl_err)
+		break;
+	      con_err = SSL_get_error (ctx->hcctx_ssl, ssl_err);
+	      if ((SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err) && n_waits < 64
+		  && SSL_ERROR_NONE == ssl_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err))
+		continue;
 	      err1[0] = 0;
-              con_err = SSL_get_error(ctx->hcctx_ssl, ssl_err);
-              if (SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err)
-                con_err = ssl_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
-              if (SSL_ERROR_NONE == con_err)
-                ssl_err = 1;
-              else
-                {
-                  if (ERR_peek_error ())
-                    cli_ssl_get_error_string (err1, sizeof (err1));
-                  else
-                    strcpy_ck (err1, "Cannot connect via HTTPS");
-                  ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", "%s", err1);
-                }
+	      if (ERR_peek_error ())
+		cli_ssl_get_error_string (err1, sizeof (err1));
+	      else
+		strcpy_ck (err1, "Cannot connect via HTTPS");
+	      ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", "%s", err1);
+	      break;
 	    }
 	  if (1 == ssl_err)
             {
