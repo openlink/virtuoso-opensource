@@ -291,6 +291,8 @@ HC_RET http_cli_ssl_cert (http_cli_ctx *, caddr_t);
 HC_RET http_cli_ssl_cert_pass (http_cli_ctx *, caddr_t);
 int http_cli_target_is_proxy_exception (char *);
 
+#define HTTP_CLI_INSECURE_UNSET (-1) /* insecure not given: verify only against a CA list given */
+
 extern caddr_t
 bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char * me,
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,

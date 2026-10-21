@@ -896,6 +896,11 @@ http_client_load_ssl_ca_certs (SSL * ssl, const char *certs_pem)
 	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca->x509);
 	}
     }
+  if (sk_X509_INFO_num (ca_list) <= 0) /* not PEM text: a CA file */
+    {
+      ERR_clear_error ();
+      xenc_load_verify_CA_list (ssl_ctx, (char *) certs_pem);
+    }
 end:
   if (ca_list)
     sk_X509_INFO_pop_free (ca_list, X509_INFO_free);
@@ -943,6 +948,24 @@ int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret)
       return 1;
     }
   return 0;
+}
+
+static int
+http_cli_ssl_expect_host (SSL * ssl, const char * host_port)
+{
+  char host[1024], * name = host, * p;
+  strncpy (host, host_port, sizeof (host));
+  host[sizeof (host) - 1] = '\0';
+  if ('[' == host[0])
+    {
+      if (NULL == (p = strchr (host, ']')))
+	return 0;
+      *p = '\0';
+      name = host + 1;
+    }
+  else if (NULL != (p = strrchr (host, ':')))
+    *p = '\0';
+  return SSL_set1_host (ssl, name);
 }
 #endif
 
@@ -1090,6 +1113,19 @@ http_cli_connect (http_cli_ctx * ctx)
 	  else
 	    SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
+	  if (!ctx->hcctx_ssl_insecure && !strcmp (pkcs12_file, "1"))
+	    {
+	      if (ctx->hcctx_ca_certs)
+		http_client_load_ssl_ca_certs (ctx->hcctx_ssl, ctx->hcctx_ca_certs);
+	      else
+		SSL_CTX_set_default_verify_paths (ctx->hcctx_ssl_ctx);
+	      if (!http_cli_ssl_expect_host (ctx->hcctx_ssl, ctx->hcctx_host))
+		{
+		  ctx->hcctx_err = srv_make_new_error ("22023", "HTS05", "Invalid host name %.300s to verify the server certificate against", ctx->hcctx_host);
+		  goto error_in_ssl;
+		}
+	    }
+
 	  if (NULL != pkcs12_file && 0 == atoi (pkcs12_file))
 	    {
 	      int session_id_context = 12;
@@ -1114,6 +1150,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	  for (n_waits = 0; ; n_waits++)
 	    {
 	      int con_err;
+	      long vr;
 	      char err1[2048];
 	      ssl_err = SSL_connect (ctx->hcctx_ssl);
 	      if (1 == ssl_err)
@@ -1123,7 +1160,16 @@ http_cli_connect (http_cli_ctx * ctx)
 		  && SSL_ERROR_NONE == ssl_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err))
 		continue;
 	      err1[0] = 0;
-	      if (ERR_peek_error ())
+	      if (X509_V_OK != (vr = SSL_get_verify_result (ctx->hcctx_ssl)))
+		{
+		  if (X509_V_ERR_HOSTNAME_MISMATCH == vr || X509_V_ERR_IP_ADDRESS_MISMATCH == vr)
+		    snprintf (err1, sizeof (err1), "Server certificate verification failed: hostname mismatch, %.300s is not in the certificate's CN/SAN",
+			ctx->hcctx_host);
+		  else
+		    snprintf (err1, sizeof (err1), "Server certificate verification failed: %s", X509_verify_cert_error_string (vr));
+		  ERR_clear_error ();
+		}
+	      else if (ERR_peek_error ())
 		cli_ssl_get_error_string (err1, sizeof (err1));
 	      else
 		strcpy_ck (err1, "Cannot connect via HTTPS");
@@ -2437,8 +2483,9 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 #ifdef _SSL
   if (!strnicmp (url, "https://", 8) && !ctx->hcctx_pkcs12_file)
     {
+      char insecure = ctx->hcctx_ssl_insecure;
       http_cli_ssl_cert (ctx, (caddr_t)"1");
-      ctx->hcctx_ssl_insecure = '\1';
+      ctx->hcctx_ssl_insecure = insecure;
     }
   else if (!strnicmp (url, "http://", 7))
     {
@@ -2877,20 +2924,20 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
 	http_cli_set_req_content_type (ctx, (caddr_t)"application/x-www-form-urlencoded");
     }
 #ifdef _SSL
-  if (NULL != cert)
+  if (NULL != cert && strcmp (cert, "1"))
     {
       http_cli_ssl_cert (ctx, cert);
       http_cli_ssl_cert_pass (ctx, pk_pass);
       http_cli_ssl_ca_certs (ctx, ca_certs);
-      if (1 == strlen (cert) && 1 == atoi (cert))
-	ctx->hcctx_ssl_insecure = '\1';
-      else
-        ctx->hcctx_ssl_insecure = (char) insecure;
+      ctx->hcctx_ssl_insecure = (insecure > 0);
     }
-  else if (!strnicmp (url, "https://", 8))
+  else
     {
-      http_cli_ssl_cert (ctx, (caddr_t)"1");
-      ctx->hcctx_ssl_insecure = '\1';
+      /* no client certificate, cert "1" from the wrappers: insecure => 0 verifies against ca_certs or else the default store */
+      http_cli_ssl_ca_certs (ctx, ca_certs);
+      if (!strnicmp (url, "https://", 8))
+	http_cli_ssl_cert (ctx, (caddr_t)"1");
+      ctx->hcctx_ssl_insecure = HTTP_CLI_INSECURE_UNSET == insecure ? (NULL == ca_certs) : (insecure > 0);
     }
 #endif
   if (!time_out_is_null) /* timeout */
@@ -3000,7 +3047,7 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t uid = NULL, pwd = NULL;
   caddr_t http_hdr = NULL, body = NULL, method = NULL;
   uint32 time_out = 0;
-  int time_out_is_null = 1, insecure = 0, follow_redirects = 0, accept_cookies = 0;
+  int time_out_is_null = 1, insecure = HTTP_CLI_INSECURE_UNSET, follow_redirects = 0, accept_cookies = 0;
   caddr_t cert = NULL, pk_pass = NULL;
   caddr_t proxy = NULL, ca_certs = NULL, cbk = NULL, *cbk_args = NULL;
 
@@ -3044,10 +3091,12 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       ca_certs = bif_string_or_null_arg (qst, args, 11, me);
     }
-  if (BOX_ELEMENTS (args) > 12) /* ca certs */
+  if (BOX_ELEMENTS (args) > 12) /* insecure */
     {
       int insecure_is_null = 0;
       insecure = (int) bif_long_or_null_arg (qst, args, 12, me, &insecure_is_null);
+      if (insecure_is_null)
+	insecure = HTTP_CLI_INSECURE_UNSET;
     }
   if (BOX_ELEMENTS (args) > 13) /* follow redirects */
     {
@@ -3298,7 +3347,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (n_args > 7) /* time-out */
     to = (uint32) bif_long_or_null_arg (qst, args, 7, me, &to_is_null);
-  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects, NULL, NULL, 0);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, HTTP_CLI_INSECURE_UNSET, 1, follow_redirects, NULL, NULL, 0);
 }
 
 caddr_t
