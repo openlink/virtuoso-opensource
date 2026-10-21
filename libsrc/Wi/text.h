@@ -284,6 +284,7 @@ struct wst_search_specs_s
   search_spec_t wst_seek_spec[2];
   search_spec_t wst_seek_asc_seq_spec[2];	/* like wst_seek_spec but allow read ahead */
   search_spec_t wst_range_spec[1];
+  search_spec_t wst_range_from_spec[1];	/* like wst_range_spec but the lower bound is included */
   search_spec_t wst_next_spec[2];
   search_spec_t wst_next_d_id_spec[2];
 
@@ -291,6 +292,7 @@ struct wst_search_specs_s
   key_spec_t	wst_ks_seek;
   key_spec_t	wst_ks_seek_asc_seq;
   key_spec_t	wst_ks_range;
+  key_spec_t	wst_ks_range_from;
   key_spec_t	wst_ks_next;
   key_spec_t	wst_ks_next_d_id;
   out_map_t *	wst_out_map; /* cols returned from cluster read of a words table */

@@ -1027,6 +1027,8 @@ wst_get_specs (dbe_key_t *key)
 
   ss = res->wst_range_spec;		SS_ASSIGN(word_cl[0]	,CMP_GT	,+0	,CMP_LT	,+1	);
 
+  ss = res->wst_range_from_spec;	SS_ASSIGN(word_cl[0]	,CMP_GTE,+0	,CMP_LT	,+1	);
+
   ss = res->wst_next_spec;		SS_ASSIGN(word_cl[0]	,CMP_EQ	,+0	,0	,0	);
   SS_ADVANCE;				SS_ASSIGN(d_id_cl[0]	,CMP_GT	,+1	,0	,0	);
 
@@ -1040,6 +1042,7 @@ wst_get_specs (dbe_key_t *key)
   WST_KSP (seek);
   WST_KSP (seek_asc_seq);
   WST_KSP (range);
+  WST_KSP (range_from);
   WST_KSP (next);
   WST_KSP (next_d_id);
   res->wst_out_map = (out_map_t *)dk_alloc_box (sizeof (out_map_t) * 4, DV_STRING);
@@ -2591,6 +2594,7 @@ typedef struct fuzzy_scan_args_s
   double fsa_threshold;
   int fsa_ngram_n;
   int fsa_calc_distance;	/* 1 if DISTANCE output requested (Levenshtein only) */
+  double fsa_max_work;		/* this worker's share of FUZZY_MAX_SCAN_WORK */
   dbe_key_t *fsa_key;
   slice_id_t fsa_slice;
   /* output – worker fills these */
@@ -2599,14 +2603,26 @@ typedef struct fuzzy_scan_args_s
 } fuzzy_scan_args_t;
 
 
+static caddr_t
+fuzzy_scan_too_much_work (const char *word)
+{
+  return srv_make_new_error ("22015", "FT043",
+      "fuzzy search for '%.100s' compares too many words, use a longer FUZZY_PREFIX", word);
+}
+
+
 /* Worker function: scan one sub-range of the word index and collect
  * words whose similarity to fsa_query is >= fsa_threshold.
  * The av argument is a list(1, box_num(ptr_to_args)).
- * Returns NULL; results are stored in args->fsa_matches. */
+ * Returns NULL; results are stored in args->fsa_matches, a failed scan
+ * sets *err_ret rather than leaving a partial list. */
 static caddr_t
 fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
 {
   fuzzy_scan_args_t *args = (fuzzy_scan_args_t *) (ptrlong) unbox (((caddr_t *)av)[0]);
+  long query_len = (long) strlen (args->fsa_query);
+  double work = 0;
+  int is_first = 1;
   caddr_t limit;
   *err_ret = NULL;
 
@@ -2614,7 +2630,6 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
 
   for (;;)
     {
-      caddr_t old_limit = limit;
       caddr_t hit_word = NULL;
       buffer_desc_t *buf;
       int rc;
@@ -2628,37 +2643,41 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
       itc->itc_lock_mode = PL_SHARED;
       itc_from (itc, args->fsa_key, args->fsa_slice);
       specs = wst_get_specs (itc->itc_row_key);
-      itc->itc_key_spec = specs->wst_ks_range;
-      ITC_SEARCH_PARAM (itc, box_copy (limit));
-      ITC_SEARCH_PARAM (itc, box_copy (args->fsa_higher));
+      /* the first probe includes the lower bound, a word equal to it is a candidate */
+      itc->itc_key_spec = is_first ? specs->wst_ks_range_from : specs->wst_ks_range;
+      is_first = 0;
+      /* the cursor owns its limits, itc_free frees them */
+      ITC_SEARCH_PARAM (itc, limit);
+      ITC_OWNS_PARAM (itc, limit);
+      limit = box_copy (args->fsa_higher);
+      ITC_SEARCH_PARAM (itc, limit);
+      ITC_OWNS_PARAM (itc, limit);
+      limit = NULL;
       ITC_FAIL (itc)
         {
           buf = itc_reset (itc);
           rc = itc_search (itc, &buf);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
-          if (DVC_MATCH != rc)
-            {
-              itc_page_leave (itc, buf);
-              itc_free (itc);
-              break;
-            }
-          hit_word = wst_itc_col_word (itc, buf);
+          if (DVC_MATCH == rc)
+            hit_word = wst_itc_col_word (itc, buf);
           itc_page_leave (itc, buf);
         }
       ITC_FAILED
         {
-          /* Free search-param copies that ITC_FAIL block would have freed */
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+          *err_ret = srv_make_new_error ("40001", "FT044", "fuzzy search word scan was interrupted");
           itc_free (itc);
           break;
         }
       END_FAIL (itc);
+      itc_free (itc);
 
       if (!hit_word)
+        break;
+
+      work += FUZZY_SCAN_SEEK_WORK + fuzzy_work (query_len, box_length (hit_word) - 1, args->fsa_algo);
+      if (work > args->fsa_max_work)
         {
-          itc_free (itc);
+          *err_ret = fuzzy_scan_too_much_work (args->fsa_query);
+          dk_free_box (hit_word);
           break;
         }
 
@@ -2680,12 +2699,8 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
         {
           limit = hit_word;		/* advance past this word */
         }
-
-      dk_free_box (old_limit);
-      itc_free (itc);
     }
 
-  dk_free_box (limit);
   dk_free_tree (av);		/* free the args list */
   return NULL;
 }
@@ -2702,6 +2717,8 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
   int algo = tctx->tctx_fuzzy_algo;
   double threshold = tctx->tctx_fuzzy_threshold;
   int ngram_n = tctx->tctx_fuzzy_n;
+  double work = 0;
+  int is_first = 1;
 
   if (!word || !word[0])
     return wst_from_word (tctx, range_flags, word);
@@ -2770,6 +2787,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
             a->fsa_threshold = threshold;
             a->fsa_ngram_n = ngram_n;
             a->fsa_calc_distance = tctx->tctx_calc_distance;
+            a->fsa_max_work = FUZZY_MAX_SCAN_WORK / n_parts;
             a->fsa_key = tctx->tctx_table->tb_primary_key;
             a->fsa_slice = tctx->tctx_qi->qi_client->cli_slice;
             a->fsa_matches = NULL;
@@ -2785,6 +2803,8 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
               list (1, box_num ((ptrlong) &args_arr[i])));
 
         aq_wait_all (aq, &err);
+        if (err)
+          aq_wait_all (aq, NULL);	/* the first error returns early: let the other workers finish before freeing their args */
         dk_free_box ((caddr_t) aq);
 
         if (err)
@@ -2870,51 +2890,61 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 
   for (;;)
     {
-      caddr_t old_limit = limit;
       caddr_t hit_word = NULL;
       buffer_desc_t *buf;
       int rc;
       double sim;
 
-      /* Open a cursor positioned at the next word >= limit in [lower, higher) */
+      /* Open a cursor positioned at the next word after limit in [lower, higher) */
       itc = itc_create (QI_SPACE (tctx->tctx_qi), tctx->tctx_qi->qi_trx);
       TEXT_ITC_INIT (itc, tctx->tctx_qi);
       itc_from (itc, tctx->tctx_table->tb_primary_key, tctx->tctx_qi->qi_client->cli_slice);
       {
         wst_search_specs_t *specs = wst_get_specs (itc->itc_row_key);
-        itc->itc_key_spec = specs->wst_ks_range;
+        /* the first probe includes the lower bound, a word equal to the prefix is a candidate */
+        itc->itc_key_spec = is_first ? specs->wst_ks_range_from : specs->wst_ks_range;
       }
-      ITC_SEARCH_PARAM (itc, box_copy (limit));
-      ITC_SEARCH_PARAM (itc, box_copy (higher));
+      is_first = 0;
+      /* the cursor owns its limits, itc_free frees them */
+      ITC_SEARCH_PARAM (itc, limit);
+      ITC_OWNS_PARAM (itc, limit);
+      limit = box_copy (higher);
+      ITC_SEARCH_PARAM (itc, limit);
+      ITC_OWNS_PARAM (itc, limit);
+      limit = NULL;
       ITC_FAIL (itc)
         {
           buf = itc_reset (itc);
           rc = itc_search (itc, &buf);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
-          if (DVC_MATCH != rc)
-            {
-              itc_page_leave (itc, buf);
-              itc_free (itc);
-              break;  /* no more words in range */
-            }
-          hit_word = wst_itc_col_word (itc, buf);
+          if (DVC_MATCH == rc)
+            hit_word = wst_itc_col_word (itc, buf);
           itc_page_leave (itc, buf);
         }
       ITC_FAILED
         {
-          /* Free search-param copies that ITC_FAIL block would have freed */
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 2]);
-          dk_free_box (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+          /* END_FAIL passes the reset on to the query, free what the scan holds */
           itc_free (itc);
-          break;
+          dk_free_tree ((caddr_t) list_to_array (wsts));
+          dk_free_box (lower);
+          dk_free_box (higher);
         }
       END_FAIL (itc);
+      itc_free (itc);
 
       if (!hit_word)
+        break;  /* no more words in range */
+
+      work += FUZZY_SCAN_SEEK_WORK + fuzzy_work (word_len, box_length (hit_word) - 1, algo);
+      if (work > FUZZY_MAX_SCAN_WORK)
         {
-          itc_free (itc);
-          break;
+          NEW_SST (search_stream_t, sst);
+          sst->sst_error = fuzzy_scan_too_much_work (word);
+          sst->sst_op = SRC_ERROR;
+          dk_free_tree ((caddr_t) list_to_array (wsts));
+          dk_free_box (lower);
+          dk_free_box (higher);
+          dk_free_box (hit_word);
+          return sst;
         }
 
       /* Compute similarity */
@@ -2942,9 +2972,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
         }
 
       /* Advance limit past this word */
-      dk_free_box (old_limit);
       limit = hit_word;
-      itc_free (itc);
 
       if (n_words > WST_WILDCARD_MAX)
         {
@@ -2962,7 +2990,6 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
 
   dk_free_box (lower);
   dk_free_box (higher);
-  dk_free_box (limit);
   return wst_from_wsts (tctx, range_flags, wsts);
 }
 

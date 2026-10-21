@@ -149,7 +149,15 @@ fuzzy_algo_id_from_name (const char *name);
 /* The algorithms are quadratic and cannot be cancelled; cap the steps of one call */
 #define FUZZY_MAX_WORK 100000000
 
-int
-fuzzy_work_ok (long len1, long len2, int algo_id);
+/* A fuzzy contains compares the query word with every indexed word of its prefix
+   range; cap the whole scan too.  Each candidate word also takes a fresh cursor
+   and seek, which costs a few hundred comparison steps */
+#define FUZZY_MAX_SCAN_WORK (10.0 * FUZZY_MAX_WORK)
+#define FUZZY_SCAN_SEEK_WORK 1000
+
+double
+fuzzy_work (long len1, long len2, int algo_id);
+
+#define fuzzy_work_ok(len1, len2, algo_id) (fuzzy_work ((len1), (len2), (algo_id)) <= FUZZY_MAX_WORK)
 
 #endif /* _FUZZY_ALGORITHMS_H */

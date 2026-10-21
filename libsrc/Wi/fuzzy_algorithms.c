@@ -886,13 +886,13 @@ fuzzy_distance (const char *s1, const char *s2, int algo_id)
     }
 }
 
-int
-fuzzy_work_ok (long len1, long len2, int algo_id)
+double
+fuzzy_work (long len1, long len2, int algo_id)
 {
   /* n-grams are inserted into a sorted array, so each string costs its length squared */
   if (FUZZY_NGRAM_COSINE == algo_id)
     len1 = len2 = (len1 > len2 ? len1 : len2);
-  return (double) len1 * (double) len2 <= FUZZY_MAX_WORK;
+  return (double) len1 * (double) len2;
 }
 
 int
