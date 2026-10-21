@@ -2,11 +2,15 @@
 
 ## October 20 2026, v7.2.18 unreleased (development branch)
 
+This update introduces a native vector index for semantic similarity search over SQL and RDF data,
+as documented in the [Virtuoso Vector Index Overview & Usage
+Documentation](https://virtuoso.openlinksw.com/docs/virtuoso/opensource/vector-index/#vector-index-overview).
+
 * Virtuoso Engine
-  * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added native HNSW vector indexes for approximate nearest-neighbour similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
   * Added SQL `CREATE VECTOR INDEX`, `VECTOR_DISTANCE()` and `X_SIMILAR()` support ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
   * Added vector arithmetic, normalization and distance functions ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
-  * Added manual and asynchronous vector index maintenance, refresh and rebuild support ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added manual and asynchronous vector index maintenance, including automatic maintenance on insert, update and delete, plus refresh and rebuild support ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
   * Added `VectorANNCostBias` setting to tune vector index plan selection ([27070d136](https://github.com/openlink/virtuoso-opensource/commit/27070d136cbe376d773301aa7ed04f29dd52514c))
   * Added C99 math functions, including hyperbolic, logarithmic and floating-point classification functions ([c0bcad119](https://github.com/openlink/virtuoso-opensource/commit/c0bcad1191041211eeb8decc42f978b73efaf05e))
   * Added default allocator settings for builds using jemalloc ([57b9f0f7c](https://github.com/openlink/virtuoso-opensource/commit/57b9f0f7cfb8f9d558bff956c40945fbacab0d93))
@@ -35,6 +39,7 @@
 * SPARQL
   * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
   * Added vector index creation and similarity search using `bif:vector_search` ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added `bif:knnSimilar` to match the object of any triple pattern against indexed string literals ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
   * Added streaming of SELECT results using chunked HTTP encoding; set `[SPARQL] StreamingResults = 0` to restore buffered results ([7f7bc1012](https://github.com/openlink/virtuoso-opensource/commit/7f7bc10128b7487f77bb3fbb23d94af4da05baed))
   * Added distinct-subquery optimization for eligible `COUNT(DISTINCT ...)` queries over RDF quads; set `[Flags] enable_sparql_count_distinct_dt = 0` to disable it ([0c97ae020](https://github.com/openlink/virtuoso-opensource/commit/0c97ae02074cc865252b42abf47206186da14989))
   * Added `[Flags] sparql_all_bif_unsafe` option to disable BIF extensions ([925adc56f](https://github.com/openlink/virtuoso-opensource/commit/925adc56f0218db0726157f8b4e98ec754f61b3d))
@@ -46,9 +51,9 @@
   * Fixed graph-permission checks in RDF 1.2 triple term helpers ([b9adcb105](https://github.com/openlink/virtuoso-opensource/commit/b9adcb10593c7e1d7206a3692f78d560eb62867c))
 
 * ONNX Embeddings
-  * Added ONNX hosting plugin for computing text embeddings, with inference available in a separate helper process ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
-  * Added default Granite embedding model provisioning with build-time checksum verification ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
-  * Added embedding-model registry and HTTP embedding providers, including OpenAI-compatible services ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added ONNX hosting plugin, statically linked to ONNX Runtime, for computing text embeddings in a separate helper process ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
+  * Added IBM granite-embedding-30m-english as the default local embedding model, with provisioning and build-time checksum verification ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
+  * Added embedding-model registry and HTTP embedding providers, including OpenAI, OpenAI-compatible services, Ollama and LM Studio ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
   * Added `--enable-onnxruntime` build option and ONNX plugin settings in the installed `virtuoso.ini` ([696fd3d09](https://github.com/openlink/virtuoso-opensource/commit/696fd3d09e23ddb0efad14ec616a1248ab2c9796), [d230f2478](https://github.com/openlink/virtuoso-opensource/commit/d230f24783acdad1173bfc597bd6b467375bd0a9))
 
 * VVec Vector Index Console
