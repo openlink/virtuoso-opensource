@@ -1,5 +1,32 @@
 # NEWS
 
+## Virtuoso New Feature -- Semantic Similarity & Vector Indexing
+
+This update introduces a native vector index for semantic similarity search over SQL and RDF data,
+as documented in the [Virtuoso Vector Index Overview & Usage
+Documentation](https://virtuoso.openlinksw.com/docs/virtuoso/opensource/vector-index/#vector-index-overview).
+
+  * Virtuoso Engine
+    - Added native HNSW vector index for approximate nearest-neighbour search over text
+    - Added embedding generation inside the server, with automatic index maintenance on insert, update and delete
+    - Added SQL X_SIMILAR and VECTOR_DISTANCE for similarity search over table columns
+    - Added VectorANNCostBias ini parameter to tune when the optimizer chooses an ANN plan
+
+  * SPARQL
+    - Added bif:vector_search for similarity search over subjects selected by graph and predicate
+    - Added bif:knnSimilar to match the object of any triple pattern against indexed string literals
+
+  * ONNX-powered Machine Learning Layer
+    - Added ONNX hosting plugin, statically linked to ONNX Runtime, with inference in a separate helper process
+    - Added IBM granite-embedding-30m-english as the default local embedding model
+    - Added OpenAI, OpenAI-compatible, Ollama and LM Studio embedding providers
+    - Added --enable-onnxruntime configure option
+
+  * VVec Console
+    - Added VVec VAD to create, monitor and maintain vector indexes, embedding models and provider API keys
+    - Added --enable-vvec-vad configure option
+
+
 ## May 07 2026, v7.2.17
   * Virtuoso Engine
     - Added support for JSON canonicalization
