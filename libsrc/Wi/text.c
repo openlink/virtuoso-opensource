@@ -1181,15 +1181,20 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
   query_instance_t *qi = tctx->tctx_qi;
   it_cursor_t * itc = itc_create (QI_SPACE(qi), qi->qi_trx);
   wst_search_specs_t *specs;
-  int lower_offs = 0;
+  int lower_offs, owned_lower_offs;
   caddr_t lcopy = box_copy(*lower);
+  caddr_t hcopy = box_copy (higher);
   TEXT_ITC_INIT (itc, qi);
   itc_from (itc, tctx->tctx_table->tb_primary_key, qi->qi_client->cli_slice);
   specs = wst_get_specs(itc->itc_row_key);
   itc->itc_key_spec = specs->wst_ks_range;
+  /* the cursor owns its copies of the limits, the returned cursor outlives higher */
   lower_offs = (int) itc->itc_search_par_fill; /* Ensure the offset of lower limit */
+  owned_lower_offs = (int) itc->itc_owned_search_par_fill;
   ITC_SEARCH_PARAM (itc, lcopy);
-  ITC_SEARCH_PARAM (itc, higher);
+  ITC_OWNS_PARAM (itc, lcopy);
+  ITC_SEARCH_PARAM (itc, hcopy);
+  ITC_OWNS_PARAM (itc, hcopy);
   ITC_FAIL (itc)
     {
       for (;;)
@@ -1199,7 +1204,6 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
 	  itc->itc_wst = NULL;
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
-	  dk_free_box (itc->itc_search_params[lower_offs]); /* lower limit */
 	  if (DVC_MATCH != rc)
 	    {
 	      itc_page_leave (itc, buf);
@@ -1215,7 +1219,10 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
 	      return itc;
 	    }
 	  itc_page_leave (itc, buf);
+	  /* the next lower limit is the word passed, the cursor owns it in place of the old one */
+	  dk_free_box (itc->itc_search_params[lower_offs]);
 	  itc->itc_search_params[lower_offs] = hit;
+	  itc->itc_owned_search_params[owned_lower_offs] = hit;
 	}
     }
  ITC_FAILED
