@@ -9186,6 +9186,9 @@ vvec_rdf_row_id_cmp (const void * a, const void * b)
 }
 
 
+/* knnSimilar's least search breadth, bif:vector_search's default ef_search */
+#define VEC_SIMILAR_MIN_EF 100
+
 /* knnSimilar's k nearest literals for the current set's text and k, searched once and
    kept as (text, k, rows by distance, rows by RO_ID); each row is (RO_ID, distance). */
 static caddr_t *
@@ -9207,7 +9210,8 @@ vvec_rdf_hits (vvec_search_node_t * vsn, caddr_t * inst)
       caddr_t emb;
       vvec_require_key (qi, "knnSimilar", vsn->vsn_vec_key->key_name, &meta);
       emb = vvec_embed_text_for_model (qi, "knnSimilar", vsn->vsn_vec_key->key_name, &meta, text);
-      rows = vvec_search_run_key (qi, "knnSimilar", vsn->vsn_vec_key, emb, k, MAX (k, ef_search));
+      /* with ef = k a small k stops at the first local optimum */
+      rows = vvec_search_run_key (qi, "knnSimilar", vsn->vsn_vec_key, emb, k, MAX (MAX (k, ef_search), VEC_SIMILAR_MIN_EF));
       dk_free_tree (emb);
     }
   if (!IS_BOX_POINTER (rows) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (rows))

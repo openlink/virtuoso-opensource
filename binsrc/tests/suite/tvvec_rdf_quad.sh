@@ -104,6 +104,16 @@ then
     exit 3
 fi
 
+#  knnSimilar with a small k searches as widely as with a large one.  Its own
+#  graph, model and index.
+LOG "+ run tvvec_rdf_knn_breadth.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_breadth.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_breadth.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG
