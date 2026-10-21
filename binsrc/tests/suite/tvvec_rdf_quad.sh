@@ -114,6 +114,17 @@ then
     exit 3
 fi
 
+#  bif:vector_search score and distance variables named ?s or ?S.  Here
+#  because this driver runs with CaseMode 2, the stock virtuoso.ini's, under
+#  which ?s collided too.  Its own graph, model and indexes.
+LOG "+ run tvvec_search_score_var.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_search_score_var.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_search_score_var.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG
