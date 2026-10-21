@@ -65,6 +65,7 @@ static double
 text_fuzzy_threshold_from_value (caddr_t value)
 {
   dtp_t dtp;
+  double threshold;
 
   if (!value)
     sqlr_new_error ("22023", "FT381",
@@ -74,24 +75,48 @@ text_fuzzy_threshold_from_value (caddr_t value)
     {
     case DV_SHORT_INT:
     case DV_LONG_INT:
-      return (double) unbox (value);
+      threshold = (double) unbox (value);
+      break;
     case DV_SINGLE_FLOAT:
-      return (double) unbox_float (value);
+      threshold = (double) unbox_float (value);
+      break;
     case DV_DOUBLE_FLOAT:
-      return unbox_double (value);
+      threshold = unbox_double (value);
+      break;
     case DV_NUMERIC:
-      {
-        double threshold;
-        numeric_to_double ((numeric_t) value, &threshold);
-        return threshold;
-      }
+      numeric_to_double ((numeric_t) value, &threshold);
+      break;
     default:
       sqlr_new_error ("22023", "FT381",
           "FUZZY_THRESHOLD must be a numeric value, not an arg of type %s (%d)",
           dv_type_title (dtp), dtp);
+      return 0.0;
     }
-  return 0.0;
+  if (!(threshold >= 0.0 && threshold <= 1.0))
+    sqlr_new_error ("22023", "FT382",
+        "FUZZY_THRESHOLD must be between 0 and 1, not %g", threshold);
+  return threshold;
 }
+
+
+static int
+text_fuzzy_int_option (caddr_t value, const char *name, const char *code, int min, int max)
+{
+  dtp_t dtp = DV_TYPE_OF (value);
+  boxint n;
+
+  if (DV_SHORT_INT != dtp && DV_LONG_INT != dtp)
+    sqlr_new_error ("22023", code, "%s must be an integer, not an arg of type %s (%d)",
+        name, dv_type_title (dtp), dtp);
+  n = unbox (value);
+  if (n < min || n > max)
+    sqlr_new_error ("22023", code, "%s must be between %d and %d, not %ld",
+        name, min, max, (long) n);
+  return (int) n;
+}
+
+#define FUZZY_MAX_N 7		/* as ngram_cosine_n () */
+#define FUZZY_MAX_PREFIX 4
 
 
 static int
@@ -2690,7 +2715,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
   {
     int max_prefix = tctx->tctx_fuzzy_prefix;
     if (max_prefix <= 0) max_prefix = 2;  /* default */
-    if (max_prefix > 4) max_prefix = 4;   /* clamp */
+    if (max_prefix > FUZZY_MAX_PREFIX) max_prefix = FUZZY_MAX_PREFIX;   /* clamp */
     prefix_len = word_len - 1;
     if (prefix_len > max_prefix) prefix_len = max_prefix;
   }
@@ -3527,6 +3552,20 @@ txs_init (text_node_t * txs, query_instance_t * qi)
   caddr_t cached_string;
   int tree_is_temporary;
   sst_tctx_t context;
+  /* Fuzzy search context, checked before a temporary tree is made */
+  if (txs->txs_fuzzy_algo)
+    context.tctx_fuzzy_algo = text_fuzzy_algo_from_value (qst_get (qst, txs->txs_fuzzy_algo));
+  else
+    context.tctx_fuzzy_algo = FUZZY_NONE;
+  context.tctx_fuzzy_threshold = (txs->txs_fuzzy_threshold
+      ? text_fuzzy_threshold_from_value (qst_get (qst, txs->txs_fuzzy_threshold))
+      : FUZZY_DEFAULT_THRESHOLD);
+  context.tctx_fuzzy_n = (txs->txs_fuzzy_n
+      ? text_fuzzy_int_option (qst_get (qst, txs->txs_fuzzy_n), "FUZZY_N", "FT383", 1, FUZZY_MAX_N)
+      : FUZZY_DEFAULT_N);
+  context.tctx_fuzzy_prefix = (txs->txs_fuzzy_prefix
+      ? text_fuzzy_int_option (qst_get (qst, txs->txs_fuzzy_prefix), "FUZZY_PREFIX", "FT384", 1, FUZZY_MAX_PREFIX)
+      : 2);
   if (txs->txs_xn_xq_source)
     {
       tree_is_temporary = 1;
@@ -3621,20 +3660,6 @@ skip_parsing_of_new_tree:
   context.tctx_calc_distance = ((NULL != txs->txs_distance) ? 1 : 0);
   context.tctx_calc_similarity = ((NULL != txs->txs_similarity) ? 1 : 0);
   context.tctx_range_flags = SRC_RANGE_DUMMY;
-  /* Fuzzy search context */
-  if (txs->txs_fuzzy_algo)
-    context.tctx_fuzzy_algo = text_fuzzy_algo_from_value (qst_get (qst, txs->txs_fuzzy_algo));
-  else
-    context.tctx_fuzzy_algo = FUZZY_NONE;
-  context.tctx_fuzzy_threshold = (txs->txs_fuzzy_threshold
-      ? text_fuzzy_threshold_from_value (qst_get (qst, txs->txs_fuzzy_threshold))
-      : FUZZY_DEFAULT_THRESHOLD);
-  context.tctx_fuzzy_n = (txs->txs_fuzzy_n
-      ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n))
-      : FUZZY_DEFAULT_N);
-  context.tctx_fuzzy_prefix = (txs->txs_fuzzy_prefix
-      ? (int) unbox (qst_get (qst, txs->txs_fuzzy_prefix))
-      : 2);
   sst = sst_from_tree (&context, (caddr_t*)tree);
   if (tree_is_temporary)
     dk_free_tree ((caddr_t)tree);
@@ -3892,7 +3917,9 @@ txs_rdf_fuzzy_metrics (text_node_t *txs, caddr_t *qst, d_id_t *d_id,
   if (!query)
     return;
   algo = text_fuzzy_algo_from_value (qst_get (qst, txs->txs_fuzzy_algo));
-  ngram_n = txs->txs_fuzzy_n ? (int) unbox (qst_get (qst, txs->txs_fuzzy_n)) : FUZZY_DEFAULT_N;
+  ngram_n = (txs->txs_fuzzy_n
+      ? text_fuzzy_int_option (qst_get (qst, txs->txs_fuzzy_n), "FUZZY_N", "FT383", 1, FUZZY_MAX_N)
+      : FUZZY_DEFAULT_N);
   rb = (rdf_box_t *) rbb_from_id (D_ID_NUM_REF (&d_id->id[0]));
   rb_complete (rb, qi->qi_trx, qi);
   literal = rb->rb_box;
