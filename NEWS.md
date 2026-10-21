@@ -1,30 +1,89 @@
 # NEWS
 
-## Virtuoso New Feature -- Semantic Similarity & Vector Indexing
+## October 20 2026, v7.2.18 unreleased (development branch)
 
-This update introduces a native vector index for semantic similarity search over SQL and RDF data,
-as documented in the [Virtuoso Vector Index Overview & Usage
-Documentation](https://virtuoso.openlinksw.com/docs/virtuoso/opensource/vector-index/#vector-index-overview).
+* Virtuoso Engine
+  * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added SQL `CREATE VECTOR INDEX`, `VECTOR_DISTANCE()` and `X_SIMILAR()` support ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added vector arithmetic, normalization and distance functions ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added manual and asynchronous vector index maintenance, refresh and rebuild support ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added `VectorANNCostBias` setting to tune vector index plan selection ([27070d136](https://github.com/openlink/virtuoso-opensource/commit/27070d136cbe376d773301aa7ed04f29dd52514c))
+  * Added C99 math functions, including hyperbolic, logarithmic and floating-point classification functions ([c0bcad119](https://github.com/openlink/virtuoso-opensource/commit/c0bcad1191041211eeb8decc42f978b73efaf05e))
+  * Added default allocator settings for builds using jemalloc ([57b9f0f7c](https://github.com/openlink/virtuoso-opensource/commit/57b9f0f7cfb8f9d558bff956c40945fbacab0d93))
+  * Renamed `charset__define()` to `__charset_define()` ([f42af5f94](https://github.com/openlink/virtuoso-opensource/commit/f42af5f943acb9bcaa1d3a2f67e839ec1338a2f8))
+  * Fixed `concat()` with non-string arguments and RDF boxes ([58f6e6fb4](https://github.com/openlink/virtuoso-opensource/commit/58f6e6fb4f18e6984bde78928e7ffb51f767923b), [8eaca101d](https://github.com/openlink/virtuoso-opensource/commit/8eaca101d1f94b4055c41bf9480dfca98f04f81a))
+  * Fixed parsing of ISO 8601 time zone offsets without a colon ([651a6dff1](https://github.com/openlink/virtuoso-opensource/commit/651a6dff1506a29ff20e01ec6acde1222e07fa44))
+  * Fixed XSLT post-processing cleanup ([1c7b7e007](https://github.com/openlink/virtuoso-opensource/commit/1c7b7e00771fcbb73c9bb3a1a0b522b70056f6ba))
+  * Fixed shared compilation cache keys and cursor references to cached statements ([16e687df0](https://github.com/openlink/virtuoso-opensource/commit/16e687df0f2e8be4f401d6e4f310af0f69a46985), [f6fa7be44](https://github.com/openlink/virtuoso-opensource/commit/f6fa7be44cd4031accfbbab408fc441fd9d42de6))
+  * Fixed `FLOOR()` and `CEILING()` to return double values ([1477a1716](https://github.com/openlink/virtuoso-opensource/commit/1477a1716528cb48d0865e7bb9317e66762e3dc7))
+  * Fixed `EXISTS` with local tests on vector seeks ([883611cb1](https://github.com/openlink/virtuoso-opensource/commit/883611cb117fed2e45f9c62cfa365980319cf52f))
+  * Fixed `RIGHT JOIN`, hash join and join security issues ([3f5777bf7](https://github.com/openlink/virtuoso-opensource/commit/3f5777bf71aff19ff68fa3dc87193496f580607f), [ee7d6a937](https://github.com/openlink/virtuoso-opensource/commit/ee7d6a9379f83c632ae84e965bad5fcb397de2bf), [eeffdca57](https://github.com/openlink/virtuoso-opensource/commit/eeffdca571a2ceae52d7846902df6770d0dacf88))
+  * Fixed `OR` expressions with NULL values and incorrect simplification of negated equality ([0e9af458a](https://github.com/openlink/virtuoso-opensource/commit/0e9af458ac2507f8f07a8572c8a15a21b88dea9d), [809418599](https://github.com/openlink/virtuoso-opensource/commit/809418599c06358c58f914ecfe4c101c6b31704c), [f9c3ab8fc](https://github.com/openlink/virtuoso-opensource/commit/f9c3ab8fc6c6d189e5cd72bd3f52d8216a86f74c), [2da872dee](https://github.com/openlink/virtuoso-opensource/commit/2da872dee441a0d4a8d530bb415f7fe438d95b78))
+  * Fixed hash-based `INTERSECT` and mixed set-operation queries ([7c722d547](https://github.com/openlink/virtuoso-opensource/commit/7c722d54735f1e977f7574fb0107654aa72d841c), [f05934117](https://github.com/openlink/virtuoso-opensource/commit/f05934117672633308c3d31a72b7b4fdb615e821))
+  * Fixed group-by dependencies and grouped `SUM(DISTINCT ...)` ([c451900c6](https://github.com/openlink/virtuoso-opensource/commit/c451900c6cbb16a7d7e801bd1dc5d144bc7d77bd), [be5504654](https://github.com/openlink/virtuoso-opensource/commit/be550465415ae6771d5402b23d84962bf7137cf8))
+  * Fixed compiler loops involving DISTINCT aggregates and scalar subqueries ([3d37842fe](https://github.com/openlink/virtuoso-opensource/commit/3d37842feb171977dd7d68018e26e70c63e60c54))
+  * Fixed grouped `CASE` expressions with `NOT IN` and handling of double-parenthesized `IN` expressions ([7b70630dd](https://github.com/openlink/virtuoso-opensource/commit/7b70630ddfb8c0403e28fc8862afac571e2a879a), [c57f4aaaf](https://github.com/openlink/virtuoso-opensource/commit/c57f4aaaf078f0753547ff634e2ab5867ddd2b27))
+  * Fixed `NULLIF()` argument evaluation ([e8371d6cd](https://github.com/openlink/virtuoso-opensource/commit/e8371d6cddf967f710e5e475ca4185a9b3a5b052))
+  * Fixed select expressions reusing stale temporary values after sorting ([e12319575](https://github.com/openlink/virtuoso-opensource/commit/e12319575469e5c36b675dc283dcab6c163eebac))
+  * Fixed spurious query timeouts and memory leaks during SQL compilation ([fdde1c76e](https://github.com/openlink/virtuoso-opensource/commit/fdde1c76eaabb78a016e37d9de835158899e716d))
+  * Fixed memory leak when domain/range inference is enabled ([302f6179b](https://github.com/openlink/virtuoso-opensource/commit/302f6179b9b2d57cf9b73e4aa2f4b8eb53f4b1db))
+  * Fixed system extent map page allocation when database files grow ([c9663ddc8](https://github.com/openlink/virtuoso-opensource/commit/c9663ddc8c88a0223339e56159efeb24fa855feb))
+  * Fixed stale page-set checksums when buffers are reused in debug builds ([08b473ddc](https://github.com/openlink/virtuoso-opensource/commit/08b473ddc940c1ac6397d6031190a355ad5ada57))
+  * Fixed checks for incompatible types and parsing of existing table qualifiers ([8439c5e52](https://github.com/openlink/virtuoso-opensource/commit/8439c5e52fc6333b0e9ff10e9053e4f9a999644a), [641ede182](https://github.com/openlink/virtuoso-opensource/commit/641ede1822e4d36d16f161f85c4124f996f6a1bf))
+  * Fixed compiler warnings and portability issues ([4cfe5bbf5](https://github.com/openlink/virtuoso-opensource/commit/4cfe5bbf55ba724da71b6965cff75611ebded709), [ea23e7ee4](https://github.com/openlink/virtuoso-opensource/commit/ea23e7ee42dcb26babffaf6e6c9c1b3a39b569b0), [09a7cea71](https://github.com/openlink/virtuoso-opensource/commit/09a7cea715b2c3b1baefe1d6545633c2a54c28ca), [43151cec2](https://github.com/openlink/virtuoso-opensource/commit/43151cec2cb86e11d0b5a0f002d4552c68cea825))
 
-  * Virtuoso Engine
-    - Added native HNSW vector index for approximate nearest-neighbour search over text
-    - Added embedding generation inside the server, with automatic index maintenance on insert, update and delete
-    - Added SQL X_SIMILAR and VECTOR_DISTANCE for similarity search over table columns
-    - Added VectorANNCostBias ini parameter to tune when the optimizer chooses an ANN plan
+* SPARQL
+  * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
+  * Added vector index creation and similarity search using `bif:vector_search` ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added streaming of SELECT results using chunked HTTP encoding; set `[SPARQL] StreamingResults = 0` to restore buffered results ([7f7bc1012](https://github.com/openlink/virtuoso-opensource/commit/7f7bc10128b7487f77bb3fbb23d94af4da05baed))
+  * Added distinct-subquery optimization for eligible `COUNT(DISTINCT ...)` queries over RDF quads; set `[Flags] enable_sparql_count_distinct_dt = 0` to disable it ([0c97ae020](https://github.com/openlink/virtuoso-opensource/commit/0c97ae02074cc865252b42abf47206186da14989))
+  * Added `[Flags] sparql_all_bif_unsafe` option to disable BIF extensions ([925adc56f](https://github.com/openlink/virtuoso-opensource/commit/925adc56f0218db0726157f8b4e98ec754f61b3d))
+  * Added DBA-configurable information box on the `/sparql` form using the `sparql-ui-info-box` registry setting ([4c0323e88](https://github.com/openlink/virtuoso-opensource/commit/4c0323e887d81d81f1a22ddfde58b718fbbf0464))
+  * Changed `SAMPLE()` to use the built-in MIN aggregate; set `[Flags] enable_sparql_sample_min = 0` to restore the previous implementation ([f4b6fbda1](https://github.com/openlink/virtuoso-opensource/commit/f4b6fbda1bbac058867258c51d31f3fa804a2514))
+  * Removed per-row PL calls from `LANG()`, boolean-to-number casts and string constants ([ffd95c4db](https://github.com/openlink/virtuoso-opensource/commit/ffd95c4dbee8d10acd7788c6ef230c1a6a4c3dd4))
+  * Fixed repeated node expansion, duplicate results and unbound starts in transitive paths ([933a404b7](https://github.com/openlink/virtuoso-opensource/commit/933a404b75423e638b418e5fb20ca3aecb45d21f))
+  * Fixed RDF 1.2 triple terms under CaseMode 0 and 1 ([bdb377bd9](https://github.com/openlink/virtuoso-opensource/commit/bdb377bd9dec2b1ebaf329756d386c1f762a5312))
+  * Fixed graph-permission checks in RDF 1.2 triple term helpers ([b9adcb105](https://github.com/openlink/virtuoso-opensource/commit/b9adcb10593c7e1d7206a3692f78d560eb62867c))
 
-  * SPARQL
-    - Added bif:vector_search for similarity search over subjects selected by graph and predicate
-    - Added bif:knnSimilar to match the object of any triple pattern against indexed string literals
+* ONNX Embeddings
+  * Added ONNX hosting plugin for computing text embeddings, with inference available in a separate helper process ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
+  * Added default Granite embedding model provisioning with build-time checksum verification ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
+  * Added embedding-model registry and HTTP embedding providers, including OpenAI-compatible services ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
+  * Added `--enable-onnxruntime` build option and ONNX plugin settings in the installed `virtuoso.ini` ([696fd3d09](https://github.com/openlink/virtuoso-opensource/commit/696fd3d09e23ddb0efad14ec616a1248ab2c9796), [d230f2478](https://github.com/openlink/virtuoso-opensource/commit/d230f24783acdad1173bfc597bd6b467375bd0a9))
 
-  * ONNX-powered Machine Learning Layer
-    - Added ONNX hosting plugin, statically linked to ONNX Runtime, with inference in a separate helper process
-    - Added IBM granite-embedding-30m-english as the default local embedding model
-    - Added OpenAI, OpenAI-compatible, Ollama and LM Studio embedding providers
-    - Added --enable-onnxruntime configure option
+* VVec Vector Index Console
+  * Added VAD package for creating, inspecting, searching, refreshing and dropping SQL and SPARQL vector indexes ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
+  * Added embedding-model and provider API-key management ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
+  * Added namespace-prefix management and graph and predicate pickers ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
+  * Added background maintenance queue and worker controls ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
+  * Added DBA session authentication and CSRF protection ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
+  * Added `--enable-vvec-vad` build option ([696fd3d09](https://github.com/openlink/virtuoso-opensource/commit/696fd3d09e23ddb0efad14ec616a1248ab2c9796))
 
-  * VVec Console
-    - Added VVec VAD to create, monitor and maintain vector indexes, embedding models and provider API keys
-    - Added --enable-vvec-vad configure option
+* Web Server and DAV
+  * Added server-sent events mode with `http_flush(3)` for responses that remain open after the request handler returns ([d58b22126](https://github.com/openlink/virtuoso-opensource/commit/d58b221267175643271ff7e7a2cbae8fbb325214))
+  * Added configurable OpenSSL security levels for HTTPS clients and SOAP calls ([e6916d03c](https://github.com/openlink/virtuoso-opensource/commit/e6916d03c7dd1a7467b93ef23b9f1297565f539f))
+  * Updated TLS and ASN.1 handling for current OpenSSL APIs ([8a6ae8fe8](https://github.com/openlink/virtuoso-opensource/commit/8a6ae8fe8d93076ac151dffcfb4c5c1ecbd61860), [fc200626e](https://github.com/openlink/virtuoso-opensource/commit/fc200626e4a32f616b2b3e131213b9b6e13de6e9))
+  * Fixed URI parsing in `rfc1808_parse_uri()` ([cbfad263b](https://github.com/openlink/virtuoso-opensource/commit/cbfad263b11e257066650d891a480e249749c6af))
+
+* Conductor
+  * Fixed pre-formatted output in the DAV browser being HTML escaped ([78d52a81a](https://github.com/openlink/virtuoso-opensource/commit/78d52a81a2ce2e4b56836e229cf46036523b7a38))
+
+* R2RML
+  * Fixed date/time handling in single-argument IRI classes and argument naming ([b815e16ad](https://github.com/openlink/virtuoso-opensource/commit/b815e16ad70effd423313ef6b292e89fb64efb8a), [0f77fe761](https://github.com/openlink/virtuoso-opensource/commit/0f77fe7616039866d167b2a6ee5af295e0b90bfa))
+  * Fixed RML floating-point and date/time type mappings ([6b55cd69d](https://github.com/openlink/virtuoso-opensource/commit/6b55cd69dd12649aee6579a8e915d7ae23edf59c))
+
+* Delta Sharing
+  * Added initial Delta Sharing plugin and HTTP service for sharing SQL tables ([93bccede8](https://github.com/openlink/virtuoso-opensource/commit/93bccede8b05e9a7d3c38187726a3322525a706a))
+
+* Build and Documentation
+  * Upgraded bundled zlib to 1.3.2 ([412b021cf](https://github.com/openlink/virtuoso-opensource/commit/412b021cf8ececd7669e89f253e89dfcfa7483d8))
+  * Fixed compatibility with OpenSSL 1.0.2 and older macOS wide-character functions ([5150290f3](https://github.com/openlink/virtuoso-opensource/commit/5150290f3283efc45f25c26edb6bb4967b3892da), [827c0e699](https://github.com/openlink/virtuoso-opensource/commit/827c0e699c6a3fed2cfede806c51d3a7c1d4d308))
+  * Added vector index SQL files to the Windows build ([ee5ed34ad](https://github.com/openlink/virtuoso-opensource/commit/ee5ed34ad869ae871ecd053c0d82011514e9bf6a))
+  * Added regression suites for vector indexes, embeddings, RDF 1.2 triple terms and graph-level security ([4e0c85c0f](https://github.com/openlink/virtuoso-opensource/commit/4e0c85c0ffaa43edf81925ef70477ef6a988ee0f), [4ee715c9e](https://github.com/openlink/virtuoso-opensource/commit/4ee715c9eb13843e4f1fea22dcd16b45e730e80a), [da454f0e3](https://github.com/openlink/virtuoso-opensource/commit/da454f0e3a542530654135c460ac87b4edc45f60))
+  * Added explicit installer download links and contributor guidelines ([a27a063c9](https://github.com/openlink/virtuoso-opensource/commit/a27a063c9ba6937558399f0156706f22d67ee8ed), [170a52bb3](https://github.com/openlink/virtuoso-opensource/commit/170a52bb3bbda1f5eb5e422fc27e250bea9e6744))
+  * Marked BPEL, SyncML and SPARQL demo packages as deprecated ([300a9f631](https://github.com/openlink/virtuoso-opensource/commit/300a9f63175b6f84a3ddab32e24087f95eda236c))
+  * Removed obsolete admin and installer files and reorganized shared admin and demo sources ([cac77a094](https://github.com/openlink/virtuoso-opensource/commit/cac77a09450314798dcaa8df7472e50941f03086), [4a44c5f71](https://github.com/openlink/virtuoso-opensource/commit/4a44c5f71907462dbb069bb721459465edae7017), [b4e6c71d6](https://github.com/openlink/virtuoso-opensource/commit/b4e6c71d634777ef1ba9fc605c254d5ad6fc07c8), [2babbeef5](https://github.com/openlink/virtuoso-opensource/commit/2babbeef55eee388bb59c4e5d2c9d685474a7e14), [74a66a18e](https://github.com/openlink/virtuoso-opensource/commit/74a66a18e0a2721b8fe22bd950e97ebec53158ab), [a427381fd](https://github.com/openlink/virtuoso-opensource/commit/a427381fd746b31ff640748cc153e852ff1662dc), [553cc6007](https://github.com/openlink/virtuoso-opensource/commit/553cc6007917e1e5e3092cf63ef4d92e32d087d3))
+  * Fixed source distribution packaging ([79f9d810d](https://github.com/openlink/virtuoso-opensource/commit/79f9d810dc7c263b6195a2b3ff9553bf47275276), [147ebfa8c](https://github.com/openlink/virtuoso-opensource/commit/147ebfa8c97cb70c5905893c00191140380c385a), [71f95aee6](https://github.com/openlink/virtuoso-opensource/commit/71f95aee68653e187c95f7e94821dd30867e3014), [615a66c12](https://github.com/openlink/virtuoso-opensource/commit/615a66c12ac4614a4e01754b9b9ca3e8e6626fed))
 
 
 ## May 07 2026, v7.2.17
