@@ -82,6 +82,9 @@ create procedure DB.DBA.ONNX_API_KEY_SET (in _key_name varchar, in _api_key varc
   DB.DBA.ONNX_REQUIRE_DBA ();
   if (_key_name is null or not length (trim (_key_name)))
     signal ('22023', 'ONNXP', 'API key registry name must not be empty');
+  -- Only registry names under the prefix are hidden from non-DBA accounts.
+  if (not starts_with (trim (_key_name), 'ONNX_API_KEY_'))
+    signal ('22023', 'ONNXP', 'API key registry names start with ONNX_API_KEY_: other registry names can be read by every SQL account');
   registry_set (trim (_key_name), coalesce (_api_key, ''));
   return 1;
 }

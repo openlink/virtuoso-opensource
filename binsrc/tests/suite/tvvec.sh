@@ -222,6 +222,12 @@ RUN_VEC_SQL tvvec_multi_index
 #  so it runs unconditionally.
 RUN_VEC_SQL tvvec_sql_backfill
 
+#  Embedding-provider API keys (registry names ONNX_API_KEY_*) are readable
+#  and writable by DBA accounts and DBA-owned procedures only.  Its own key,
+#  account and procedures; needs neither vonnx nor a provider, so it runs
+#  unconditionally.
+RUN_VEC_SQL tvvec_api_keys
+
 #  ---- Phase 3: SPARQL reduce (in-core test_embedding, always) ---------------
 RUN_VEC_SQL tvec_sparql_reduce
 
