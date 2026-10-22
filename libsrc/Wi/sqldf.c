@@ -6116,6 +6116,9 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
   if (!hash_join_enable || (mode && OPT_HASH != mode))
     return 0;
+  if (!enable_chash_join
+      || !(so->so_sc->sc_cc && so->so_sc->sc_cc->cc_query ? so->so_sc->sc_cc->cc_query->qr_proc_vectored : enable_vec))
+    return 0;	/* only the vectored chash join is maintained: with either off this would be a row hash.  No query when only scoping a view */
   if (DFE_TABLE != dfe->dfe_type || dfe_ot (dfe)->ot_is_proc_view)
     return 0;
   if (OPT_HASH != mode && ot && ot->ot_table && tb_is_rdf_quad (ot->ot_table)

@@ -123,6 +123,14 @@ then
     exit 3
 fi
 
+LOG + running sql script $VIRTUOSO_TEST/sqlo_row_hash_join.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_row_hash_join.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_row_hash_join.sql: hash joins without the column-store hash"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

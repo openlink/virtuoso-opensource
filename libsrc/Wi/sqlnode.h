@@ -557,6 +557,10 @@ typedef struct hash_area_s
 #define HA_PROC_FILL 5
 #define HA_ORD_DISTINCT 6
 
+/* a chash join: fill and probe go by the plan, not by enable_chash_join, which may have changed since it was compiled */
+#define HA_IS_CHASH_FILL(ha) \
+  (HA_FILL == (ha)->ha_op && ((ha)->ha_ch_len || CHA_ALWAYS_UNQ == (ha)->ha_ch_unique))
+
 typedef struct clo_comp_s
 {
   short			nth;
