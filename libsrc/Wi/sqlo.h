@@ -975,6 +975,7 @@ float dfe_join_score_jp (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe, dk_set
 int  dfe_is_quad (df_elt_t * tb_dfe);
 char * dfe_p_const_abbrev (df_elt_t * tb_dfe);
 int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys, float ref_card);
+int sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);

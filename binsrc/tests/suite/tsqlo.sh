@@ -115,6 +115,14 @@ then
     exit 3
 fi
 
+LOG + running sql script $VIRTUOSO_TEST/sqlo_nested_jt_score.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_nested_jt_score.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_nested_jt_score.sql: free-text SCORE through a nested joined table"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

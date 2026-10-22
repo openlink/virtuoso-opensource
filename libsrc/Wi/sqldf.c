@@ -6072,7 +6072,7 @@ extern int chash_per_query_pct;
 
 
 /* a hash fill join cannot carry a virtual col of OT, so none if the statement reads one */
-static int
+int
 sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot)
 {
   ST * tree = dt_ot ? dt_ot->ot_dt : NULL;
