@@ -128,14 +128,6 @@ Ruby <http://www.ruby-lang.org/>
     Ruby is distributed under the terms of the Ruby License: <http://www.ruby-lang.org/en/about/license.txt>
 
 
-PHP <http://www.php.net/>
-
-    Virtuoso may be linked against libphp5.so to provide a PHP hosting
-    environment.
-
-    PHP is distributed under the terms of the PHP License: <http://php.net/license/>
-
-
 Java <http://www.java.com/>
 
     Virtuoso may be linked against libjvm.so to provide a Java hosting

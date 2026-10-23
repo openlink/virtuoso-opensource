@@ -48,7 +48,7 @@ noinst_LTLIBRARIES = libwi.la libwic.la # $(IODBC_LIBS)
 noinst_HEADERS = \
 	2pc_client.h 2pc.h arith.h bif_text.h bif_xper.h blobio.h CLI.h \
 	crsr.h date.h datesupp.h eqlcomp.h hosting.h http_client.h http.h \
-	iodbcinst.h ksrvext.h ksrvextphp.h lisprdr.h list2.h log.h ltrx.h \
+	iodbcinst.h ksrvext.h lisprdr.h list2.h log.h ltrx.h \
 	map_schema.h msdtc.h mts_client.h mts_com.h mts.h multibyte.h \
 	numeric.h odbcinc.h pldebug.h rdfinf.h rdf_core.h recovery.h remote.h \
 	rendezvous.h repl.h replsr.h schspace.h security.h shuric.h \

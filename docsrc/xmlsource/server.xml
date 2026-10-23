@@ -2328,12 +2328,8 @@ Encodings</link> for more details.</para>
 						the file name of the modules shared library or object.
                                                 </para>
                                                 <para>Example:</para>
-                                                <para><computeroutput>Load6 = attach, libphp5.so</computeroutput>)</para>
-                                                <para><computeroutput>Load7 = Hosting, hosting_php.so</computeroutput>)</para>
-                                                <para>"Attach" is used for now for the php library. It can be used to load other libraries in future too.
-                                                The reason is to load PHP5 functionality into virtuoso namespace, so when actually is loaded the hosting plugin,
-                                                it can bind to the already available symbols for php5.
-                                                </para>
+                                                <para><computeroutput>;Load6 = plain, proj4</computeroutput>)</para>
+                                                <para><computeroutput>;oad7 = plain, geos</computeroutput>)</para>
 					</formalpara>
 				</listitem>
 			</itemizedlist>

@@ -9253,22 +9253,6 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	update DB.DBA.RDF_QUAD set P = iri_to_id ('http://xmlns.com/foaf/0.1/topic') where G = iri_to_id (coalesce (dest, graph_iri)) and P = iri_to_id ('http://xmlns.com/foaf/0.1/primaryTopic') and S = iri_to_id (doc_iri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, body, new_origin_uri, coalesce (dest, graph_iri));
       }
-    if (base is not null and isstring (file_stat (base)) and __proc_exists ('php_str', 2) is not null)
-      {
-	declare exit handler for sqlstate '*'
-	  {
-	    goto fallback;
-	  };
-	  code := RDFMAP_DBPEDIA_EXTRACT_PHP (base, get_uri);
-	  body := php_str (code);
-	  if (length (body) > 2 and body[0] = 239 and body[1] = 187 and body[2] = 191)
-	    body := subseq (body, 3);
-	  dbpiri := sprintf ('http://dbpedia.org/resource/%U', get_uri);
-	  RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
-	  DB.DBA.TTLP (body, dbpiri, dbpiri);
-	  insert soft DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_EXPIRATION)
-		  values (dbpiri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', dbpiri, dbpiri, now(), dateadd ('hour', 1, now ()));
-      }
     fallback:
     DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), null);
     return 1;
@@ -10571,40 +10555,6 @@ DB.DBA.VHOST_REMOVE (lpath=>'/schemas/xbrl');
 DB.DBA.VHOST_DEFINE (lpath=>'/schemas/xbrl', ppath=>'/DAV/VAD/rdf_mappers/ontologies/xbrl/msft2007.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0, opts=>vector ('url_rewrite', 'xbrl_rule_list1'));
 -- dbpedia_extract.php
 
-CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
-{
-  declare ses any;
-  ses := string_output ();
-  http ('<?php\n', ses);
-  http (sprintf ('\x24basePath = "%s";\n', base), ses);
-  http (sprintf ('\x24pageTitlesEn[] = "%s";\n', title), ses);
-  http ('\n', ses);
-  http ('set_include_path (\x24basePath.\':\'.\x24basePath.\'/extractors:\'.\x24basePath.\'/destinations\');\n', ses);
-  http ('require_once \'dbpedia.php\';\n', ses);
-  http ('\n', ses);
-  http ('\x24manager = new ExtractionManager();\n', ses);
-  http ('\x24jobEnWiki = new ExtractionJob (new LiveWikipediaCollection("en"), new ArrayObject(\x24pageTitlesEn));\n', ses);
-  http ('\n', ses);
-  http ('\x24group = new ExtractionGroup(new SimpleDumpDestination());\n', ses);
-  http ('\x24group->addExtractor(new LabelExtractor());\n', ses);
-  http ('\x24group->addExtractor(new ArticleCategoriesExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new PageLinksExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new WikipageExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new ActiveAbstractExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new PersondataExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new ChemboxExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new GeoExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new DisambiguationExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new CharacterCountExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new RedirectExtractor ());\n', ses);
-  http ('\x24group->addExtractor(new HomepageExtractor ());\n', ses);
-  http ('\x24jobEnWiki->addExtractionGroup(\x24group);\n', ses);
-  http ('\n', ses);
-  http ('\x24manager->execute(\x24jobEnWiki);\n', ses);
-  http ('?>\n', ses);
-  return string_output_string (ses);
-}
-;
 
 --no_c_escapes-
 -- Cartridge for sponging Powerpoint PPTX files.

@@ -19,24 +19,6 @@ The goal of the project is to port *.vsp user's pages to the following programmi
      1. Install the ods_framework_dav.vad package.
 
 
----+++PHP Implementation
-
-   1. PHP: The supported version of PHP is 5.2.4, so you should use Virtuoso with php5 plugin.
-
-[Plugins]
-LoadPath = ../hosting
-....
-Load8    = attach, php5ts
-Load9    = Hosting, hosting_php.dll
-....
-
-   1. The page name is 'users.php'.
-   1. The endpoint URL is http://[host]:[port]/php/users/users.php. The alternate URL is http://[host]:[port]/ods/users/users.php
-   1. Configuration:
-      1. Start Virtuoso executive
-      1. Install the ods_framework_dav.vad package
-
-
 ---+++VSP Implementation
 
    1. The page name is 'users.vsp'.

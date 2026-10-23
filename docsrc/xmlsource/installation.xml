@@ -5954,12 +5954,6 @@ $ more cluster_01/database.log
 05:11:49   WBXML2 version 0.9 from OpenLink Software
 05:11:49   Support functions for WBXML2 0.9.2 Library
 05:11:49   SUCCESS plugin 5: loaded from ../hosting/wbxml2.so }
-05:11:49 { Loading plugin 6: Type `attach', file `libphp5.so' in `../hosting'
-05:11:49   SUCCESS plugin 6: loaded from ../hosting/libphp5.so }
-05:11:49 { Loading plugin 7: Type `Hosting', file `hosting_php.so' in `../hosting'
-05:11:49   Hosting version 3208 from OpenLink Software
-05:11:49   PHP engine version 5.3.21
-05:11:49   SUCCESS plugin 7: loaded from ../hosting/hosting_php.so }
 05:11:49 { Loading plugin 8: Type `plain', file `qrcode' in `../hosting'
 05:11:49   QRcode version 0.1 from OpenLink Software
 05:11:49   Support functions for ISO/IEC 18004:2006, using QR Code encoder (C) 2006 Kentaro Fukuchi <fukichi@megaui.net>

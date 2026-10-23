@@ -97,7 +97,7 @@
 # error Unable to guess uint8 type
 #endif
 
-#if defined (WIN32) && !defined (_PHP) && !defined(BIF_SAMPLES)
+#if defined (WIN32) && !defined(BIF_SAMPLES)
 #define int64 __int64
 #elif SIZEOF_LONG_LONG == 8
 #define int64 			long long

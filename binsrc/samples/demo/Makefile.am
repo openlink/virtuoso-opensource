@@ -138,9 +138,6 @@ endif
 if !WITH_WBXML2
 REM_WBXML2_C=;
 endif
-if !HAVE_PHP5
-REM_PHP5_C=;
-endif
 if !WITH_PYTHON
 REM_PYTHON_C=;
 endif
@@ -177,7 +174,6 @@ do_subst = \
 	    -e 's,[@]REM_IM[@],$(REM_IM_C),g' \
 	    -e 's,[@]REM_HSL[@],$(REM_HSL_C),g' \
 	    -e 's,[@]REM_WBXML2[@],$(REM_WBXML2_C),g' \
-	    -e 's,[@]REM_PHP5[@],$(REM_PHP5_C),g' \
 	    -e 's,[@]REM_PYTHON[@],$(REM_PYTHON_C),g' \
 	    -e 's,[@]REM_PERL[@],$(REM_PERL_C),g' \
 	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g' \

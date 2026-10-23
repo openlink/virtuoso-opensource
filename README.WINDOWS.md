@@ -23,7 +23,6 @@ These versions are the minimum recommended versions of these packages. Older ver
 Optionally install:
 
   * Java Development Kit (JDK) for Windows version 1.4 or above, available from java.sun.com
-  * PHP library for Windows version 4 and header files.
   * Active Python, available from http://www.activestate.com/ActivePython
   * ImageMagick library, available from http://www.imagemagick.org/
 
@@ -104,18 +103,6 @@ yyparse ()
   * Build the solution
 
 ## Building Optional Components
-
-## PHP5 Library Notes
-
-Place these directories with the header files from the PHP5 source tree under /win32/php5/:
-
-  * ext/
-  * main/
-  * regex/
-  * TSRM/
-  * win32/
-  * Zend/
-
 
 ## Building the Virtuoso Open-Source Java hosting binary under Visual Studio 2003
 

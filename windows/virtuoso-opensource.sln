@@ -103,8 +103,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "maildrop", "maildrop.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtmail", "odbcmail.vcxproj", "{4C517D78-E5B9-11DA-85E2-A4E5714C712A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hosting_php", "hosting_php.vcxproj", "{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "creolewiki", "creolewiki.vcxproj", "{ABE43C46-E1C4-11DB-930B-CD6B662399AA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mediawiki", "mediawiki.vcxproj", "{408E2482-2623-11DB-9BB9-97600548391D}"

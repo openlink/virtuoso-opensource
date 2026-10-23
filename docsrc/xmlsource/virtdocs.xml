@@ -1070,7 +1070,6 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xslttrans				SYSTEM "xslttrans.xml">
 <!ENTITY XMLType				SYSTEM "XMLType.xml">
 <!ENTITY XMLDOM					SYSTEM "XMLDOM.xml">
-<!ENTITY php 					SYSTEM "php.xml">
 <!ENTITY xmlschema 				SYSTEM "xmlschema.xml">
 <!ENTITY twopc 					SYSTEM "2pc.xml">
 <!ENTITY xa 					SYSTEM "xa.xml">
