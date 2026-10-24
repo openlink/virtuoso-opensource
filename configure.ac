@@ -3391,7 +3391,6 @@ AC_CONFIG_FILES([
 	binsrc/hosting/mono/tests/Makefile
 	binsrc/hosting/geos/Makefile
 	binsrc/hosting/perl/Makefile
-	binsrc/hosting/php/Makefile
 	binsrc/hosting/proj4/Makefile
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
