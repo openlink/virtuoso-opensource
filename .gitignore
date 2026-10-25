@@ -144,6 +144,8 @@ libsrc/util/getdate.c
 #  Binaries
 #
 a.out.dSYM
+/output/
+/.cache/
 binsrc/config/ccdefs
 binsrc/config/ccdefs.dSYM/
 
