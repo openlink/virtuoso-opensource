@@ -20,9 +20,10 @@
 #
 # ONNX Plugin for Virtuoso
 #
-# Requires a static ONNX Runtime library (libonnxruntime.a), which is linked
-# into the plugin and the helper. Pass its installation prefix
-# (containing include/ and lib/ subdirectories) to configure.
+# Requires the ONNX Runtime library, static (libonnxruntime.a) or shared,
+# which is linked into the plugin and the helper. Pass its installation prefix
+# (containing include/ and lib/ or lib64/ subdirectories) to configure. The
+# linker takes the shared library if both are installed.
 #
 # Example:
 #   ./configure --enable-onnxruntime=/usr/local/onnxruntime
@@ -62,11 +63,11 @@ vonnx_la_CFLAGS += @ONNXRUNTIME_CFLAGS@
 # installed.
 vonnx_la_LDFLAGS = -module -shared -avoid-version -export-dynamic
 vonnx_la_LDFLAGS += -export-symbols vonnx.exp
-vonnx_la_LIBADD = @ONNXRUNTIME_LIBS@
+vonnx_la_LIBADD = @ONNXRUNTIME_LDFLAGS@ @ONNXRUNTIME_LIBS@
 
 onnx_helper_SOURCES = $(srcdir)/onnx_helper.c $(srcdir)/onnx_bpe_classes.h
 onnx_helper_CFLAGS = -std=gnu11 -D_GNU_SOURCE @ONNXRUNTIME_CFLAGS@
-onnx_helper_LDADD = @ONNXRUNTIME_LIBS@ -lm
+onnx_helper_LDADD = @ONNXRUNTIME_LDFLAGS@ @ONNXRUNTIME_LIBS@ -lm
 
 if WITH_ONNX
 all-local: stage-onnx-runtime

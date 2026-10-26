@@ -1434,39 +1434,48 @@ AS_HELP_STRING([--disable-onnxruntime], [disable the onnx plugin (default)])],
 
 if test "x$with_onnx" != "xno"
 then
-    AC_MSG_CHECKING([ONNX Runtime static library usability])
+    AC_MSG_CHECKING([ONNX Runtime library usability])
 
     save_CPPFLAGS="$CPPFLAGS"
     save_LIBS="$LIBS"
 
-    if test "x$with_onnx" = "xyes"
+    #  The header is in include/ in the release archives and in
+    #  include/onnxruntime/ after a source (cmake) install, so look in both.
+    #  A directory that does not exist is ignored by the compiler and linker.
+    onnx_subincs="onnxruntime"
+    onnx_pkgconfig="${PKG_CONFIG:-pkg-config}"
+    onnx_libs_from_pc=""
+
+    if test "x$with_onnx" != "xyes"
     then
-	#  No prefix given: take the directories from pkg-config
-	onnx_pkg_config="${PKG_CONFIG:-pkg-config}"
-	if $onnx_pkg_config --exists libonnxruntime 2>/dev/null
-	then
-	    onnx_incdir=`$onnx_pkg_config --variable=includedir libonnxruntime`
-	    onnx_libdir=`$onnx_pkg_config --variable=libdir libonnxruntime`
-	else
-	    onnx_incdir=""
-	    onnx_libdir=""
-	fi
+	#  --enable-onnxruntime=DIR: everything comes from DIR
+	ONNXRUNTIME_CFLAGS="-I$with_onnx/include"
+	for onnx_d in $onnx_subincs
+	do
+	    ONNXRUNTIME_CFLAGS="$ONNXRUNTIME_CFLAGS -I$with_onnx/include/$onnx_d"
+	done
+	ONNXRUNTIME_LDFLAGS="-L$with_onnx/lib -L$with_onnx/lib64"
+    elif $onnx_pkgconfig --exists libonnxruntime >/dev/null 2>&1
+    then
+	#  --enable-onnxruntime: use what pkg-config says
+	ONNXRUNTIME_CFLAGS=`$onnx_pkgconfig --cflags libonnxruntime`
+	ONNXRUNTIME_LDFLAGS=`$onnx_pkgconfig --libs-only-L libonnxruntime`
+	onnx_libs_from_pc=`$onnx_pkgconfig --libs-only-l --libs-only-other libonnxruntime`
     else
-	#  The prebuilt release archives put the headers in include/, a source
-	#  (cmake) install in include/onnxruntime/.
-	if test -f "$with_onnx/include/onnxruntime/onnxruntime_c_api.h"
-	then
-	    onnx_incdir="$with_onnx/include/onnxruntime"
-	else
-	    onnx_incdir="$with_onnx/include"
-	fi
-	onnx_libdir="$with_onnx/lib"
+	#  --enable-onnxruntime and no pkg-config data: the default search
+	#  paths of the compiler and the linker, and the usual package
+	#  locations of the headers
+	ONNXRUNTIME_CFLAGS=""
+	for onnx_d in $onnx_subincs
+	do
+	    ONNXRUNTIME_CFLAGS="$ONNXRUNTIME_CFLAGS -I/usr/local/include/$onnx_d -I/usr/include/$onnx_d"
+	done
+	ONNXRUNTIME_LDFLAGS=""
     fi
 
     #
-    #  Link the archive by its path: with -lonnxruntime the linker prefers
-    #  the shared library when both are installed. The archive is C++, so
-    #  also link the C++ runtime and the system libraries it uses.
+    #  The static archive is C++, so the C++ runtime and the system libraries
+    #  it uses go on the link line; they do no harm with the shared library.
     #
     case "$host_os" in
       darwin*)
@@ -1478,53 +1487,46 @@ then
       *)
 	onnx_syslibs="-lstdc++ -lm -lpthread" ;;
     esac
-
-    ONNXRUNTIME_CFLAGS="-I$onnx_incdir"
-    ONNXRUNTIME_LIBS="$onnx_libdir/libonnxruntime.a $onnx_syslibs"
+    if test "x$onnx_libs_from_pc" = "x"
+    then
+	onnx_libs_from_pc="-lonnxruntime"
+    fi
+    ONNXRUNTIME_LIBS="$onnx_libs_from_pc $onnx_syslibs"
 
     #
-    #  Keep the abseil, protobuf, re2, ... symbols in the archive out of the
-    #  dynamic symbol table of the plugin, so they cannot clash with other
-    #  copies loaded in the same process.
-    #
-    #  The MLAS assembly objects have no .note.GNU-stack section, which
-    #  makes the linker mark the plugin as needing an executable stack;
-    #  glibc 2.41 and newer refuse to dlopen such a library.
+    #  With the static archive: keep the abseil, protobuf, re2, ... symbols
+    #  out of the dynamic symbol table of the plugin, so they cannot clash
+    #  with other copies loaded in the same process, and mark the plugin as
+    #  not needing an executable stack (the MLAS assembly objects have no
+    #  .note.GNU-stack section, and glibc 2.41 and newer refuse to dlopen
+    #  such a library).
     #
     case "$host_os" in
       linux*|freebsd*)
 	ONNXRUNTIME_LIBS="-Wl,-z,noexecstack -Wl,--exclude-libs,libonnxruntime.a $ONNXRUNTIME_LIBS" ;;
     esac
 
-    if test -z "$onnx_libdir" || test ! -f "$onnx_libdir/libonnxruntime.a"
-    then
-	AC_MSG_RESULT([not found])
-	with_onnx="no"
-	ONNXRUNTIME_CFLAGS=""
-	ONNXRUNTIME_LIBS=""
-	AC_MSG_WARN([No libonnxruntime.a found, the onnx plugin will not be built])
-    else
-	CPPFLAGS="$CPPFLAGS $ONNXRUNTIME_CFLAGS"
-	LIBS="$LIBS $ONNXRUNTIME_LIBS"
+    CPPFLAGS="$CPPFLAGS $ONNXRUNTIME_CFLAGS"
+    LIBS="$LIBS $ONNXRUNTIME_LDFLAGS $ONNXRUNTIME_LIBS"
 
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <onnxruntime_c_api.h>
 ]], [[
   const OrtApi* api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
   (void)api;
 ]])],
-	[
-	  BUILD_OPTS="$BUILD_OPTS onnx"
-	  AC_MSG_RESULT([good])
-	],
-	[
-	  AC_MSG_RESULT([bad. Check config.log for details])
-	  with_onnx="no"
-	  ONNXRUNTIME_CFLAGS=""
-	  ONNXRUNTIME_LIBS=""
-	  AC_MSG_WARN([The onnx plugin will not be built])
-	])
-    fi
+    [
+      BUILD_OPTS="$BUILD_OPTS onnx"
+      AC_MSG_RESULT([good])
+    ],
+    [
+      AC_MSG_RESULT([bad. Check config.log for details])
+      with_onnx="no"
+      ONNXRUNTIME_CFLAGS=""
+      ONNXRUNTIME_LDFLAGS=""
+      ONNXRUNTIME_LIBS=""
+      AC_MSG_WARN([The onnx plugin will not be built])
+    ])
 
     LIBS="$save_LIBS"
     CPPFLAGS="$save_CPPFLAGS"
@@ -1532,6 +1534,7 @@ fi
 
 AM_CONDITIONAL([WITH_ONNX], [test "x$with_onnx" != "xno"])
 AC_SUBST([ONNXRUNTIME_CFLAGS])
+AC_SUBST([ONNXRUNTIME_LDFLAGS])
 AC_SUBST([ONNXRUNTIME_LIBS])
 
 ##########################################################################
