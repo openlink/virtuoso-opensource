@@ -86,20 +86,13 @@ all-local: stage-onnx-runtime
 # never copied before the fetch and checksum check have finished.
 .PHONY: verify-onnx-model stage-onnx-runtime
 
+all-local: verify-onnx-model
+
+.PHONY: verify-onnx-model
+
 verify-onnx-model:
 	@$(SHELL) "$(srcdir)/fetch-onnx-model" \
 	    --dir "$(srcdir)/onnx-models/granite-embedding-30m-english"
-
-stage-onnx-runtime: verify-onnx-model vonnx.la onnx_helper
-	@mkdir -p .libs "$(top_builddir)/binsrc/hosting/onnx-models/granite-embedding-30m-english"; \
-	  cp -p onnx_helper "$(top_builddir)/binsrc/hosting/onnx_helper"; \
-	  for f in model.onnx vocab.json merges.txt LICENSE README.md SHA256SUMS; do \
-	    cp -p "$(srcdir)/onnx-models/granite-embedding-30m-english/$$f" "$(top_builddir)/binsrc/hosting/onnx-models/granite-embedding-30m-english/"; \
-	  done
-	@if test -f .libs/vonnx.so; then \
-	  mkdir -p "$(top_builddir)/binsrc/hosting"; \
-	  cp -p .libs/vonnx.so "$(top_builddir)/binsrc/hosting/vonnx.so"; \
-	fi
 
 install-data-local:
 	@$(MKDIR_P) "$(DESTDIR)$(hostingdir)/onnx-models/granite-embedding-30m-english"; \
