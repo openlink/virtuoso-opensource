@@ -72,6 +72,8 @@ if [ ! -f "$DIR/SHA256SUMS" ]; then
     echo "fetch-onnx-model: no SHA256SUMS in $DIR" >&2
     exit 2
 fi
+#  CDPATH makes cd print the directory, which would end up in DIR twice.
+unset CDPATH
 #  Absolute, so checks run from the staging directory still find SHA256SUMS.
 DIR=`cd "$DIR" && pwd`
 
@@ -94,13 +96,20 @@ fi
 
 FILES=`sed -n 's/^[0-9a-fA-F]\{64\} [ *]//p' "$DIR/SHA256SUMS"`
 
+#  The checksum lines of SHA256SUMS, without its comments.  GNU sha256sum and
+#  shasum skip comment lines in a -c list, but BusyBox (Alpine) rejects them,
+#  so the tools only ever see this filtered list on stdin.
+sums () {
+    grep '^[0-9a-fA-F]\{64\} ' "$DIR/SHA256SUMS"
+}
+
 verify () {
-    ( cd "$DIR" && $SUMCHECK SHA256SUMS ) >/dev/null 2>&1
+    ( cd "$DIR" && sums | $SUMCHECK - ) >/dev/null 2>&1
 }
 
 #  verify_file DIR FILE: check one file against the SHA256SUMS in $DIR.
 verify_file () {
-    ( cd "$1" && grep " $2\$" "$DIR/SHA256SUMS" | $SUMCHECK - ) >/dev/null 2>&1
+    ( cd "$1" && sums | grep " $2\$" | $SUMCHECK - ) >/dev/null 2>&1
 }
 
 #  Fast path: a good local copy is all the build needs.
@@ -122,7 +131,7 @@ if [ "$VERIFY_ONLY" = "1" ]; then
     else
         echo "fetch-onnx-model: checksum verification FAILED in $DIR" >&2
         echo "" >&2
-        ( cd "$DIR" && $SUMCHECK SHA256SUMS ) 2>&1 | sed 's/^/    /' >&2 || true
+        ( cd "$DIR" && sums | $SUMCHECK - ) 2>&1 | sed 's/^/    /' >&2 || true
         echo "" >&2
         echo "  A wrong model does not fail loudly at runtime — it produces" >&2
         echo "  confident, wrong embeddings — so the build stops here." >&2
