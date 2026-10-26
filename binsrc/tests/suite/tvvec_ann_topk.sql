@@ -281,6 +281,31 @@ ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
 ECHO BOTH ": TOP 30 order by VECTOR_DISTANCE rows=" $LAST[1] " expected 30\n";
 
 --
+--  8. A text index on the same column: with a TOP the ANN search leads and
+--     contains checks its candidates; without one the text index leads and
+--     X_SIMILAR, like any other predicate on the text key, stays a filter.
+--
+create text index on DB.DBA.TK_T (content) with key id;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": create text index STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select DB.DBA.TK_SCALAR (0, 'select count (*) from (select top 2 id from DB.DBA.TK_T where contains (content, ''hot'') and X_SIMILAR (content, ''hot 0 1'') > 0.6) x');
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": TOP 2 contains + X_SIMILAR rows=" $LAST[1] " expected 2\n";
+
+select DB.DBA.TK_SCALAR (0, 'select count (*) from (select top 100 id from DB.DBA.TK_T where contains (content, ''hot'') and X_SIMILAR (content, ''hot 0 1'') > 0.6) x');
+ECHO BOTH $IF $EQU $LAST[1] 60 "PASSED" "***FAILED";
+ECHO BOTH ": TOP 100 contains + X_SIMILAR rows=" $LAST[1] " expected 60\n";
+
+select DB.DBA.TK_SCALAR (0, 'select count (*) from DB.DBA.TK_T where contains (content, ''hot'') and X_SIMILAR (content, ''hot 0 1'') > 0.6');
+ECHO BOTH $IF $EQU $LAST[1] 60 "PASSED" "***FAILED";
+ECHO BOTH ": count contains + X_SIMILAR=" $LAST[1] " expected 60\n";
+
+select DB.DBA.TK_SCALAR (0, 'select count (*) from DB.DBA.TK_T where contains (content, ''hot'') and abs (id) > 70');
+ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
+ECHO BOTH ": count contains + abs (id) > 70=" $LAST[1] " expected 10\n";
+
+--
 --  Cleanup.
 --
 drop function DB.DBA.TK_OBY;

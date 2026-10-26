@@ -113,6 +113,12 @@ struct sst_tctx_s
   ptrlong		tctx_range_flags;	/* Flags related to shift_4_xxx, WR-optimization, attribute indexing etc. */
   caddr_t		tctx_end_id;		/* do not seek beyond this in created word streams */
   int			tctx_descending;	/* created search streams should return results in descending order */
+  int			tctx_fuzzy_algo;	/* 0=none, 1=JW, 2=Lev, 3=NGram */
+  double			tctx_fuzzy_threshold;	/* similarity threshold 0.0..1.0 */
+  int			tctx_fuzzy_n;		/* n-gram size, default 2 */
+  int			tctx_fuzzy_prefix;	/* prefix length, default 2, range 1-4 */
+  int			tctx_calc_distance;	/* 1 if DISTANCE output column requested */
+  int			tctx_calc_similarity;	/* 1 if SIMILARITY output column requested */
 };
 
 typedef struct sst_tctx_s sst_tctx_t;
@@ -129,6 +135,8 @@ typedef struct sst_tctx_s sst_tctx_t;
     int			sst_nth_pos; \
     int			sst_raw_score; /* Hit count or the term score before applying a frequency correction and the statistical weight */ \
     int			sst_score;	/* Final corrected score */ \
+    double		sst_best_similarity; /* max wst_fuzzy_similarity across all matching word streams */ \
+    int			sst_best_distance;	/* min wst_fuzzy_distance across all matching word streams */ \
     wpos_t		sst_view_from; /* do not process word positions smaller than this value */ \
     wpos_t		sst_view_to; /* do not process word positions larger than or equal to this value */ \
     word_range_t *	sst_all_ranges; \
@@ -168,6 +176,8 @@ struct word_stream_s
     basket_t		wst_cl_word_strings; /* prefetched consecutive word strings from cluster */
     char		wst_all_fetched; /* all stuff is in word strings */
     char		wst_fixed_d_id; /* only the id sought  for and no other will do */
+    double		wst_fuzzy_similarity; /* 0.0 if not fuzzy, 1.0 for exact, otherwise similarity ratio */
+    int			wst_fuzzy_distance; /* Levenshtein edit distance, -1 if not computed */
 };
 
 typedef struct word_stream_s word_stream_t;
@@ -274,6 +284,7 @@ struct wst_search_specs_s
   search_spec_t wst_seek_spec[2];
   search_spec_t wst_seek_asc_seq_spec[2];	/* like wst_seek_spec but allow read ahead */
   search_spec_t wst_range_spec[1];
+  search_spec_t wst_range_from_spec[1];	/* like wst_range_spec but the lower bound is included */
   search_spec_t wst_next_spec[2];
   search_spec_t wst_next_d_id_spec[2];
 
@@ -281,6 +292,7 @@ struct wst_search_specs_s
   key_spec_t	wst_ks_seek;
   key_spec_t	wst_ks_seek_asc_seq;
   key_spec_t	wst_ks_range;
+  key_spec_t	wst_ks_range_from;
   key_spec_t	wst_ks_next;
   key_spec_t	wst_ks_next_d_id;
   out_map_t *	wst_out_map; /* cols returned from cluster read of a words table */
