@@ -83,6 +83,48 @@ then
     exit 3
 fi
 
+#  knnSimilar's SIMILARITY and DISTANCE through a hash join: each joined row
+#  keeps its own score.  Its own graph, model and index.
+LOG "+ run tvvec_rdf_knn_hash.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_hash.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_hash.sql"
+    exit 3
+fi
+
+#  knnSimilar inside OPTIONAL: a score in the optional part compiles, and
+#  the subjects the optional part does not match bind nothing.  Its own
+#  graph, model and index.
+LOG "+ run tvvec_rdf_knn_optional.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_optional.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_optional.sql"
+    exit 3
+fi
+
+#  knnSimilar with a small k searches as widely as with a large one.  Its own
+#  graph, model and index.
+LOG "+ run tvvec_rdf_knn_breadth.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_rdf_knn_breadth.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_rdf_knn_breadth.sql"
+    exit 3
+fi
+
+#  bif:vector_search score and distance variables named ?s or ?S.  Here
+#  because this driver runs with CaseMode 2, the stock virtuoso.ini's, under
+#  which ?s collided too.  Its own graph, model and indexes.
+LOG "+ run tvvec_search_score_var.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_search_score_var.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_search_score_var.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

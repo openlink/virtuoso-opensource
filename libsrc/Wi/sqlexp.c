@@ -2384,6 +2384,23 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ASG_SSL (res, all_res, txs->txs_score);
       asg_ssl_array (res, all_res, txs->txs_offband);
     }
+  else if (IS_QN (qn, vvec_search_node_input))
+    {
+      QNCAST (vvec_search_node_t, vsn, qn);
+      REF_SSL (res, vsn->vsn_query_vec);
+      REF_SSL (res, vsn->vsn_query_text);
+      REF_SSL (res, vsn->vsn_k);
+      REF_SSL (res, vsn->vsn_ef_search);
+      if (vsn->vsn_rdf && !vsn->vsn_is_driving)
+	{
+	  REF_SSL (all_res, vsn->vsn_ro_id);
+	  REF_SSL (res, vsn->vsn_ro_id);
+	}
+      else
+	ASG_SSL (res, all_res, vsn->vsn_pk_id);
+      ASG_SSL (res, all_res, vsn->vsn_distance);
+      ASG_SSL (res, all_res, vsn->vsn_similarity);
+    }
   else if (IS_QN (qn, xn_input))
     {
       QNCAST (xpath_node_t, xn, qn);

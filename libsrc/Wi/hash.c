@@ -229,7 +229,7 @@ DBG_NAME (hi_allocate) (DBG_PARAMS unsigned int32 sz, int use_memcache, hash_are
 {
   hash_index_t *hi = DK_ALLOC (sizeof (hash_index_t));
   memzero (hi, sizeof (hash_index_t));
-  if ((HA_FILL == ha->ha_op && enable_chash_join && ha->ha_ch_len)
+  if ((HA_FILL == ha->ha_op && ha->ha_ch_len)
       || (HA_GROUP == ha->ha_op && HI_CHASH == use_memcache && ha->ha_ch_len))
     return hi;
   if (!sz)
@@ -3272,7 +3272,7 @@ hash_fill_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * qst)
 #endif
   if (fref->src_gen.src_out_fill)
     QST_INT (inst, fref->src_gen.src_out_fill) = n_sets;
-  if (enable_chash_join)
+  if (HA_IS_CHASH_FILL (ha))
     {
       chash_fill_input (fref, inst, qst);
       return;

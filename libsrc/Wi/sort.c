@@ -358,7 +358,7 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
 	  int set, n_sets;
 	  /* can be first in a qf, so no prev if filling replicated hash */
 	  n_sets = setp->src_gen.src_prev ? QST_INT (inst, setp->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
-	  if (enable_chash_join)
+	  if (HA_IS_CHASH_FILL (setp->setp_ha))
 	    {
 	      setp_chash_fill (setp, inst);
 	      return 1; /* XXX: check with Orri */

@@ -255,6 +255,7 @@ struct df_elt_s
       df_elt_t **	after_join_test;
       df_elt_t **	vdb_join_test; /* the part of a remote table's join test that must be done on the vdb */
       dk_set (df_elt_t*)	out_cols;
+      dk_set (df_elt_t*)	vc_out_cols; /* virtual cols read from the probe side of a hash join, carried by the hash */
 
       bitf_t is_being_placed; /* true while laying out preds for this */
       bitf_t is_unique:1;
@@ -974,6 +975,7 @@ float dfe_join_score_jp (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe, dk_set
 int  dfe_is_quad (df_elt_t * tb_dfe);
 char * dfe_p_const_abbrev (df_elt_t * tb_dfe);
 int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys, float ref_card);
+int sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);

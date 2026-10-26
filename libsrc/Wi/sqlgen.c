@@ -1617,8 +1617,13 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
   int shareable = !tb_dfe->_.table.all_preds && !enable_chash_join;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
 
-  if (IS_TS (ts))
-    ts->ts_is_outer = 0; /* filler is not outer even if the hash source is */
+  {
+    /* filler is not outer even if the hash source is; a text or vector search node may come before the ts */
+    data_source_t * fill_qn;
+    for (fill_qn = ts_src; fill_qn; fill_qn = qn_next (fill_qn))
+      if (IS_TS (fill_qn))
+	((table_source_t *) fill_qn)->ts_is_outer = 0;
+  }
   if ( so->so_in_list_nodes)
     sqlg_in_iter_nodes (so, ts_src, &head);
   while (qn_next (ts_post))
@@ -1647,6 +1652,17 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
 	NCONCF1 (setp->setp_dependent, ssl);
     }
   END_DO_SET();
+  /* a virtual col the probe side reads is written by the search in this filler: carry it as a dependent */
+  if (enable_chash_join && tb_dfe->_.table.hash_filler_of)
+    {
+      DO_SET (df_elt_t *, vc_dfe, &tb_dfe->_.table.hash_filler_of->_.table.vc_out_cols)
+	{
+	  state_slot_t * ssl = sqlg_dfe_ssl (so, vc_dfe);
+	  if (!dk_set_member (setp->setp_keys, (void *) ssl) && !dk_set_member (setp->setp_dependent, (void *) ssl))
+	    NCONCF1 (setp->setp_dependent, ssl);
+	}
+      END_DO_SET();
+    }
   setp_distinct_hash (so->so_sc, setp, tb_dfe->dfe_arity, HA_FILL);
   ha = setp->setp_ha;
   if (enable_chash_join)
@@ -1951,6 +1967,19 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 	    box_set_nth ((caddr_t**)&hs->hs_out_slots, nth - ha->ha_n_keys, (caddr_t)ssl);
 	}
       END_DO_SET();
+      if (!is_fill_dt)
+	{
+	  /* the virtual cols the filler carries, found by ssl: they have no column */
+	  DO_SET (df_elt_t *, vc_dfe, &tb_dfe->_.table.vc_out_cols)
+	    {
+	      state_slot_t * ssl = sqlg_dfe_ssl (so, vc_dfe);
+	      int nth = dk_set_position (setp->setp_dependent, ssl);
+	      if (nth < 0)
+		SQL_GPF_T1 (sc->sc_cc, "hash join virtual col not carried by the hash filler");
+	      box_set_nth ((caddr_t**)&hs->hs_out_slots, nth, (caddr_t)ssl);
+	    }
+	  END_DO_SET();
+	}
     }
   else
     {

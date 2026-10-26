@@ -5656,7 +5656,12 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
   if (SPART_TRIPLE_FIELDS_COUNT <= field_idx)
     return t_box_dv_short_string (simple_vname);
   if (triple->_.triple.ft_type == uname_bif_c_vector_search)
-    return t_box_dv_short_string (simple_vname);
+    {
+      /* score and distance cols are named after their variables, so ?s or ?S would meet the subject's "S" */
+      if (SPART_TRIPLE_SUBJECT_IDX == field_idx)
+        return t_box_sprintf (210, "vs~%.100s", simple_vname);
+      return t_box_dv_short_string (simple_vname);
+    }
   qm = triple->_.triple.tc_list[0]->tc_qm;
   if ((0 != triple->_.triple.ft_type) || (NULL == qm->qmTableName) || (NULL == strstr (qm->qmTableName, "DB.DBA.RDF_QUAD")))
     {

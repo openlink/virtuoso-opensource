@@ -11371,12 +11371,16 @@ bif_add_protected_sequence (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   NO_CADDR_T;
 }
 
+static int registry_name_is_protected (const caddr_t name);
+
 void
 check_sequence_grants (query_instance_t * qi, caddr_t name)
 {
   dbe_table_t * tbl = NULL;
   if (sec_bif_caller_is_dba (qi))
     return;
+  if (3 == registry_name_is_protected (name))
+    sqlr_new_error ("42000", "SR159:SECURITY", "Registry variable %.300s restricted to DBA group.", name);
   if (id_hash_get (dba_sequences, (caddr_t)&name))
     sqlr_new_error ("42000", "SR159:SECURITY", "Sequence %.300s restricted to DBA group.", name);
   tbl = sequence_auto_increment_of (name);
@@ -11384,6 +11388,7 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
     sqlr_new_error ("42000", "SR159:SECURITY", "No permission to write sequence %.300s with user ID %d, group ID %d", name, (int)(qi->qi_u_id), (int)(qi->qi_g_id));
 }
 
+/* 1: DBA writes with force, 2: not writable, 3: DBA only, reading included */
 static int registry_name_is_protected (const caddr_t name)
 {
   if (!strncmp (name, "__key__", 7))
@@ -11396,6 +11401,8 @@ static int registry_name_is_protected (const caddr_t name)
     return 1;
   if (!strcmp (name, "cl_host_map"))
     return 1;
+  if (!strncmp (name, "ONNX_API_KEY_", 13))
+    return 3;
   return 0;
 }
 
@@ -11697,6 +11704,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (2 == force)
         return (box_num (0));
       sqlr_new_error ("42000", "SR484", "Function registry_set() can not modify protected registry variable '%.300s'.", name);
+    case 3: break;
     }
   check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
@@ -11718,6 +11726,8 @@ bif_registry_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_string_arg (qst, args, 0, "registry_get");
   caddr_t dflt = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "registry_get") : NULL;
 
+  if (3 == registry_name_is_protected (name) && !sec_bif_caller_is_dba ((query_instance_t *) qst))
+    return box_copy (dflt);
   IN_TXN;
   res = registry_get (name);
   LEAVE_TXN;
@@ -11734,7 +11744,7 @@ bif_registry_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res = NULL;
   caddr_t name = bif_string_arg (qst, args, 0, "registry_remove");
-  if (registry_name_is_protected (name))
+  if (registry_name_is_protected (name) && 3 != registry_name_is_protected (name))
     sqlr_new_error ("42000", "SR485", "Function registry_remove can not remove protected registry variable '%.300s'.", name);
   check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;

@@ -91,6 +91,46 @@ then
     exit 3
 fi
 
+LOG + running sql script $VIRTUOSO_TEST/sqlo_hash_outer.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_hash_outer.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_hash_outer.sql: hash join filler of an outer table"
+    exit 3
+fi
+
+LOG + running sql script $VIRTUOSO_TEST/sqlo_hash_text_score.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_hash_text_score.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_hash_text_score.sql: free-text SCORE through a hash join"
+    exit 3
+fi
+
+LOG + running sql script $VIRTUOSO_TEST/sqlo_oj_text_score.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_oj_text_score.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_oj_text_score.sql: free-text SCORE through an ON condition"
+    exit 3
+fi
+
+LOG + running sql script $VIRTUOSO_TEST/sqlo_nested_jt_score.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_nested_jt_score.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_nested_jt_score.sql: free-text SCORE through a nested joined table"
+    exit 3
+fi
+
+LOG + running sql script $VIRTUOSO_TEST/sqlo_row_hash_join.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/sqlo_row_hash_join.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: sqlo_row_hash_join.sql: hash joins without the column-store hash"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

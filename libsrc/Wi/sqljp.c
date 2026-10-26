@@ -923,6 +923,13 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
     return 0; /* the build is larger than the probe, reverse order bound to be better  */
   if (2 == enable_hash_fill_join)
     return 0;
+  DO_SET (df_elt_t *, tb_dfe, &jp.jp_hash_fill_dfes)
+    {
+      /* the filler would join a table whose virtual col the statement reads, e.g. a text SCORE, which a hash fill join cannot carry */
+      if (tb_dfe != hash_ref_tb && sqlo_virtual_cols_refd (ot, tb_dfe->_.table.ot))
+	return 0;
+    }
+  END_DO_SET ();
   if (so->so_cache_subqs)
     {
       dfe_cc_list_key (hash_keys, sqk, &sqk_fill, sizeof (sqk) - 1);

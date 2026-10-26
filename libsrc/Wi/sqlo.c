@@ -873,6 +873,9 @@ sqlo_with_decl (sqlo_t * so,  ST * tree)
 }
 
 
+static int sqlo_select_ref_score (ST *tree);
+static void sqlo_implied_columns_of_join_cond (sqlo_t *so, ST *tree, int add_score);
+
 void
 sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 {
@@ -1026,6 +1029,9 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	sqlo_add_table_ref (so, &tree->_.join.right, is_jtc ? &res_jt : res);
 	right_ot = (op_table_t *) so->so_tables->data;
 	sqlo_natural_join_cond (so, left_ot, right_ot, tree);
+	/* also the where of a dt inlined into a left outer join */
+	sqlo_implied_columns_of_join_cond (so, tree->_.join.cond,
+	    sqlo_select_ref_score (so->so_this_dt ? so->so_this_dt->ot_dt : NULL));
 	sqlo_scope (so, &(tree->_.join.cond));
 	/* can be that the right subtree in a ij ends with oj in which case the right ot will be flagged outer. The cond in this case goes to to the top where, i.e. res, not to the join cond of the outer (optional) ot */
 if (J_INNER == tree->_.join.type && right_ot->ot_is_outer)
@@ -2000,6 +2006,23 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
     return 0;
 }
 
+
+/* virtual cols of each contains (), knnSimilar etc. ANDed in an ON condition, as for a WHERE */
+static void
+sqlo_implied_columns_of_join_cond (sqlo_t *so, ST *tree, int add_score)
+{
+  int ct = 0;
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return;
+  if (sqlc_contains_args (tree, &ct))
+    sqlo_implied_columns_of_contains (so, tree, add_score);
+  else if (ST_P (tree, BOP_AND))
+    {
+      sqlo_implied_columns_of_join_cond (so, tree->_.bin_exp.left, add_score);
+      sqlo_implied_columns_of_join_cond (so, tree->_.bin_exp.right, add_score);
+    }
+}
+
 void
 sqlo_jt_replace_col_refs (ST ** tree, caddr_t new_pref, ST **selection, ST *jt, int do_aliases)
 {
@@ -2060,6 +2083,32 @@ sqlo_jt_dt_get_ft_conds (sqlo_t *so, ST **cond, ST *tref)
 }
 
 
+int sqlo_join_reffed_outside (ST *tree, ST *stop_at, char *prefix, char *name);
+
+static void
+sqlo_jt_virtual_cols (sqlo_t *so, ST *tree, ST *jt, ST *select_stmt, dk_set_t *res)
+{
+  /* the virtual cols, e.g. a text SCORE, of the tables of the joined table jt that select_stmt references outside of jt */
+  while (ST_P (tree, TABLE_REF))
+    tree = tree->_.table_ref.table;
+  if (ST_P (tree, JOINED_TABLE))
+    {
+      sqlo_jt_virtual_cols (so, tree->_.join.left, jt, select_stmt, res);
+      sqlo_jt_virtual_cols (so, tree->_.join.right, jt, select_stmt, res);
+    }
+  else if (ST_P (tree, TABLE_DOTTED))
+    {
+      op_table_t *ot = sqlo_cname_ot (so, tree->_.table.prefix);
+      DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
+	{
+	  if (sqlo_join_reffed_outside (select_stmt, jt, vc->vc_tree->_.col_ref.prefix, vc->vc_tree->_.col_ref.name))
+	    t_set_push (res, t_box_copy_tree ((caddr_t) vc->vc_tree));
+	}
+      END_DO_SET ();
+    }
+}
+
+
 int
 sqlo_jt_dt_wrap (sqlo_t *so, ST **jptr, ST *select_stmt, int was_top, int replace_col_refs)
 {
@@ -2079,6 +2128,14 @@ sqlo_jt_dt_wrap (sqlo_t *so, ST **jptr, ST *select_stmt, int was_top, int replac
       if (sqlo_print_debug_output)
 	sqlo_box_print (jtm_prefix);
       sel = sqlp_stars ((ST **) t_list(1, t_list (3, COL_DOTTED, NULL, STAR)), (ST **) t_list (1, *jptr));
+      if (replace_col_refs)
+	{
+	  /* the star has the real cols; a virtual col the enclosing statement reads must be selected too or its references cannot be replaced */
+	  dk_set_t vcs = NULL;
+	  sqlo_jt_virtual_cols (so, *jptr, *jptr, select_stmt, &vcs);
+	  if (vcs)
+	    sel = (ST **) t_box_conc ((caddr_t) sel, (caddr_t) t_list_to_array (dk_set_nreverse (vcs)));
+	}
       texp = t_listst (9, TABLE_EXP,
 	  t_list (1,
 	    *jptr),
@@ -2291,20 +2348,22 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 }
 
 int
-sqlo_join_reffed_outside (ST *tree, ST *stop_at, char *prefix)
+sqlo_join_reffed_outside (ST *tree, ST *stop_at, char *prefix, char *name)
 {
+  /* a ref of prefix's col name, any col if name is NULL, outside stop_at */
   if (!IS_BOX_POINTER (tree) || tree == stop_at)
     return 0;
   else if (DV_TYPE_OF (tree) == DV_ARRAY_OF_POINTER)
     {
-      if (ST_COLUMN (tree, COL_DOTTED) && box_equal (prefix, tree->_.col_ref.prefix))
+      if (ST_COLUMN (tree, COL_DOTTED) && box_equal (prefix, tree->_.col_ref.prefix)
+	  && (!name || (STAR != tree->_.col_ref.name && !CASEMODESTRCMP (tree->_.col_ref.name, name))))
 	return 1;
       else
 	{
 	  int inx = 0;
 	  DO_BOX (ST *, elt, inx, ((ST **)tree))
 	    {
-	      if (sqlo_join_reffed_outside (elt, stop_at, prefix))
+	      if (sqlo_join_reffed_outside (elt, stop_at, prefix, name))
 		return 1;
 	    }
 	  END_DO_BOX;
@@ -2359,7 +2418,7 @@ sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t 
 	    ot = sqlo_cname_ot (so, rtb->_.table.prefix);
 	  else if (ST_P (rtb, DERIVED_TABLE))
 	    ot = sqlo_find_dt (so, rtb->_.table_ref.table);
-	  if (ot && !sqlo_join_reffed_outside (tree, (*tbp)->_.join.cond, ot->ot_new_prefix))
+	  if (ot && !sqlo_join_reffed_outside (tree, (*tbp)->_.join.cond, ot->ot_new_prefix, NULL))
 	    {
 	      if (sqlo_print_debug_output)
 		{

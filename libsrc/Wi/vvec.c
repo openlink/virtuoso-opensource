@@ -781,6 +781,13 @@ vvec_node_can_hold_overflow_ref (int hnsw_m)
 }
 
 
+#define VVEC_DIM_FITS_INLINE(m, dim) ((dim) <= vvec_max_inline_dimension (m))
+#define VVEC_MAX_HNSW_M (PAGE_SZ / (int) ((VVEC_MAX_LAYERS + 1) * sizeof (dp_addr_t)))
+/* hnsw_m is bounded first: a large one wraps the int slot arithmetic and seems to fit */
+#define VVEC_NODE_FITS_PAGE(m, dim) \
+  ((m) > 0 && (m) <= VVEC_MAX_HNSW_M && (VVEC_DIM_FITS_INLINE (m, dim) || vvec_node_can_hold_overflow_ref (m)))
+
+
 static void
 vvec_meta_set_i32 (buffer_desc_t * buf, int off, int32 v)
 {
@@ -3750,7 +3757,7 @@ vvec_insert_graph (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id, co
   vvec_meta_set_i64 (node, VVEC_NODE_D_ID, row_id_i64);
   vvec_float_set (node->bd_buffer + VVEC_NODE_MAGNITUDE, magnitude);
   memset (node->bd_buffer + VVEC_NODE_COUNTS, 0, PAGE_SZ - VVEC_NODE_COUNTS);
-  if (meta->vm_dimension > vvec_max_inline_dimension (meta->vm_hnsw_m))
+  if (!VVEC_DIM_FITS_INLINE (meta->vm_hnsw_m, meta->vm_dimension))
     {
       dp_addr_t overflow_head = 0;
       overflow_pages = vvec_write_overflow_vector (itc, meta, node->bd_page, vec, &overflow_head);
@@ -5292,7 +5299,8 @@ vvec_prepare_index_opts (query_instance_t * qi, caddr_t name, caddr_t table, cad
     sqlr_new_error ("42000", "VEC16", "Vector hnsw_m must be greater than zero.");
   if (ef_constr <= 0)
     sqlr_new_error ("42000", "VEC16", "Vector ef_construction must be greater than zero.");
-  if (dimension > vvec_max_inline_dimension (hnsw_m) && !vvec_node_can_hold_overflow_ref (hnsw_m))
+  /* a dimension left to the model is 0 here, checked again below */
+  if (!VVEC_NODE_FITS_PAGE (hnsw_m, dimension))
     sqlr_new_error ("42000", "VEC17", "Vector storage cannot fit node metadata for hnsw_m=%d.", hnsw_m);
   /* Passthrough (source_kind='vector') has no model: keep model_id = 0 and skip
    * the ONNX_MODELS resolution entirely. */
@@ -5344,6 +5352,8 @@ vvec_prepare_index_opts (query_instance_t * qi, caddr_t name, caddr_t table, cad
       if (dimension <= 0 || dimension > (0x7fffffff / (int) sizeof (float)))
         sqlr_new_error ("42000", "VEC15",
             "Model %s declares an unusable output dimension %d.", (char *) model, dimension);
+      if (!VVEC_NODE_FITS_PAGE (hnsw_m, dimension))
+        sqlr_new_error ("42000", "VEC17", "Vector storage cannot fit node metadata for hnsw_m=%d.", hnsw_m);
       res = (caddr_t *) vvec_opts_append_val ((caddr_t *) res, VVEC_OPT_DIMENSIONS, box_num (dimension));
     }
   if (VVEC_REDUCE_TRUNCATE == reduce && model_shape_dim <= 0)
@@ -6557,7 +6567,7 @@ vvec_bulk_serialize_packed (query_instance_t * qi, vvec_meta_t * meta, vvec_hnsw
   int n = h->count;
   int i, l, inx;
   int64 overflow_pages = 0;
-  int inline_dim = meta->vm_dimension <= vvec_max_inline_dimension (meta->vm_hnsw_m);
+  int inline_dim = VVEC_DIM_FITS_INLINE (meta->vm_hnsw_m, meta->vm_dimension);
   int dim = meta->vm_dimension;
   int *total_nb_arr;
   int *page_of_node, *slot_of_node;
@@ -6794,7 +6804,7 @@ vvec_fast_rebuild_estimated_bytes (int64 n, int dim, int m)
 static int64
 vvec_fast_rebuild_log_bytes (int64 n, int dim, int m)
 {
-  int inline_dim = dim <= vvec_max_inline_dimension (m);
+  int inline_dim = VVEC_DIM_FITS_INLINE (m, dim);
   int nb = vvec_node_layer_capacity (m, 0);
   int rec = vvec_cn_record_bytes (dim, 0, nb, !inline_dim);
   int64 per_page = VVEC_PK_DATA_USABLE / (rec > 0 ? rec : 1);
@@ -9186,6 +9196,9 @@ vvec_rdf_row_id_cmp (const void * a, const void * b)
 }
 
 
+/* knnSimilar's least search breadth, bif:vector_search's default ef_search */
+#define VEC_SIMILAR_MIN_EF 100
+
 /* knnSimilar's k nearest literals for the current set's text and k, searched once and
    kept as (text, k, rows by distance, rows by RO_ID); each row is (RO_ID, distance). */
 static caddr_t *
@@ -9207,7 +9220,8 @@ vvec_rdf_hits (vvec_search_node_t * vsn, caddr_t * inst)
       caddr_t emb;
       vvec_require_key (qi, "knnSimilar", vsn->vsn_vec_key->key_name, &meta);
       emb = vvec_embed_text_for_model (qi, "knnSimilar", vsn->vsn_vec_key->key_name, &meta, text);
-      rows = vvec_search_run_key (qi, "knnSimilar", vsn->vsn_vec_key, emb, k, MAX (k, ef_search));
+      /* with ef = k a small k stops at the first local optimum */
+      rows = vvec_search_run_key (qi, "knnSimilar", vsn->vsn_vec_key, emb, k, MAX (MAX (k, ef_search), VEC_SIMILAR_MIN_EF));
       dk_free_tree (emb);
     }
   if (!IS_BOX_POINTER (rows) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (rows))

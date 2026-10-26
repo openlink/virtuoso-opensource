@@ -967,6 +967,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tcontneg
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcontneg.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: content negotiation -- tcontneg.sql"
+      exit 1
+   fi
+
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"

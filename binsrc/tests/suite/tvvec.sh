@@ -222,6 +222,18 @@ RUN_VEC_SQL tvvec_multi_index
 #  so it runs unconditionally.
 RUN_VEC_SQL tvvec_sql_backfill
 
+#  Embedding-provider API keys (registry names ONNX_API_KEY_*) are readable
+#  and writable by DBA accounts and DBA-owned procedures only.  Its own key,
+#  account and procedures; needs neither vonnx nor a provider, so it runs
+#  unconditionally.
+RUN_VEC_SQL tvvec_api_keys
+
+#  CREATE VECTOR INDEX refuses an hnsw_m whose graph node cannot fit on a
+#  page (VEC17) whether the dimension is given or taken from the model, and
+#  however large hnsw_m is.  Self-contained with its own tables and
+#  test_embedding models, so it runs unconditionally.
+RUN_VEC_SQL tvvec_page_fit
+
 #  ---- Phase 3: SPARQL reduce (in-core test_embedding, always) ---------------
 RUN_VEC_SQL tvec_sparql_reduce
 

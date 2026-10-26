@@ -3752,7 +3752,7 @@ txs_ext_fti_get (query_instance_t * qi, slice_id_t slice, caddr_t ext_fti, caddr
 /* First we query the remote with HTTP */
   resp_text = bif_http_client_impl ((caddr_t *)qi, &err, NULL /* no need in args */, "HTTP call to an external free-text indexing server",
     call_uri, NULL /*uid*/, NULL /*pwd*/, NULL /*method*/, NULL /*http_hdr*/, NULL /*body*/,
-    NULL /*cert*/, NULL /*pk_pass*/, 600000 /*time_out*/, 0 /*time_out_is_null*/, NULL /*proxy*/, NULL /*ca_certs*/, 0 /*insecure*/,
+    NULL /*cert*/, NULL /*pk_pass*/, 600000 /*time_out*/, 0 /*time_out_is_null*/, NULL /*proxy*/, NULL /*ca_certs*/, HTTP_CLI_INSECURE_UNSET /*insecure*/,
     0 /* ret_arg_index */,
     3,
     NULL, NULL, 0);

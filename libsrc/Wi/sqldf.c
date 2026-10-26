@@ -1986,6 +1986,8 @@ sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	  dfe->_.col.is_fixed = 0;
 	  if (!dfe->_.col.vc)
 	    t_set_push (&tb_dfe->_.table.out_cols, (void*) dfe);
+	  else if (HR_REF == tb_dfe->_.table.hash_role)
+	    t_set_pushnew (&tb_dfe->_.table.vc_out_cols, (void*) dfe);
 	  tb_dfe->dfe_unit = 0;
 	  sqlo_rdf_col_card (so, tb_dfe, dfe);
 	  if (HR_REF == tb_dfe->_.table.hash_role)
@@ -6069,6 +6071,25 @@ return 1;
 extern int chash_per_query_pct;
 
 
+/* a hash fill join cannot carry a virtual col of OT, so none if the statement reads one */
+int
+sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot)
+{
+  ST * tree = dt_ot ? dt_ot->ot_dt : NULL;
+  if (!ot->ot_virtual_cols)
+    return 0;
+  if (!tree)
+    return 1;
+  DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
+    {
+      if (box_is_subtree ((caddr_t) tree, (caddr_t) vc->vc_tree))
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
+
 int
 sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score_ret)
 {
@@ -6095,6 +6116,9 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
   if (!hash_join_enable || (mode && OPT_HASH != mode))
     return 0;
+  if (!enable_chash_join
+      || !(so->so_sc->sc_cc && so->so_sc->sc_cc->cc_query ? so->so_sc->sc_cc->cc_query->qr_proc_vectored : enable_vec))
+    return 0;	/* only the vectored chash join is maintained: with either off this would be a row hash.  No query when only scoping a view */
   if (DFE_TABLE != dfe->dfe_type || dfe_ot (dfe)->ot_is_proc_view)
     return 0;
   if (OPT_HASH != mode && ot && ot->ot_table && tb_is_rdf_quad (ot->ot_table)
@@ -6171,7 +6195,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dfe->_.table.text_pred = NULL; /* if text pred on inner table of hash join, the filler will always do the text pred */
   sqlo_check_col_pred_placed (dfe);
   sqlo_hash_redundant_keys (so, &hash_refs, &hash_keys);
-  if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys, ref_arity))
+  if (!sqlo_virtual_cols_refd (super_ot, ot)
+      && sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys, ref_arity))
     {
       sqlo_check_col_pred_placed (dfe);
       fill_unit = fill_dfe->dfe_unit;
@@ -6217,6 +6242,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dfe->_.table.index_path = NULL; /* if hash is better, no inx path */
   dfe->_.table.hash_role = HR_REF;
   dfe->_.table.out_cols = NULL;
+  dfe->_.table.vc_out_cols = NULL;
   dfe->_.table.hash_filler = fill_dfe;
   dfe->dfe_unit = HASH_LOOKUP_COST + HASH_ROW_COST * MAX (0, dfe->dfe_arity - 1);
   fill_dfe->dfe_unit = fill_unit;
