@@ -2014,10 +2014,63 @@ sst_freq_factor (search_stream_t * sst)
 }
 
 
+/* best fuzzy similarity and distance of sst's word streams on d_id; reads only, unlike sst_scores () */
+static void
+sst_fuzzy_metrics (search_stream_t * sst, d_id_t * d_id, double * sim_ret, int * dist_ret)
+{
+  int inx;
+  if (DVC_MATCH != d_id_cmp (d_id, &sst->sst_d_id))
+    return;
+  if (SRC_WORD == sst->sst_op)
+    {
+      word_stream_t * wst = (word_stream_t *) sst;
+      if (wst->wst_fuzzy_similarity <= 0.0)
+	return;
+      if (wst->wst_fuzzy_similarity > *sim_ret)
+	*sim_ret = wst->wst_fuzzy_similarity;
+      if (wst->wst_fuzzy_distance >= 0 && (*dist_ret < 0 || wst->wst_fuzzy_distance < *dist_ret))
+	*dist_ret = wst->wst_fuzzy_distance;
+      return;
+    }
+  if (!sst->sst_terms)
+    return;
+  DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
+    {
+      sst_fuzzy_metrics (term, d_id, sim_ret, dist_ret);
+    }
+  END_DO_BOX;
+}
+
+
+/* a phrase or NEAR gets its words' best SIMILARITY and DISTANCE as BOP_AND does; returns the bonus of its least similar word, 0 if none is fuzzy */
+static int
+sst_fuzzy_terms (search_stream_t * sst, d_id_t * d_id)
+{
+  double least = 0.0;
+  int inx;
+  DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
+    {
+      double sim = 0.0;
+      int dist = -1;
+      sst_fuzzy_metrics (term, d_id, &sim, &dist);
+      if (sim <= 0.0)
+	continue;
+      if (0.0 == least || sim < least)
+	least = sim;
+      if (sim > sst->sst_best_similarity)
+	sst->sst_best_similarity = sim;
+      if (dist >= 0 && (sst->sst_best_distance < 0 || dist < sst->sst_best_distance))
+	sst->sst_best_distance = dist;
+    }
+  END_DO_BOX;
+  return (int) (least * 100);
+}
+
+
 void
 sst_scores (search_stream_t * sst, d_id_t * d_id)
 {
-  int score, raw_score, mult;
+  int score, raw_score, mult, fuzzy_bonus;
   int inx;
   if (DVC_MATCH != d_id_cmp (d_id, &sst->sst_d_id))
     return;
@@ -2123,6 +2176,12 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 	  score += first->sst_score;
 	}
       END_DO_SET();
+      /* the metrics of its words, and the bonus of its least similar word, as a fuzzy word gets its own; none for exact words */
+      fuzzy_bonus = sst_fuzzy_terms (sst, d_id);
+      if (score)
+	score += fuzzy_bonus;
+      if (raw_score)
+	raw_score += fuzzy_bonus;
       sst->sst_raw_score = raw_score;
       sst->sst_score = score;
       return;
@@ -2157,6 +2216,8 @@ sst_scores (search_stream_t * sst, d_id_t * d_id)
 	  score += first->sst_score;
 	}
       END_DO_SET();
+      /* the metrics of its words; the bonus is in the scores of its top terms */
+      sst_fuzzy_terms (sst, d_id);
       sst->sst_raw_score = raw_score;
       sst->sst_score = score;
       return;

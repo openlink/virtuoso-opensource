@@ -689,6 +689,69 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": J7 fuzzy + boolean OR STATE=" $STATE " rows=" $ROWCNT "\n";
 
 -- ============================================================
+-- Group N — Phrases and NEAR keep the fuzzy metrics
+-- ============================================================
+ECHO BOTH "\n--- Group N: Phrases and NEAR keep the fuzzy metrics ---\n";
+
+-- A phrase and NEAR match through fuzzy words as AND does.  Their rows must
+-- report the words' SIMILARITY and DISTANCE as AND's rows do - the best of
+-- the words, here the exact 'Pro' - and an exact phrase must outrank a
+-- misspelt one.  Columns: rows, least SIMILARITY, sum of DISTANCE.
+create table fuzzy_phrase (id integer not null primary key, name varchar);
+create text index on fuzzy_phrase (name) with key id;
+insert into fuzzy_phrase values (1, 'MacBook Pro 14');
+insert into fuzzy_phrase values (2, 'MacBook Air 13');
+insert into fuzzy_phrase values (3, 'MacBook Pro 16');
+
+create procedure fuzzy_phrase_score (in q varchar)
+{
+  declare s integer;
+  select max (SCORE) into s from fuzzy_phrase where contains (name, q, 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+  return s;
+}
+;
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, 'Macbok AND Pro', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N1 AND = " $LAST[1] " (expected 2 1.000 0)\n";
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, '"Macbok Pro"', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N2 phrase = " $LAST[1] " (expected 2 1.000 0, as AND)\n";
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, 'Macbok NEAR Pro', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N3 NEAR = " $LAST[1] " (expected 2 1.000 0, as AND)\n";
+
+-- both words misspelt: Macbok 0.857 (1 edit), Prro 0.75 (1 edit)
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, '"Macbok Prro"', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 0.857 2"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N4 phrase of two misspelt words = " $LAST[1] " (expected 2 0.857 2)\n";
+
+SELECT case when fuzzy_phrase_score ('"MacBook Pro"') > fuzzy_phrase_score ('"Macbok Pro"') then 'yes' else 'no' end;
+ECHO BOTH $IF $EQU $LAST[1] "yes"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N5 exact phrase outranks the misspelt one: " $LAST[1] "\n";
+
+-- guards: the phrase score without fuzzy options, and NEAR's score, unchanged
+SELECT max (SCORE) FROM fuzzy_phrase WHERE contains (name, '"MacBook Pro"');
+ECHO BOTH $IF $EQU $LAST[1] 2823  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N6 phrase without fuzzy, SCORE = " $LAST[1] " (expected 2823)\n";
+
+SELECT fuzzy_phrase_score ('Macbok NEAR Pro');
+ECHO BOTH $IF $EQU $LAST[1] 1496  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N7 fuzzy NEAR, SCORE = " $LAST[1] " (expected 1496)\n";
+
+drop procedure fuzzy_phrase_score;
+drop table fuzzy_phrase;
+
+-- ============================================================
 -- Group K — Candidate scan and option checks
 -- ============================================================
 ECHO BOTH "\n--- Group K: Candidate scan and option checks ---\n";
