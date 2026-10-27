@@ -748,6 +748,51 @@ ECHO BOTH $IF $EQU $LAST[1] 1496  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": N7 fuzzy NEAR, SCORE = " $LAST[1] " (expected 1496)\n";
 
+-- the same through SPARQL bif:contains: a fuzzy phrase takes the bonus of its least similar word,
+-- 100 for an exact word, 85 for Macbok (0.857) and 75 for Prro (0.75)
+SPARQL CLEAR GRAPH <http://example.com/phrase>;
+DB.DBA.TTLP ('
+<http://example.com/m1> <http://example.com/name> "MacBook Pro 14" .
+<http://example.com/m2> <http://example.com/name> "MacBook Air 13" .
+<http://example.com/m3> <http://example.com/name> "MacBook Pro 16" .
+', '', 'http://example.com/phrase', 0);
+DB.DBA.vt_batch_update ('DB.DBA.RDF_OBJ', 'OFF', 1);
+DB.DBA.vt_batch_update ('DB.DBA.RDF_OBJ', 'ON', 1);
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N8 loaded phrase data STATE=" $STATE "\n";
+
+SPARQL SELECT (max (?sc) as ?m) (count (*) as ?c) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"Macbok Pro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2908  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N9 SPARQL fuzzy phrase, SCORE = " $LAST[1] " (expected 2908)\n";
+ECHO BOTH $IF $EQU $LAST[2] 2  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N9 SPARQL fuzzy phrase, rows = " $LAST[2] " (expected 2)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"MacBook Pro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2923  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N10 SPARQL exact phrase with fuzzy, SCORE = " $LAST[1] " (expected 2923, above the misspelt one)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"Macbok Prro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2898  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N11 SPARQL phrase of two misspelt words, SCORE = " $LAST[1] " (expected 2898, the bonus of Prro)\n";
+
+-- guards: the phrase score without fuzzy options, and NEAR's score, unchanged
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"MacBook Pro"' OPTION (score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2823  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N12 SPARQL phrase without fuzzy, SCORE = " $LAST[1] " (expected 2823)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains 'Macbok NEAR Pro' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 1496  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N13 SPARQL fuzzy NEAR, SCORE = " $LAST[1] " (expected 1496)\n";
+
+SPARQL CLEAR GRAPH <http://example.com/phrase>;
+
 drop procedure fuzzy_phrase_score;
 drop table fuzzy_phrase;
 
