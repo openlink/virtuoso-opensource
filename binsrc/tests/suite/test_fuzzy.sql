@@ -547,6 +547,84 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": H4 SPARQL FUZZY_PREFIX 1 = " $ROWCNT " rows (expected >0)\n";
 
 -- ============================================================
+-- Group M — Parallel candidate scan of a large prefix range
+-- ============================================================
+ECHO BOTH "\n--- Group M: Parallel candidate scan of a large prefix range ---\n";
+
+-- 250,000 six-letter words that all start with JO, so the default prefix
+-- makes every one a candidate for 'johnson'; their byte after the prefix is
+-- one of 26 letters.  Plus the bare prefix and a word with a digit after it.
+-- Every thread count must find what the single-threaded scan finds: the
+-- workers share the range by the words in it, and the scan's limits do not
+-- depend on how many there are.
+create table fuzzy_vocab (id integer not null primary key, w varchar);
+create procedure fuzzy_vocab_fill (in n integer)
+{
+  declare i integer;
+  for (i := 0; i < n; i := i + 1)
+    insert into fuzzy_vocab (id, w) values (i + 1, concat ('JO', chr (65 + mod (i / 17576, 26)), chr (65 + mod (i / 676, 26)), chr (65 + mod (i / 26, 26)), chr (65 + mod (i, 26))));
+  insert into fuzzy_vocab (id, w) values (n + 1, 'JO');
+  insert into fuzzy_vocab (id, w) values (n + 2, 'JO9ZZZ');
+}
+;
+fuzzy_vocab_fill (250000);
+create text index on fuzzy_vocab (w) with key id;
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M0 250002 words with a text index STATE=" $STATE "\n";
+
+create procedure fuzzy_vocab_count (in qp integer, in q varchar, in algo varchar, in threshold float)
+{
+  declare old_qp, n integer;
+  old_qp := __dbf_set ('enable_qp', qp);
+  declare exit handler for sqlstate '*' { __dbf_set ('enable_qp', old_qp); return __SQL_STATE || ' ' || __SQL_MESSAGE; };
+  select count (*) into n from fuzzy_vocab where contains (w, q, 'fuzzy', algo, 'fuzzy_threshold', threshold);
+  __dbf_set ('enable_qp', old_qp);
+  return n;
+}
+;
+
+SELECT fuzzy_vocab_count (1, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M1 single-threaded scan of 250002 candidates = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (2, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M2 enable_qp 2 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (4, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M3 enable_qp 4 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (8, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M4 enable_qp 8 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (8, 'johnson', 'jaro_winkler', 0.9);
+ECHO BOTH $IF $EQU $LAST[1] 163  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M5 enable_qp 8, threshold 0.9 = " $LAST[1] " (expected 163, as single-threaded)\n";
+
+-- JO9ZZZ is the only word whose byte after the prefix is a digit
+SELECT fuzzy_vocab_count (4, 'jo9zzz', 'levenshtein', 0.8);
+ECHO BOTH $IF $EQU $LAST[1] 15  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M6 enable_qp 4, digit after the prefix = " $LAST[1] " (expected 15, as single-threaded)\n";
+
+SELECT fuzzy_vocab_count (8, 'jxyz', 'levenshtein', 0.8);
+ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M7 enable_qp 8, empty prefix range = " $LAST[1] " (expected 0)\n";
+
+drop procedure fuzzy_vocab_count;
+drop procedure fuzzy_vocab_fill;
+drop table fuzzy_vocab;
+
+-- ============================================================
 -- Group I — SPARQL algorithm validation (P1-5)
 -- ============================================================
 ECHO BOTH "\n--- Group I: SPARQL algorithm validation ---\n";

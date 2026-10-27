@@ -2584,6 +2584,12 @@ wst_from_range (sst_tctx_t *tctx, ptrlong range_flags, const char * word, caddr_
  * existing single-threaded scan is used.
  */
 
+#if defined (__GNUC__) || defined (__clang__)
+#define FUZZY_WORK_ADD(p, n) __atomic_add_fetch ((p), (n), __ATOMIC_RELAXED)
+#else
+#define FUZZY_WORK_ADD(p, n) (InterlockedExchangeAdd64 ((volatile LONG64 *) (p), (n)) + (n))
+#endif
+
 /* Args passed to each parallel fuzzy scan worker. */
 typedef struct fuzzy_scan_args_s
 {
@@ -2594,7 +2600,7 @@ typedef struct fuzzy_scan_args_s
   double fsa_threshold;
   int fsa_ngram_n;
   int fsa_calc_distance;	/* 1 if DISTANCE output requested (Levenshtein only) */
-  double fsa_max_work;		/* this worker's share of FUZZY_MAX_SCAN_WORK */
+  int64 *fsa_work;		/* all workers' work, against FUZZY_MAX_SCAN_WORK as a single scan's */
   dbe_key_t *fsa_key;
   slice_id_t fsa_slice;
   /* output – worker fills these */
@@ -2621,7 +2627,6 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
 {
   fuzzy_scan_args_t *args = (fuzzy_scan_args_t *) (ptrlong) unbox (((caddr_t *)av)[0]);
   long query_len = (long) strlen (args->fsa_query);
-  double work = 0;
   int is_first = 1;
   caddr_t limit;
   *err_ret = NULL;
@@ -2673,8 +2678,8 @@ fuzzy_scan_worker (caddr_t av, caddr_t *err_ret)
       if (!hit_word)
         break;
 
-      work += FUZZY_SCAN_SEEK_WORK + fuzzy_work (query_len, box_length (hit_word) - 1, args->fsa_algo);
-      if (work > args->fsa_max_work)
+      if (FUZZY_WORK_ADD (args->fsa_work, (int64) (FUZZY_SCAN_SEEK_WORK + fuzzy_work (query_len, box_length (hit_word) - 1, args->fsa_algo)))
+	  > FUZZY_MAX_SCAN_WORK)
         {
           *err_ret = fuzzy_scan_too_much_work (args->fsa_query);
           dk_free_box (hit_word);
@@ -2750,6 +2755,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
       if (n_parts > 8) n_parts = 8;	/* cap: diminishing returns past 8 */
       {
         fuzzy_scan_args_t *args_arr;
+        int64 scan_work = 0;
         async_queue_t *aq;
         caddr_t err = NULL;
         int i;
@@ -2787,7 +2793,7 @@ wst_from_fuzzy (sst_tctx_t *tctx, ptrlong range_flags, const char *word)
             a->fsa_threshold = threshold;
             a->fsa_ngram_n = ngram_n;
             a->fsa_calc_distance = tctx->tctx_calc_distance;
-            a->fsa_max_work = FUZZY_MAX_SCAN_WORK / n_parts;
+            a->fsa_work = &scan_work;
             a->fsa_key = tctx->tctx_table->tb_primary_key;
             a->fsa_slice = tctx->tctx_qi->qi_client->cli_slice;
             a->fsa_matches = NULL;
