@@ -2379,6 +2379,10 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       REF_SSL (res, txs->txs_end_id);
       REF_SSL (res, txs->txs_ext_fti);
       REF_SSL (res, txs->txs_precision);
+      REF_SSL (res, txs->txs_fuzzy_algo);
+      REF_SSL (res, txs->txs_fuzzy_threshold);
+      REF_SSL (res, txs->txs_fuzzy_n);
+      REF_SSL (res, txs->txs_fuzzy_prefix);
       ASG_SSL (res, all_res, txs->txs_main_range_out);
       ASG_SSL (res, all_res, txs->txs_attr_range_out);
       ASG_SSL (res, all_res, txs->txs_score);

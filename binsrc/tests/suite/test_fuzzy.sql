@@ -708,6 +708,82 @@ drop procedure fuzzy_parallel_count;
 drop procedure fuzzy_knn_outputs;
 
 -- ============================================================
+-- Group L — Fuzzy options passed as parameters
+-- ============================================================
+ECHO BOTH "\n--- Group L: Fuzzy options passed as parameters ---\n";
+
+-- A prepared statement passes the options as parameters.  With ORDER BY on
+-- the key the table drives the plan and contains () checks one row at a
+-- time, so each parameter must reach the text node for every row.
+create procedure fuzzy_exec_count (in stmt varchar, in params any)
+{
+  declare st, msg varchar;
+  declare md, rows any;
+  st := '00000';
+  exec (stmt, st, msg, params, 100, md, rows);
+  if (st <> '00000')
+    return st || ' ' || msg;
+  return length (rows);
+}
+;
+
+create procedure fuzzy_exec_sum (in stmt varchar, in params any)
+{
+  declare st, msg varchar;
+  declare md, rows any;
+  declare s, inx integer;
+  st := '00000';
+  exec (stmt, st, msg, params, 100, md, rows);
+  if (st <> '00000')
+    return st || ' ' || msg;
+  s := 0;
+  for (inx := 0; inx < length (rows); inx := inx + 1)
+    s := s + rows[inx][0];
+  return s;
+}
+;
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5)', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L1 parameter algorithm, contains drives = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', 0.5) order by id', vector ());
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L2 literal algorithm, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5) order by id', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L3 parameter algorithm, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', ?) order by id', vector (0.5));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L4 parameter threshold, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''ngram_cosine'', ''fuzzy_threshold'', 0.5, ''fuzzy_n'', ?) order by id', vector (2));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L5 parameter FUZZY_N, order by id = " $LAST[1] " (expected 3)\n";
+
+-- prefix 1 also reaches Janson
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', 0.5, ''fuzzy_prefix'', ?) order by id', vector (1));
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L6 parameter FUZZY_PREFIX, order by id = " $LAST[1] " (expected 4)\n";
+
+-- distances 0, 2 and 2: Johnson, Jonsson, Johansson
+SELECT fuzzy_exec_sum ('select DISTANCE, id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5) order by id', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L7 sum of DISTANCE, parameter algorithm, order by id = " $LAST[1] " (expected 4)\n";
+
+drop procedure fuzzy_exec_count;
+drop procedure fuzzy_exec_sum;
+
+-- ============================================================
 -- Cleanup
 -- ============================================================
 drop table fuzzy_test;
