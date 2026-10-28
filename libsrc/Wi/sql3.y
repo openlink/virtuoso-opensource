@@ -2345,15 +2345,18 @@ opt_group_by_clause
  		}
 	| GROUP BY ROLLUP '(' ordering_spec_commalist ')'
 		{
-			dk_set_t group_by_full = 0;
-			dk_set_t first_group_by_key = (dk_set_t)$5;
-			while (first_group_by_key)
-			{
-			  group_by_full = t_NCONC (group_by_full, t_CONS (t_list_to_array (first_group_by_key), NULL));
-			  first_group_by_key = first_group_by_key->next;
-			}
-			group_by_full = t_NCONC (group_by_full, t_CONS (t_list_to_array (NULL), NULL));
-			$$ = (ST*) t_list_to_array (group_by_full);
+			dk_set_t sets = NULL;
+			caddr_t *keys = (caddr_t *) t_list_to_array ($5);
+			int len = BOX_ELEMENTS (keys);
+			t_set_push (&sets, keys);
+			while (--len > 0)
+			  {
+			    caddr_t *prefix = (caddr_t *) t_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+			    memcpy (prefix, keys, len * sizeof (caddr_t));
+			    t_set_push (&sets, prefix);
+			  }
+			t_set_push (&sets, t_list (0));
+			$$ = (ST*) t_list_to_array (dk_set_nreverse (sets));
 		}
 	| GROUP BY CUBE '(' ordering_spec_commalist ')'
 		{

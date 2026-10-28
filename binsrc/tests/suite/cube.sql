@@ -66,14 +66,14 @@ ECHO BOTH $IF $EQU $LAST[4] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (k) = " $LAST[4] "\n";
 ECHO BOTH $IF $EQU $LAST[6] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (t) = " $LAST[6] "\n";
-ECHO BOTH $IF $EQU $ROWCNT 76 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 86 "PASSED" "***FAILED";
 eCHO BOTH ": TOTAL ROWS = " $ROWCNT "\n";
 
 select j, 0, k, 0, t, 0, sum (i) from ROLLUP1 group by j,k,t;
 
-select NULL, 1, k, 0, t, 0, sum (i) from ROLLUP1 group by k,t;
+select j, 0, k, 0, NULL, 1, sum (i) from ROLLUP1 group by j,k;
 
-select NULL, 1, NULL, 1, t, 0, sum (i) from ROLLUP1 group by t;
+select j, 0, NULL, 1, NULL, 1, sum (i) from ROLLUP1 group by j;
 
 select NULL, 1, NULL, 1, NULL, 1, sum (i) from ROLLUP1;
 
@@ -116,7 +116,7 @@ ECHO BOTH $IF $EQU $LAST[5] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (k) = " $LAST[5] "\n";
 ECHO BOTH $IF $EQU $LAST[7] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (t) = " $LAST[7] "\n";
-ECHO BOTH $IF $EQU $ROWCNT 76 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 86 "PASSED" "***FAILED";
 ECHO BOTH ": TOTAL ROWS = " $ROWCNT "\n";
 
 create procedure test_cube ()
@@ -148,7 +148,7 @@ ECHO BOTH $IF $EQU $LAST[5] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (k) = " $LAST[5] "\n";
 ECHO BOTH $IF $EQU $LAST[7] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (t) = " $LAST[7] "\n";
-ECHO BOTH $IF $EQU $ROWCNT 76 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 86 "PASSED" "***FAILED";
 ECHO BOTH ": TOTAL ROWS = " $ROWCNT "\n";
 
 --bug #8788
@@ -169,6 +169,53 @@ select distinct GJ
 	     ) MM;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
 ECHO BOTH ": B8788 the grouping bug : wrong placement of the grouping () call_exp dfe.\n";
+
+-- ROLLUP (K, V) means GROUPING SETS ((K, V), (K), ()): the subtotals are by
+-- K, the first key.  It used to give the subtotals of ROLLUP (V, K).
+create table ROLLUP_ORDER (K varchar, V varchar, N integer);
+insert into ROLLUP_ORDER values ('a', 'x', 1);
+insert into ROLLUP_ORDER values ('a', 'y', 2);
+insert into ROLLUP_ORDER values ('b', 'x', 3);
+-- The rows of q as (k v total), NULL as -, sorted, so the row order of the
+-- query does not matter.
+create procedure ROLLUP_ORDER_ROWS (in q varchar) returns varchar
+{
+  declare st, msg, meta, rows, strs any;
+  declare res varchar;
+  declare inx integer;
+  st := '00000';
+  exec (q, st, msg, vector (), 0, meta, rows);
+  if (st <> '00000')
+    return concat ('error ', st, ' ', msg);
+  strs := make_array (length (rows), 'any');
+  for (inx := 0; inx < length (rows); inx := inx + 1)
+    strs[inx] := concat ('(', coalesce (rows[inx][0], '-'), ' ', coalesce (rows[inx][1], '-'), ' ', cast (rows[inx][2] as varchar), ')');
+  strs := __vector_sort (strs);
+  res := '';
+  for (inx := 0; inx < length (strs); inx := inx + 1)
+    res := concat (res, strs[inx]);
+  return res;
+}
+;
+select ROLLUP_ORDER_ROWS ('select K, V, sum (N) from ROLLUP_ORDER group by rollup (K, V)');
+ECHO BOTH $IF $EQU $LAST[1] "(- - 6)(a - 3)(a x 1)(a y 2)(b - 3)(b x 3)" "PASSED" "***FAILED";
+ECHO BOTH ": ROLLUP (K, V) = " $LAST[1] "\n";
+select ROLLUP_ORDER_ROWS ('select V, K, sum (N) from ROLLUP_ORDER group by rollup (V, K)');
+ECHO BOTH $IF $EQU $LAST[1] "(- - 6)(x - 4)(x a 1)(x b 3)(y - 2)(y a 2)" "PASSED" "***FAILED";
+ECHO BOTH ": ROLLUP (V, K) = " $LAST[1] "\n";
+select ROLLUP_ORDER_ROWS ('select K, V, sum (N) from ROLLUP_ORDER group by grouping sets ((K, V), (K), ())');
+ECHO BOTH $IF $EQU $LAST[1] "(- - 6)(a - 3)(a x 1)(a y 2)(b - 3)(b x 3)" "PASSED" "***FAILED";
+ECHO BOTH ": GROUPING SETS ((K, V), (K), ()) = " $LAST[1] "\n";
+SPARQL INSERT DATA { GRAPH <urn:test:rollup> {
+  <urn:test:r1> <urn:test:k> "a" ; <urn:test:v> "x" ; <urn:test:n> 1 .
+  <urn:test:r2> <urn:test:k> "a" ; <urn:test:v> "y" ; <urn:test:n> 2 .
+  <urn:test:r3> <urn:test:k> "b" ; <urn:test:v> "x" ; <urn:test:n> 3 . } };
+select ROLLUP_ORDER_ROWS ('SPARQL SELECT ?k ?v (SUM (?n) AS ?total) FROM <urn:test:rollup> WHERE { ?r <urn:test:k> ?k ; <urn:test:v> ?v ; <urn:test:n> ?n } GROUP BY ROLLUP (?k, ?v)');
+ECHO BOTH $IF $EQU $LAST[1] "(- - 6)(a - 3)(a x 1)(a y 2)(b - 3)(b x 3)" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL ROLLUP (?k, ?v) = " $LAST[1] "\n";
+SPARQL CLEAR GRAPH <urn:test:rollup>;
+drop procedure ROLLUP_ORDER_ROWS;
+drop table ROLLUP_ORDER;
 
 
 -- GROUPING SETS
