@@ -16787,6 +16787,10 @@ create function DB.DBA.RDF_STAR_TT_GET_O (in node_iri any, in p_val any) returns
   raw_obj := rdf_triple_object_impl (tt);
   if (__tag (raw_obj) = __tag of vector)
     return raw_obj;
+  /* A number is encoded with its type (i:, n:, f:, d:) and decoded as that
+     number: keep it, so ?o binds to 42, not "42", and mints the same term. */
+  if (isnumeric (raw_obj))
+    return raw_obj;
   result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (raw_obj);
   if (result is null) return null;
   /* If the C layer returned UNAME, the value is definitely an IRI */

@@ -288,8 +288,74 @@ echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
 echo both ": 2q both explicit reifiers reify a triple term naming the inserted blank node\n";
 
 --------------------------------------------------------------------------
+-- 3. A number in the object of a triple term, bound to a variable by a
+--    triple-term pattern, keeps its datatype.
+--
+--    The triple-term IRI encodes 42 as the integer it is ("i:42"), and the
+--    decoder returns an integer, but RDF_STAR_TT_GET_O cast every object to
+--    varchar: <<( ?s ?p ?o )>> bound ?o to "42"^^xsd:string.  Arithmetic and
+--    comparisons on ?o failed, and a template that mints the term again from
+--    ?o -- the SPARQL 1.2 Update pattern of DELETE/INSERT over triple terms --
+--    minted <<( :x :age "42" )>>, a different term from the stored one.
+--    The decimal and the double are loaded with TTLP, whose encoding keeps
+--    their type; the SPARQL path's encoding of them is a separate defect.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:num>;
+
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:num> {
+  :c1 rdf:reifies <<( :x :age 42 )>> .
+  :c4 rdf:reifies <<( :x :name "Forty-two" )>> . } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 3a INSERT DATA of triple terms with an integer and a string object\n";
+
+DB.DBA.TTLP ('@prefix : <http://ex.org/> . @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+:c2 rdf:reifies <<( :x :ratio 2.5 )>> .
+:c3 rdf:reifies <<( :x :weight 1.5e0 )>> .', '', 'urn:trdfstar_update:num');
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT (datatype (?o) = xsd:integer) FROM <urn:trdfstar_update:num> WHERE { :c1 rdf:reifies <<( ?s ?p ?o )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 3b the integer object binds as an xsd:integer\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT (?o + 1) FROM <urn:trdfstar_update:num> WHERE { :c1 rdf:reifies <<( ?s ?p ?o )>> };
+echo both $if $equ $LAST[1] 43 "PASSED" "***FAILED";
+echo both ": 3c arithmetic on the bound integer: ?o + 1 = 43\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT (datatype (?o) = xsd:decimal) FROM <urn:trdfstar_update:num> WHERE { :c2 rdf:reifies <<( ?s ?p ?o )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 3d the decimal object binds as an xsd:decimal\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT (datatype (?o) = xsd:double) FROM <urn:trdfstar_update:num> WHERE { :c3 rdf:reifies <<( ?s ?p ?o )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 3e the double object binds as an xsd:double\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:num> WHERE { ?c rdf:reifies <<( ?s ?p ?o )>> FILTER (?o > 40) };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 3f FILTER (?o > 40) over the bound objects matches the integer only\n";
+
+-- 3g. guard: a string object stays the string it was.
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT (datatype (?o) = xsd:string && ?o = "Forty-two") FROM <urn:trdfstar_update:num> WHERE { :c4 rdf:reifies <<( ?s ?p ?o )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 3g the string object still binds as the same xsd:string\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:num>;
 
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn_ann>;
