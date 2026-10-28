@@ -4129,217 +4129,12 @@ create function DB.DBA.RDF_TRIPLES_TO_TTL_ENV (in tcount integer, in env_flags i
 }
 ;
 
--- RDF 1.2 CONSTRUCT serialization: fold reification patterns into triple-term IRIs.
--- Scans triples for generated blank-node reifier rdf:reifies urn:rdf-star:triple:... patterns.
--- Replaces generated reifier subjects/objects with triple-term IRIs.
--- Removes rdf:reifies triples only when they are support rows for rewritten triples.
-create procedure DB.DBA.RDF_TRIPLES_FOLD_TRIPLE_TERMS (inout triples any)
-{
-  declare tcount, tctr, new_count integer;
-  declare reifies_iri varchar;
-  declare reifier_to_tt, reifier_use_count any;
-  declare new_triples any;
-
-  tcount := length (triples);
-  if (0 = tcount) return;
-
-  reifies_iri := 'http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies';
-  reifier_to_tt := dict_new (__min (tcount, 256));
-  reifier_use_count := dict_new (__min (tcount, 256));
-
-  -- Pass 1: Find rdf:reifies triples and build generated-reifier -> triple-term IRI mapping
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare s_str, s_key, p_str, o_str varchar;
-      p_str := cast (triples[tctr][1] as varchar);
-      if (p_str = reifies_iri)
-        {
-          o_str := cast (triples[tctr][2] as varchar);
-          if (o_str is not null and length (o_str) > 20 and "LEFT" (o_str, 20) = 'urn:rdf-star:triple:')
-            {
-              s_str := cast (triples[tctr][0] as varchar);
-              s_key := null;
-              if (s_str is not null)
-                {
-                  if ("LEFT" (s_str, 9) = 'nodeID://')
-                    s_key := concat ('bn:', subseq (s_str, 9));
-                  else if ("LEFT" (s_str, 2) = '_:')
-                    {
-                      s_key := subseq (s_str, 2);
-                      if ("LEFT" (s_key, 1) = 'v')
-                        s_key := subseq (s_key, 1);
-                      s_key := concat ('bn:', s_key);
-                    }
-                }
-              if (s_key is not null)
-                dict_put (reifier_to_tt, s_key, o_str);
-            }
-        }
-    }
-
-  if (0 = dict_size (reifier_to_tt)) return;
-
-  -- Pass 1b: Count non-rdf:reifies usage of mapped reifier bnodes.
-  -- If a reifier is only present in rdf:reifies triples, keep those triples.
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare s_str, s_key, p_str, o_str, o_key varchar;
-      declare use_count integer;
-      p_str := cast (triples[tctr][1] as varchar);
-      if (p_str = reifies_iri)
-        goto next_use_count;
-      s_str := cast (triples[tctr][0] as varchar);
-      s_key := null;
-      if (s_str is not null)
-        {
-          if ("LEFT" (s_str, 9) = 'nodeID://')
-            s_key := concat ('bn:', subseq (s_str, 9));
-          else if ("LEFT" (s_str, 2) = '_:')
-            {
-              s_key := subseq (s_str, 2);
-              if ("LEFT" (s_key, 1) = 'v')
-                s_key := subseq (s_key, 1);
-              s_key := concat ('bn:', s_key);
-            }
-        }
-      if (s_key is not null and dict_get (reifier_to_tt, s_key, null) is not null)
-        {
-          use_count := cast (dict_get (reifier_use_count, s_key, 0) as integer);
-          dict_put (reifier_use_count, s_key, use_count + 1);
-        }
-      o_str := cast (triples[tctr][2] as varchar);
-      o_key := null;
-      if (o_str is not null)
-        {
-          if ("LEFT" (o_str, 9) = 'nodeID://')
-            o_key := concat ('bn:', subseq (o_str, 9));
-          else if ("LEFT" (o_str, 2) = '_:')
-            {
-              o_key := subseq (o_str, 2);
-              if ("LEFT" (o_key, 1) = 'v')
-                o_key := subseq (o_key, 1);
-              o_key := concat ('bn:', o_key);
-            }
-        }
-      if (o_key is not null and dict_get (reifier_to_tt, o_key, null) is not null)
-            {
-              use_count := cast (dict_get (reifier_use_count, o_key, 0) as integer);
-              dict_put (reifier_use_count, o_key, use_count + 1);
-            }
-      next_use_count: ;
-    }
-
-  -- Pass 2: Rewrite non-rdf:reifies triples and remove only consumed support rdf:reifies triples
-  new_triples := make_array (tcount, 'any');
-  new_count := 0;
-
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare s_val, p_val, o_val any;
-      declare s_str, s_key, p_str, o_str, o_key, replacement varchar;
-      declare use_count integer;
-      s_val := triples[tctr][0];
-      p_val := triples[tctr][1];
-      o_val := triples[tctr][2];
-      s_str := cast (s_val as varchar);
-      p_str := cast (p_val as varchar);
-
-      if (p_str = reifies_iri)
-        {
-          s_key := null;
-          if (s_str is not null)
-            {
-              if ("LEFT" (s_str, 9) = 'nodeID://')
-                s_key := concat ('bn:', subseq (s_str, 9));
-              else if ("LEFT" (s_str, 2) = '_:')
-                {
-                  s_key := subseq (s_str, 2);
-                  if ("LEFT" (s_key, 1) = 'v')
-                    s_key := subseq (s_key, 1);
-                  s_key := concat ('bn:', s_key);
-                }
-            }
-          if (s_key is not null and dict_get (reifier_to_tt, s_key, null) is not null)
-            {
-              use_count := cast (dict_get (reifier_use_count, s_key, 0) as integer);
-              if (use_count > 0)
-                goto next_tt_triple;
-            }
-          -- Keep explicit rdf:reifies rows when the reifier is not consumed elsewhere.
-          if (length (triples[tctr]) > 3)
-            new_triples[new_count] := vector (s_val, p_val, o_val, triples[tctr][3]);
-          else
-            new_triples[new_count] := vector (s_val, p_val, o_val);
-          new_count := new_count + 1;
-          goto next_tt_triple;
-        }
-
-      -- Replace generated reifier subject with triple-term IRI
-      s_key := null;
-      if (s_str is not null)
-        {
-          if ("LEFT" (s_str, 9) = 'nodeID://')
-            s_key := concat ('bn:', subseq (s_str, 9));
-          else if ("LEFT" (s_str, 2) = '_:')
-            {
-              s_key := subseq (s_str, 2);
-              if ("LEFT" (s_key, 1) = 'v')
-                s_key := subseq (s_key, 1);
-              s_key := concat ('bn:', s_key);
-            }
-        }
-      replacement := case when s_key is null then null else dict_get (reifier_to_tt, s_key, null) end;
-      if (replacement is not null)
-        s_val := __uname (replacement);
-
-      -- Replace generated reifier object with triple-term IRI (for nested cases)
-      o_str := cast (o_val as varchar);
-      o_key := null;
-      if (o_str is not null)
-        {
-          if ("LEFT" (o_str, 9) = 'nodeID://')
-            o_key := concat ('bn:', subseq (o_str, 9));
-          else if ("LEFT" (o_str, 2) = '_:')
-            {
-              o_key := subseq (o_str, 2);
-              if ("LEFT" (o_key, 1) = 'v')
-                o_key := subseq (o_key, 1);
-              o_key := concat ('bn:', o_key);
-            }
-        }
-      if (o_key is not null)
-        {
-          replacement := dict_get (reifier_to_tt, o_key, null);
-          if (replacement is not null)
-            o_val := __uname (replacement);
-        }
-
-      if (length (triples[tctr]) > 3)
-        new_triples[new_count] := vector (s_val, p_val, o_val, triples[tctr][3]);
-      else
-        new_triples[new_count] := vector (s_val, p_val, o_val);
-      new_count := new_count + 1;
-
-      next_tt_triple: ;
-    }
-
-  -- Compact the array if triples were removed
-  if (new_count < tcount)
-    {
-      declare result any;
-      result := make_array (new_count, 'any');
-      for (tctr := 0; tctr < new_count; tctr := tctr + 1)
-        result[tctr] := new_triples[tctr];
-      triples := result;
-    }
-  else
-    triples := new_triples;
-}
-;
-
 -- Write a single RDF value in Turtle/N-Triples syntax with triple-term support.
 -- Handles IRIs, bnodes, literals, and nested triple-term IRIs (recursive).
-create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
+-- A triple term is written as <<( S P O )>>.  RDF 1.2 has no triple term
+-- subjects: one in subject position (is_subj) is written as the reifying
+-- triple << S P O >>, the nearest form Turtle reads.
+create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any, in is_subj integer := 0)
 {
   declare val_str varchar;
   declare val_is_iri integer;
@@ -4350,7 +4145,7 @@ create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
   val_str := cast (val as varchar);
   if (val_str is null)
     { http ('""', ses); return; }
-  -- Nested triple-term IRI: resolve and write << S P O >>
+  -- Triple-term IRI: resolve and write <<( S P O )>>
   if (length (val_str) > 20 and "LEFT" (val_str, 20) = 'urn:rdf-star:triple:')
     {
       declare ts, tp, to_ any;
@@ -4359,13 +4154,13 @@ create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
       to_ := DB.DBA.RDF_STAR_TT_GET_O (val_str, null);
       if (ts is not null and tp is not null and to_ is not null)
         {
-          http ('<< ', ses);
+          http (case when is_subj then '<< ' else '<<( ' end, ses);
           DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, ts);
           http (' ', ses);
           DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, tp);
           http (' ', ses);
           DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, to_);
-          http (' >>', ses);
+          http (case when is_subj then ' >>' else ' )>>' end, ses);
           return;
         }
       -- Fallback: write as plain IRI if components not resolvable
@@ -4426,28 +4221,19 @@ end_pred_sort: ;
 end_subj_sort: ;
   }
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  DB.DBA.RDF_TRIPLES_FOLD_TRIPLE_TERMS (triples);
-  tcount := length (triples);
-  if (0 = tcount)
-    {
-      http ('# Empty TURTLE\n', ses);
-      return;
-    }
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       if (DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][0]) or DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][2]))
         {
-          -- Flush any pending C BIF triple state
-          if (isstring (env[2]) and length (env[2]) > 0)
+          -- Close the statement http_ttl_triple left open: env[1], the namespace
+          -- of its subject, is a string while one is open, and 0 resets it
+          if (not isinteger (env[1]))
             {
               http (' .\n', ses);
-              aset (env, 2, '');
-              aset (env, 3, '');
-              aset (env, 4, '');
-              aset (env, 5, 0);
+              env[1] := 0;
             }
           -- Write entire triple in SQL with triple-term syntax
-          DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0]);
+          DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0], 1);
           http ('\t', ses);
           DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][1]);
           http ('\t', ses);
@@ -4459,8 +4245,8 @@ end_subj_sort: ;
           http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
         }
     }
-  -- Write final period only if C BIF wrote something
-  if (isstring (env[2]) and length (env[2]) > 0)
+  -- Write final period only if C BIF left a statement open
+  if (not isinteger (env[1]))
     http (' .', ses);
 }
 ;
@@ -4489,13 +4275,6 @@ end_subj_sort: ;
   rowvector_graph_sort (triples, 3, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  DB.DBA.RDF_TRIPLES_FOLD_TRIPLE_TERMS (triples);
-  tcount := length (triples);
-  if (0 = tcount)
-    {
-      http ('# Empty TriG\n', ses);
-      return;
-    }
   for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
     {
       if (not DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][0]) and not DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][2]))
@@ -4514,12 +4293,12 @@ end_subj_sort: ;
         {
           if (DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][0]) or DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][2]))
             {
-              if (isstring (env[2]) and length (env[2]) > 0)
+              if (not isinteger (env[1]))
                 {
                   http (' .\n', ses);
-                  aset (env, 2, ''); aset (env, 3, ''); aset (env, 4, ''); aset (env, 5, 0);
+                  env[1] := 0;
                 }
-              DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0]);
+              DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0], 1);
               http ('\t', ses);
               DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][1]);
               http ('\t', ses);
@@ -4529,7 +4308,7 @@ end_subj_sort: ;
           else
             http_ttl_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
         }
-      if (isstring (env[2]) and length (env[2]) > 0)
+      if (not isinteger (env[1]))
         http (' .\n}\n', ses);
       else
         http ('}\n', ses);
@@ -4545,13 +4324,12 @@ end_subj_sort: ;
             {
               if (prev_g_iri <> '')
                 {
-                  if (isstring (env[2]) and length (env[2]) > 0)
+                  if (not isinteger (env[1]))
                     http (' .\n}\n', ses);
                   else
                     http ('}\n', ses);
                 }
               env[1] := 0;
-              aset (env, 2, ''); aset (env, 3, ''); aset (env, 4, ''); aset (env, 5, 0);
               http ('<', ses);
               http_escape (g_iri, 12, ses, 1, 1);
               http ('> = {\n', ses);
@@ -4559,12 +4337,12 @@ end_subj_sort: ;
             }
           if (DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][0]) or DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][2]))
             {
-              if (isstring (env[2]) and length (env[2]) > 0)
+              if (not isinteger (env[1]))
                 {
                   http (' .\n', ses);
-                  aset (env, 2, ''); aset (env, 3, ''); aset (env, 4, ''); aset (env, 5, 0);
+                  env[1] := 0;
                 }
-              DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0]);
+              DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0], 1);
               http ('\t', ses);
               DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][1]);
               http ('\t', ses);
@@ -4577,7 +4355,7 @@ end_subj_sort: ;
     }
   if (prev_g_iri <> '')
     {
-      if (isstring (env[2]) and length (env[2]) > 0)
+      if (not isinteger (env[1]))
         http (' .\n}\n', ses);
       else
         http ('}\n', ses);
@@ -4598,18 +4376,11 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NT (inout triples any, inout ses any)
     }
   env := vector (0, 0, 0);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  DB.DBA.RDF_TRIPLES_FOLD_TRIPLE_TERMS (triples);
-  tcount := length (triples);
-  if (0 = tcount)
-    {
-      http ('# Empty NT\n', ses);
-      return;
-    }
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       if (DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][0]) or DB.DBA.RDF_IS_TRIPLE_TERM_IRI (triples[tctr][2]))
         {
-          DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0]);
+          DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][0], 1);
           http (' ', ses);
           DB.DBA.RDF_TTL_WRITE_SS_VALUE (ses, triples[tctr][1]);
           http (' ', ses);
@@ -15434,7 +15205,6 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_STAR_REIFIER_IRI to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STAR_TT_CHECK to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_TRIPLES_FOLD_TRIPLE_TERMS to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TTL_WRITE_SS_VALUE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_IS_TRIPLE_TERM_IRI to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QUAD_URI to SPARQL_UPDATE',
