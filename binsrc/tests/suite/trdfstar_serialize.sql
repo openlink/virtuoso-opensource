@@ -40,6 +40,10 @@ create function TRDFSTAR_SER_WRITE (in fmt varchar, in graph_iri varchar) return
     DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
   else if (fmt = 'TRIG')
     DB.DBA.RDF_TRIPLES_TO_TRIG (triples, ses);
+  else if (fmt = 'NICE_TTL')
+    DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ses);
+  else if (fmt = 'HTML_NICE_TTL_BODY')
+    DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
   else
     signal ('22023', 'TRDFSTAR_SER_WRITE: unknown format');
   return string_output_string (ses);
@@ -252,6 +256,46 @@ echo both $if $equ $LAST[1] 3 "PASSED" "***FAILED";
 echo both ": 3b TriG with a plain triple after a triple term triple reads back (" $LAST[1] " triples)\n";
 
 --------------------------------------------------------------------------
+-- 4. The "nice" Turtle writer and triple terms.
+--
+--    DB.DBA.RDF_TRIPLES_TO_NICE_TTL (application/x-nice-turtle, DAV RDF
+--    resources) and the body of the HTML Turtle page, which
+--    RDF_TRIPLES_TO_HTML_NICE_TTL writes with RDF_TRIPLES_TO_NICE_TTL_IMPL,
+--    have no triple term syntax: a triple term was written as its internal
+--    IRI, a prefixed name like ns2:i1234 of an @prefix
+--    <urn:rdf-star:triple:...:>, which other stores read as an unrelated IRI.
+--------------------------------------------------------------------------
+
+select case when strstr (TRDFSTAR_SER_WRITE ('NICE_TTL', 'urn:trdfstar_serialize:rt'), 'urn:rdf-star:triple:') is null then 'none' else 'found' end;
+echo both $if $equ $LAST[1] "none" "PASSED" "***FAILED";
+echo both ": 4a nice Turtle writes no internal triple term IRI\n";
+
+select case when strstr (TRDFSTAR_SER_WRITE ('NICE_TTL', 'urn:trdfstar_serialize:rt'), '<<( ') is null then 'none' else 'found' end;
+echo both $if $equ $LAST[1] "found" "PASSED" "***FAILED";
+echo both ": 4b nice Turtle writes a triple term as <<( s p o )>>\n";
+
+TRDFSTAR_SER_ROUND_TRIP ('NICE_TTL', 'urn:trdfstar_serialize:rt', 'urn:trdfstar_serialize:rt:nice');
+select TRDFSTAR_SER_SHAPE ('urn:trdfstar_serialize:rt:nice');
+echo both $if $equ $LAST[1] "7 3 4 1 1" "PASSED" "***FAILED";
+echo both ": 4c the nice Turtle output reads back as the same graph (shape " $LAST[1] ")\n";
+
+select case when strstr (TRDFSTAR_SER_WRITE ('HTML_NICE_TTL_BODY', 'urn:trdfstar_serialize:rt'), 'urn:rdf-star:triple:') is null then 'none' else 'found' end;
+echo both $if $equ $LAST[1] "none" "PASSED" "***FAILED";
+echo both ": 4d the HTML nice Turtle page body writes no internal triple term IRI\n";
+
+select case when strstr (TRDFSTAR_SER_WRITE ('HTML_NICE_TTL_BODY', 'urn:trdfstar_serialize:rt'), '&lt;&lt;( ') is null then 'none' else 'found' end;
+echo both $if $equ $LAST[1] "found" "PASSED" "***FAILED";
+echo both ": 4e the HTML nice Turtle page body writes a triple term as <<( s p o )>>, escaped\n";
+
+SPARQL CLEAR GRAPH <urn:trdfstar_serialize:nice>;
+DB.DBA.TTLP ('@prefix : <http://example.com/ns#> . :s :p [ :q "x" ] .', '', 'urn:trdfstar_serialize:nice', 0);
+
+select case when strstr (TRDFSTAR_SER_WRITE ('NICE_TTL', 'urn:trdfstar_serialize:nice'), '[') is not null
+  and strstr (TRDFSTAR_SER_WRITE ('NICE_TTL', 'urn:trdfstar_serialize:nice'), '_:vb') is null then 'nice' else 'plain' end;
+echo both $if $equ $LAST[1] "nice" "PASSED" "***FAILED";
+echo both ": 4f nice Turtle of a graph without triple terms still nests a blank node object in [ ]\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -263,5 +307,7 @@ SPARQL CLEAR GRAPH <urn:trdfstar_serialize:rt:trig>;
 SPARQL CLEAR GRAPH <urn:trdfstar_serialize:mix>;
 SPARQL CLEAR GRAPH <urn:trdfstar_serialize:mix:ttl>;
 SPARQL CLEAR GRAPH <urn:trdfstar_serialize:mix:trig>;
+SPARQL CLEAR GRAPH <urn:trdfstar_serialize:rt:nice>;
+SPARQL CLEAR GRAPH <urn:trdfstar_serialize:nice>;
 
 ECHO BOTH "COMPLETED: RDF 1.2 triple term serialization tests (trdfstar_serialize.sql)\n";

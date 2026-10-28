@@ -7278,6 +7278,24 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (inout triples any, in env_
 -- Start the actual serialization
   env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
   tcount := length (triples);
+  -- The nice layout has no triple term syntax: triples that hold a triple term
+  -- go to the plain Turtle writer, HTML-escaped on a page (TTL_ENV_HTML_OUTPUT)
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      if (rdf_istriple_impl (triples[tctr][0]) or rdf_istriple_impl (triples[tctr][2]))
+        {
+          if (bit_and (env_flags, 256))
+            {
+              declare plain any;
+              plain := string_output ();
+              DB.DBA.RDF_TRIPLES_TO_TTL (triples, plain);
+              http_value (string_output_string (plain), 0, ses);
+            }
+          else
+            DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+          return;
+        }
+    }
   prefixes_are_printed := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     prefixes_are_printed := prefixes_are_printed + http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
