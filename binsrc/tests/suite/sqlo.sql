@@ -1922,6 +1922,58 @@ echo both $if $equ $state OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": Bug#18907 control exp with aggregate outside of dt\n";
 
+-- A SERVICE whose body is one sub-SELECT is sent as that sub-SELECT.  To an
+-- endpoint with no loaded service description (SPARQL 1.0 is assumed) an
+-- aliased projection, (?c AS ?country), is sent as ?c, so the names read
+-- back must be the names sent; they were the aliases, and every such query
+-- failed at run time (SPARQL_REXEC: unexpected variable name 'c').  Checked
+-- on the SQL text, without calling the endpoint: every name in
+-- expected_vars must be a ?name of qtext_template.
+create procedure DB.DBA.SINV_ALIAS_T_AGREE (in q varchar) returns integer
+{
+  declare t, qt, ev, vname varchar;
+  declare a, b, n integer;
+  t := cast (sparql_to_sql_text (q) as varchar);
+  a := strstr (t, 'qtext_template =');
+  b := strstr (t, 'qtext_posmap =');
+  if (a is null or b is null)
+    return -1;
+  qt := subseq (t, a, b);
+  a := strstr (t, 'expected_vars = vector (');
+  if (a is null)
+    return -2;
+  ev := subseq (t, a + length ('expected_vars = vector ('));
+  ev := subseq (ev, 0, strchr (ev, ')'));
+  n := 0;
+  while (strchr (ev, '''') is not null)
+    {
+      ev := subseq (ev, strchr (ev, '''') + 1);
+      b := strchr (ev, '''');
+      vname := subseq (ev, 0, b);
+      ev := subseq (ev, b + 1);
+      if (strstr (qt, concat ('?', vname)) is null)
+        return 0;
+      n := n + 1;
+    }
+  return case when n > 0 then 1 else -3 end;
+}
+;
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?country WHERE { SERVICE <http://data.example.org/sparql> { SELECT (?c AS ?country) WHERE { ?c a <http://example.org/Country> } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT (?c AS ?country): the names expected back are the names sent: " $last[1] "\n";
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?country ?cap ?label WHERE { SERVICE <http://data.example.org/sparql> { SELECT (?c AS ?country) ?cap (?l AS ?label) WHERE { ?c <http://example.org/capital> ?cap ; <http://example.org/label> ?l } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT with two aliases and a variable: " $last[1] "\n";
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> { SELECT ?c WHERE { ?c a <http://example.org/Country> } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT without an alias (guard): " $last[1] "\n";
+
 sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
 sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
 select __box_flags ("u") from (sparql select (URI(CONCAT('http://host/',?o)) as ?u) from <urn:b19410> { ?s <#pred> ?o  } order by ?u) dt;

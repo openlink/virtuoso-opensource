@@ -9891,8 +9891,11 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       int rset_len = BOX_ELEMENTS (rset_varnames);
       int rvals_len = BOX_ELEMENTS (rvals);
       int vname_ctr, expn_ctr;
+      caddr_t *sent_varnames;
       if (rset_len != rvals_len)
         goto failed_single_subq_optimization; /* see below */
+/* Names the endpoint sends back: (?x AS ?alias) is printed as ?x to a SPARQL 1.0 endpoint (see ssg_sdprint_tree) */
+      sent_varnames = (caddr_t *)t_alloc_box (rset_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       for (vname_ctr = rset_len; vname_ctr--; /* no step */)
         {
           caddr_t rset_varname = rset_varnames[vname_ctr];
@@ -9917,10 +9920,28 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
             }
           if (0 > expn_ctr)
             goto failed_single_subq_optimization; /* see below */
+          sent_varnames[vname_ctr] = rset_varname;
+          if ((SPAR_ALIAS == SPART_TYPE (rvals [expn_ctr])) && !rvals [expn_ctr]->_.alias.was_expanded
+            && !((SSG_SD_BI | SSG_SD_SPARQL11_MORE) & ssg->ssg_sd_flags) )
+            {
+              SPART *arg = rvals [expn_ctr];
+              while (SPAR_ALIAS == SPART_TYPE (arg))
+                arg = arg->_.alias.arg;
+              if ((SPAR_VARIABLE == SPART_TYPE (arg)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (arg)))
+                sent_varnames[vname_ctr] = arg->_.var.vname;
+            }
+        }
+/* Two aliases of one variable would come back as one name twice */
+      for (vname_ctr = rset_len; vname_ctr--; /* no step */)
+        {
+          int vname_ctr2;
+          for (vname_ctr2 = vname_ctr; vname_ctr2--; /* no step */)
+            if (!strcmp (sent_varnames[vname_ctr], sent_varnames[vname_ctr2]))
+              goto failed_single_subq_optimization; /* see below */
         }
       if ((NULL != limit_expn) && (DV_LONG_INT == DV_TYPE_OF (limit_expn)) && (0 == sparp_req_top_has_limofs (single_subq)))
         single_subq->_.req_top.limit = limit_expn;
-      final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
+      final_rset_varnames_ret[0] = sent_varnames;
       ssg_sdprint_tree (ssg, single_subq);
       goto query_text_is_composed; /* see below */
 failed_single_subq_optimization: ;
