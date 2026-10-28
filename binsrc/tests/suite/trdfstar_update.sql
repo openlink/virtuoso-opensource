@@ -874,6 +874,42 @@ echo both $if $equ $state "OK" "PASSED" "***FAILED";
 echo both ": 8f WHERE { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } compiles\n";
 
 --------------------------------------------------------------------------
+-- 9. In WHERE, an annotation on a triple whose object is a triple term with
+--    a variable.
+--
+--    The annotation's reifier is constrained by
+--    FILTER (?r_tt = RDF_STAR_TT_IRI (?S, ?P, <<( :a :b ?O )>>)), added before
+--    the annotated triple, whose triple-term object binds ?O afterwards; so
+--    the filter saw ?O unbound and
+--      ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |}
+--    (the WHERE of the W3C test update-tripleterm-05) never matched.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:attv>;
+
+SPARQL PREFIX : <http://example.com/ns#>
+INSERT { GRAPH <urn:trdfstar_update:attv> { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } }
+WHERE { VALUES (?S ?P ?O ?Y ?Z) { (:s :p :o :src :x) } };
+
+select 99;
+SPARQL PREFIX : <http://example.com/ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:attv> WHERE { ?S ?P <<( :a :b ?O )>> {| :src ?Z |} };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 9a WHERE { ?S ?P <<( :a :b ?O )>> {| :src ?Z |} } matches the annotated triple\n";
+
+select 99;
+SPARQL PREFIX : <http://example.com/ns#>
+SELECT ?O FROM <urn:trdfstar_update:attv> WHERE { ?S ?P <<( :a :b ?O )>> {| :src :x |} };
+echo both $if $equ $LAST[1] "http://example.com/ns#o" "PASSED" "***FAILED";
+echo both ": 9b and binds ?O from the triple term\n";
+
+select 99;
+SPARQL PREFIX : <http://example.com/ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:attv> WHERE { ?S ?P <<( :a :b ?O )>> {| :src :nobody |} };
+echo both $if $equ $LAST[1] 0 "PASSED" "***FAILED";
+echo both ": 9c an annotation the triple does not have does not match\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -886,6 +922,7 @@ SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
 drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:attv>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:atto>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:atto_g>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:enc>;

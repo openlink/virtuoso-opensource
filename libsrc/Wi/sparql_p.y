@@ -2599,11 +2599,23 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		   (s, p, o).  A block right after a ~ is about that reifier, and is
 		   covered by the reifier suffixes below. */
 		  SPART *main_s = NULL, *main_p = NULL, *main_o = $1;
+		  SPART *tt_obj_node = NULL;
 		  SPART *ann_graph = NULL;
 		  int ann_graph_pushed_for_main = 0;
 		  ccaddr_t s_str = NULL, p_str = NULL, o_str = NULL;
 		  dk_set_t ann_subjs = sparp_arg->sparp_ann_block_subjects;
 		  dk_set_t acc_triples;
+		  dk_set_t obj_gp_st = sparp_env()->spare_context_gp_subtypes;
+		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)) &&
+		    !(obj_gp_st && (CONSTRUCT_L == (ptrlong)(obj_gp_st->data))) )
+		    {
+		      /* In WHERE a triple-term object is matched through a generated blank
+		         node, bound by the triple below.  The annotation and reifier
+		         constraints use that node, not the term's own variables, which its
+		         decomposition binds only after them. */
+		      tt_obj_node = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+		      main_o = tt_obj_node;
+		    }
 		  sparp_arg->sparp_ann_block_subjects = NULL;
 		  sparp_arg->sparp_ann_pending_reifier = NULL;
 		  acc_triples = (dk_set_t)(sparp_env()->spare_acc_triples->data);
@@ -2725,7 +2737,7 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		        dk_set_t tt_gp_st_r = sparp_env()->spare_context_gp_subtypes;
 		        int tt_in_ctor_r = (tt_gp_st_r && (CONSTRUCT_L == (ptrlong)(tt_gp_st_r->data)));
 		        {
-		          SPART *main_s_r = NULL, *main_p_r = NULL, *main_o_r = $1;
+		          SPART *main_s_r = NULL, *main_p_r = NULL, *main_o_r = ((NULL != tt_obj_node) ? tt_obj_node : $1);
 		          ccaddr_t s_str_r = NULL, p_str_r = NULL, o_str_r = NULL;
 		          if (NULL != sparp_env()->spare_context_subjects)
 		            main_s_r = (SPART *)(sparp_env()->spare_context_subjects->data);
@@ -2863,7 +2875,8 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		        int has_known_o = (tt_obj && SPAR_IS_LIT_OR_QNAME (tt_obj));
 		        SPART *tt_bnode;
 		        dk_set_t bind_revlist = NULL;
-		        tt_bnode = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+		        tt_bnode = ((NULL != tt_obj_node) ? tt_obj_node :
+		          spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1) );
 		        spar_gp_add_triplelike (sparp_arg, NULL, NULL, NULL, tt_bnode, NULL, NULL, 0x0);
 		        if (has_known_p)
 		          {
