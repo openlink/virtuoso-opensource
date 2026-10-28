@@ -506,6 +506,8 @@ typedef struct sparp_s {
   int sparp_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
   int sparp_global_num_offset;		/*!< If \c sparp_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from \c sparp_global_num_offset up, some number of first params are system-specific. */
   dk_set_t sparp_ann_reifier_suffixes;	/*!< Accumulated reifier nodes from ~ annotation suffixes, consumed by spar_object_with_ann */
+  dk_set_t sparp_ann_block_subjects;	/*!< Subjects of the {| |} blocks of the current object that follow no reifier, each made a reifier by spar_object_with_ann */
+  SPART *sparp_ann_pending_reifier;	/*!< Reifier of the ~ suffix just parsed: a {| |} block right after it is about that reifier */
 } sparp_t;
 
 

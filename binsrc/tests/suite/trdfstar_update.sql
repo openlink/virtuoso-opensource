@@ -637,6 +637,85 @@ echo both ": 5i a stored urn:rdf-star:reifier: reifier still matches << s p o >>
 drop procedure TRDFSTAR_UPDATE_LEGACY_REIFIER;
 
 --------------------------------------------------------------------------
+-- 6. Every annotation block reifies the triple, once.
+--
+--    RDF 1.2: in s p o ~ {| ... |} the block is about the reifier the ~
+--    makes, and each block that follows no reifier gets a fresh reifier of
+--    its own, as the Turtle loader does.  The SPARQL grammar instead gave a
+--    block after a bare ~ a reifier of its own, so INSERT stored two reifiers,
+--    one with nothing to say, and a WHERE pattern had two unrelated reifier
+--    variables; and of two blocks on one triple only the last was made a
+--    reifier, leaving the first block's properties on a node that reified
+--    nothing.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_two>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_where>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_two_ttl>;
+
+-- 6a. a block after a bare ~ annotates that reifier: one reifier.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:ab> { :d :e :f ~ {| :src :y |} . } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 6a INSERT DATA of :d :e :f ~ {| :src :y |}\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT (DISTINCT ?r) FROM <urn:trdfstar_update:ab> WHERE { ?r rdf:reifies ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6b one reifier\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:ab> WHERE { ?r rdf:reifies <<( :d :e :f )>> ; :src :y . FILTER (isBLANK (?r)) };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6c and it is the blank node that carries :src :y\n";
+
+-- 6d. two blocks on one triple: two reifiers, each with its block.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:ab_two> { :a :b :c {| :p1 :o1 |} {| :p2 :o2 |} . } };
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:ab_two> WHERE {
+  ?r1 rdf:reifies <<( :a :b :c )>> ; :p1 :o1 .
+  ?r2 rdf:reifies <<( :a :b :c )>> ; :p2 :o2 .
+  FILTER (?r1 != ?r2) };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6d {| :p1 :o1 |} {| :p2 :o2 |}: two reifiers, each reifies the triple\n";
+
+-- 6e. the same shape as the Turtle loader stores, annotation by annotation.
+DB.DBA.TTLP ('@prefix : <http://ex.org/> . :d :e :f ~ {| :src :y |} .', '', 'urn:trdfstar_update:ab_ttl');
+DB.DBA.TTLP ('@prefix : <http://ex.org/> . :a :b :c {| :p1 :o1 |} {| :p2 :o2 |} .', '', 'urn:trdfstar_update:ab_two_ttl');
+select 99;
+select (case when
+    (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:ab'))
+  = (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:ab_ttl'))
+  and
+    (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:ab_two'))
+  = (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:ab_two_ttl'))
+  then 1 else 0 end);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6e as many quads as TTLP stores for each of the two annotations\n";
+
+-- 6f. in WHERE, the block after ~ constrains that reifier: over a triple
+--     with one bare reifier and one annotated reifier there is one match.
+DB.DBA.TTLP ('@prefix : <http://ex.org/> . :g :h :i ~ . :g :h :i {| :src :z |} .', '', 'urn:trdfstar_update:ab_where');
+select 99;
+SPARQL PREFIX : <http://ex.org/>
+SELECT COUNT(*) FROM <urn:trdfstar_update:ab_where> WHERE { :g :h :i ~ {| :src :z |} };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6f WHERE { :g :h :i ~ {| :src :z |} } matches the annotated reifier only\n";
+
+-- 6g. guard: ~ ?r {| |} binds ?r to the annotated reifier.
+select 99;
+SPARQL PREFIX : <http://ex.org/>
+SELECT COUNT(*) FROM <urn:trdfstar_update:ab_where> WHERE { :g :h :i ~ ?r {| :src :z |} };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 6g WHERE { :g :h :i ~ ?r {| :src :z |} } matches once\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -649,6 +728,11 @@ SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
 drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_two>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_where>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_two_ttl>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:reif>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_user>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_forms>;
