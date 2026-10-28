@@ -522,6 +522,121 @@ echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
 echo both ": 4p DELETE { << ?s ?p ?o >> ... } is rejected: an unnamed reifier is a blank node\n";
 
 --------------------------------------------------------------------------
+-- 5. An unnamed reifier is a fresh blank node.
+--
+--    When << s p o >>, a bare ~ or {| |} names no reifier, RDF 1.2 makes the
+--    reifier a fresh blank node, and so does the Turtle loader.  SPARQL INSERT
+--    instead rewrote every blank-node subject of an rdf:reifies triple, made
+--    by the template or written by the user, into the IRI
+--    urn:rdf-star:reifier:<the triple term>
+--    (RDF_TRIPLES_CANONICALIZE_GENERATED_REIFIERS, run on every insert batch):
+--    two annotations of the same triple became one reifier carrying both, and
+--    a reifier named inside another triple term was left as a blank node with
+--    no triples.  A reifier written as an IRI is the user's and stays one node.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_user>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_forms>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_nested>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_tmpl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_named>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_legacy>;
+
+-- 5a. the reifier of an annotation is a blank node.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif> { :bob :name "Bob" {| :claimedBy :alice |} } };
+select 99;
+SPARQL PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT (isBLANK (?r)) FROM <urn:trdfstar_update:reif> WHERE { ?r rdf:reifies ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 5a the reifier of an annotation is a blank node\n";
+
+-- 5b. a second annotation of the same triple is a second reifier, and
+--     neither carries the other's claim.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif> { :bob :name "Bob" {| :claimedBy :carol |} } };
+select 99;
+SPARQL PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT (DISTINCT ?r) FROM <urn:trdfstar_update:reif> WHERE { ?r rdf:reifies ?t };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 5b two annotations of one triple are two reifiers\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif> WHERE { ?r :claimedBy :alice , :carol };
+echo both $if $equ $LAST[1] 0 "PASSED" "***FAILED";
+echo both ": 5c no reifier carries both claims\n";
+
+-- 5d. blank-node reifiers written by the user stay the distinct nodes they are.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif_user> {
+  _:r1 rdf:reifies <<( :bob :name "Bob" )>> ; :src :x .
+  _:r2 rdf:reifies <<( :bob :name "Bob" )>> ; :src :y . } };
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif_user> WHERE { ?r rdf:reifies ?t ; :src ?src . FILTER (isBLANK (?r)) FILTER NOT EXISTS { ?r :src ?other . FILTER (?other != ?src) } };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 5d _:r1 and _:r2 stay two blank-node reifiers, one source each\n";
+
+-- 5e. the reifier of << s p o >> and of a bare ~ is a blank node.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif_forms> { << :a :b :c >> :src :x . :d :e :f ~ . } };
+select 99;
+SPARQL PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif_forms> WHERE { ?r rdf:reifies ?t FILTER (isBLANK (?r)) };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 5e the reifiers of << s p o >> and of ~ are blank nodes\n";
+
+-- 5f. a reifier named inside another triple term keeps its triples.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif_nested> { << :a :b << :c :d :e >> >> :src :x . } };
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif_nested> WHERE { ?r2 rdf:reifies <<( :a :b ?r1 )>> ; :src :x . ?r1 rdf:reifies <<( :c :d :e )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 5f << :a :b << :c :d :e >> >>: the outer term names the inner reifier, which reifies <<( :c :d :e )>>\n";
+
+-- 5g. an INSERT template makes a fresh reifier per solution.
+SPARQL PREFIX : <http://ex.org/>
+INSERT { GRAPH <urn:trdfstar_update:reif_tmpl> { :a :b :c {| :src ?n |} } } WHERE { VALUES ?n { 1 2 } };
+select 99;
+SPARQL PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT (DISTINCT ?r) FROM <urn:trdfstar_update:reif_tmpl> WHERE { ?r rdf:reifies ?t };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 5g two solutions of an INSERT template make two reifiers\n";
+
+-- 5h. guard: a reifier named with an IRI is one node, however often it is written.
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif_named> { :a :b :c ~ :r {| :src :y |} } };
+SPARQL PREFIX : <http://ex.org/>
+INSERT DATA { GRAPH <urn:trdfstar_update:reif_named> { :a :b :c ~ :r {| :src :z |} } };
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif_named> WHERE { ?r rdf:reifies ?t ; :src :y , :z . FILTER (?r = :r) };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 5h the named reifier :r is one node with both sources\n";
+
+-- 5i. guard: a reifier stored in the old content-addressed IRI form still
+--     reads back through << s p o >>.
+create procedure TRDFSTAR_UPDATE_LEGACY_REIFIER ()
+{
+  declare tt, reif varchar;
+  tt := DB.DBA.RDF_STAR_TT_IRI ('http://ex.org/a', 'http://ex.org/b', 'http://ex.org/c');
+  reif := cast (DB.DBA.RDF_STAR_REIFIER_IRI (tt) as varchar);
+  DB.DBA.TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <%s> . <%s> <http://ex.org/src> <http://ex.org/old> .', reif, tt, reif),
+    '', 'urn:trdfstar_update:reif_legacy');
+}
+;
+TRDFSTAR_UPDATE_LEGACY_REIFIER ();
+select 99;
+SPARQL PREFIX : <http://ex.org/>
+SELECT COUNT(*) FROM <urn:trdfstar_update:reif_legacy> WHERE { << :a :b :c >> :src :old };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 5i a stored urn:rdf-star:reifier: reifier still matches << s p o >>\n";
+drop procedure TRDFSTAR_UPDATE_LEGACY_REIFIER;
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -534,6 +649,13 @@ SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
 drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_user>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_forms>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_nested>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_tmpl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_named>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:reif_legacy>;
 
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn_ann>;
