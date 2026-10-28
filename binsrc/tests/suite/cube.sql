@@ -100,6 +100,50 @@ ECHO BOTH ": GROUPING (t) = " $LAST[6] "\n";
 ECHO BOTH $IF $EQU $ROWCNT 120 "PASSED" "***FAILED";
 ECHO BOTH ": TOTAL ROWS = " $ROWCNT "\n";
 
+-- MIN and MAX of RDF boxes.  A box compared with NULL, the start value of
+-- the aggregate, gave LESS or GREATER instead of unknown, so MAX of boxes
+-- with an RDF_OBJ id stayed NULL; SPARQL MIN and MAX aggregate the stored box
+-- and returned it unconverted.  Boxes with an RDF_OBJ id compare by that id,
+-- so the order of strings is checked over STR ().
+create table MINMAX_BOX (ID integer primary key, A varchar);
+insert into MINMAX_BOX values (1, 'Alice');
+insert into MINMAX_BOX values (2, 'Bob');
+insert into MINMAX_BOX values (3, 'Carol');
+select min (rdf_box (A, 257, 257, 200 - ID, 1)), max (rdf_box (A, 257, 257, 200 - ID, 1)) from MINMAX_BOX;
+ECHO BOTH $IF $EQU $LAST[1] "Alice" "PASSED" "***FAILED";
+ECHO BOTH ": MIN of RDF boxes with RDF_OBJ ids = " $LAST[1] "\n";
+ECHO BOTH $IF $EQU $LAST[2] "Carol" "PASSED" "***FAILED";
+ECHO BOTH ": MAX of RDF boxes with RDF_OBJ ids = " $LAST[2] "\n";
+select max (rdf_box (A, 257, 257, 200 - ID, 1)) from MINMAX_BOX where ID = 2;
+ECHO BOTH $IF $EQU $LAST[1] "Bob" "PASSED" "***FAILED";
+ECHO BOTH ": MAX of one RDF box = " $LAST[1] "\n";
+drop table MINMAX_BOX;
+SPARQL INSERT DATA { GRAPH <urn:test:minmax> { <urn:test:z> <urn:test:name> "Zed-minmax-test" ; <urn:test:age> 30 . } };
+SPARQL INSERT DATA { GRAPH <urn:test:minmax> { <urn:test:y> <urn:test:name> "Adam-minmax-test" ; <urn:test:age> 25 . } };
+SPARQL INSERT DATA { GRAPH <urn:test:minmax> { <urn:test:x> <urn:test:name> "Mia-minmax-test" ; <urn:test:age> 35 . } };
+SPARQL SELECT (MIN (?n) AS ?mn) (MAX (?n) AS ?mx) FROM <urn:test:minmax> WHERE { <urn:test:x> <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] "Mia-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MIN of a string = " $LAST[1] "\n";
+ECHO BOTH $IF $EQU $LAST[2] "Mia-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MAX of a string = " $LAST[2] "\n";
+SPARQL SELECT (STR (SAMPLE (?n)) AS ?sm) FROM <urn:test:minmax> WHERE { <urn:test:x> <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] "Mia-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL SAMPLE of a string = " $LAST[1] "\n";
+SPARQL SELECT ?g (MIN (?n) AS ?mn) (MAX (?n) AS ?mx) FROM <urn:test:minmax> WHERE { <urn:test:x> <urn:test:name> ?n . BIND (1 AS ?g) } GROUP BY ?g;
+ECHO BOTH $IF $EQU $LAST[2] "Mia-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MIN of a string per group = " $LAST[2] "\n";
+ECHO BOTH $IF $EQU $LAST[3] "Mia-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MAX of a string per group = " $LAST[3] "\n";
+SPARQL SELECT (MIN (STR (?n)) AS ?mn) (MAX (STR (?n)) AS ?mx) FROM <urn:test:minmax> WHERE { ?s <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] "Adam-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MIN of STR of strings = " $LAST[1] "\n";
+ECHO BOTH $IF $EQU $LAST[2] "Zed-minmax-test" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MAX of STR of strings = " $LAST[2] "\n";
+SPARQL SELECT (MIN (?a) AS ?mn) (MAX (?a) AS ?mx) FROM <urn:test:minmax> WHERE { ?s <urn:test:age> ?a };
+ECHO BOTH $IF $EQU $LAST[2] 35 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL MAX of numbers = " $LAST[2] "\n";
+SPARQL CLEAR GRAPH <urn:test:minmax>;
+
 create procedure test_rollup ()
 {
 	declare JJ, GJJ, KK, KJJ, TT, GTT, SS integer;

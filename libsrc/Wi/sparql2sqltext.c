@@ -5045,6 +5045,9 @@ valmode_is_found:
           ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
           if (IS_BOX_POINTER (arg1_native))
             {
+              /* the argument is aggregated as is, see sparp_argtype_of_function () */
+              if (arg1_native->qmfIsSubformatOfLongWhenEqToSql && (uname_SPECIAL_cc_bif_c_GROUPING != name))
+                return arg1_native;
               return SSG_VALMODE_SQLVAL;
             }
           if (SSG_VALMODE_NUM == arg1_native)
@@ -8367,6 +8370,9 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         int bigtext, curr_arg_is_long = 0, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
+        /* MIN/MAX of a raw object returns the object's format, a stored box */
+        if (IS_BOX_POINTER (native) && !IS_BOX_POINTER (needed) && (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql))
+          native = SSG_VALMODE_LONG;
         if (((SSG_VALMODE_SHORT_OR_LONG == needed) && ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
           ((SSG_VALMODE_NUM == needed) && ((SSG_VALMODE_SQLVAL == native) || (SSG_VALMODE_BOOL == native))) ||
           ((SSG_VALMODE_SQLVAL == needed) && ((SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
