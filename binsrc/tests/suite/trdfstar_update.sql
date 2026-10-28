@@ -814,6 +814,66 @@ drop procedure TRDFSTAR_UPDATE_OLD_NUMBER_TERM;
 drop procedure TRDFSTAR_UPDATE_SAME_TERM;
 
 --------------------------------------------------------------------------
+-- 8. An annotation on a triple whose object is a triple term.
+--
+--    The W3C SPARQL 1.2 syntax tests update-tripleterm-04 and -05:
+--      INSERT { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } WHERE { ... }
+--      ... WHERE { ?s ?P <<( :a :b :c )>> {| ?Y <<(:s1 :p1 ?Z)>> |} }
+--    The rule that adds the annotated triple matched a triple-term object
+--    through a generated blank node and filters, as a WHERE pattern does, in a
+--    template too: a ground triple term was stored as a fresh blank node, and
+--    one with a variable did not compile.  In WHERE, an annotation block whose
+--    content binds variables moves into a subquery, and the reifies filter of
+--    the block, which holds the triple term, could not be cloned there.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:atto>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:atto_g>;
+
+-- 8a. update-tripleterm-05's template, with data.
+SPARQL PREFIX : <http://example.com/ns#>
+INSERT { GRAPH <urn:trdfstar_update:atto> { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } }
+WHERE { VALUES (?S ?P ?O ?Y ?Z) { (:s :p :o :src :x) } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 8a INSERT { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } compiles and runs\n";
+
+select 99;
+SPARQL PREFIX : <http://example.com/ns#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:atto> WHERE {
+  :s :p <<( :a :b :o )>> .
+  ?r rdf:reifies <<( :s :p <<( :a :b :o )>> )>> ; :src :x . };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 8b the triple term is the object, and the annotation reifies that triple\n";
+
+-- 8c. update-tripleterm-04's template: a ground triple-term object.
+SPARQL PREFIX : <http://example.com/ns#>
+INSERT { GRAPH <urn:trdfstar_update:atto_g> { :s ?P <<( :a :b :c )>> {| ?Y <<( :s1 :p1 ?Z )>> |} } }
+WHERE { VALUES (?P ?Y ?Z) { (:p :q :z) } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 8c INSERT { :s ?P <<( :a :b :c )>> {| ?Y <<( :s1 :p1 ?Z )>> |} } runs\n";
+
+select 99;
+SPARQL PREFIX : <http://example.com/ns#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:atto_g> WHERE {
+  :s :p <<( :a :b :c )>> .
+  ?r rdf:reifies <<( :s :p <<( :a :b :c )>> )>> ; :q <<( :s1 :p1 :z )>> . };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 8d the ground triple term is stored as the object, not a blank node\n";
+
+-- 8e. update-tripleterm-04's WHERE.
+select 99;
+SPARQL PREFIX : <http://example.com/ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:atto_g> WHERE { ?s ?P <<( :a :b :c )>> {| ?Y <<(:s1 :p1 ?Z)>> |} };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 8e WHERE { ?s ?P <<( :a :b :c )>> {| ?Y <<(:s1 :p1 ?Z)>> |} } compiles and matches\n";
+
+-- 8f. guard: update-tripleterm-05's WHERE compiles.
+SPARQL PREFIX : <http://example.com/ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:atto> WHERE { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 8f WHERE { ?S ?P <<( :a :b ?O )>> {| ?Y ?Z |} } compiles\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -826,6 +886,8 @@ SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
 drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:atto>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:atto_g>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:enc>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_ttl>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_old>;

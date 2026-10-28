@@ -2843,7 +2843,16 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		/* Add the main triple, annotation triples already added by spar_props */
 		{
 		  SPART *bound_tt_pat = spar_bound_tt_pattern_of_node (sparp_arg, $1);
-		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)))
+		  dk_set_t main_gp_st = sparp_env()->spare_context_gp_subtypes;
+		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)) &&
+		    main_gp_st && (CONSTRUCT_L == (ptrlong)(main_gp_st->data)) )
+		    {
+		      /* In a template the triple term is the object itself, as in
+		         spar_ograph_node; matching it through a blank node is for WHERE. */
+		      spar_gp_add_triplelike (sparp_arg, NULL, NULL, NULL, $1, NULL, NULL, 0x0);
+		      $$ = $1;
+		    }
+		  else if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)))
 		  {
 		    SPART *tt_subj = $1->_.triple_term.subject;
 		    SPART *tt_pred = $1->_.triple_term.predicate;

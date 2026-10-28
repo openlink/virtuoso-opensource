@@ -3350,6 +3350,12 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       if (NULL != orig->_.triple.options)
         tgt->_.triple.options = sparp_treelist_full_clone_int (sparp, orig->_.triple.options, parent_gp);
       return tgt;
+    case SPAR_TRIPLE_TERM: /* RDF 1.2: an expression such as RDF_STAR_TT_IRI (?s, ?p, <<( ... )>>) can hold one */
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.triple_term.subject = sparp_tree_full_clone_int (sparp, orig->_.triple_term.subject, parent_gp);
+      tgt->_.triple_term.predicate = sparp_tree_full_clone_int (sparp, orig->_.triple_term.predicate, parent_gp);
+      tgt->_.triple_term.object = sparp_tree_full_clone_int (sparp, orig->_.triple_term.object, parent_gp);
+      return tgt;
     case SPAR_BUILT_IN_CALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.builtin.args = sparp_treelist_full_clone_int (sparp, orig->_.builtin.args, parent_gp);
