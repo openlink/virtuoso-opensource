@@ -312,4 +312,32 @@ SELECT f2(EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROU
 SELECT f (EmpId), Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), (Yr), ());
 SELECT f (EmpId) as ee, f (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
 
+
+-- GROUP_CONCAT without a separator: the separator is a single space
+create table GCONCAT_T (ID integer primary key, N varchar);
+insert into GCONCAT_T values (1, 'Alice');
+insert into GCONCAT_T values (2, 'Bob');
+insert into GCONCAT_T values (3, 'Carol');
+select length (DB.DBA.GROUP_CONCAT (N)) from GCONCAT_T;
+ECHO BOTH $IF $EQU $LAST[1] 15 "PASSED" "***FAILED";
+ECHO BOTH ": SQL GROUP_CONCAT (N) length = " $LAST[1] " STATE=" $STATE "\n";
+select DB.DBA.GROUP_CONCAT (N, NULL) from GCONCAT_T where ID < 3;
+ECHO BOTH $IF $EQU $LAST[1] "AliceBob" "PASSED" "***FAILED";
+ECHO BOTH ": SQL GROUP_CONCAT (N, NULL) = " $LAST[1] "\n";
+drop table GCONCAT_T;
+SPARQL INSERT DATA { GRAPH <urn:test:gconcat> { <urn:test:a> <urn:test:name> "Alice" . <urn:test:b> <urn:test:name> "Bob" . <urn:test:c> <urn:test:name> "Carol" . } };
+SPARQL SELECT (STRLEN (GROUP_CONCAT (?n)) AS ?len) FROM <urn:test:gconcat> WHERE { ?s <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] 15 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUP_CONCAT (?n) length = " $LAST[1] " STATE=" $STATE "\n";
+SPARQL SELECT (STRLEN (GROUP_CONCAT (DISTINCT ?n)) AS ?len) FROM <urn:test:gconcat> WHERE { ?s <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] 15 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUP_CONCAT (DISTINCT ?n) length = " $LAST[1] " STATE=" $STATE "\n";
+SPARQL SELECT (GROUP_CONCAT (?n) AS ?all) FROM <urn:test:gconcat> WHERE { ?s <urn:test:name> "Bob" . ?s <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] "Bob" "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUP_CONCAT of one value = " $LAST[1] "\n";
+SPARQL SELECT (STRLEN (GROUP_CONCAT (?n; SEPARATOR=", ")) AS ?len) FROM <urn:test:gconcat> WHERE { ?s <urn:test:name> ?n };
+ECHO BOTH $IF $EQU $LAST[1] 17 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUP_CONCAT (?n; SEPARATOR=', ') length = " $LAST[1] "\n";
+SPARQL CLEAR GRAPH <urn:test:gconcat>;
+
 #endif

@@ -770,7 +770,7 @@ create procedure DB.DBA.GROUP_CONCAT_INIT (inout _env any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
+create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar := ' ')
 {
   if (__tag of varchar <> __tag (token))
     {
@@ -813,7 +813,7 @@ create procedure DB.DBA.GROUP_CONCAT_DISTINCT_INIT (inout _env any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.GROUP_CONCAT_DISTINCT_ACC (inout _env any, in token varchar, in delim varchar)
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_ACC (inout _env any, in token varchar, in delim varchar := ' ')
 {
   declare curlen integer;
   declare env_vec, items any;
