@@ -303,6 +303,78 @@ spar_ctor_uses_default_graph (SPART *ctor_gp)
 #define CTOR_OPCODE_VARIABLE 1
 #define CTOR_OPCODE_BNODE 2
 #define CTOR_OPCODE_CONST_OR_EXPN 3
+#define CTOR_OPCODE_TRIPLE_TERM 4
+
+/* Index of a blank node of a constructor template in the vector of blank nodes
+   made per solution, one per distinct label, as for a CTOR_OPCODE_BNODE field. */
+static int
+spar_ctor_bnode_idx (SPART *bnode, dk_set_t *bnodes_acc, int *bnode_count)
+{
+  int var_ctr = bnode_count[0];
+  dk_set_t bnode_iter;
+  for (bnode_iter = bnodes_acc[0]; NULL != bnode_iter; bnode_iter = bnode_iter->next)
+    {
+      SPART *old_bnode = (SPART *)(bnode_iter->data);
+      var_ctr--;
+      if (!strcmp (bnode->_.var.vname, old_bnode->_.var.vname))
+        return var_ctr;
+    }
+  t_set_push (bnodes_acc, bnode);
+  return bnode_count[0]++;
+}
+
+/* RDF 1.2: a triple term with a blank node inside names that blank node by its
+   IRI_ID, so it can not be minted before the constructor makes the blank node.
+   It becomes a CTOR_OPCODE_TRIPLE_TERM field whose argument is an opcode and an
+   argument for each of its three components, evaluated per solution by
+   DB.DBA.SPARQL_CTOR_TRIPLE_TERM after the blank nodes of the solution are made. */
+static SPART *
+spar_ctor_triple_term_args (sparp_t *sparp, SPART *tt, ctor_var_enumerator_t *cve, dk_set_t *bnodes_acc, int *bnode_count)
+{
+  SPART **args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
+  SPART *comps[3];
+  int ctr;
+  comps[0] = tt->_.triple_term.subject;
+  comps[1] = tt->_.triple_term.predicate;
+  comps[2] = tt->_.triple_term.object;
+  for (ctr = 0; ctr < 3; ctr++)
+    {
+      SPART *comp = comps[ctr];
+      switch (SPART_TYPE (comp))
+        {
+        case SPAR_BLANK_NODE_LABEL:
+          args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_BNODE);
+          args[ctr * 2 + 1] = (SPART *)t_box_num_nonull (spar_ctor_bnode_idx (comp, bnodes_acc, bnode_count));
+          break;
+        case SPAR_VARIABLE:
+          if (!SPART_VARNAME_IS_GLOB (comp->_.var.vname))
+            {
+              args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
+              args[ctr * 2 + 1] = (SPART *)t_box_num_nonull (spar_cve_find_or_add_variable (sparp, cve, comp));
+              break;
+            }
+          args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+          args[ctr * 2 + 1] = comp;
+          break;
+        case SPAR_TRIPLE_TERM:
+          args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_TRIPLE_TERM);
+          args[ctr * 2 + 1] = spar_ctor_triple_term_args (sparp, comp, cve, bnodes_acc, bnode_count);
+          break;
+        case SPAR_LIT: case SPAR_QNAME:
+          args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+          args[ctr * 2 + 1] = comp;
+          break;
+        default:
+          sparp_gp_trav (sparp, NULL /*unused*/, comp, cve, NULL, NULL, sparp_gp_trav_ctor_var_to_limofs_aref, NULL, NULL, NULL);
+          args[ctr * 2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+          args[ctr * 2 + 1] = comp;
+          break;
+        }
+    }
+  /* Not LONG::bif:vector: the components are wanted as SQL values, as
+     RDF_STAR_TT_IRI () gets them; in LONG mode a string becomes an RDF box. */
+  return spar_make_funcall (sparp, 0, "bif:vector", args);
+}
 
 void
 spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, sql_comp_t *sc_for_big_ssl_const, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve,
@@ -386,6 +458,15 @@ bnode_found_or_added_for_big_ssl:
                     box_flags (val) = BF_IRI;
                   val_arg_ptr[0] = val;
                   break;
+                case SPAR_TRIPLE_TERM: /* a ground one is a SPAR_QNAME by now; INSERT DATA moves one with a blank node out of here */
+                  if (cve->cve_bnodes_are_prohibited && spar_triple_term_has_blank_node_component (fld))
+                    {
+                      dk_free_tree ((caddr_t)args);
+                      while (NULL != list_of_triples)
+                        dk_free_tree ((caddr_t)(dk_set_pop (&list_of_triples)));
+                      spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                    }
+                  /* no break */
                 default: spar_internal_error (sparp, "Non-const in big ssl const mode constructor pattern");
                 }
             }
@@ -462,6 +543,17 @@ bnode_found_or_added:
               val_arg_ptr[0] = (SPART *)t_box_num_nonull (var_ctr);
               triple_is_const = 0;
               break;
+            case SPAR_TRIPLE_TERM:
+              if (spar_triple_term_has_blank_node_component (fld))
+                {
+                  if (cve->cve_bnodes_are_prohibited)
+                    spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                  opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_TRIPLE_TERM);
+                  val_arg_ptr[0] = spar_ctor_triple_term_args (sparp, fld, cve, &bnodes_acc, &bnode_count);
+                  triple_is_const = 0;
+                  break;
+                }
+              /* no break: with no blank node inside, a run-time expression like any other */
             case SPAR_LIT: case SPAR_QNAME:
               opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
               val_arg_ptr[0] = fld;
@@ -853,6 +945,7 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
         return bnode_emulation;
       }
     case CTOR_OPCODE_CONST_OR_EXPN: return oparg;
+    case CTOR_OPCODE_TRIPLE_TERM: return oparg; /* a run-time value, like an expression */
     }
   spar_internal_error (sparp, "spar_" "emulate_ctor_field(): bad opcode");
   return NULL; /* never reached */
@@ -940,11 +1033,14 @@ spar_dealias (sparp_t *sparp, SPART *expn, int expected_type)
   return expn;
 }
 
+/* A triple term field always has a blank node inside: it must stay with the
+   other uses of that blank node, in the same aggregate. */
+#define CTOR_OPCODE_HAS_BNODE(op) ((CTOR_OPCODE_BNODE == (op)) || (CTOR_OPCODE_TRIPLE_TERM == (op)))
 #define CTOR_ARGS_HAVE_BNODE(args) ( \
-  (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) \
-  || (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) \
-  || (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) \
-  || ((8 <= BOX_ELEMENTS (args)) && (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[6])))) )
+  CTOR_OPCODE_HAS_BNODE (unbox ((caddr_t)(args[0]))) \
+  || CTOR_OPCODE_HAS_BNODE (unbox ((caddr_t)(args[2]))) \
+  || CTOR_OPCODE_HAS_BNODE (unbox ((caddr_t)(args[4]))) \
+  || ((8 <= BOX_ELEMENTS (args)) && CTOR_OPCODE_HAS_BNODE (unbox ((caddr_t)(args[6])))) )
 
 int
 spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
@@ -1269,7 +1365,10 @@ spar_make_insertdata_or_deletedata (sparp_t *sparp, ptrlong subtype, SPART *dflt
       for (ctr = triple_count; ctr--; /* no step */)
         {
           SPART *memb = membs[ctr];
-          if ((SPAR_BLANK_NODE_LABEL != SPART_TYPE (memb->_.triple.tr_subject)) && (SPAR_BLANK_NODE_LABEL != SPART_TYPE (memb->_.triple.tr_object)))
+          /* A blank node inside a triple term counts too: all uses of a blank node
+             must be made by one constructor, which makes it once. */
+          if (!spar_triple_term_has_blank_node_component (memb->_.triple.tr_subject)
+            && !spar_triple_term_has_blank_node_component (memb->_.triple.tr_object) )
             continue;
           t_set_push (&bnoded_triples, memb);
           membs[ctr] = membs[last_used_idx];

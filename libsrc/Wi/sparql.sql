@@ -8631,6 +8631,60 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT (inout _env any)
 }
 ;
 
+-- RDF 1.2: the IRI_ID of a triple term of a constructor template that has a
+-- blank node inside (field opcode 4).  tt_ops holds an opcode and an argument
+-- for each of the three components, as a template field does; blank nodes come
+-- from blank_ids, the blank nodes made for the current solution, so the term
+-- names the same node as the rest of the template.  A value that is not an IRI
+-- is passed as an SQL value, as RDF_STAR_TT_IRI () gets it from a template with
+-- no blank node inside, so both mint the same IRI for the same term.
+create function DB.DBA.SPARQL_CTOR_TRIPLE_TERM (in tt_ops any, in vars any, inout blank_ids any) returns any
+{
+  declare comps any;
+  declare ctr integer;
+  declare tt_iri any;
+  comps := vector (null, null, null);
+  for (ctr := 0; ctr < 3; ctr := ctr + 1)
+    {
+      declare op integer;
+      declare arg, val any;
+      op := tt_ops[ctr * 2];
+      arg := tt_ops[ctr * 2 + 1];
+      if (1 = op or 3 = op)
+        {
+          if (1 = op)
+            val := vars[arg];
+          else
+            val := arg;
+          if (val is null)
+            return null;
+          if (not isiri_id (val) and not ((isstring (val) and (1 = __box_flags (val))) or (__tag of UNAME = __tag (val))))
+            val := __rdf_sqlval_of_obj (val);
+        }
+      else if (2 = op)
+        {
+          if (isinteger (blank_ids))
+            blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
+          while (arg >= length (blank_ids))
+            blank_ids := vector_concat (blank_ids, vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'))));
+          val := blank_ids[arg];
+        }
+      else if (4 = op)
+        {
+          val := DB.DBA.SPARQL_CTOR_TRIPLE_TERM (arg, vars, blank_ids);
+          if (val is null)
+            return null;
+        }
+      else signal ('RDFXX', 'Bad opcode of a triple term in a SPARQL constructor');
+      comps[ctr] := val;
+    }
+  tt_iri := rdf_triple_term_iri_impl (comps[0], comps[1], comps[2]);
+  if (tt_iri is null)
+    return null;
+  return iri_to_id (tt_iri);
+}
+;
+
 create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer, in ctor_op integer)
 {
   declare triple_ctr, quads_found integer;
@@ -8722,6 +8776,15 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               else if (__tag of vector = __tag (arg))
                 arg := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (arg[0], arg[1], arg[2]);
+              triple_vec[fld_ctr] := arg;
+            }
+          else if (4 = op)
+            {
+              arg := DB.DBA.SPARQL_CTOR_TRIPLE_TERM (arg, vars, blank_ids);
+              if (arg is null)
+                goto end_of_adding_triple;
+              if (fld_ctr in (1,3))
+                signal ('RDF01', 'Bad triple for INSERT: triple term can not be used as predicate or graph');
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_INSERT_CTOR()');
@@ -10118,6 +10181,15 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               else if (__tag of vector = __tag (arg))
                 arg := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (arg[0], arg[1], arg[2]);
+              triple_vec[fld_ctr] := arg;
+            }
+          else if (4 = op)
+            {
+              arg := DB.DBA.SPARQL_CTOR_TRIPLE_TERM (arg, vars, blank_ids);
+              if (arg is null)
+                goto end_of_adding_triple;
+              if (fld_ctr in (1,3))
+                signal ('RDF01', 'Bad triple for CONSTRUCT: triple term can not be used as predicate or graph');
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_CONSTRUCT()');
