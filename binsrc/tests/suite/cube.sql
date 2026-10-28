@@ -200,6 +200,21 @@ SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId),
 SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr, EmpId), ());
 SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr desc));
 SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), ());
+
+-- SPARQL GROUPING SETS with the empty grouping set (): the SQL text
+-- generator read the first argument of the empty grouping list, which has
+-- none, and the query could not be run.
+SPARQL INSERT DATA { GRAPH <urn:test:gsets> { <urn:test:e1> <urn:test:sales> 10 . <urn:test:e1> <urn:test:sales> 20 . <urn:test:e2> <urn:test:sales> 5 . } };
+SPARQL SELECT ?s (SUM (?v) AS ?total) FROM <urn:test:gsets> WHERE { ?s <urn:test:sales> ?v } GROUP BY GROUPING SETS ((?s), ());
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUPING SETS ((?s), ()) returned " $ROWCNT " rows\n";
+SPARQL SELECT (SUM (?v) AS ?total) FROM <urn:test:gsets> WHERE { ?s <urn:test:sales> ?v } GROUP BY GROUPING SETS (());
+ECHO BOTH $IF $EQU $LAST[1] 35 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL GROUPING SETS (()) total = " $LAST[1] "\n";
+SPARQL SELECT (STRLEN (STRUUID ()) AS ?len) WHERE { };
+ECHO BOTH $IF $EQU $LAST[1] 36 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL zero-argument built-in STRUUID () = " $LAST[1] " characters\n";
+SPARQL CLEAR GRAPH <urn:test:gsets>;
 SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), (EmpId));
 SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 2,1 (yy));
 SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 3 (yy));

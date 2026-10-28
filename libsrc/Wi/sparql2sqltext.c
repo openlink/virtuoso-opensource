@@ -3872,8 +3872,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
 {
   const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
   SPART **args = tree->_.builtin.args;
-  SPART *arg1 = ((NULL != args) ? args[0] : NULL);
-  ssg_valmode_t arg1_native = ((NULL != args) ? sparp_expn_native_valmode (ssg->ssg_sparp, arg1) : NULL);
+  SPART *arg1 = ((0 < BOX_ELEMENTS_0 (args)) ? args[0] : NULL);
+  ssg_valmode_t arg1_native = ((NULL != arg1) ? sparp_expn_native_valmode (ssg->ssg_sparp, arg1) : NULL);
   int argctr;
   ssg_valmode_t op_fmt = NULL;
   int arg1_restr_bits;
