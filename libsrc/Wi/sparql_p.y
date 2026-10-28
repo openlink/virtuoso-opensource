@@ -103,12 +103,12 @@ spart_safe_strval (SPART *node, char *buf, size_t bufsz)
               { snprintf (buf, bufsz, "%s^^%s", v, (const char *)dt); return buf; }
             return v;
           }
-        /* Preserve lexical form when parser provides one (e.g., true/false). */
-        if (orig && (DV_STRING == DV_TYPE_OF (orig) || DV_UNAME == DV_TYPE_OF (orig)) && orig[0])
-          return orig;
         /* Boolean literals are internally numeric in some parse paths; keep RDF lexical form. */
         if ((dt == uname_xmlschema_ns_uri_hash_boolean) && (DV_LONG_INT == dtp))
           return unbox (val) ? "true" : "false";
+        /* A number is encoded with its type, as rdf_star_tt_val_to_cstr () encodes
+           it for the Turtle loader and at run time, so all three mint one IRI for
+           one term; its original lexical form ("2.50", "1.5e0") would mint another. */
         if (DV_LONG_INT == dtp)
           { snprintf (buf, bufsz, "i:%ld", (long) unbox (val)); return buf; }
         if (DV_NUMERIC == dtp)
@@ -138,6 +138,9 @@ spart_safe_strval (SPART *node, char *buf, size_t bufsz)
             snprintf (buf, bufsz, "d:%s", dbuf);
             return buf;
           }
+        /* Preserve lexical form when parser provides one. */
+        if (orig && (DV_STRING == DV_TYPE_OF (orig) || DV_UNAME == DV_TYPE_OF (orig)) && orig[0])
+          return orig;
         if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
           { snprintf (buf, bufsz, "id:%llu", (unsigned long long) unbox_iri_id (val)); return buf; }
         if (DV_DATETIME == dtp || DV_DATE == dtp || DV_TIME == dtp)

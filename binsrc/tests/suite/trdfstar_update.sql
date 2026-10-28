@@ -716,6 +716,104 @@ echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
 echo both ": 6g WHERE { :g :h :i ~ ?r {| :src :z |} } matches once\n";
 
 --------------------------------------------------------------------------
+-- 7. A decimal or double in a triple term is one term, however it is written.
+--
+--    The Turtle loader and the run-time minter encode a number in a triple
+--    term with its type ("n:2.5", "d:1.5e0"); the SPARQL compile-time path
+--    encoded its original text ("2.5", "1.5e0", "2.50"), so INSERT DATA and
+--    TTLP stored the same triple term under two IRIs, its object bound as a
+--    string, and "7"^^xsd:integer was not the term 7.  A pattern compared the
+--    text of its constant with the text of the stored number, so
+--    <<( :x :v 1.5e0 )>> did not match the double 1.5 the loader stores.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_old>;
+
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+INSERT DATA { GRAPH <urn:trdfstar_update:enc> {
+  :c2 rdf:reifies <<( :x :v 2.5 )>> .
+  :c3 rdf:reifies <<( :x :v 1.5e0 )>> .
+  :c6 rdf:reifies <<( :x :v 2.50 )>> .
+  :c7 rdf:reifies <<( :x :v 7 )>> .
+  :c8 rdf:reifies <<( :x :v "7"^^xsd:integer )>> . } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7a INSERT DATA of triple terms with decimal, double and integer objects\n";
+
+DB.DBA.TTLP ('@prefix : <http://ex.org/> . @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+:c2 rdf:reifies <<( :x :v 2.5 )>> .
+:c3 rdf:reifies <<( :x :v 1.5e0 )>> .
+:c6 rdf:reifies <<( :x :v 2.50 )>> .', '', 'urn:trdfstar_update:enc_ttl');
+
+create procedure TRDFSTAR_UPDATE_SAME_TERM (in g1 varchar, in s1 varchar, in g2 varchar, in s2 varchar) returns integer
+{
+  if ((select O from DB.DBA.RDF_QUAD where G = iri_to_id (g1) and S = iri_to_id (s1))
+    = (select O from DB.DBA.RDF_QUAD where G = iri_to_id (g2) and S = iri_to_id (s2)))
+    return 1;
+  return 0;
+}
+;
+
+select 99;
+select TRDFSTAR_UPDATE_SAME_TERM ('urn:trdfstar_update:enc', 'http://ex.org/c2', 'urn:trdfstar_update:enc_ttl', 'http://ex.org/c2')
+     + TRDFSTAR_UPDATE_SAME_TERM ('urn:trdfstar_update:enc', 'http://ex.org/c3', 'urn:trdfstar_update:enc_ttl', 'http://ex.org/c3')
+     + TRDFSTAR_UPDATE_SAME_TERM ('urn:trdfstar_update:enc', 'http://ex.org/c6', 'urn:trdfstar_update:enc_ttl', 'http://ex.org/c6');
+echo both $if $equ $LAST[1] 3 "PASSED" "***FAILED";
+echo both ": 7b 2.5, 1.5e0 and 2.50 are stored as the triple terms TTLP stores\n";
+
+select 99;
+select TRDFSTAR_UPDATE_SAME_TERM ('urn:trdfstar_update:enc', 'http://ex.org/c7', 'urn:trdfstar_update:enc', 'http://ex.org/c8');
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 7c <<( :x :v \"7\"^^xsd:integer )>> is the term <<( :x :v 7 )>>\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:enc> WHERE {
+  { :c2 rdf:reifies <<( ?s ?p ?o )>> FILTER (datatype (?o) = xsd:decimal) }
+  UNION
+  { :c3 rdf:reifies <<( ?s ?p ?o )>> FILTER (datatype (?o) = xsd:double) } };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 7d the decimal and the double inserted by SPARQL bind with their datatypes\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:enc_ttl> WHERE { ?c rdf:reifies <<( :x :v 1.5e0 )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 7e <<( :x :v 1.5e0 )>> matches the double TTLP stored\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:enc> WHERE { ?c rdf:reifies <<( :x :v 2.5 )>> };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": 7f <<( :x :v 2.5 )>> matches both 2.5 and 2.50\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:enc> WHERE { ?c rdf:reifies <<( :x :v 1.5e0 )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 7g <<( :x :v 1.5e0 )>> matches the double SPARQL stored\n";
+
+-- 7h. guard: a term stored before this change, with the number as text,
+--     still matches a pattern that writes the number the same way.
+create procedure TRDFSTAR_UPDATE_OLD_NUMBER_TERM ()
+{
+  declare tt varchar;
+  tt := DB.DBA.RDF_STAR_TT_IRI ('http://ex.org/x', 'http://ex.org/v', '1.5e0');
+  DB.DBA.TTLP (sprintf ('<http://ex.org/c9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <%s> .', tt),
+    '', 'urn:trdfstar_update:enc_old');
+}
+;
+TRDFSTAR_UPDATE_OLD_NUMBER_TERM ();
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:enc_old> WHERE { ?c rdf:reifies <<( :x :v 1.5e0 )>> };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 7h a term stored with the number as text still matches <<( :x :v 1.5e0 )>>\n";
+drop procedure TRDFSTAR_UPDATE_OLD_NUMBER_TERM;
+drop procedure TRDFSTAR_UPDATE_SAME_TERM;
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
@@ -728,6 +826,9 @@ SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
 drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:enc_old>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:ab>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_two>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:ab_where>;

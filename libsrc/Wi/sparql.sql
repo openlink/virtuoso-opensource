@@ -16551,6 +16551,22 @@ create function DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (in node_iri any) returns 
 }
 ;
 
+-- Is the number num, the decoded object of a stored triple term, the value of
+-- lex, a pattern's constant as the compiler passes it: its lexical form
+-- ("1.5e0", "2.50", "42")?  Compared in num's own type.
+create function DB.DBA.RDF_STAR_TT_NUMBER_EQ (in num any, in lex any) returns integer
+{
+  declare exit handler for sqlstate '*' { return 0; };
+  if (isnumeric (lex))
+    return case when num = lex then 1 else 0 end;
+  if (not isstring (lex))
+    return 0;
+  if (__tag (num) in (__tag of double precision, __tag of real))
+    return case when num = cast (lex as double precision) then 1 else 0 end;
+  return case when num = cast (lex as decimal) then 1 else 0 end;
+}
+;
+
 create function DB.DBA.RDF_STAR_TT_CHECK (in node_iri any, in s_val any, in p_val any, in o_val any) returns integer
 {
   declare tt_iri varchar;
@@ -16582,8 +16598,21 @@ create function DB.DBA.RDF_STAR_TT_CHECK (in node_iri any, in s_val any, in p_va
     { got_p := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (rdf_triple_predicate_impl (tt_iri));
       if (got_p is null or DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (p_val) <> got_p) return 0; }
   if (o_val is not null)
-    { got_o := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (rdf_triple_object_impl (tt_iri));
-      if (got_o is null or DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (o_val) <> got_o) return 0; }
+    {
+      declare raw_o any;
+      raw_o := rdf_triple_object_impl (tt_iri);
+      /* A number is encoded with its type and decoded as that number; its text
+         ("1.5" for 1.5e0) is not the pattern's, so compare it by value. */
+      if (isnumeric (raw_o))
+        {
+          if (0 = DB.DBA.RDF_STAR_TT_NUMBER_EQ (raw_o, o_val)) return 0;
+        }
+      else
+        {
+          got_o := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (raw_o);
+          if (got_o is null or DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (o_val) <> got_o) return 0;
+        }
+    }
   return 1;
 }
 ;
