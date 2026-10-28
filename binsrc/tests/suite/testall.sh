@@ -136,6 +136,7 @@ tlubm \
 rtest \
 trepl_rdf \
 trdfstar \
+tsparql12_langdir \
 tsoap12 \
 tvspxex \
 tgraphql \

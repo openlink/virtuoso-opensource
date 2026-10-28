@@ -83,6 +83,7 @@ check_SCRIPTS = \
 	treplh.sh \
 	tsec.sh \
 	tsoap12.sh \
+	tsparql12_langdir.sh \
 	tsql.sh \
 	tsql2.sh \
 	tsql3.sh \
