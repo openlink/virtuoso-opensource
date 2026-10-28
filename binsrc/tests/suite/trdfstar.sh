@@ -47,6 +47,13 @@ then
     exit 1
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfstar_update.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: trdfstar_update.sql"
+    exit 1
+fi
+
 SHUTDOWN_SERVER
 CHECK_LOG
 BANNER "COMPLETED: RDF 1.2 triple term tests (trdfstar.sh)"

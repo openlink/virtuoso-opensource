@@ -4718,6 +4718,65 @@ spar_gp_check_graph_options (sparp_t *sparp, const char *pname, SPART **options)
     }
 }
 
+/* RDF 1.2: true if every component is an IRI, a literal or a ground triple term */
+static int
+spar_tt_is_ground (SPART *tt)
+{
+  SPART *comps[3];
+  int ctr;
+  comps[0] = tt->_.triple_term.subject;
+  comps[1] = tt->_.triple_term.predicate;
+  comps[2] = tt->_.triple_term.object;
+  for (ctr = 0; ctr < 3; ctr++)
+    {
+      SPART *comp = comps[ctr];
+      if (NULL == comp)
+        return 0;
+      if (SPAR_TRIPLE_TERM == SPART_TYPE (comp))
+        {
+          if (!spar_tt_is_ground (comp))
+            return 0;
+        }
+      else if (!SPAR_IS_LIT_OR_QNAME (comp))
+        return 0;
+    }
+  return 1;
+}
+
+/* RDF 1.2: the IRI of a triple term, nested triple terms included; value boxes go as is, a literal may be an unboxed int */
+static caddr_t
+spar_tt_iri_from_components (sparp_t *sparp, caddr_t *tt_qst, SPART *tt)
+{
+  SPART *comps[3];
+  caddr_t vals[3], nested[3];
+  caddr_t res;
+  int ctr;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ctr, 8000))
+    spar_error (sparp, "Stack overflow");
+  comps[0] = tt->_.triple_term.subject;
+  comps[1] = tt->_.triple_term.predicate;
+  comps[2] = tt->_.triple_term.object;
+  for (ctr = 0; ctr < 3; ctr++)
+    {
+      SPART *comp = comps[ctr];
+      nested[ctr] = NULL;
+      if (NULL == comp)
+        vals[ctr] = NULL;
+      else if (SPAR_TRIPLE_TERM == SPART_TYPE (comp))
+        vals[ctr] = nested[ctr] = spar_tt_iri_from_components (sparp, tt_qst, comp);
+      else if (SPAR_IS_LIT_OR_QNAME (comp))
+        vals[ctr] = SPAR_LIT_OR_QNAME_VAL (comp);
+      else if ((SPAR_VARIABLE == SPART_TYPE (comp)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (comp)))
+        vals[ctr] = comp->_.var.vname;
+      else
+        vals[ctr] = NULL;
+    }
+  res = rdf_star_tt_iri_from_values_qst (tt_qst, vals[0], vals[1], vals[2], 0);
+  for (ctr = 0; ctr < 3; ctr++)
+    dk_free_tree (nested[ctr]);
+  return res;
+}
+
 SPART *
 spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
@@ -5512,40 +5571,27 @@ mcall_not_found: ;
 plain_triple_in_ctor:
   /* RDF 1.2: Fallback conversion of SPAR_TRIPLE_TERM to SPAR_QNAME IRI for any
      positions not already handled by grammar-level decomposition (e.g. collections). */
-  /* Pass value boxes as is: a literal may be an unboxed int, not a string */
-#define SPAR_TT_COMP_VAL(node) \
-  ((NULL == (node)) ? NULL : \
-   (SPAR_IS_LIT_OR_QNAME(node) ? SPAR_LIT_OR_QNAME_VAL(node) : \
-    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : NULL)))
+  /* In a constructor template only a ground triple term is converted, one with a variable or blank node is left for the run time */
   if ((NULL != subject) && (SPAR_TRIPLE_TERM == SPART_TYPE (subject)))
     {
-      SPART *tts = subject->_.triple_term.subject;
-      SPART *ttp = subject->_.triple_term.predicate;
-      SPART *tto = subject->_.triple_term.object;
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
-      if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
+      if (spar_tt_is_ground (subject) || !tt_keep_runtime)
         {
-          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
-              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
+          caddr_t tt_iri = spar_tt_iri_from_components (sparp, tt_qst, subject);
           if (NULL != tt_iri)
             subject = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
   if ((NULL != object) && (SPAR_TRIPLE_TERM == SPART_TYPE (object)))
     {
-      SPART *tts = object->_.triple_term.subject;
-      SPART *ttp = object->_.triple_term.predicate;
-      SPART *tto = object->_.triple_term.object;
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
-      if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
+      if (spar_tt_is_ground (object) || !tt_keep_runtime)
         {
-          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
-              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
+          caddr_t tt_iri = spar_tt_iri_from_components (sparp, tt_qst, object);
           if (NULL != tt_iri)
             object = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
-#undef SPAR_TT_COMP_VAL
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
