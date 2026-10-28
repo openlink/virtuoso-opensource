@@ -228,6 +228,28 @@ INSERT into Sales VALUES(2, 2006, 6000);
 INSERT into Sales VALUES(3, 2006, 20000);
 INSERT into Sales VALUES(3, 2007, 24000);
 
+-- A condition on a grouping column over a derived table with grouping sets
+-- must see the NULLs the grouping sets produce: it used to be pushed below
+-- the grouping, where the column is never NULL, and found no subtotal rows.
+select count (*) from (select EmpId, Yr, sum (Sales) as S from Sales group by grouping sets ((EmpId, Yr), (EmpId), ())) R where Yr is null;
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+ECHO BOTH ": GROUPING SETS derived table, rows with Yr NULL = " $LAST[1] "\n";
+select count (*) from (select EmpId, Yr, sum (Sales) as S from Sales group by grouping sets ((EmpId, Yr), (EmpId), ())) R where EmpId is null;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": GROUPING SETS derived table, rows with EmpId NULL = " $LAST[1] "\n";
+select S from (select EmpId, Yr, sum (Sales) as S from Sales group by grouping sets ((EmpId, Yr), (EmpId), ())) R where EmpId = 1 and Yr is null;
+ECHO BOTH $IF $EQU $LAST[1] 55000 "PASSED" "***FAILED";
+ECHO BOTH ": GROUPING SETS derived table, subtotal of EmpId 1 = " $LAST[1] "\n";
+select count (*) from (select EmpId, Yr, sum (Sales) as S from Sales group by rollup (EmpId, Yr)) R where EmpId is null and Yr is null;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": ROLLUP derived table, grand total rows = " $LAST[1] "\n";
+select count (*) from (select EmpId, Yr, sum (Sales) as S from Sales group by cube (EmpId, Yr)) R where Yr is null and EmpId is null;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": CUBE derived table, grand total rows = " $LAST[1] "\n";
+select count (*) from (select EmpId, Yr, sum (Sales) as S from Sales group by EmpId, Yr) R where EmpId = 1;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+ECHO BOTH ": plain GROUP BY derived table, rows of EmpId 1 = " $LAST[1] "\n";
+
 SELECT (EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), (yy));
 SELECT (EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
 SELECT (EmpId) as ee, f(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));

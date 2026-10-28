@@ -878,6 +878,8 @@ void sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *av
 sinv_map_t * sinv_call_map (ST * tree, client_connection_t * cli);
 int sqlo_is_contains_vdb_tb (sqlo_t *so, op_table_t *ot, char ctype, ST **args);
 int sel_n_breakup (ST* sel);
+#define SEL_HAS_GROUPING_SETS(sel) \
+  (BOX_ELEMENTS_0 ((sel)->_.select_stmt.table_exp) > 8 && BOX_ELEMENTS_0 ((sel)->_.select_stmt.table_exp->_.table_exp.group_by_full) > 1)
 df_elt_t ** sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name);
 dbe_column_t *  cp_left_col (df_elt_t * cp);
 df_elt_t ** sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred);
