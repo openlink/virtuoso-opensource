@@ -59,6 +59,19 @@ fill_ROLLUP (100);
 
 select * from ROLLUP1;
 
+-- SPARQL GROUP BY ROLLUP and CUBE with a single key, as SQL allows
+SPARQL INSERT DATA { GRAPH <urn:test:rollup1> { <urn:test:a> <urn:test:name> "Alice" . <urn:test:b> <urn:test:name> "Bob" . <urn:test:c> <urn:test:name> "Carol" . } };
+SPARQL SELECT ?n (COUNT (*) AS ?c) FROM <urn:test:rollup1> WHERE { ?s <urn:test:name> ?n } GROUP BY ROLLUP (?n);
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL ROLLUP (?n) returned " $ROWCNT " rows STATE=" $STATE "\n";
+SPARQL SELECT ?n (COUNT (*) AS ?c) FROM <urn:test:rollup1> WHERE { ?s <urn:test:name> ?n } GROUP BY CUBE (?n);
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL CUBE (?n) returned " $ROWCNT " rows STATE=" $STATE "\n";
+SPARQL SELECT (MAX (?c) AS ?total) WHERE { { SELECT ?n (COUNT (*) AS ?c) FROM <urn:test:rollup1> WHERE { ?s <urn:test:name> ?n } GROUP BY ROLLUP (?n) } };
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+ECHO BOTH ": SPARQL ROLLUP (?n) total = " $LAST[1] "\n";
+SPARQL CLEAR GRAPH <urn:test:rollup1>;
+
 select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from ROLLUP1 group by rollup (j,k,t) ;
 ECHO BOTH $IF $EQU $LAST[2] 1 "PASSED" "***FAILED";
 ECHO BOTH ": GROUPING (j) = " $LAST[2] "\n";
