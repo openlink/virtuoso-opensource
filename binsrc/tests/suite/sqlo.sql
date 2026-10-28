@@ -3719,5 +3719,91 @@ ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case nondet-union - an update minting one IRI in a sub-select joined with a UNION: expected 1 new node, got " $LAST[1] " STATE=" $STATE "\n";
 SPARQL CLEAR GRAPH <urn:sqlo:nondet>;
+-- Case oj-dt-exp: a derived table on the right of a LEFT OUTER JOIN gives
+-- NULL in every column for a row with no match.  Inlined into the join, an
+-- expression of its select list was computed on the row the join makes for
+-- no match, from that row's NULL columns: concat ('x|', NULL) is 'x|' and
+-- coalesce (NULL, 'none') is 'none'.  SPARQL BIND inside OPTIONAL is such a
+-- derived table.
+-- --------------------------------------------------------------------------
+DROP TABLE ojdt_t1 IF EXISTS;
+DROP TABLE ojdt_t2 IF EXISTS;
+CREATE TABLE ojdt_t1 (A INT PRIMARY KEY);
+CREATE TABLE ojdt_t2 (A INT PRIMARY KEY, B VARCHAR);
+INSERT INTO ojdt_t1 VALUES (1);
+INSERT INTO ojdt_t1 VALUES (2);
+INSERT INTO ojdt_t2 VALUES (1, 'x');
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, concat ('x|', B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - concat () of a derived table, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, coalesce (B, 'none') AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - coalesce () of a derived table, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, concat ('x|', B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] "x|x" "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - concat () of a derived table, the row with a match (guard): expected x|x, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, 'c' AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - a constant of a derived table, the row with no match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, upper (B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - upper () of a derived table, the row with no match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, case when B is null then 'none' else B end AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - case with a constant branch, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, case 1 when 0 then null else null end AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - case of null constants, the row with a match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, A + 10 AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - column + 10, inlined, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, A + 10 AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 11 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - column + 10, inlined, the row with a match: expected 11, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, coalesce (B, case when A > 5 then B end) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - coalesce and case of columns only, inlined, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL CLEAR GRAPH <urn:sqlo:ojdt>;
+SPARQL INSERT DATA { GRAPH <urn:sqlo:ojdt> { <urn:sqlo:a> a <urn:sqlo:P> ; <urn:sqlo:knows> <urn:sqlo:b> . <urn:sqlo:b> a <urn:sqlo:P> ; <urn:sqlo:name> "B" } };
+
+SPARQL SELECT (COUNT (?e) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s ?p ?o . FILTER (isIRI (?o) && ?p != rdf:type) BIND (CONCAT ("x|", STR (?o)) AS ?e) } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - SPARQL BIND inside OPTIONAL binds only the row with a match: expected 1, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s ?p ?o . FILTER (isIRI (?o) && ?p != rdf:type) BIND (CONCAT ("x|", STR (?o)) AS ?e) } FILTER (!BOUND (?e)) };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - SPARQL BIND inside OPTIONAL leaves the row with no match unbound: expected 1, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (?o) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s <urn:sqlo:knows> ?o } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - OPTIONAL without BIND (guard): expected 1, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL CLEAR GRAPH <urn:sqlo:ojdt>;
+DROP TABLE ojdt_t1;
+DROP TABLE ojdt_t2;
 
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

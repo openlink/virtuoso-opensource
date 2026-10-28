@@ -1275,16 +1275,62 @@ sqlo_join_exp_inlineable (ST * exp)
 }
 
 
+static const char *sqlo_null_passing_bifs[] = { "__ro2sq", "__id2i", "__id2in", "iri_to_id", NULL };
+
+static int
+sqlo_exp_null_strict (ST * exp)
+{
+  /* true if exp is null whenever all its columns are null; unknown is false */
+  int inx;
+  while (ST_P (exp, BOP_AS))
+    exp = exp->_.as_exp.left;
+  if (DV_DB_NULL == DV_TYPE_OF (exp))
+    return 1;
+  if (ST_COLUMN (exp, COL_DOTTED))
+    return 1;
+  if (ST_P (exp, BOP_PLUS) || ST_P (exp, BOP_MINUS) || ST_P (exp, BOP_TIMES) || ST_P (exp, BOP_DIV) || ST_P (exp, BOP_MOD))
+    return sqlo_exp_null_strict (exp->_.bin_exp.left) || sqlo_exp_null_strict (exp->_.bin_exp.right);
+  if (ST_P (exp, COALESCE_EXP))
+    {
+      DO_BOX (ST *, arg, inx, exp->_.comma_exp.exps)
+	{
+	  if (!sqlo_exp_null_strict (arg))
+	    return 0;
+	}
+      END_DO_BOX;
+      return 1;
+    }
+  if (ST_P (exp, SIMPLE_CASE) || ST_P (exp, SEARCHED_CASE))
+    {
+      ST **exps = exp->_.comma_exp.exps;
+      for (inx = ST_P (exp, SIMPLE_CASE) ? 2 : 1; inx < BOX_ELEMENTS_INT (exps); inx += 2)
+	{
+	  if (!sqlo_exp_null_strict (exps[inx]))
+	    return 0;
+	}
+      return 1;
+    }
+  if (ST_P (exp, CALL_STMT) && DV_ARRAY_OF_POINTER != DV_TYPE_OF (exp->_.call.name) && BOX_ELEMENTS_0 (exp->_.call.params) >= 1)
+    {
+      const char **bif;
+      for (bif = sqlo_null_passing_bifs; *bif; bif++)
+	if (!stricmp (exp->_.call.name, *bif))
+	  return sqlo_exp_null_strict (exp->_.call.params[0]);
+    }
+  return 0;
+}
+
+
 int
 sqlo_oj_has_const (ST * tree)
 {
-  /* if a rhs of left oj is a select with constant exps, this cannot be inlined because the constant must be a variable in order to be null. */ 
+  /* if a rhs of left oj is a select with exps that are constant or can be non-null on the no-match row, it cannot be inlined: they must be variables in order to be null */
   int inx;
   if (!ST_P (tree, SELECT_STMT))
     return 0;
   DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
     {
-      if (!sqlo_has_node (exp, COL_DOTTED))
+      if (!sqlo_has_node (exp, COL_DOTTED) || !sqlo_exp_null_strict (exp))
 	return 1;
     }
   END_DO_BOX;
