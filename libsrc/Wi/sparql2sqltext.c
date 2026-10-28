@@ -4633,17 +4633,17 @@ expanded_sameterm_ready:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           case SPAR_BIF_TRIPLE_PREDICATE:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL, NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           case SPAR_BIF_TRIPLE_OBJECT:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           default:
             break;
           }
@@ -4833,21 +4833,21 @@ expanded_sameterm_ready:
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_TRIPLE_PREDICATE:
                 {
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL, NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_TRIPLE_OBJECT:
                 {
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_UNNEST:
                 {

@@ -16664,13 +16664,29 @@ create function DB.DBA.RDF_STAR_TT_MATCH (in node_iri any, in p_val any) returns
 }
 ;
 
+-- Accessors take a stored triple term's IRI or a TRIPLE () vector, both read by rdf_triple_*_impl
+create function DB.DBA.RDF_STAR_TT_OF (in node_iri any) returns any
+{
+  if (__tag (node_iri) = __tag of vector)
+    {
+      if (length (node_iri) <> 3)
+        return null;
+      return node_iri;
+    }
+  return DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri));
+}
+;
+
 create function DB.DBA.RDF_STAR_TT_GET_S (in node_iri any, in p_val any) returns any
 {
-  declare tt_iri, result, node_str varchar;
-  node_str := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri);
-  tt_iri := DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (node_str);
-  if (tt_iri is null) return null;
-  result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (rdf_triple_subject_impl (tt_iri));
+  declare result varchar;
+  declare tt, comp any;
+  tt := DB.DBA.RDF_STAR_TT_OF (node_iri);
+  if (tt is null) return null;
+  comp := rdf_triple_subject_impl (tt);
+  if (__tag (comp) = __tag of vector)
+    return comp;
+  result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (comp);
   if (result is not null)
     return __uname (result);
   return result;
@@ -16679,11 +16695,11 @@ create function DB.DBA.RDF_STAR_TT_GET_S (in node_iri any, in p_val any) returns
 
 create function DB.DBA.RDF_STAR_TT_GET_P (in node_iri any, in s_val any, in o_val any) returns any
 {
-  declare tt_iri, result, node_str varchar;
-  node_str := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri);
-  tt_iri := DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (node_str);
-  if (tt_iri is null) return null;
-  result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (rdf_triple_predicate_impl (tt_iri));
+  declare result varchar;
+  declare tt any;
+  tt := DB.DBA.RDF_STAR_TT_OF (node_iri);
+  if (tt is null) return null;
+  result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (rdf_triple_predicate_impl (tt));
   if (result is not null)
     return __uname (result);
   return result;
@@ -16692,12 +16708,13 @@ create function DB.DBA.RDF_STAR_TT_GET_P (in node_iri any, in s_val any, in o_va
 
 create function DB.DBA.RDF_STAR_TT_GET_O (in node_iri any, in p_val any) returns any
 {
-  declare tt_iri, result, node_str varchar;
-  declare raw_obj any;
-  node_str := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (node_iri);
-  tt_iri := DB.DBA.RDF_STAR_REIFIER_TO_TRIPLE_IRI (node_str);
-  if (tt_iri is null) return null;
-  raw_obj := rdf_triple_object_impl (tt_iri);
+  declare result varchar;
+  declare tt, raw_obj any;
+  tt := DB.DBA.RDF_STAR_TT_OF (node_iri);
+  if (tt is null) return null;
+  raw_obj := rdf_triple_object_impl (tt);
+  if (__tag (raw_obj) = __tag of vector)
+    return raw_obj;
   result := DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (raw_obj);
   if (result is null) return null;
   /* If the C layer returned UNAME, the value is definitely an IRI */
