@@ -4345,7 +4345,7 @@ create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
   declare val_is_iri integer;
   if (val is null)
     { http ('""', ses); return; }
-  -- Preserve type information: UNAME tag means IRI regardless of string content
+  -- Preserve type information: a UNAME that is not a blank node is an IRI regardless of string content
   val_is_iri := equ (__tag (val), __tag of UNAME);
   val_str := cast (val as varchar);
   if (val_str is null)
@@ -4370,16 +4370,8 @@ create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
         }
       -- Fallback: write as plain IRI if components not resolvable
     }
-  -- IRI: check __tag first, then fall back to scheme pattern matching
-  if (val_is_iri or
-      val_str like 'http://%' or val_str like 'https://%' or val_str like 'urn:%' or
-      val_str like 'mailto:%' or val_str like 'ftp://%' or val_str like 'file://%' or
-      "LEFT" (val_str, 1) = '#')
-    {
-      http ('<', ses); http_escape (val_str, 12, ses, 1, 1); http ('>', ses);
-      return;
-    }
-  -- Bnode
+  -- Bnode, before the IRI test: a blank node component of a triple term is
+  -- a UNAME too (RDF_STAR_TT_GET_S/O), and must keep the label it has elsewhere
   if ("LEFT" (val_str, 9) = 'nodeID://')
     {
       http ('_:v', ses); http (subseq (val_str, 9), ses);
@@ -4388,6 +4380,15 @@ create procedure DB.DBA.RDF_TTL_WRITE_SS_VALUE (inout ses any, in val any)
   if ("LEFT" (val_str, 2) = '_:')
     {
       http (val_str, ses);
+      return;
+    }
+  -- IRI: check __tag first, then fall back to scheme pattern matching
+  if (val_is_iri or
+      val_str like 'http://%' or val_str like 'https://%' or val_str like 'urn:%' or
+      val_str like 'mailto:%' or val_str like 'ftp://%' or val_str like 'file://%' or
+      "LEFT" (val_str, 1) = '#')
+    {
+      http ('<', ses); http_escape (val_str, 12, ses, 1, 1); http ('>', ses);
       return;
     }
   -- Literal (plain string)
