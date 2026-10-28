@@ -462,6 +462,7 @@ typedef struct sparp_s {
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
   int sparp_query_uses_triple_terms;	/*!< Nonzero if the source query builds a triple term, by <<( )>> or TRIPLE(); ORDER BY then sorts by kind of term first */
   dk_set_t sparp_bare_tt_nodes;		/*!< Set of SPAR_TRIPLE_TERM nodes built from <<(s p o)>> syntax; used by parser-only validation rules. */
+  dk_set_t sparp_tt_helper_patterns;	/*!< Names of generated blank nodes that stand for matched triple terms in WHERE patterns, each followed by its SPAR_TRIPLE_TERM pattern; DELETE WHERE and CONSTRUCT WHERE put the pattern back into the template. */
   dk_set_t sparp_trans_starts;		/*!< Start point subqueries made for transitive triples with both ends unbound, attached after parsing if the ends are really unbound. */
 /* Environment of lex */
   size_t sparp_text_ofs;

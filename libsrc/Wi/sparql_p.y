@@ -395,6 +395,13 @@ spar_tt_decompose_node (sparp_t *sparp, SPART *node_expr, SPART *tt_pat, dk_set_
   SPART *s_chk, *p_chk, *o_chk;
   if ((NULL == node_expr) || (NULL == tt_pat) || (SPAR_TRIPLE_TERM != SPART_TYPE (tt_pat)))
     return;
+  if ((SPAR_BLANK_NODE_LABEL == SPART_TYPE (node_expr)) && (1 == node_expr->_.bnode.bracketed))
+    {
+      /* A generated blank node standing for a matched triple term: remember the
+         pattern for a template made from this WHERE (DELETE WHERE, CONSTRUCT WHERE). */
+      t_set_push (&(sparp->sparp_tt_helper_patterns), tt_pat);
+      t_set_push (&(sparp->sparp_tt_helper_patterns), node_expr->_.var.vname);
+    }
   if (SPAR_IS_BLANK_OR_VAR (node_expr) && (NULL != spar_find_bound_tt_var (sparp, node_expr->_.var.vname)))
     tt_is_bound_bare = 1;
   tt_check_fname = (spar_is_bare_triple_term_node (sparp, tt_pat) || tt_is_bound_bare) ?
@@ -3511,28 +3518,15 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						  int tt_has_bnode = (spar_triple_term_has_blank_node_component ($3) || spar_triple_term_has_blank_node_component ($5));
 						  dk_set_t tt_gp_st = sparp_env()->spare_context_gp_subtypes;
 						  int tt_in_ctor = (tt_gp_st && (CONSTRUCT_L == (ptrlong)(tt_gp_st->data)));
-						  if (tt_in_ctor && tt_has_bnode)
+						  if (tt_in_ctor && (tt_has_var || tt_has_bnode))
 						    {
-						      /* A blank node inside: the constructor mints the term per
-						         solution, after the blank node (CTOR_OPCODE_TRIPLE_TERM). */
+						      /* A template mints the term itself, per solution: from the values
+						         of its variables, and after a blank node inside is made
+						         (CTOR_OPCODE_TRIPLE_TERM).  A triple term is not a reifier;
+						         only << >>, ~ and {| |} introduce one. */
 						      SPART *tt_node = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $3, $4, $5);
 						      spar_mark_bare_triple_term_node (sparp_arg, tt_node);
 						      $$ = tt_node;
-						    }
-						  else if (tt_in_ctor && tt_has_var)
-						    {
-						      /* Keep legacy variable-template coercion path for now.
-						         Variable <<(s p o)>> in ctor/update annotation templates
-						         currently relies on reifier-node lowering. */
-						      SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $3, $4, $5);
-						      SPART *tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_hash_iri);
-						      SPART *tt_reifies_obj = spart_make_triple_term_reified_object_node (sparp_arg, tt_hash_iri, tt_reifier_node);
-						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
-						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
-						      spar_gp_add_triplelike (sparp_arg, NULL,
-						        (SPART *) t_box_copy_tree ((caddr_t) tt_reifier_node),
-						        tt_reifies_pred, tt_reifies_obj, NULL, NULL, 0x0);
-						      $$ = tt_reifier_node;
 						    }
 						  else if (tt_has_var)
 						    {
@@ -3598,10 +3592,11 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						  if (tt_in_ctor)
 						    {
 						      /* CONSTRUCT/INSERT: generate explicit reifier + rdf:reifies triple.
-						         A blank node inside is minted per solution, so is the term. */
-						      SPART *tt_hash_iri = ((spar_triple_term_has_blank_node_component ($2) || spar_triple_term_has_blank_node_component ($4)) ?
-						        spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4) :
-						        spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL) );
+						         A term that is not ground is minted per solution: from the values of
+						         its variables, and after a blank node inside is made. */
+						      SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						      if (spar_tt_is_ground (tt_hash_iri))
+						        tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
 						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
 						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						      spar_gp_add_triplelike (sparp_arg, NULL,
@@ -3611,93 +3606,20 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						    }
 						  else
 						    {
-						      int has_known_s = ($2 && SPAR_IS_LIT_OR_QNAME ($2));
-						      int has_known_p = ($3 && SPAR_IS_LIT_OR_QNAME ($3));
-						      int has_known_o = ($4 && SPAR_IS_LIT_OR_QNAME ($4));
-						      ccaddr_t s_str = has_known_s ? SPAR_LIT_OR_QNAME_VAL ($2) : NULL;
-						      ccaddr_t p_str = has_known_p ? SPAR_LIT_OR_QNAME_VAL ($3) : NULL;
-						      ccaddr_t o_str = has_known_o ? SPAR_LIT_OR_QNAME_VAL ($4) : NULL;
-						      SPART *s_arg = s_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
-						      SPART *p_arg = p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
-						      SPART *o_arg = o_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
+						      /* WHERE: id rdf:reifies <<( s p o )>>, matched as that long form is, so
+						         the reifier is bound before s, p and o are read from its triple term
+						         and before the rest of the pattern uses it.  Binding them from id
+						         first, before id was bound, emptied the pattern. */
+						      SPART *tt_pat = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						      SPART *tt_bnode = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
+						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						      dk_set_t bind_revlist = NULL;
-						      spar_gp_add_filter (sparp_arg,
-						        spartlist (sparp_arg, 3, BOP_EQ,
-						          spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_CHECK",
-						            (SPART **) t_list (4,
-						              (SPART *) t_box_copy_tree ((caddr_t) $6),
-						              sparp_tree_full_copy (sparp_arg, s_arg, NULL),
-						              sparp_tree_full_copy (sparp_arg, p_arg, NULL),
-						              sparp_tree_full_copy (sparp_arg, o_arg, NULL))),
-						          spartlist (sparp_arg, 5, SPAR_LIT, t_box_num_nonull (1), NULL, NULL, NULL)),
-						        0);
-						      if (has_known_p)
-						        {
-						          SPART *p_lit = spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL);
-						          if (SPAR_IS_BLANK_OR_VAR ($2))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_S",
-						                (SPART **) t_list (2, (SPART *) t_box_copy_tree ((caddr_t) $6), sparp_tree_full_copy (sparp_arg, p_lit, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $2->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($4))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_O",
-						                (SPART **) t_list (2, (SPART *) t_box_copy_tree ((caddr_t) $6), sparp_tree_full_copy (sparp_arg, p_lit, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $4->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
-						      else if (has_known_s && has_known_o)
-						        {
-						          if (SPAR_IS_BLANK_OR_VAR ($3))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_P",
-						                (SPART **) t_list (3, (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL),
-						                  spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $3->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
-						      else
-						        {
-						          if (SPAR_IS_BLANK_OR_VAR ($2))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_S",
-						                (SPART **) t_list (2,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $2->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($3))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_P",
-						                (SPART **) t_list (3,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  s_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL),
-						                  o_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $3->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($4))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_O",
-						                (SPART **) t_list (2,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $4->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
+						      spar_mark_bare_triple_term_node (sparp_arg, tt_pat);
+						      spar_gp_add_triplelike (sparp_arg, NULL,
+						        (SPART *) t_box_copy_tree ((caddr_t) $6),
+						        tt_reifies_pred, tt_bnode, NULL, NULL, 0x0);
+						      spar_tt_decompose_node (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) tt_bnode), tt_pat, &bind_revlist);
 						      if (NULL != bind_revlist)
 						        spar_gp_finalize_binds (sparp_arg, bind_revlist);
 						      $$ = $6;
@@ -3772,10 +3694,10 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						  spar_validate_tt_predicate_not_blank (sparp_arg, $3);
 						  dk_set_t tt_gp_st = sparp_env()->spare_context_gp_subtypes;
 						  int tt_in_ctor = (tt_gp_st && (CONSTRUCT_L == (ptrlong)(tt_gp_st->data)));
-						  /* In a template, a blank node inside is minted per solution, so is the term. */
-						  SPART *tt_hash_iri = ((tt_in_ctor && (spar_triple_term_has_blank_node_component ($2) || spar_triple_term_has_blank_node_component ($4))) ?
-						    spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4) :
-						    spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL) );
+						  /* In a template, a term that is not ground is minted per solution. */
+						  SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						  if (!tt_in_ctor || spar_tt_is_ground (tt_hash_iri))
+						    tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
 						  SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
 						    t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						  /* Assert the triple (s, p, o) */

@@ -4719,7 +4719,7 @@ spar_gp_check_graph_options (sparp_t *sparp, const char *pname, SPART **options)
 }
 
 /* RDF 1.2: true if every component is an IRI, a literal or a ground triple term */
-static int
+int
 spar_tt_is_ground (SPART *tt)
 {
   SPART *comps[3];

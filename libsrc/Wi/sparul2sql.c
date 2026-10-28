@@ -832,6 +832,30 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
         spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
 }
 
+/* RDF 1.2: a WHERE pattern matches a triple term through a generated blank node
+   that stands for it (recorded by spar_tt_decompose_node ()).  A template made
+   from the pattern gets the triple term back: as a blank node, a DELETE template
+   would refuse it and a CONSTRUCT template would make a new blank node. */
+static void
+spar_ctor_tmpl_restore_triple_terms (sparp_t *sparp, SPART *tmpl, SPART *gp)
+{
+  int fld_ctr;
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+      SPART *fld = tmpl->_.triple.tr_fields[fld_ctr];
+      dk_set_t iter;
+      if ((SPAR_BLANK_NODE_LABEL != SPART_TYPE (fld)) || (1 != fld->_.bnode.bracketed))
+        continue;
+      for (iter = sparp->sparp_tt_helper_patterns; NULL != iter; iter = iter->next->next)
+        {
+          if (strcmp ((caddr_t)(iter->data), fld->_.var.vname))
+            continue;
+          tmpl->_.triple.tr_fields[fld_ctr] = sparp_tree_full_copy (sparp, (SPART *)(iter->next->data), gp);
+          break;
+        }
+    }
+}
+
 void
 spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp, SPART *g, dk_set_t *ret_tmpls)
 {
@@ -868,6 +892,7 @@ spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp,
             spar_error (sparp, "DELETE WHERE requires default graph but it is not provided");
         }
       tmpl = sparp_tree_full_copy (sparp, memb, gp);
+      spar_ctor_tmpl_restore_triple_terms (sparp, tmpl, gp);
       if (CONSTRUCT_L == subtype)
         {
           /* CONSTRUCT WHERE produces triples in the constructor default graph.

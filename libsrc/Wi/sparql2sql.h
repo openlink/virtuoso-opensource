@@ -140,6 +140,9 @@ extern SPART *spar_macroexpand_tree (sparp_t *sparp, SPART *tree);
 /*!< True for a blank node, or for a triple term with a blank node at any depth; defined in sparql_p.y */
 extern int spar_triple_term_has_blank_node_component (SPART *node);
 
+/*!< True for a triple term whose components are IRIs, literals or ground triple terms; defined in sparql_core.c */
+extern int spar_tt_is_ground (SPART *tt);
+
 struct sparp_equiv_s;
 
 /*! Equivalence class of variables. All instances of \c sparp_equiv_s are enumerated in \c sparp_sg->sg_equivs .

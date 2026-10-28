@@ -352,10 +352,188 @@ echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
 echo both ": 3g the string object still binds as the same xsd:string\n";
 
 --------------------------------------------------------------------------
+-- 4. SPARQL 1.2 Update, Example 8: DELETE/INSERT over triple-term patterns.
+--
+--    In a template, a triple term with a variable inside was lowered to a
+--    fresh reifier blank node plus an rdf:reifies triple: the DELETE template
+--    refused it ("Blank nodes are not allowed in DELETE constructor
+--    patterns"), and the INSERT template reified the term twice.  DELETE
+--    WHERE copies its pattern into the template, with the blank node that
+--    stands for a matched triple term.  The short form << s p o ~ ?claim >>
+--    bound its components before ?claim was bound, so it never matched.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8_copy>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8s>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
+
+create procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT (in stmt varchar) returns varchar
+{
+  declare st, msg varchar;
+  declare mdta, rows any;
+  st := '00000';
+  exec (stmt, st, msg, vector (), 0, mdta, rows);
+  if ('00000' <> st)
+    return msg;
+  -- one row per constructed triple: subject, predicate, object
+  if (1 <> length (rows))
+    return sprintf ('%d triples', length (rows));
+  return cast (rows[0][2] as varchar);
+}
+;
+
+-- 4a. Example 8, long form, verbatim but for the graph.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:e8> { :claim1 :claimedBy :alice ; rdf:reifies <<( :bob :name "Bob" )>> . } };
+
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+WITH <urn:trdfstar_update:e8>
+DELETE { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :alice . }
+INSERT { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :carol . ?s ?p ?o . }
+WHERE  { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :alice . };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 4a Example 8 (long form) runs\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> SELECT ?w FROM <urn:trdfstar_update:e8> WHERE { :claim1 :claimedBy ?w };
+echo both $if $equ $LAST[1] "http://ex.org/carol" "PASSED" "***FAILED";
+echo both ": 4b the claim is now by :carol\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> SELECT COUNT(*) FROM <urn:trdfstar_update:e8> WHERE { :claim1 :claimedBy :alice };
+echo both $if $equ $LAST[1] 0 "PASSED" "***FAILED";
+echo both ": 4c and no longer by :alice\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:e8> WHERE { ?r rdf:reifies ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4d one rdf:reifies triple: the triple term was reinserted, not reified again\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:e8> WHERE { :claim1 rdf:reifies <<( :bob :name "Bob" )>> . :bob :name "Bob" };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4e the reification is kept and :bob :name \"Bob\" is asserted\n";
+
+-- 4f. an INSERT template mints the triple term itself: one triple, whose
+--     object is the stored triple term.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT { GRAPH <urn:trdfstar_update:e8_copy> { ?claim :about <<( ?s ?p ?o )>> } }
+WHERE { GRAPH <urn:trdfstar_update:e8> { ?claim rdf:reifies <<( ?s ?p ?o )>> } };
+select 99;
+select (case when
+    (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8_copy')) = 1
+  and
+    (select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8_copy'))
+  = (select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8')
+       and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies'))
+  then 1 else 0 end);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4f INSERT { ?c :about <<( ?s ?p ?o )>> } writes the stored triple term, once\n";
+
+-- 4g. the same update over a triple term with an integer object: the
+--     DELETE must find the stored term and the INSERT must mint it again.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:e8n> { :claim2 :claimedBy :alice ; rdf:reifies <<( :bob :age 23 )>> . } };
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:e8n_ref> { :claim2 rdf:reifies <<( :bob :age 23 )>> . } };
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+WITH <urn:trdfstar_update:e8n>
+DELETE { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :alice . }
+INSERT { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :carol . ?s ?p ?o . }
+WHERE  { ?claim rdf:reifies <<( ?s ?p ?o )>> ; ?pp :alice . };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 4g Example 8 over <<( :bob :age 23 )>> runs\n";
+
+select 99;
+select (case when
+    (select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8n')
+       and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')) = 1
+  and
+    (select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8n')
+       and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies'))
+  = (select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_update:e8n_ref'))
+  then 1 else 0 end);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4h the integer triple term is the one stored before, not a re-minted \"23\"\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:e8n> WHERE { :bob :age ?a . :claim2 :claimedBy :carol . FILTER (datatype (?a) = xsd:integer && ?a = 23) };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4i :bob :age 23 is asserted as an integer and the claim is by :carol\n";
+
+-- 4j. Example 8, short form: << s p o ~ ?claim >> binds before ?claim is used.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:e8s> { :claim1 :claimedBy :alice ; rdf:reifies <<( :bob :name "Bob" )>> . } };
+select 99;
+SPARQL PREFIX : <http://ex.org/>
+SELECT COUNT(*) FROM <urn:trdfstar_update:e8s> WHERE { << ?s ?p ?o ~ ?claim >> ?pp :alice };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4j << ?s ?p ?o ~ ?claim >> ?pp :alice matches the claim\n";
+
+SPARQL PREFIX : <http://ex.org/>
+WITH <urn:trdfstar_update:e8s>
+DELETE { << ?s ?p ?o ~ ?claim >> ?pp :alice }
+INSERT { ?s ?p ?o ~ ?claim {| ?pp :carol |} }
+WHERE  { << ?s ?p ?o ~ ?claim >> ?pp :alice };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 4k Example 8 (short form) runs\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT COUNT(*) FROM <urn:trdfstar_update:e8s> WHERE {
+  :claim1 :claimedBy :carol ; rdf:reifies <<( :bob :name "Bob" )>> . :bob :name "Bob" .
+  FILTER NOT EXISTS { :claim1 :claimedBy :alice } };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4l the short form reattributes the claim, keeps the reification, asserts the triple\n";
+
+-- 4m. DELETE WHERE over a triple-term pattern.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:dw> { :claim1 :claimedBy :alice ; rdf:reifies <<( :bob :name "Bob" )>> . :bob :name "Bob" . } };
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+DELETE WHERE { GRAPH <urn:trdfstar_update:dw> { ?c rdf:reifies <<( :bob :name ?n )>> ; :claimedBy ?w } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 4m DELETE WHERE { ?c rdf:reifies <<( :bob :name ?n )>> ; :claimedBy ?w } runs\n";
+
+select 99;
+SPARQL PREFIX : <http://ex.org/> SELECT COUNT(*) FROM <urn:trdfstar_update:dw> WHERE { ?s ?p ?o };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4n DELETE WHERE removed the reification and the claim, kept :bob :name \"Bob\"\n";
+
+-- 4o. CONSTRUCT WHERE writes the matched triple term, not a new blank node.
+SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT DATA { GRAPH <urn:trdfstar_update:cw> { :claim1 rdf:reifies <<( :bob :name "Bob" )>> . } };
+select 99;
+select left (TRDFSTAR_UPDATE_CONSTRUCT_OBJECT ('SPARQL PREFIX : <http://ex.org/> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> CONSTRUCT WHERE { GRAPH <urn:trdfstar_update:cw> { ?c rdf:reifies <<( :bob :name ?n )>> } }'), 20);
+echo both $if $equ $LAST[1] "urn:rdf-star:triple:" "PASSED" "***FAILED";
+echo both ": 4o CONSTRUCT WHERE over a triple-term pattern constructs the triple term\n";
+
+-- 4p. guard: an unnamed reifier in a DELETE template is a blank node, which
+--     the DELETE template forbids (SPARQL 1.2 Update, Example 8 note).
+select (case when TRDFSTAR_UPDATE_ERROR_OF ('SPARQL PREFIX : <http://ex.org/> WITH <urn:trdfstar_update:e8s> DELETE { << ?s ?p ?o >> :claimedBy ?w } WHERE { << ?s ?p ?o ~ ?c >> :claimedBy ?w }')
+  like '%Blank node%not allowed%' then 1 else 0 end);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 4p DELETE { << ?s ?p ?o >> ... } is rejected: an unnamed reifier is a blank node\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
 SPARQL CLEAR GRAPH <urn:trdfstar_update:num>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8_copy>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8s>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:e8n_ref>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:dw>;
+SPARQL CLEAR GRAPH <urn:trdfstar_update:cw>;
+drop procedure TRDFSTAR_UPDATE_CONSTRUCT_OBJECT;
 
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn>;
 SPARQL CLEAR GRAPH <urn:trdfstar_update:bn_ann>;
