@@ -10854,7 +10854,8 @@ retval_list_complete:
            save_where_l_text = ssg->ssg_where_l_text;
            ssg->ssg_where_l_printed = 0;
            ssg->ssg_where_l_text = " WHERE";
-           ssg_print_binv_table_exp (ssg, member, SSG_TABLE_PVIEW_PARAM_PASS);
+           /* the rows of VALUES are bound in its WHERE pass, it has no pview params */
+           ssg_print_binv_table_exp (ssg, member, SSG_TABLE_WHERE_PASS);
            ssg->ssg_where_l_printed = save_where_l_printed;
            ssg->ssg_where_l_text = save_where_l_text;
            goto end_of_where_list; /* see below */

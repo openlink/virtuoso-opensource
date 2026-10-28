@@ -4722,6 +4722,8 @@ spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *mem
   eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent_gp, (SPART *)(member_binv->_.binv.vars[0]->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
   if (NULL == eq)
     return 0;
+  if ((UNION_L == parent_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == parent_gp->_.gp.subtype))
+    return 0;
   {
     int memb_idx;
     caddr_t varname = member_binv->_.binv.vars[0]->_.var.vname;

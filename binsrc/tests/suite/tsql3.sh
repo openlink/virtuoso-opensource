@@ -277,6 +277,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tvalues_union
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvalues_union.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: VALUES in UNION -- tvalues_union.sql"
+    exit 1
+fi
+
 
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
