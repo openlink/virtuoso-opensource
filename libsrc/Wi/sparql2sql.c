@@ -8293,13 +8293,32 @@ sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree)
   return 0;
 }
 
+/* External vars of \c sub, less those its group \c gp binds itself (e.g. a FILTER EXISTS var bound inside a SERVICE) */
+static void
+sparp_list_external_vars_of_sub (sparp_t *sparp, SPART *sub, SPART *gp, dk_set_t *set_ret)
+{
+  dk_set_t sub_externals = NULL;
+  sparp_list_external_vars (sparp, sub, &sub_externals);
+  DO_SET (caddr_t, vname, &sub_externals)
+    {
+      if ((NULL != gp) && (SPAR_GP == SPART_TYPE (gp)) && !SPART_VARNAME_IS_GLOB (vname))
+        {
+          sparp_equiv_t *eq = sparp_equiv_get (sparp, gp, (SPART *)vname, SPARP_EQUIV_GET_NAMESAKES);
+          if ((NULL != eq) && !((SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL) & eq->e_rvr.rvrRestrictions))
+            continue;
+        }
+      t_set_push_new_string (set_ret, vname);
+    }
+  END_DO_SET ();
+}
+
 int
 sparp_gp_trav_list_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if ((SPAR_GP == SPART_TYPE (curr)) && (SELECT_L == curr->_.gp.subtype))
     {
       sparp_gp_trav_suspend (sparp);
-      sparp_list_external_vars (sparp, curr->_.gp.subquery, common_env);
+      sparp_list_external_vars_of_sub (sparp, curr->_.gp.subquery, sts_this->sts_ancestor_gp, common_env);
       sparp_gp_trav_resume (sparp);
     }
   return 0;
@@ -8317,7 +8336,7 @@ int
 sparp_gp_trav_list_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   sparp_gp_trav_suspend (sparp);
-  sparp_list_external_vars (sparp, curr->_.gp.subquery, common_env);
+  sparp_list_external_vars_of_sub (sparp, curr->_.gp.subquery, sts_this->sts_ancestor_gp, common_env);
   sparp_gp_trav_resume (sparp);
   return 0;
 }

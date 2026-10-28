@@ -3805,5 +3805,48 @@ ECHO BOTH ": case oj-dt-exp - OPTIONAL without BIND (guard): expected 1, got " $
 SPARQL CLEAR GRAPH <urn:sqlo:ojdt>;
 DROP TABLE ojdt_t1;
 DROP TABLE ojdt_t2;
+-- Case sinv-exists: a variable that a FILTER [NOT] EXISTS or a MINUS inside a
+-- SERVICE takes from the SERVICE's own pattern is bound inside the SERVICE.
+-- It was taken for a parameter of the SERVICE: the query sent named it
+-- ?!000001, and the parameter was sent unbound ("runaway ... after
+-- reorder"), as UNDEF.  The endpoint is declared SPARQL 1.1, which allows
+-- EXISTS; the SQL text shows what would be sent, and no endpoint is called.
+-- --------------------------------------------------------------------------
+create function DB.DBA.SQLO_SINV_SENDS_ITS_VARS (in q varchar) returns integer
+{
+  declare t varchar;
+  t := cast (sparql_to_sql_text (q) as varchar);
+  if (strstr (t, 'runaway') is not null or strstr (t, '?!0000') is not null)
+    return 0;
+  return 1;
+}
+;
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o FILTER NOT EXISTS { ?a a <urn:sqlo:S> } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - FILTER NOT EXISTS inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o MINUS { ?a a <urn:sqlo:S> } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - MINUS inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?x WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { SELECT (?a AS ?x) WHERE { { SELECT DISTINCT ?a WHERE { ?a ?p ?o FILTER NOT EXISTS { ?a a <urn:sqlo:S> } } } ?a <urn:sqlo:q> ?v } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - FILTER NOT EXISTS in a sub-select inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - SERVICE without EXISTS (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT case when regexp_match ('param_row = vector [(][^)]*"S"', cast (sparql_to_sql_text ('SELECT ?a ?o WHERE { ?a <urn:sqlo:p> <urn:sqlo:x> . SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864 IN ?a) { ?a ?q ?o } }') as varchar)) is not null then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - a declared IN variable is still passed from the outer pattern (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+drop function DB.DBA.SQLO_SINV_SENDS_ITS_VARS;
 
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
