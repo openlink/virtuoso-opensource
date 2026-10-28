@@ -6520,6 +6520,89 @@ sparp_calc_importance_of_member (sparp_t *sparp, SPART *memb)
   return res;
 }
 
+/* a group with a call that gives another value each time must not be copied into each branch of a union */
+static int sparp_tree_is_nondeterministic (sparp_t *sparp, SPART *tree);
+
+static int
+sparp_gp_trav_nondet_expn_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  bif_metadata_t *bmd = NULL;
+  switch (SPART_TYPE (curr))
+    {
+    case SPAR_BUILT_IN_CALL:
+      {
+        const sparp_bif_desc_t *sbd = sparp_bif_descs + curr->_.builtin.desc_ofs;
+        if (SPAR_BIF_BNODE == curr->_.builtin.btype)
+          break;
+        if ('B' == sbd->sbd_implementation)
+          {
+            char impl_name[100];
+            snprintf (impl_name, sizeof (impl_name), "rdf_%s_impl", sbd->sbd_name);
+            bmd = find_bif_metadata_by_raw_name (impl_name);
+          }
+        if ((NULL == bmd) || !bmd->bmd_no_fold)
+          return 0;
+        break;
+      }
+    case SPAR_FUNCALL:
+      if (strncmp (curr->_.funcall.qname, "bif:", 4))
+        return 0;
+      bmd = find_bif_metadata_by_raw_name (curr->_.funcall.qname + 4);
+      if ((NULL == bmd) || !bmd->bmd_no_fold)
+        return 0;
+      break;
+    default:
+      return 0;
+    }
+  ((int *)common_env)[0] = 1;
+  return SPAR_GPT_COMPLETED;
+}
+
+static int
+sparp_gp_trav_nondet_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if ((SPAR_GP == SPART_TYPE (curr)) && (SELECT_L == curr->_.gp.subtype) && sparp_tree_is_nondeterministic (sparp, curr->_.gp.subquery))
+    {
+      ((int *)common_env)[0] = 1;
+      return SPAR_GPT_COMPLETED;
+    }
+  return 0;
+}
+
+static int
+sparp_gp_trav_nondet_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if (sparp_tree_is_nondeterministic (sparp, curr->_.gp.subquery))
+    {
+      ((int *)common_env)[0] = 1;
+      return SPAR_GPT_COMPLETED;
+    }
+  return 0;
+}
+
+static int
+sparp_tree_is_nondeterministic (sparp_t *sparp, SPART *tree)
+{
+  int res = 0;
+  SPART *top_pattern = tree;
+  sparp_gp_trav_suspend (sparp);
+  if (SPAR_REQ_TOP == SPART_TYPE (tree))
+    {
+      sparp_trav_out_clauses (sparp, tree, &res,
+        NULL, NULL,
+        sparp_gp_trav_nondet_expn_in, NULL, sparp_gp_trav_nondet_expn_subq,
+        NULL );
+      top_pattern = tree->_.req_top.pattern;
+    }
+  if (!res)
+    sparp_gp_trav (sparp, NULL /* unused */, top_pattern, &res,
+      sparp_gp_trav_nondet_gp_in, NULL,
+      sparp_gp_trav_nondet_expn_in, NULL, sparp_gp_trav_nondet_expn_subq,
+      NULL );
+  sparp_gp_trav_resume (sparp);
+  return res;
+}
+
 int
 sparp_find_index_of_most_important_union (sparp_t *sparp, SPART *parent_gp)
 {
@@ -6596,6 +6679,16 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
             parent_len = BOX_ELEMENTS (parent->_.gp.members);
           if (2000 < (parent_len + case_count))
             return 0; /* This restricts the size of the resulting SQL statement */
+        }
+      if (!curr_had_one_member)
+        {
+          int memb_ctr;
+          DO_BOX_FAST (SPART *, memb, memb_ctr, curr->_.gp.members)
+            {
+              if ((memb_ctr != union_idx) && (SPAR_GP == SPART_TYPE (memb)) && sparp_tree_is_nondeterministic (sparp, memb))
+                return 0; /* The group is joined with the union once, not copied into each branch: see sparp_tree_is_nondeterministic() */
+            }
+          END_DO_BOX_FAST;
         }
       sparp_equiv_audit_all (sparp, 0);
       union_glued_filters_count = sub_union->_.gp.glued_filters_count;

@@ -3661,4 +3661,63 @@ ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 3 $IF $EQU $LA
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case late-proj - last of the top 3 by N desc is (3, C); got " $ROWCNT " row(s), last (" $LAST[1] ", " $LAST[2] ") STATE=" $STATE "\n";
 
+-- --------------------------------------------------------------------------
+-- Case nondet-union: a group joined with a UNION is one solution sequence;
+-- the join is not to evaluate it once per branch of the UNION.  It did: the
+-- rewrite of a join of a UNION into a UNION of joins gave each branch its
+-- own copy of the group, and a STRUUID, UUID, RAND or BNODE computed in it
+-- had a different value in each branch; in an update, one new resource per
+-- branch.
+-- --------------------------------------------------------------------------
+SPARQL CLEAR GRAPH <urn:sqlo:nondet>;
+SPARQL INSERT DATA { GRAPH <urn:sqlo:nondet> {
+  <urn:sqlo:carl> a <urn:sqlo:Person> ; <urn:sqlo:name> "Carl" ; <urn:sqlo:knows> <urn:sqlo:dora> .
+  <urn:sqlo:ed> <urn:sqlo:knows> <urn:sqlo:carl> } };
+
+SPARQL SELECT (COUNT (DISTINCT ?u) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - STRUUID () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?r) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (RAND () AS ?r) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - RAND () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?r) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (bif:rnd (1000000000) AS ?r) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - bif:rnd () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?u) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { SELECT * WHERE { { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } } } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - the same with the UNION in a sub-select of its own (guard): expected 1 value, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 4 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - the join has one row per triple of Carl (guard): expected 4, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL DELETE { GRAPH <urn:sqlo:nondet> { ?p ?p0 ?o0 . ?s0 ?q0 ?p } }
+  INSERT { GRAPH <urn:sqlo:nondet> { ?new a <urn:sqlo:Person> ; <urn:sqlo:name> "Carla" } }
+  WHERE { GRAPH <urn:sqlo:nondet> {
+    { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (IRI (CONCAT ("urn:sqlo:node_", STRUUID ())) AS ?new) } }
+    { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } } };
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:nondet> WHERE { ?s <urn:sqlo:name> "Carla" };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - an update minting one IRI in a sub-select joined with a UNION: expected 1 new node, got " $LAST[1] " STATE=" $STATE "\n";
+SPARQL CLEAR GRAPH <urn:sqlo:nondet>;
+
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
