@@ -791,6 +791,12 @@ sparp_gp_member_binds_varname_locally (SPART *memb, caddr_t vname)
             }
           END_DO_BOX_FAST;
         }
+      switch (memb->_.gp.subtype)
+        {
+        /* a column of a UNION branch must not be replaced by a triple-term BIND of another branch */
+        case 0: case WHERE_L: case UNION_L: case SPAR_UNION_WO_ALL: case OPTIONAL_L:
+          return sparp_gp_binds_varname_locally (memb, vname);
+        }
       return 0;
     default:
       return 0;
@@ -3929,6 +3935,8 @@ sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int r
       return;
     case SPAR_BUILT_IN_CALL:
       memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+      if (SPAR_BIF_TRIPLE == tree->_.builtin.btype)
+        rvr_ret->rvrRestrictions = SPART_VARR_IS_TRIPLE_TERM;
       return; /* !!!TBD */
     case SPAR_FUNCALL:
       {
@@ -3969,7 +3977,7 @@ sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int r
       return;
     case SPAR_TRIPLE_TERM:
       memset (rvr_ret, 0, sizeof (rdf_val_range_t));
-      rvr_ret->rvrRestrictions = SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL;
+      rvr_ret->rvrRestrictions = SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL | SPART_VARR_IS_TRIPLE_TERM;
       return;
     }
   spar_internal_error (sparp, "sparp_" "get_expn_rvr(): unsupported type of expression");

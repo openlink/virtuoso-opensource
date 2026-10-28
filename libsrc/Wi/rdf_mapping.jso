@@ -22,7 +22,7 @@
 
 --
 -- Flags that describe restrictions on possible values of the variable or the use of the var
-JSO_CONST virtrdf SPART_VARR__ALL		0x0000FFFF	--!< OR of everything, do not forget to edit when new bits are added.
+JSO_CONST virtrdf SPART_VARR__ALL		0x0002FFFF	--!< OR of everything, do not forget to edit when new bits are added.
 JSO_CONST virtrdf SPART_VARR_SPRINTFF		0x00000001	--!< The values of a variable is always made according to one of specified formats
 JSO_CONST virtrdf SPART_VARR_IS_REF		0x00000002	--!< The value is a node reference, IRI or blank
 JSO_CONST virtrdf SPART_VARR_IS_IRI		0x00000004	--!< The value is an IRI node reference
@@ -41,6 +41,7 @@ JSO_CONST virtrdf SPART_VARR_EXPORTED		0x00002000	--!< The variable is exported 
 JSO_CONST virtrdf SPART_VARR_CONFLICT		0x00004000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
 JSO_CONST virtrdf SPART_VARR_EQ_VAR		0x00008000	--!< This is to indicate that the equivalence class saves some equalities that no longer exists as filters
 JSO_CONST virtrdf SPART_VARR_IS_BOOL		0x00010000	--!< The value is a boolean, the rvrFixedValue, if present, is integer 1 or 0, the rvrDatatype, if present, is xsd:Boolean
+JSO_CONST virtrdf SPART_VARR_IS_TRIPLE_TERM	0x00020000	--!< The value is (or is copied/BIND-derived from) an RDF-star triple term <<s p o>> constructed in the query text; says nothing about stored data
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'

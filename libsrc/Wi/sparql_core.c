@@ -230,6 +230,8 @@ spartlist_impl (sparp_t *sparp, ptrlong length, ptrlong type, ...)
   va_end (ap);
   tree->type = type;
   tree->srcline = t_box_num ((NULL != sparp) ? ((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : 0) : 0);
+  if ((SPAR_TRIPLE_TERM == type) && (NULL != sparp))
+    sparp->sparp_query_uses_triple_terms++;
   /*spart_check (sparp, tree);*/
   return tree;
 }
@@ -2019,6 +2021,8 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
           caddr_t vname;
           sparp_distinct_varnames_of_tree (sparp, memb, &known_varnames);
           sparp_distinct_varnames_of_tree (sparp, memb, &pattern_bound_varnames);
+          sparp_values_varnames_of_gp (memb, &known_varnames);
+          sparp_values_varnames_of_gp (memb, &pattern_bound_varnames);
           if ((NULL != memb) && (SPAR_GP == SPART_TYPE (memb))
             && (SELECT_L == memb->_.gp.subtype) && (NULL != memb->_.gp.subquery)
             && (SPAR_REQ_TOP == SPART_TYPE (memb->_.gp.subquery)))
@@ -7189,6 +7193,8 @@ sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments)
     }
   spar_internal_error (sparp, "sparp" "_make_builtin_call(): bad bif_id");
 ofs_found:
+  if (SPAR_BIF_TRIPLE == bif_id)
+    sparp->sparp_query_uses_triple_terms++;
   return spartlist (sparp, 4, SPAR_BUILT_IN_CALL, bif_id, ofs, arguments);
 }
 

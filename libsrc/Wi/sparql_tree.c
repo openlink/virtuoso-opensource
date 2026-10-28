@@ -2898,6 +2898,8 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
   changeable_flags &= ((ptrlong)(SPART_VARR__ALL)) &
     ~(SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL);
   new_restr = dest->rvrRestrictions & (addon->rvrRestrictions | ~changeable_flags);
+  /* "may be a triple term": one branch is enough */
+  new_restr |= (dest->rvrRestrictions | addon->rvrRestrictions) & SPART_VARR_IS_TRIPLE_TERM;
   if (dest->rvrDatatype != addon->rvrDatatype)
     {
       ccaddr_t union_dt = sparp_smallest_union_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
@@ -3865,6 +3867,19 @@ sparp_distinct_varnames_of_tree (sparp_t *sparp, SPART *tree, dk_set_t *acc)
     NULL, NULL,
     sparp_gp_distinct_varnames_expn_in_cbk, NULL, sparp_gp_distinct_varnames_expn_subq_cbk,
     NULL );
+}
+
+void
+sparp_values_varnames_of_gp (SPART *memb, dk_set_t *acc)
+{
+  int ctr;
+  if ((NULL == memb) || (SPAR_GP != SPART_TYPE (memb)) || (VALUES_L != memb->_.gp.subtype) || (NULL == memb->_.gp.subquery))
+    return;
+  DO_BOX_FAST (SPART *, var, ctr, memb->_.gp.subquery->_.binv.vars)
+    {
+      t_set_push_new_string (acc, var->_.var.vname);
+    }
+  END_DO_BOX_FAST;
 }
 
 int

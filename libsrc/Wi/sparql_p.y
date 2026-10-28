@@ -191,6 +191,9 @@ static SPART *
 spart_make_triple_term_qname (sparp_t *sparp, SPART *s_node, SPART *p_node, SPART *o_node, SPART *reifier_node)
 {
   char sb[200], pb[200], ob[200];
+  /* a constant triple term becomes a plain IRI here, still note it for ORDER BY */
+  if (NULL != sparp)
+    sparp->sparp_query_uses_triple_terms++;
   const char *s = spart_hash_input_strval (sparp, s_node, sb, sizeof(sb));
   const char *p = spart_hash_input_strval (sparp, p_node, pb, sizeof(pb));
   const char *o = spart_hash_input_strval (sparp, o_node, ob, sizeof(ob));
@@ -625,6 +628,7 @@ spar_gp_finalize_mixed_binds (sparp_t *sparp, dk_set_t bind_revlist)
   DO_SET (SPART *, memb, &acc_membs)
     {
       sparp_distinct_varnames_of_tree (sparp, memb, &known_varnames);
+      sparp_values_varnames_of_gp (memb, &known_varnames);
     }
   END_DO_SET();
   DO_SET (SPART *, filt, &acc_filts)
