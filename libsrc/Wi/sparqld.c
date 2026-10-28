@@ -640,6 +640,15 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
     ssg_putchar (')');
 }
 
+/* the service storage's default map stands for whatever the endpoint has; naming it would match the endpoint's own empty map */
+static int
+ssg_sd_qm_is_dflt_service_map (quad_map_t *qm)
+{
+  jso_rtti_t *qm_rtti = (jso_rtti_t *)gethash (qm, jso_rttis_of_structs);
+  return ((NULL != qm_rtti) && (NULL != qm_rtti->jrtti_inst_iri)
+    && !strcmp (qm_rtti->jrtti_inst_iri, uname_virtrdf_ns_uri_DefaultServiceMap) );
+}
+
 void
 ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 {
@@ -1260,7 +1269,8 @@ args_printed:
           (1 == BOX_ELEMENTS_0 (tree->_.triple.tc_list)) &&
           (NULL != ssg->ssg_sparp->sparp_storage) &&
           (0 != (BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsUserMaps) +
-              BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsMjvMaps) ) ) );
+              BOX_ELEMENTS_0 (ssg->ssg_sparp->sparp_storage->qsMjvMaps) ) ) &&
+          !ssg_sd_qm_is_dflt_service_map (tree->_.triple.tc_list[0]->tc_qm) );
         if (ssg->ssg_sd_forgotten_dot)
           {
             if ((OPTIONAL_L == tree->_.triple.subtype) ||

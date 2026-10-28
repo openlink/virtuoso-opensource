@@ -1929,6 +1929,22 @@ echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": box flags are preserved on group by\n";
 
+-- A SERVICE body sent to a Virtuoso endpoint -- a dialect with QUAD MAP,
+-- set here with DEFINE lang:dialect as SPARQL LOAD SERVICE sets it -- was
+-- wrapped in QUAD MAP <virtrdf:DefaultServiceMap> { ... } whenever the
+-- local default storage had user quad maps, which every database has had
+-- since the vector index added two.  The endpoint keeps nothing in a map
+-- of that name, and returned no rows.  The local service map is not sent.
+select case when strstr (cast (sparql_to_sql_text ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> (DEFINE lang:dialect 13155) { ?c a <http://example.org/Country> } }') as varchar), 'DefaultServiceMap') is null then 1 else 0 end;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE to an endpoint of Virtuoso's dialect is not pinned to the local service map: " $last[1] "\n";
+
+select case when strstr (cast (sparql_to_sql_text ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> { ?c a <http://example.org/Country> } }') as varchar), 'QUAD MAP') is null then 1 else 0 end;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE to an endpoint of the plain dialect, no QUAD MAP (guard): " $last[1] "\n";
+
 drop table case1172;
 CREATE TABLE case1172 ( v1 DECIMAL ) ;
   INSERT INTO case1172 VALUES ( 0 ) ;
