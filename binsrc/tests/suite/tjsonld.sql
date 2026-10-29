@@ -389,3 +389,73 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": JSON-LD results check STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+
+--
+-- Native JSON numbers.  JSON-LD 1.1 (toRdf, Object to RDF Conversion) makes
+-- a number with a non-zero fractional part, or of 10^21 or more, an
+-- xsd:double, and any other number an xsd:integer; JSON itself has no
+-- decimal type.  The loader made a number with an exponent an xsd:string
+-- (a stray break in jsonld.y) and a number with a '.' an xsd:decimal.
+--
+SPARQL CLEAR GRAPH <urn:tjsonld:num>;
+DB.DBA.RDF_LOAD_JSON_LD ('{ "@context": { "v": { "@id": "urn:tjsonld:v" } }, "@graph": [
+  { "@id": "urn:tjsonld:int", "v": 12000 },
+  { "@id": "urn:tjsonld:frac", "v": 2500.5 },
+  { "@id": "urn:tjsonld:exp", "v": 2.25e0 },
+  { "@id": "urn:tjsonld:expint", "v": 1.5e3 },
+  { "@id": "urn:tjsonld:zero", "v": 2.0 },
+  { "@id": "urn:tjsonld:huge", "v": 1e21 },
+  { "@id": "urn:tjsonld:arr", "v": [ 7, 0.5 ] },
+  { "@id": "urn:tjsonld:typed", "v": { "@value": 5, "@type": "http://www.w3.org/2001/XMLSchema#int" } } ] }', '', 'urn:tjsonld:num');
+
+-- datatype and value of the objects of one subject, sorted, as text
+create function TJSONLD_NUM (in subj_iri varchar) returns varchar
+{
+  declare st, msg, mdta, rset any;
+  declare inx integer;
+  declare res varchar;
+  st := '00000';
+  exec (sprintf ('sparql select (str (datatype (?o)) as ?dt) (str (?o) as ?lex) from <urn:tjsonld:num> where { <%s> <urn:tjsonld:v> ?o } order by str (?o)', subj_iri),
+    st, msg, vector (), 0, mdta, rset);
+  if (st <> '00000')
+    return 'error ' || st;
+  res := '';
+  for (inx := 0; inx < length (rset); inx := inx + 1)
+    res := res || case when inx > 0 then ' ' else '' end || subseq (rset[inx][0], 33) || ':' || rset[inx][1];
+  return res;
+}
+;
+
+select TJSONLD_NUM ('urn:tjsonld:int');
+ECHO BOTH $IF $EQU $LAST[1] "integer:12000" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 12000 loads as an xsd:integer, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:typed');
+ECHO BOTH $IF $EQU $LAST[1] "int:5" "PASSED" "***FAILED";
+ECHO BOTH ": a number with an explicit @type keeps it, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:exp');
+ECHO BOTH $IF $EQU $LAST[1] "double:2.25" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 2.25e0 loads as an xsd:double, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:frac');
+ECHO BOTH $IF $EQU $LAST[1] "double:2500.5" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 2500.5 loads as an xsd:double, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:expint');
+ECHO BOTH $IF $EQU $LAST[1] "integer:1500" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 1.5e3, no fraction, loads as the xsd:integer 1500, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:zero');
+ECHO BOTH $IF $EQU $LAST[1] "integer:2" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 2.0 loads as the xsd:integer 2, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:huge');
+ECHO BOTH $IF $EQU $LAST[1] "double:1e+21" "PASSED" "***FAILED";
+ECHO BOTH ": JSON-LD number 1e21 loads as an xsd:double, got " $LAST[1] "\n";
+
+select TJSONLD_NUM ('urn:tjsonld:arr');
+ECHO BOTH $IF $EQU $LAST[1] "double:0.5 integer:7" "PASSED" "***FAILED";
+ECHO BOTH ": an array [7, 0.5] loads an xsd:integer and an xsd:double, got " $LAST[1] "\n";
+
+SPARQL CLEAR GRAPH <urn:tjsonld:num>;
