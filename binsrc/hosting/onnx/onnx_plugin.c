@@ -2569,7 +2569,7 @@ onnx_do_embed (onnx_model_entry_t *m, const char *text)
     onnx_fail (ONNX_SQLSTATE_RUNTIME, "ONNX", "Native fault during inference");
 #endif
   if (ctx.err_status)
-    onnx_raise_status (ctx.err_status, ctx.err_msg[0] ? ctx.err_msg : "onnx_embed");
+    onnx_raise_status (ctx.err_status, ctx.err_msg[0] ? ctx.err_msg : "ONNX_EMBED_TEXT");
   if (ctx.err_msg[0])
     onnx_fail (ONNX_SQLSTATE_CONFIG, "ONNX", "%s", ctx.err_msg);
   return ctx.result;
@@ -2818,10 +2818,11 @@ onnx_run_tokens_inproc (onnx_model_entry_t *m, const int64_t *ids, const int64_t
 static caddr_t
 bif_onnx_embed (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
-  long handle = bif_long_arg (qst, args, 0, "onnx_embed");
-  caddr_t txt = bif_string_arg (qst, args, 1, "onnx_embed");
+  /* The name it is registered under (vonnx_connect), the one the caller wrote */
+  long handle = bif_long_arg (qst, args, 0, "ONNX_EMBED_TEXT");
+  caddr_t txt = bif_string_arg (qst, args, 1, "ONNX_EMBED_TEXT");
   size_t len = box_length (txt) - 1;
-  onnx_validate_text ("onnx_embed", txt, len);
+  onnx_validate_text ("ONNX_EMBED_TEXT", txt, len);
   onnx_model_entry_t *m = onnx_model_ref (handle);
   if (!m)
     onnx_fail (ONNX_SQLSTATE_INPUT, "ONNX", "Unknown or closed model handle %ld", handle);

@@ -6,7 +6,7 @@
 #  a caller-supplied float32 tensor, as used by user-trained TensorFlow and
 #  PyTorch models exported to ONNX.
 #
-#  Covers six defects found while verifying that path (see
+#  Covers seven defects found while verifying that path (see
 #  lace2/docs/virtuoso-ml-onnx/onnx-verification-report.md):
 #
 #    1. ONNX Runtime error text was formatted from freed memory, so every
@@ -19,7 +19,8 @@
 #       instead of being rejected, giving confident nonsense;
 #    5. DB.DBA.ONNX_MODEL_REFRESH ignored the input_names column and forced the
 #       tokenizer input names, so the catalogue could not carry a tensor model;
-#    6. the ONNX BIFs had no DBA check and no DirsAllowed check.
+#    6. the ONNX BIFs had no DBA check and no DirsAllowed check;
+#    7. ONNX_EMBED_TEXT's argument errors named a function onnx_embed.
 #
 #  The test model is a 112-byte Identity graph (input 'features' float32 [1,4]
 #  -> output 'y' float32 [1,4]) written out of a base64 literal by the server
@@ -417,6 +418,35 @@ out=`RAW "select ONNX_LOAD_MODEL ('/etc/passwd', 'mode=inproc');"`
 LOG "+ outside DirsAllowed: `echo "$out" | grep -i error | head -1`"
 CHECK "a path outside DirsAllowed is refused before ORT sees it" \
     `echo "$out" | grep -qiE 'FA003|is denied|not allowed' && echo 1 || echo 0`
+
+#  ---- ONNX_EMBED_TEXT's errors name ONNX_EMBED_TEXT ----------------------------
+#  It is registered as ONNX_EMBED_TEXT, but its argument checks named the
+#  function onnx_embed, a name that exists nowhere else:
+#    SR030: Too few (only 0) arguments for onnx_embed.
+#  None of these needs a model: the arguments are checked first.
+ERRLINE()   #  ERRLINE "<expression>" -> the first line of the error it raises
+{
+    RAW "select $1;" | grep -E 'SR[0-9][0-9][0-9]|max_input_bytes' | head -1
+}
+e=`ERRLINE "ONNX_EMBED_TEXT ()"`
+LOG "+ no arguments: $e"
+CHECK "ONNX_EMBED_TEXT with no arguments names itself (SR030)" \
+    `echo "$e" | grep -q 'SR030.* ONNX_EMBED_TEXT\.' && echo 1 || echo 0`
+e=`ERRLINE "ONNX_EMBED_TEXT ('no-such-model', 'hello')"`
+LOG "+ a model name for the handle: $e"
+CHECK "ONNX_EMBED_TEXT with a string handle names itself (SR008)" \
+    `echo "$e" | grep -q 'SR008.*Function ONNX_EMBED_TEXT needs an integer as argument 1' && echo 1 || echo 0`
+e=`ERRLINE "ONNX_EMBED_TEXT (1, 2, 3, 4, 5)"`
+LOG "+ a number for the text: $e"
+CHECK "ONNX_EMBED_TEXT with a number for its text names itself (SR014)" \
+    `echo "$e" | grep -q 'SR014.*Function ONNX_EMBED_TEXT needs a string as argument 2' && echo 1 || echo 0`
+mib=`PROBE "select ONNX_CONFIG ('max_input_bytes');"`
+PROBE "select ONNX_CONFIG ('max_input_bytes', 4);" > /dev/null
+e=`ERRLINE "ONNX_EMBED_TEXT (1, 'longer than four bytes')"`
+PROBE "select ONNX_CONFIG ('max_input_bytes', ${mib:-524288});" > /dev/null
+LOG "+ a text over max_input_bytes: $e"
+CHECK "ONNX_EMBED_TEXT over max_input_bytes names itself" \
+    `echo "$e" | grep -q 'ONNX_EMBED_TEXT: input exceeds max_input_bytes' && echo 1 || echo 0`
 
 SHUTDOWN_SERVER
 rm -f "$MODEL" "$NOTAMODEL" "$MODEL_G" "$MODEL_B" \
