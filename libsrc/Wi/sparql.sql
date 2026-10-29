@@ -7087,8 +7087,12 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
       val := colvalues[col_ctr];
       if (col_ctr > 0)
         http('\t', _env);
+      -- As in DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW
       if (val is not null)
-        http_nt_object(val, _env, 1);
+        {
+          if (2 = http_nt_object (val, _env, 257))
+            DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (_env, val);
+        }
     }
   http('\n', _env);
 }

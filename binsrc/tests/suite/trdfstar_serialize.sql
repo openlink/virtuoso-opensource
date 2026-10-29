@@ -296,6 +296,100 @@ echo both $if $equ $LAST[1] "nice" "PASSED" "***FAILED";
 echo both ": 4f nice Turtle of a graph without triple terms still nests a blank node object in [ ]\n";
 
 --------------------------------------------------------------------------
+-- 5. Triple terms and literals in TSV results.
+--
+--    define output:format "TSV" (DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC)
+--    had no triple term syntax and wrote a triple term as its internal IRI;
+--    and the TSV writers of the SPARQL endpoint (SPARQL_RESULTS_TSV_WRITE_ROW,
+--    and _STREAM_ROW for a streamed result) guessed from its text whether a
+--    string was an IRI, so a literal that
+--    looks like one, such as STR(<http://ex/a>), was written as the IRI
+--    <http://ex/a>, where it was "http://ex/a" before RDF 1.2 support.
+--------------------------------------------------------------------------
+
+-- The text a SPARQL query with an output:format define returns.
+create function TRDFSTAR_SER_SPARQL_TEXT (in qry varchar) returns varchar
+{
+  declare st, msg, mdta, rset any;
+  st := '00000';
+  exec (qry, st, msg, vector (), 0, mdta, rset);
+  if (st <> '00000')
+    return 'error ' || st || ': ' || msg;
+  return cast (rset[0][0] as varchar);
+}
+;
+
+-- The TSV the SPARQL endpoint writes for a value in a one column result.
+create function TRDFSTAR_SER_TSV_ROW (in val any) returns varchar
+{
+  declare ses any;
+  ses := string_output ();
+  DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW (ses, vector (vector (vector ('x'))), vector (val));
+  return string_output_string (ses);
+}
+;
+
+select case when strstr (txt, '<<(<http://example.com/ns#a> <http://example.com/ns#b> <http://example.com/ns#c>)>>') is not null
+  and strstr (txt, 'urn:rdf-star:triple:') is null then 'ok' else txt end
+  from (select TRDFSTAR_SER_SPARQL_TEXT ('sparql define output:format "TSV" select ?o from <urn:trdfstar_serialize:rt> where { <http://example.com/ns#r> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> ?o }') as txt) as x;
+echo both $if $equ $LAST[1] "ok" "PASSED" "***FAILED";
+echo both ": 5a define output:format TSV writes a triple term as <<( s p o )>>\n";
+
+select case when strstr (txt, '<<(<http://example.com/ns#a> <http://example.com/ns#b> <<(<http://example.com/ns#c> <http://example.com/ns#d> <http://example.com/ns#e>)>>)>>') is not null
+  and strstr (txt, 'urn:rdf-star:triple:') is null then 'ok' else txt end
+  from (select TRDFSTAR_SER_SPARQL_TEXT ('sparql define output:format "TSV" select ?o from <urn:trdfstar_serialize:rt> where { <http://example.com/ns#r4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> ?o }') as txt) as x;
+echo both $if $equ $LAST[1] "ok" "PASSED" "***FAILED";
+echo both ": 5b define output:format TSV writes a nested triple term as <<( s p <<( s p o )>> )>>\n";
+
+-- The TSV the SPARQL endpoint streams for a value in a one column result.
+create function TRDFSTAR_SER_TSV_STREAM_ROW (in val any) returns varchar
+{
+  declare ses, metas, env, row any;
+  ses := string_output ();
+  metas := vector (vector (vector ('x')));
+  env := 0;
+  row := vector (val);
+  DB.DBA.SPARQL_RESULTS_TSV_STREAM_ROW (ses, metas, env, row, 0);
+  return string_output_string (ses);
+}
+;
+
+select case when strstr (TRDFSTAR_SER_SPARQL_TEXT ('sparql define output:format "TSV" select (str (<http://ex/a>) as ?x) {}'), '"http://ex/a"') is not null then 'literal' else 'other' end;
+echo both $if $equ $LAST[1] "literal" "PASSED" "***FAILED";
+echo both ": 5c define output:format TSV writes STR(<http://ex/a>) as a literal\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_ROW ('http://ex/a'), '"http://ex/a"') is not null then 'literal' else TRDFSTAR_SER_TSV_ROW ('http://ex/a') end;
+echo both $if $equ $LAST[1] "literal" "PASSED" "***FAILED";
+echo both ": 5d the endpoint TSV writes a string that looks like an IRI as a literal\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_ROW (iri_to_id ('http://ex/a')), '<http://ex/a>') is not null then 'iri' else 'other' end;
+echo both $if $equ $LAST[1] "iri" "PASSED" "***FAILED";
+echo both ": 5e the endpoint TSV writes an IRI as an IRI\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_ROW ((select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_serialize:rt') and S = iri_to_id ('http://example.com/ns#r'))),
+  '<<(<http://example.com/ns#a> <http://example.com/ns#b> <http://example.com/ns#c>)>>') is not null then 'tt' else 'other' end;
+echo both $if $equ $LAST[1] "tt" "PASSED" "***FAILED";
+echo both ": 5f the endpoint TSV writes a triple term as <<( s p o )>>\n";
+
+select "LEFT" (TRDFSTAR_SER_TSV_ROW ((select S from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_serialize:rt') and P = iri_to_id ('http://example.com/ns#src'))), 4);
+echo both $if $equ $LAST[1] "_:vb" "PASSED" "***FAILED";
+echo both ": 5g the endpoint TSV writes a blank node as _:vb...\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_STREAM_ROW ('http://ex/a'), '"http://ex/a"') is not null then 'literal' else TRDFSTAR_SER_TSV_STREAM_ROW ('http://ex/a') end;
+echo both $if $equ $LAST[1] "literal" "PASSED" "***FAILED";
+echo both ": 5h the streamed endpoint TSV writes a string that looks like an IRI as a literal\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_STREAM_ROW ((select O from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:trdfstar_serialize:rt') and S = iri_to_id ('http://example.com/ns#r'))),
+  '<<(<http://example.com/ns#a> <http://example.com/ns#b> <http://example.com/ns#c>)>>') is not null then 'tt' else 'other' end;
+echo both $if $equ $LAST[1] "tt" "PASSED" "***FAILED";
+echo both ": 5i the streamed endpoint TSV writes a triple term as <<( s p o )>>\n";
+
+select case when strstr (TRDFSTAR_SER_TSV_ROW (vector (iri_to_id ('http://example.com/ns#a'), iri_to_id ('http://example.com/ns#b'), iri_to_id ('http://example.com/ns#c'))),
+  '<<(<http://example.com/ns#a> <http://example.com/ns#b> <http://example.com/ns#c>)>>') is not null then 'tt' else 'other' end;
+echo both $if $equ $LAST[1] "tt" "PASSED" "***FAILED";
+echo both ": 5j the endpoint TSV writes a TRIPLE() vector as <<( s p o )>>\n";
+
+--------------------------------------------------------------------------
 -- cleanup
 --------------------------------------------------------------------------
 
