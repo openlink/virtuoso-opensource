@@ -379,6 +379,45 @@ create method R2RML_GET_COL_DESC (in triplesmap_iid IRI_ID, in col_name varchar)
 }
 ;
 
+--! The datatype of the natural RDF literal of a column of the given type (R2RML 10.2), as the quad map formats give it, or NULL
+create function DB.DBA.R2RML_NATURAL_DATATYPE (in col_dtp integer) returns varchar
+{
+  if (col_dtp = __tag of date)
+    return 'http://www.w3.org/2001/XMLSchema#date';
+  if (col_dtp = __tag of time)
+    return 'http://www.w3.org/2001/XMLSchema#time';
+  if (col_dtp in (__tag of datetime, __tag of timestamp))
+    return 'http://www.w3.org/2001/XMLSchema#dateTime';
+  if (col_dtp in (__tag of integer, __tag of smallint, __tag of bigint))
+    return 'http://www.w3.org/2001/XMLSchema#integer';
+  if (col_dtp = __tag of double precision)
+    return 'http://www.w3.org/2001/XMLSchema#double';
+  if (col_dtp = __tag of numeric)
+    return 'http://www.w3.org/2001/XMLSchema#decimal';
+  if (col_dtp in (__tag of varchar, __tag of nvarchar, __tag of long varchar, __tag of long nvarchar))
+    return 'http://www.w3.org/2001/XMLSchema#string';
+  return null;
+}
+;
+
+--! Nonzero if rr:datatype dt of a column-valued literal map is the natural datatype of the column (col_desc as R2RML_GET_COL_DESC returns it):
+--! the map is then the natural literal, and is written as the plain column, not as a literal class
+create function DB.DBA.R2RML_DT_IS_NATURAL (in col_desc any, in dt any) returns integer
+{
+  declare nat varchar;
+  if (dt is null)
+    return 0;
+  nat := DB.DBA.R2RML_NATURAL_DATATYPE (col_desc[2][1]);
+  if (nat is null)
+    return 0;
+  if (isiri_id (dt))
+    dt := id_to_iri (dt);
+  if (cast (dt as varchar) = nat)
+    return 1;
+  return 0;
+}
+;
+
 create function DB.DBA.R2RML_SPLIT_TEMPLATE (in strg varchar) returns any
 {
   declare splitlbra, parts any;
@@ -664,6 +703,9 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
     self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (fld_idx, 2, triplesmap_iid, src_template, termtype, dt, lang);
   else if (col is not null)
     {
+      if ((dt is not null) and (termtype = 'http://www.w3.org/ns/r2rml#Literal') and (lang is null)
+        and DB.DBA.R2RML_DT_IS_NATURAL (self.R2RML_GET_COL_DESC (triplesmap_iid, col), dt))
+        dt := null; -- the natural literal, see R2RML_MAKE_QM_IMPL_IOL_CLASSES
       if ((termtype <> 'http://www.w3.org/ns/r2rml#Literal') or (dt is not null) or (lang is not null))
         self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (fld_idx, 2, triplesmap_iid, '{' || col || '}', termtype, dt, lang);
       else
@@ -745,8 +787,15 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:datatype ?dt . }
             optional { ?fldmap rr:language ?lang . } } } ) do
     {
-      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
-        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), "dt", __ro2sq ("lang"));
+      declare obj_dt any;
+      obj_dt := "dt";
+      -- rr:datatype naming the column's natural datatype gives the natural literal (R2RML 11): no class,
+      -- R2RML_GEN_FLD writes the plain column, whose quad map format has that datatype
+      if ((obj_dt is not null) and (("termtype" is null) or (__id2i ("termtype") = 'http://www.w3.org/ns/r2rml#Literal')) and ("lang" is null)
+        and DB.DBA.R2RML_DT_IS_NATURAL (self.R2RML_GET_COL_DESC ("triplesmap", DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col"))), obj_dt))
+        obj_dt := null;
+      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or (obj_dt is not null) or ("lang" is not null))
+        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), obj_dt, __ro2sq ("lang"));
     }
 }
 ;

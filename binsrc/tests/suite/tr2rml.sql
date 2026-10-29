@@ -202,10 +202,69 @@ ECHO BOTH $IF $EQU $LAST[1] "R2RML" "PASSED" "***FAILED";
 ECHO BOTH ": a quad map field whose class the script does not create is an R2RML error, got " $LAST[1] "\n";
 
 --------------------------------------------------------------------------
--- 3. cleanup
+-- 3. rr:datatype on a column, naming the column's natural datatype.
+--    R2RML 11: the literal has the natural lexical form of the value and
+--    the given datatype; for xsd:date on a DATE column that is the natural
+--    literal.  The generator wrote a literal class ("%D", "%d") with
+--    option (datatype ...), and a literal class keeps that option only for
+--    the compiler's static typing: the view wrote plain strings.
+--------------------------------------------------------------------------
+
+create table COURSE.L6.WORKDAY (DAY_ID integer primary key, WORK_DATE date, HOURS integer);
+insert into COURSE.L6.WORKDAY values (1, cast ('2026-01-12' as date), 7);
+insert into COURSE.L6.WORKDAY values (2, cast ('2026-01-13' as date), 8);
+
+SPARQL CLEAR GRAPH <urn:tr2rml:map-dt>;
+DB.DBA.TTLP ('@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix ex: <http://example.org/firm/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+<urn:tr2rml:map-dt#WorkdayMap> a rr:TriplesMap ;
+  rr:logicalTable [ rr:tableSchema "COURSE" ; rr:tableOwner "L6" ; rr:tableName "WORKDAY" ] ;
+  rr:subjectMap [ rr:template "http://example.org/firm/workday/{DAY_ID}" ; rr:graph <urn:tr2rml:view-dt> ] ;
+  rr:predicateObjectMap [ rr:predicate ex:workDate ; rr:objectMap [ rr:column "WORK_DATE" ; rr:datatype xsd:date ] ] ;
+  rr:predicateObjectMap [ rr:predicate ex:hours ; rr:objectMap [ rr:column "HOURS" ; rr:datatype xsd:integer ] ] .
+', '', 'urn:tr2rml:map-dt');
+
+select TR2RML_UNDECLARED (DB.DBA.R2RML_MAKE_QM_FROM_G ('urn:tr2rml:map-dt', null, 'urn:tr2rml:qm-dt'));
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": with rr:datatype on columns the script creates every class it uses (" $LAST[1] " missing)\n";
+
+select TR2RML_RUN ('urn:tr2rml:map-dt', 'urn:tr2rml:qm-dt');
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": the view with rr:datatype on columns is created without errors, got " $LAST[1] "\n";
+
+select count (*) from (sparql select ?o from <urn:tr2rml:view-dt> where { ?s <http://example.org/firm/ns#workDate> ?o }) x;
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": the view has 2 ex:workDate triples, got " $LAST[1] "\n";
+
+-- ?p unbound, so the datatype is the value's own, not the one the compiler
+-- knows statically for the field
+select count (*) from (sparql select (str (datatype (?o)) as ?dt) from <urn:tr2rml:view-dt> where { ?s ?p ?o }) x
+  where "dt" = 'http://www.w3.org/2001/XMLSchema#date';
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": rr:datatype xsd:date on a DATE column gives 2 xsd:date values, got " $LAST[1] "\n";
+
+select count (*) from (sparql select (str (datatype (?o)) as ?dt) from <urn:tr2rml:view-dt> where { ?s ?p ?o }) x
+  where "dt" = 'http://www.w3.org/2001/XMLSchema#integer';
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": rr:datatype xsd:integer on an INTEGER column gives 2 xsd:integer values, got " $LAST[1] "\n";
+
+select case when strstr (cast (s as varchar), '"2026-01-12"^^<http://www.w3.org/2001/XMLSchema#date>') is not null then 'found' else cast (s as varchar) end
+  from (select (sparql define output:format "NT" construct { ?s ?p ?o } from <urn:tr2rml:view-dt>
+    where { ?s ?p ?o . filter (?s = <http://example.org/firm/workday/1>) }) as s) x;
+ECHO BOTH $IF $EQU $LAST[1] "found" "PASSED" "***FAILED";
+ECHO BOTH ": the view's N-Triples write \"2026-01-12\"^^xsd:date, got " $LAST[1] "\n";
+
+select count (*) from (sparql select ?s from <urn:tr2rml:view-dt> where { ?s <http://example.org/firm/ns#workDate> "2026-01-13"^^<http://www.w3.org/2001/XMLSchema#date> }) x;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": a pattern with the typed date \"2026-01-13\"^^xsd:date finds its row, got " $LAST[1] "\n";
+
+--------------------------------------------------------------------------
+-- 4. cleanup
 --------------------------------------------------------------------------
 
 SPARQL DROP SILENT QUAD MAP <urn:tr2rml:qm>;
 SPARQL DROP SILENT QUAD MAP <urn:tr2rml:qm-iri>;
+SPARQL DROP SILENT QUAD MAP <urn:tr2rml:qm-dt>;
 
 ECHO BOTH "COMPLETED: R2RML (tr2rml.sql)\n";
