@@ -28,7 +28,7 @@
 #
 #  The ONNX plugin is off by default (--enable-onnxruntime), so like the other
 #  ONNX-backed suites this SKIPS (never fails) when vonnx.so is not built, and
-#  also when the staged plugin is present but the model does not actually load.
+#  also when the built plugin is present but the model does not actually load.
 #  It uses the bundled granite-384-local model.
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -66,8 +66,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-
 #  Ask the running server a one-line question; echoes the first bare value.
 PROBE()
 {
@@ -102,15 +100,10 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 #  ---- ONNX gate: repoint LoadPath and add the model/helper paths ------------
 ONNX=0
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
+    ONNX_CONFIGURE $CFGFILE
     ONNX=1
-    LOG "+ vonnx plugin found in $HOSTING"
 else
     LOG "SKIPPED: vonnx plugin not built"
     BANNER "COMPLETED ONNX helper lifecycle test (skipped: vonnx not built)"
@@ -130,7 +123,7 @@ printf '#!/bin/sh\nwhile :; do sleep 1; done\n' > "$DECOY_DIR/onnx_helper"
 /bin/sh "$DECOY_DIR/onnx_helper" --model decoy --server &
 DECOY_PID=$!
 
-#  Confirm the model actually loads and embeds; a staged-but-broken plugin skips.
+#  Confirm the model actually loads and embeds; a built-but-broken plugin skips.
 ok=`PROBE "select case when exists (select 1 from DB.DBA.ONNX_MODELS where model_name = 'granite-384-local' and handle is not null) then 1 else 0 end;"`
 if [ "$ok" != "1" ]
 then
@@ -205,7 +198,7 @@ CHECK "working helper_path preserved after a bad config (got '$n')" `[ "$n" = "3
 #  its single-threaded helpers, back.  And opt never reached a helper at all.
 #  Each variant gets one helper (the pool size is lowered for the section and
 #  put back) and is unloaded as soon as it is checked.
-MODEL="$HOSTING/onnx-models/granite-embedding-30m-english"
+MODEL="$ONNX_MODEL_ROOT/granite-embedding-30m-english"
 OPTS="input=input_ids;input2=attention_mask;output=pooled_output;vocab=$MODEL/vocab.json;max_seq_len=512"
 LOAD()
 {

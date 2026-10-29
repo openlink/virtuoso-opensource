@@ -39,15 +39,9 @@ BANNER "STARTED vector index refresh operations test (tvvec_refresh_ops.sh)"
 
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
-    LOG "+ vonnx plugin found in $HOSTING"
+    ONNX_CONFIGURE $CFGFILE
 else
     LOG "+ vonnx not built; the ONNX assertions pass vacuously"
 fi

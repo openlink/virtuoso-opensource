@@ -69,8 +69,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-
 #  Fixtures for the general tensor I/O surface.  All are a few hundred bytes and
 #  are written out by the server itself (string_to_file + decode_base64), so the
 #  suite carries no binary and needs no Python.  Expected values below are from
@@ -128,9 +126,9 @@ CHECK()   #  CHECK "<description>" <ok?0/1>
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 #  ---- ONNX gate: repoint LoadPath and add the model/helper paths ------------
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
+    ONNX_CONFIGURE $CFGFILE
     #  Narrow DirsAllowed to the test directory ONLY.  Two things depend on this:
     #
     #    - the generated suite config allows '/', under which the DirsAllowed
@@ -140,13 +138,9 @@ then
     #      DirsAllowed = ., ../vad/).  That is the shape that once stopped the
     #      server loading its own bundled model at bootstrap, so the bundled
     #      model is asserted below under this config and not a friendlier one.
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" \
-        -e "s#^DirsAllowed[ 	]*=.*#DirsAllowed = .#" \
-        "$CFGFILE.pre_onnx" > "$CFGFILE"
+    cp "$CFGFILE" "$CFGFILE.pre_onnx"
+    sed -e "s#^DirsAllowed[ 	]*=.*#DirsAllowed = .#" "$CFGFILE.pre_onnx" > "$CFGFILE"
     rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
-    LOG "+ vonnx plugin found in $HOSTING"
 else
     LOG "SKIPPED: vonnx plugin not built"
     BANNER "COMPLETED ONNX tensor path test (skipped: vonnx not built)"

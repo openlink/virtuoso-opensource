@@ -33,7 +33,7 @@ ECHO BOTH ": ensure ONNX_MODELS table STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 insert soft DB.DBA.ONNX_MODELS
   (model_name, description, model_path, model_type, output_name, output_shape, vocab_path, max_seq_len, created_at, updated_at)
 values
-  ('granite-384-local', 'local bootstrap model', 'onnx-models/granite-embedding-30m-english/model.onnx', 'text_embedding', 'pooled_output', '1,384', 'onnx-models/granite-embedding-30m-english/vocab.json', 512, now (), now ());
+  ('granite-384-local', 'local bootstrap model', 'granite-embedding-30m-english/model.onnx', 'text_embedding', 'pooled_output', '1,384', 'granite-embedding-30m-english/vocab.json', 512, now (), now ());
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": ensure test model registered STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

@@ -73,8 +73,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-
 PROBE()
 {
     echo "$1" | $ISQL $DSN dba dba VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT 2>/dev/null \
@@ -106,14 +104,9 @@ CHECK()
 
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
-    LOG "+ vonnx plugin found in $HOSTING"
+    ONNX_CONFIGURE $CFGFILE
 else
     LOG "SKIPPED: vonnx plugin not built"
     BANNER "COMPLETED ONNX request batching test (skipped: vonnx not built)"

@@ -65,8 +65,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-GRANITE="$HOSTING/onnx-models/granite-embedding-30m-english"
 TEXTS="$VIRTUOSO_TEST/tvvec_onnx_bpe_texts.txt"
 IDS="$VIRTUOSO_TEST/tvvec_onnx_bpe_ids.txt"
 VECS="$VIRTUOSO_TEST/tvvec_onnx_bpe_vecs.txt"
@@ -86,8 +84,10 @@ CHECK()
     else FAIL=`expr $FAIL + 1`; LOG "***FAILED: $1"; fi
 }
 
-if [ ! -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
+    GRANITE="$ONNX_MODEL_ROOT/granite-embedding-30m-english"
+else
     LOG "SKIPPED: vonnx plugin not built"
     BANNER "COMPLETED ONNX BPE test (skipped: vonnx not built)"
     exit 0
@@ -99,7 +99,7 @@ do
 done
 
 #  --- 1. token ids ------------------------------------------------------------
-"$HOSTING/onnx_helper" --vocab "$GRANITE/vocab.json" --max-seq-len 512 --tokenize \
+"$ONNX_HELPER" --vocab "$GRANITE/vocab.json" --max-seq-len 512 --tokenize \
     < "$TEXTS" > tvvec_onnx_bpe_tokens.out 2>tvvec_onnx_bpe_tokens.err
 same=`awk 'NR == FNR { want[FNR] = $0; next } { if ($0 == want[FNR]) n++ } END { print n + 0 }' "$IDS" tvvec_onnx_bpe_tokens.out`
 CHECK "the helper tokenizes $same of $NTEXTS fixture texts as Hugging Face does" \
@@ -112,11 +112,7 @@ then
 fi
 
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
-cp "$CFGFILE" "$CFGFILE.pre_onnx"
-sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-rm -f "$CFGFILE.pre_onnx"
-printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-    "$HOSTING" "$HOSTING" >> "$CFGFILE"
+ONNX_CONFIGURE $CFGFILE
 
 START_SERVER $PORT 1000
 
