@@ -633,6 +633,12 @@ create_iol_class:
     }
   return iri_to_id (class_iri);
 print_field:
+  -- The class name is a digest of the term type, format, argument types, datatype and language, so a
+  -- field written with other parameters than R2RML_MAKE_QM_IMPL_IOL_CLASSES used would name a class
+  -- the script never creates, and the script would leave a half-built view behind.
+  if (dict_get (self.declared_jsos, class_iri, null) is null)
+    signal ('R2RML', sprintf ('Internal error: the quad map would use the %s class <%s> for "%s" of <%s>, but the script does not create it',
+        subseq (termtype, length ('http://www.w3.org/ns/r2rml#')), class_iri, src_template, id_to_iri (triplesmap_iid)));
   http ('<' || class_iri || '> (', self.codegen_ses);
   for (argctr := 0; argctr < argcount; argctr := argctr + 1)
     {
@@ -881,7 +887,10 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
       term_type := __rdf_strsqlval ("ott");
       if (term_type is null)
         {
-          if ("ocol" is null and "odatatype" is null and "olang" is null and (isiri_id ("consto") or
+          -- R2RML 7.4: without rr:termType an object map is a Literal if it is column-valued or has
+          -- rr:datatype or rr:language, an IRI otherwise; a template, as R2RML_MAKE_QM_IMPL_IOL_CLASSES
+          -- has already created its class.  A constant is what the constant is.
+          if ("ocol" is null and "odatatype" is null and "olang" is null and ("otmpl" is not null or isiri_id ("consto") or
                 ((isstring ("consto") or isuname("consto")) and bit_and (__box_flags ("consto"), 1)) ))
             term_type := 'http://www.w3.org/ns/r2rml#IRI';
           else

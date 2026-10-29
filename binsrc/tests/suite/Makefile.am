@@ -75,6 +75,7 @@ check_SCRIPTS = \
 	tpcd.sh \
 	tproviders.sh \
 	tproxy.sh \
+	tr2rml.sh \
 	trdfstar.sh \
 	trecov.sh \
 	trecov_schema.sh \

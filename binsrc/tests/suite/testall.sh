@@ -123,6 +123,7 @@ timsg \
 tpcd \
 tproxy \
 trecov_schema \
+tr2rml \
 trepl \
 tsec \
 tsqlo \
