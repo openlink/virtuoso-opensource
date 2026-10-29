@@ -89,6 +89,32 @@ alter table DB.DBA.SPARQL_VEC_INDEX add SVI_LABEL varchar if not exists
 alter table DB.DBA.SPARQL_VEC_INDEX add SVI_COMMENT varchar if not exists
 ;
 
+-- What the <urn:vvec:indexes> RDF view (sparql_vec_index_view.sql) reads: an
+-- index's IRI with its label, and with its comment, in the rows the CALLER may
+-- read -- decided, row by row, by the caller's own grants on those columns of
+-- DB.DBA.SPARQL_VEC_INDEX.  No grant, no rows.
+--
+-- The quad maps read these views rather than the table because they are in the
+-- default quad storage, so every SPARQL query over a variable graph reaches
+-- them.  Reading the table, they failed every such query of a reader without
+-- the column grants -- the anonymous /sparql account on every database --
+-- with SQ033, whatever graphs the query was about.  SELECT on the views goes
+-- to SPARQL_SELECT (DB.DBA.RDF_CREATE_SPARQL_ROLES); they show nothing a
+-- grant on the table does not.
+create view DB.DBA.SPARQL_VEC_INDEX_LABELS as
+  select SVI_IRI, SVI_LABEL from DB.DBA.SPARQL_VEC_INDEX
+   where SVI_LABEL is not null
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_IRI') <> 0
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_LABEL') <> 0
+;
+
+create view DB.DBA.SPARQL_VEC_INDEX_COMMENTS as
+  select SVI_IRI, SVI_COMMENT from DB.DBA.SPARQL_VEC_INDEX
+   where SVI_COMMENT is not null
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_IRI') <> 0
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_COMMENT') <> 0
+;
+
 -- Trigger catalog for general-selector async maintenance.
 -- One row per (index, graph, predicate) dependency pair extracted from the
 -- WHERE pattern at parse time.  SVT_PRED_IRI = '' means graph-only fallback

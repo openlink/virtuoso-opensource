@@ -15449,7 +15449,14 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.VEC_INDEX_EXPAND_SEARCH_INDEXES to SPARQL_SELECT',
     'grant execute on DB.DBA.VEC_INDEX_HIT_BETTER to SPARQL_SELECT',
     'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI to SPARQL_SELECT',
-    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS to SPARQL_SELECT' );
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS to SPARQL_SELECT',
+    -- The quad maps of the <urn:vvec:indexes> RDF view read these two views,
+    -- and every query over a variable graph reaches those maps, so a SPARQL
+    -- reader without SELECT on them had every such query fail with SQ033.
+    -- They show each reader only what its own grants on the label and comment
+    -- columns of DB.DBA.SPARQL_VEC_INDEX allow (sparql_vec_index.sql).
+    'grant select on DB.DBA.SPARQL_VEC_INDEX_LABELS to SPARQL_SELECT',
+    'grant select on DB.DBA.SPARQL_VEC_INDEX_COMMENTS to SPARQL_SELECT' );
 
   foreach (varchar cmd in cmds) do
     {
