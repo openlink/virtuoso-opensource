@@ -1977,6 +1977,18 @@ create_new_ranges:
 	    END_DO_SET();
 	  }
 	END_DO_SET();
+	/* The loop above leaves where a phrase or a NEAR group matches in the
+	   ranges of the group's first term, not in the node's own.  A phrase is
+	   a term of an enclosing NEAR, which reads the ranges of its terms, so
+	   give the node the ranges of its single group. */
+	if (make_ranges && ((SRC_WORD_CHAIN == sst->sst_op) || (SRC_NEAR == sst->sst_op))
+	    && (NULL != sst->sst_near_group_firsts) && (NULL == sst->sst_near_group_firsts->next))
+	  {
+	    search_stream_t *first = (search_stream_t *) sst->sst_near_group_firsts->data;
+	    unsigned rinx;
+	    for (rinx = first->sst_sel_startofs; rinx < first->sst_sel_startofs + first->sst_sel_count; rinx++)
+	      sst_range_hit (sst, (int) first->sst_all_ranges[rinx].r_start, (int) first->sst_all_ranges[rinx].r_end);
+	  }
 	if (0 != sst->sst_all_ranges_fill)
 	  {
 	    sst->sst_sel_from = sst->sst_all_from = from;
