@@ -7332,7 +7332,13 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   if (LOAD_L == subtype)
     {
       dk_set_t *opts_ptr = &(sparp->sparp_env->spare_src.ssrc_common_sponge_options);
-      options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (opts_ptr[0])));
+      dk_set_t load_opts = opts_ptr[0];
+      if (!strcmp (opname, "LOAD") && (graph_precode != aux_op))
+        { /* LOAD ... INTO GRAPH, the graph is not the source: SPARQL 1.2 makes a named graph in the document an error. Pushed on a local head, the common options stay as they are. */
+          t_set_push (&load_opts, t_box_dv_short_string ("1"));
+          t_set_push (&load_opts, t_box_dv_uname_string ("get:no-named-graphs"));
+        }
+      options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (load_opts)));
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:destination"))
         spar_error (sparp, "DEFINE get:destination ... is not applicable for SPARUL LOAD statement; use LOAD ... INTO ... form instead");
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:uri"))

@@ -241,7 +241,8 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:strategy', get_keyword_ucase ('get:strategy', env),
         'get:private', get_keyword_ucase ('get:private', env),
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
-        'get:note', get_keyword_ucase ('get:note', env) );
+        'get:note', get_keyword_ucase ('get:note', env),
+        'get:no-named-graphs', get_keyword ('get:no-named-graphs', env) );
       dict_put (grabbed, url, 1);
       DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() has resolved <%s> as <%s> and will try to grab it', val, url);
       get_private := get_keyword_ucase ('get:private', env, null);
@@ -1316,6 +1317,8 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 			return 'text/rdf+n3';
 		if (strstr (ret_content_type, 'application/x-trig') is not null)
 			return 'application/x-trig';
+		if (strstr (ret_content_type, 'application/trig') is not null)
+			return 'application/trig';
 		if (strstr (ret_content_type, 'application/n-quads') is not null)
 			return 'application/n-quads';
 	}
@@ -1767,11 +1770,15 @@ retry_after_deadlock:
     strstr (ret_content_type, 'application/x-turtle') is not null )
     ttl_mode := 255;
   else if (
-    strstr (ret_content_type, 'application/x-trig') is not null)
+    strstr (ret_content_type, 'application/x-trig') is not null or
+    strstr (ret_content_type, 'application/trig') is not null)
     ttl_mode := 256+255;
   else if (
     strstr (ret_content_type, 'application/n-quads') is not null)
     ttl_mode := 512+255;
+  -- SPARQL 1.2 LOAD ... INTO GRAPH: a named graph in the document is an error (TTLP_NO_NAMED_GRAPHS)
+  if (ttl_mode is not null and get_keyword ('get:no-named-graphs', options) is not null)
+    ttl_mode := bit_or (ttl_mode, 1024);
   if (ttl_mode is not null)
     {
       declare exit handler for sqlstate '*'

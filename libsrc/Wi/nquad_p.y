@@ -385,6 +385,8 @@ ctx_opt
 		  }
 	| q_complete {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		if (TTLP_NO_NAMED_GRAPHS & ttlp_arg->ttlp_flags)
+		  ttlyyerror_action ("The text has a named graph but is loaded into a single graph, as by SPARQL LOAD ... INTO GRAPH");
 		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, ttlp_arg->ttlp_last_complete_uri))
 		  TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_last_complete_uri);
 		else {

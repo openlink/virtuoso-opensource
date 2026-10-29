@@ -975,6 +975,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsparul_load
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparul_load.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: SPARQL LOAD of RDF datasets -- tsparul_load.sql"
+      exit 1
+   fi
+
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"
