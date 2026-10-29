@@ -267,6 +267,14 @@ then
     exit 1
 fi
 
+LOG + running sql script ttrans_target
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_target.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table with both ends bound -- ttrans_target.sql"
+    exit 1
+fi
+
 
 LOG + running sql script tclforvec
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclforvec.sql 

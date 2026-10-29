@@ -3336,6 +3336,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	      sethash ((void *) (ptrlong) org_shadowed, sc->sc_vec_ssl_shadow, (void *) sh);
 	  }
 	  END_DO_BOX;
+	  /* the target is read with the input, once per set of this node, so it is referenced the same way */
+	  ref_ssls (res, tn->tn_target);
 
 	  t_set_push (&sc->sc_vec_pred, (void *) tn);
 	  qn->src_sets = 0;	/* the sqs is transparent for the sets for the inner query */
