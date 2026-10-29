@@ -207,6 +207,14 @@ then
     exit 1
 fi
 
+LOG + running sql script ttext_outer
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttext_outer.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: free-text check before an outer join -- ttext_outer.sql"
+    exit 1
+fi
+
 LOG + running sql script tplmodule
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplmodule.sql
 if test $STATUS -ne 0

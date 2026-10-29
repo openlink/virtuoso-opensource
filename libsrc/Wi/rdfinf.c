@@ -2651,7 +2651,9 @@ qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn)
   (((qn_input_fn) rdf_inf_pre_input == (qn)->src_input && !((rdf_inf_pre_node_t *)(qn))->ri_is_after) \
     || (qn_input_fn)in_iter_input  == (qn)->src_input)
 
-#define IS_ITER_OR_TXS(qn) (IS_ITER(qn) || (qn_input_fn)txs_input == (qn)->src_input)
+/* Of the text nodes before an outer ts, only its own one feeds it.  Another table's text node checks the rows of that table, or stands for it when nothing else is read from it. */
+#define IS_ITER_OR_OWN_TXS(qn, tb_dfe) \
+  (IS_ITER(qn) || ((qn_input_fn)txs_input == (qn)->src_input && DFE_TABLE == (tb_dfe)->dfe_type && (qn) == (tb_dfe)->_.table.text_node))
 
 void
 sqlc_asg_mark (state_slot_t * ssl)
@@ -2778,7 +2780,7 @@ sqlg_cl_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t *
   outer_seq_end_node_t * ose = NULL;
   while (qn)
     {
-      if (IS_ITER_OR_TXS (qn))
+      if (IS_ITER_OR_OWN_TXS (qn, tb_dfe))
 	{
 	  if (!first_iter)
 	    first_iter = qn;
