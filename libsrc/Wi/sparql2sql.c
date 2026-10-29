@@ -5690,7 +5690,7 @@ sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp)
           continue;
         case UNION_L: case SPAR_UNION_WO_ALL:
           if (0 == BOX_ELEMENTS_0 (memb->_.gp.members))
-            goto do_detach_memb; /* see below */
+            goto do_detach_or_zap; /* see below: a union without branches has no solutions, it is not {} */
           continue;
         default:
           SPARP_FOREACH_GP_EQUIV (sparp, memb, eq_ctr, eq)
@@ -6197,6 +6197,9 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
       if (SPAR_GP == memb->type)
         sparp_gp_deprecate (sparp, memb, 1);
     }
+/* Without members the group would read as {}, that has one solution. The conflicts above say otherwise only while
+some variable of the group is used outside it, so with ASK, COUNT(*), EXISTS or MINUS nothing would say so. */
+  sparp_gp_attach_filter (sparp, curr, SPAR_MAKE_EBV_LITERAL (sparp, 0), 0, NULL);
 }
 
 int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)

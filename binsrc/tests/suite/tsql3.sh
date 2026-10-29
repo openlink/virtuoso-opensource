@@ -317,6 +317,15 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfview_nomatch
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfview_nomatch.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: patterns no quad map can produce -- trdfview_nomatch.sql"
+    exit 1
+fi
+
+
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
