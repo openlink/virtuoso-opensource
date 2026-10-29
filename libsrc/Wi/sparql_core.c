@@ -4244,10 +4244,11 @@ mcall_not_found: ;
 plain_triple_in_ctor:
   /* RDF 1.2: Fallback conversion of SPAR_TRIPLE_TERM to SPAR_QNAME IRI for any
      positions not already handled by grammar-level decomposition (e.g. collections). */
-#define SPAR_TT_COMP_STR(node) \
-  ((NULL == (node)) ? "" : \
-   (SPAR_IS_LIT_OR_QNAME(node) ? (const char *)SPAR_LIT_OR_QNAME_VAL(node) : \
-    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : "")))
+  /* Pass value boxes as is: a literal may be an unboxed int, not a string */
+#define SPAR_TT_COMP_VAL(node) \
+  ((NULL == (node)) ? NULL : \
+   (SPAR_IS_LIT_OR_QNAME(node) ? SPAR_LIT_OR_QNAME_VAL(node) : \
+    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : NULL)))
   if ((NULL != subject) && (SPAR_TRIPLE_TERM == SPART_TYPE (subject)))
     {
       SPART *tts = subject->_.triple_term.subject;
@@ -4256,18 +4257,8 @@ plain_triple_in_ctor:
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
       if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
         {
-          const char *s = SPAR_TT_COMP_STR (tts);
-          const char *p = SPAR_TT_COMP_STR (ttp);
-          const char *o = SPAR_TT_COMP_STR (tto);
-          caddr_t s_box, p_box, o_box, tt_iri;
-          if (!s) s = ""; if (!p) p = ""; if (!o) o = "";
-          s_box = box_dv_short_string (s);
-          p_box = box_dv_short_string (p);
-          o_box = box_dv_short_string (o);
-          tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst, s_box, p_box, o_box, 0);
-          dk_free_tree (s_box);
-          dk_free_tree (p_box);
-          dk_free_tree (o_box);
+          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
+              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
           if (NULL != tt_iri)
             subject = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
@@ -4280,23 +4271,13 @@ plain_triple_in_ctor:
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
       if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
         {
-          const char *s = SPAR_TT_COMP_STR (tts);
-          const char *p = SPAR_TT_COMP_STR (ttp);
-          const char *o = SPAR_TT_COMP_STR (tto);
-          caddr_t s_box, p_box, o_box, tt_iri;
-          if (!s) s = ""; if (!p) p = ""; if (!o) o = "";
-          s_box = box_dv_short_string (s);
-          p_box = box_dv_short_string (p);
-          o_box = box_dv_short_string (o);
-          tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst, s_box, p_box, o_box, 0);
-          dk_free_tree (s_box);
-          dk_free_tree (p_box);
-          dk_free_tree (o_box);
+          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
+              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
           if (NULL != tt_iri)
             object = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
-#undef SPAR_TT_COMP_STR
+#undef SPAR_TT_COMP_VAL
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
