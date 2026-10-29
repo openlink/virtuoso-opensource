@@ -167,6 +167,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_values_conflict
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_values_conflict.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: SPARQL VALUES contradicted by FILTER -- tsparql_values_conflict.sql"
+    exit 1
+fi
+
 LOG + running sql script tcheck
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcheck.sql
 if test $STATUS -ne 0
