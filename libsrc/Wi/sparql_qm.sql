@@ -83,7 +83,14 @@ create procedure DB.DBA.RDF_QM_CHANGE_OPT (in cmdlist any)
           result (STATE, MESSAGE);
           if ('' <> eaqs)
             exec ('DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE (?)', STATE, MESSAGE, vector (eaqs));
-          DB.DBA.RDF_AUDIT_METADATA (1, null, null, 0);
+          -- The audit reloads the built-in metadata, which repairs what a failed
+          -- quad map operation may have left half written.  A vector index
+          -- operation writes nothing there -- its state is in its own tables,
+          -- and it undoes its own partial work -- so after one of those the
+          -- reload repairs nothing and costs some 150 ms and the system graph
+          -- rewritten into the transaction log.
+          if (not starts_with (cast (cmd[0] as varchar), 'DB.DBA.VEC_INDEX_'))
+            DB.DBA.RDF_AUDIT_METADATA (1, null, null, 0);
           return;
         }
       if (UNAME'DB.DBA.RDF_QM_BEGIN_ALTER_QUAD_STORAGE' = cmd[0])

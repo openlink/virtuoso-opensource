@@ -203,6 +203,11 @@ RUN_VEC_SQL tvvec_optimizer_vector_key
 #  unconditionally.
 RUN_VEC_SQL tvvec_index_metadata
 
+#  A failed vector index statement answers its error and nothing more: it does
+#  not reload the built-in RDF metadata as a failed quad map operation does.
+#  Needs no model, so it runs unconditionally.
+RUN_VEC_SQL tvvec_ddl_error_reload
+
 #  Multi-index bif:vector_search: option (index (<a>, <b>)), option (index *),
 #  and the RANKING option.  Self-contained -- its own graphs, its own
 #  test_embedding models and its own throwaway readers -- so it needs neither
