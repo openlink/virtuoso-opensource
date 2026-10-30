@@ -295,6 +295,37 @@ create procedure jacts_dump_results ()
 }
 ;
 
+--
+-- A document big enough that the vectored loader sends quads to the store while
+-- it is still parsing: DB.DBA.TTLP_RL_TRIPLE_L sends a batch once the dpipe holds
+-- more than 30 MB, about 90,000 short quads.  The JSON-LD loader never gave the
+-- triple feed its graph, so the callbacks got graph 0, that batch failed with
+-- SR130 and the load stopped part way.
+--
+create function TJSONLD_BIG_DOC (in n integer) returns varchar
+{
+  declare ses any;
+  declare i integer;
+  ses := string_output ();
+  http ('{ "@context": { "v": { "@id": "urn:tjsonld:big:v" } }, "@graph": [', ses);
+  for (i := 0; i < n; i := i + 1)
+    http (sprintf ('%s{ "@id": "urn:tjsonld:big:s%d", "v": [ "a%d", "b%d" ] }', case when i > 0 then ',' else '' end, i, i, i), ses);
+  http (' ] }', ses);
+  return string_output_string (ses);
+}
+;
+
+SPARQL CLEAR GRAPH <urn:tjsonld:big>;
+DB.DBA.RDF_LOAD_JSON_LD (TJSONLD_BIG_DOC (60000), '', 'urn:tjsonld:big');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": a JSON-LD document of 120000 quads, sent to the store while parsing, loads STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:tjsonld:big');
+ECHO BOTH $IF $EQU $LAST[1] 120000 "PASSED" "***FAILED";
+ECHO BOTH ": all 120000 quads of the big JSON-LD document are in its graph, got " $LAST[1] "\n";
+
+SPARQL CLEAR GRAPH <urn:tjsonld:big>;
+
 jacts_run_all();
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;

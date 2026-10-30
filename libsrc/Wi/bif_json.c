@@ -595,6 +595,11 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       QR_RESET_CTX
         {
           tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
+          /* The document goes into this one graph.  Tell the triple feed, as the other
+             loaders do, so the callbacks get the graph's IID and not NULL: a batch the
+             vectored loader sends while still parsing went to graph 0 and failed. */
+          tf->tf_default_graph_uri = box_copy (graph_uri);
+          TF_CHANGE_GRAPH_TO_DEFAULT (tf);
         }
       QR_RESET_CODE
         {
