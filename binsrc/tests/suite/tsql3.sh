@@ -314,6 +314,14 @@ then
     exit 1
 fi
 
+LOG + running sql script texec_cache
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/texec_cache.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: exec () statement cache after DDL -- texec_cache.sql"
+    exit 1
+fi
+
 SHUTDOWN_SERVER
 
 if [ "x$SQLOPTIMIZE" = "x" ]
