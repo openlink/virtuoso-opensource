@@ -991,6 +991,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsinv_lang
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsinv_lang.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: language-tagged literals in SERVICE replies -- tsinv_lang.sql"
+      exit 1
+   fi
+
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"

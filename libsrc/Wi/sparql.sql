@@ -1633,6 +1633,14 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
             }
           return parsed;
         }
+      -- A language tag makes a literal rdf:langString, or rdf:dirLangString with
+      -- a direction; a SPARQL result that names that datatype beside the
+      -- language, as Virtuoso's do, is a literal with a language.
+      if (isstring (o_lang) and o_lang <> ''
+          and (o_type = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+            or o_type = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString'))
+        return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+          o_val, NULL, o_lang );
       return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
         o_val,
         iri_to_id (o_type),
@@ -1936,6 +1944,11 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
           return parsed;
         }
+      -- As in DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS: keep the language.
+      if (__tag (o_lang) in (__tag of varchar, __tag of UNAME) and o_lang <> ''
+          and (o_type = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+            or o_type = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString'))
+        return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
       return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (
         o_val,
         iri_to_id (o_type),
