@@ -48,6 +48,20 @@ void jsonyyset_extra (jsonp_t *jsonp_arg, yyscan_t yyscanner);
     (jp)->lvl = 0; \
     memset (&(jp)->curr_item, 0, sizeof(jsonld_item_t))
 
+/* The JSON-LD parser works in the thread's temp pool.  The triple callbacks and
+   the fetch of a remote context run SQL, which must not see that pool: a bif
+   that starts a pool of its own, such as json_parse (), stops the server ("MP
+   reallocated"), and a vectored insert sets the thread's pool to NULL, leaving
+   the parser with none.  So the pool is set aside while they run.  If they fail,
+   bif_rdf_load_jsonld () puts it back before freeing it. */
+#define JSONLD_OUTSIDE_PARSER_POOL(stmt) \
+  do { \
+      mem_pool_t *__parser_mp = THR_TMP_POOL; \
+      SET_THR_TMP_POOL (NULL); \
+      stmt; \
+      SET_THR_TMP_POOL (__parser_mp); \
+    } while (0)
+
 static caddr_t
 bif_json_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -318,11 +332,11 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
       return;
     }
   if (0 == strncmp(subj, "_:", 2))
-    subj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (subj));
+    JSONLD_OUTSIDE_PARSER_POOL (subj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (subj)));
   else
     subj_iid = subj = jsonld_qname_resolve_1 (jsonp_arg, subj, NULL, itm->use_ns);
   if (is_bnode_obj)
-    obj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (obj));
+    JSONLD_OUTSIDE_PARSER_POOL (obj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (obj)));
   if (is_ref)
     {
       if (!is_bnode_obj)
@@ -332,7 +346,7 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
         }
       if (DV_STRINGP(obj_iid) && !strlen(obj_iid))
         goto done;
-      tf_triple (jsonp_arg->jtf, subj_iid, prop, obj_iid);
+      JSONLD_OUTSIDE_PARSER_POOL (tf_triple (jsonp_arg->jtf, subj_iid, prop, obj_iid));
     }
   else
     {
@@ -342,7 +356,7 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
         lang = NULL;
       JLD_AUDIT_O (obj, dt, lang, err);
       if (!err)
-        tf_triple_l (jsonp_arg->jtf, subj_iid, prop, obj, dt, lang);
+        JSONLD_OUTSIDE_PARSER_POOL (tf_triple_l (jsonp_arg->jtf, subj_iid, prop, obj, dt, lang));
     }
 done:
 #ifdef _JSONLD_DEBUG_Q
@@ -468,7 +482,7 @@ jsonld_context_uri_get (jsonp_t * jsonp_arg, caddr_t uri, id_hash_t *ht)
   caddr_t content;
   query_instance_t * qi = jsonp_arg->qi;
   caddr_t err = NULL;
-  content = xml_uri_get (qi, &err, NULL, jsonp_arg->base_uri, uri, XML_URI_STRING);
+  JSONLD_OUTSIDE_PARSER_POOL (content = xml_uri_get (qi, &err, NULL, jsonp_arg->base_uri, uri, XML_URI_STRING));
   jsonp_t jsonp;
   jsonld_ctx_t jctx;
   yyscan_t scanner;
@@ -576,6 +590,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t ctx_url = BOX_ELEMENTS (args) > 6 ? bif_string_or_null_arg (qst, args, 6, fn) : NULL;
   caddr_t err = NULL;
   triple_feed_t *tf = NULL;
+  mem_pool_t *parser_mp;
   jsonp_t jsonp;
   yyscan_t scanner;
 
@@ -614,6 +629,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   MP_START();
+  parser_mp = THR_TMP_POOL;
   jsonyylex_init (&scanner);
   jsonyyset_extra (&jsonp, scanner);
   jsonp.node2id = hash_table_allocate(101);
@@ -650,6 +666,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET;
+  SET_THR_TMP_POOL (parser_mp); /* a failed callback leaves it set aside */
   while (NULL != dk_set_pop(&jsonp.stack));
   MP_DONE();
   tf_free (tf);
