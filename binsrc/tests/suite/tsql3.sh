@@ -322,6 +322,14 @@ then
     exit 1
 fi
 
+LOG + running sql script txqf_null_datatype
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/txqf_null_datatype.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: __xqf_str_parse_to_rdf_box with a NULL datatype -- txqf_null_datatype.sql"
+    exit 1
+fi
+
 SHUTDOWN_SERVER
 
 if [ "x$SQLOPTIMIZE" = "x" ]
