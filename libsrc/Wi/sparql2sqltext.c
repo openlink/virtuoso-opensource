@@ -10256,6 +10256,8 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
+      if (sinv->_.sinv.silent) /* DB.DBA.SPARQL_SINV_IMP makes a failed call one solution with no bindings */
+        ssg_puts (len ? ", 'silent', 1" : "'silent', 1");
       ssg_putchar (')');
 /* The order of printing parameters here is important because ssg_prepare_sinv_template() has a side effect:
 if sinv->_.sinv.rset_varnames is empty then it uses ?stubvarXX in the printed result set in irder to provide compatibility with obsolete SPARQL endpoints.

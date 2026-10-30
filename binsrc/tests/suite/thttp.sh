@@ -1010,7 +1010,15 @@ then
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql
+   fi
+
+   LOG + running sql script tsinv_silent
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsinv_silent.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: SERVICE SILENT -- tsinv_silent.sql"
+      exit 1
    fi
 
    ECHO "Interop round 4 endpoints"

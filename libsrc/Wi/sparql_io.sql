@@ -1623,6 +1623,22 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
       http (subseq (qtext_template, prev_pos), qtext_ses);
       qtext_template := string_output_string (qtext_ses);
     }
+  {
+  -- SERVICE SILENT (ws_params has 'silent', see ssg_print_sinv_table_exp):
+  -- a call that fails is a single solution with no bindings (SPARQL 1.1
+  -- Federated Query, section 4).
+  declare exit handler for sqlstate '*'
+    {
+      declare no_bindings any;
+      declare var_ctr integer;
+      if (not (isvector (ws_params) and get_keyword ('silent', ws_params, 0)))
+        resignal;
+      no_bindings := make_array (length (expected_vars), 'any');
+      for (var_ctr := 0; var_ctr < length (no_bindings); var_ctr := var_ctr + 1)
+        no_bindings[var_ctr] := null;
+      result (no_bindings);
+      return;
+    };
   -- Handler dispatch: check for registered SERVICE handler
   handler_info := DB.DBA.SPARQL_SINV_RESOLVE_HANDLER (ws_endpoint);
   if (handler_info is not null)
@@ -1659,6 +1675,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
       -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP returns ', retrow);
       result (retrow);
     }
+  }
 }
 ;
 
