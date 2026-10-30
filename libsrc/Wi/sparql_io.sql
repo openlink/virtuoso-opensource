@@ -1985,7 +1985,11 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_TERM (inout ses any, inout _val
     is_xml_lit := 0;
   if (lang is not null)
     {
-      if (dt is not null)
+      -- The language makes the datatype rdf:langString (rdf:dirLangString
+      -- with a direction); written beside it, the datatype is what a reader
+      -- that takes the datatype first keeps, and the language is lost.
+      if (dt is not null and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+          and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString')
         http (sprintf ('<literal xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
       else
         http (sprintf ('<literal xml:lang="%V">', cast (lang as varchar)), ses);
@@ -2157,7 +2161,9 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (inout ses any, in 
           dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
           if (lang is not null)
             {
-              if (dt is not null)
+              -- As in DB.DBA.SPARQL_RESULTS_XML_WRITE_TERM.
+              if (dt is not null and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+                  and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString')
                        http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
               else
                        http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);

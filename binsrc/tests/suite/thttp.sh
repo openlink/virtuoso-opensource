@@ -967,6 +967,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsparql_xml_lang
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsparql_xml_lang.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: language-tagged literals in XML results -- tsparql_xml_lang.sql"
+      exit 1
+   fi
+
    LOG + running sql script tcontneg
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcontneg.sql
    if test $STATUS -ne 0

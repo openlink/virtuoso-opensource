@@ -6752,7 +6752,10 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
 	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
 	  if (lang is not null)
 	    {
-	      if (dt is not null)
+	      -- With rdf:datatype, RDF/XML makes a typed literal and drops the
+	      -- language: rdf:langString and rdf:dirLangString go unsaid.
+	      if (dt is not null and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+	          and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString')
                 http (sprintf (' xml:lang="%V" rdf:datatype="%V">',
 		    cast (lang as varchar), cast (dt as varchar)), _env);
 	      else
