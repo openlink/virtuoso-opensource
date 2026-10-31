@@ -948,6 +948,8 @@ qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
     }
   if (!xx)
     return;	/* a cached query recomp'd for schema effect can have a null  head node */
+  /* each node calls the next one, so a long chain of nodes (e.g. many OPTIONALs) can use up the thread stack */
+  QI_CHECK_STACK (qi, &n_sets, QN_STACK_MARGIN);
   SRC_ENTER (xx, inst);
   if (xx->src_out_fill && !xx->src_prev)
     {

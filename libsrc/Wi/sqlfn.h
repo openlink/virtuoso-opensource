@@ -1067,6 +1067,7 @@ extern void qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin);
 #define CALL_STACK_MARGIN (AUTO_QI_DEFAULT_SZ + (3000 * sizeof (caddr_t)))
 #define OL_BACKUP_STACK_MARGIN (4*PAGE_SZ + 1000 * sizeof (caddr_t))
 #define AC_STACK_MARGIN (3000 * sizeof (caddr_t)) /* do not do autocompact if less */
+#define QN_STACK_MARGIN INS_STACK_MARGIN
 
 /* row.c */
 

@@ -330,6 +330,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tqn_stack
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tqn_stack.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: a long chain of query nodes and the thread stack -- tqn_stack.sql"
+    exit 1
+fi
+
 SHUTDOWN_SERVER
 
 if [ "x$SQLOPTIMIZE" = "x" ]
