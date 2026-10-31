@@ -1227,6 +1227,11 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   int repl = (DKS_REPLICATION & ses->dks_cluster_flags);
   rdf_box_t * rb = (rdf_box_t *) x;
   rdf_box_audit (rb);
+  if (rb->rb_is_complete && (DKS_RB_COMPLETE & ses->dks_cluster_flags))
+    {
+      rb_serialize_complete (x, ses);
+      return;
+    }
   if ((RDF_BOX_DEFAULT_TYPE < rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
   if  ((rdf_no_string_inline || rb->rb_serialize_id_only)

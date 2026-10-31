@@ -413,6 +413,7 @@ extern size_t cha_max_gb_bytes;
 extern int64 chash_space_avail;
 extern int chash_per_query_pct;
 extern int enable_chash_gb;
+extern int enable_ro2sq_late_complete;
 extern int64 chash_mempool_size_limit;
 extern int64 chash_mempool_size_max_used;
 extern long tc_slow_temp_insert;
@@ -2281,6 +2282,7 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I64 (chash_space_avail, "chash_space_avail"),
     SD_DEF_I32 (chash_per_query_pct, "chash_per_query_pct"),
     SD_DEF_I32 (enable_chash_gb, "enable_chash_gb"),
+    SD_DEF_I32 (enable_ro2sq_late_complete, "enable_ro2sq_late_complete"),
     SD_DEF_I64 (chash_mempool_size_limit, "chash_mempool_size_limit"),
     SD_DEF_I32 (enable_ksp_fast, "enable_ksp_fast"),
     SD_DEF_I32 (enable_ac, "enable_ac"),

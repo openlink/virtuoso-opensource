@@ -1817,7 +1817,15 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  dt_dfe->_.sub.dt_out[inx] = exp;
 	  /* GK: done because the dts are already unplaced, but may be in the deps part of the exp */
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 1);
-	  sqlo_place_exp (so, dt_dfe, exp);
+	  if (exp && sqlo_is_oby_key_completion (dt_dfe->_.sub.ot, exp))
+	    {
+	      int old_mode = so->so_place_code_forr_cond;
+	      so->so_place_code_forr_cond = 1;
+	      sqlo_place_exp (so, dt_dfe, exp);
+	      so->so_place_code_forr_cond = old_mode;
+	    }
+	  else
+	    sqlo_place_exp (so, dt_dfe, exp);
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 0);
 	  if (exp)
 	    {
@@ -4619,7 +4627,7 @@ sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * co
 int
 st_is_call (ST * tree, char * f, int n_args)
 {
-  if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name) && 0 == stricmp (f, tree->_.call.name)
+  if (ST_P (tree, CALL_STMT) && DV_STRING_TYPE (tree->_.call.name) && 0 == stricmp (f, tree->_.call.name)
       && BOX_ELEMENTS (tree->_.call.params) == n_args)
     return 1;
   return 0;
@@ -6792,10 +6800,27 @@ sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
 #endif
 
 
+int enable_ro2sq_late_complete = 1;
+
+int
+sqlo_is_oby_key_completion (op_table_t * ot, df_elt_t * sel_dfe)
+{
+  /* __ro2sq () selected out of a group or sort is read after it, so it completes what the group or sort kept */
+  if (!enable_ro2sq_late_complete || !st_is_call (sel_dfe->dfe_tree, "__ro2sq", 1))
+    return 0;
+  return (ot->ot_group_dfe && ot->ot_group_dfe->dfe_is_placed) || (ot->ot_oby_dfe && ot->ot_oby_dfe->dfe_is_placed);
+}
+
+
 void
 sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top_exp)
 {
   so->so_place_code_forr_cond = 0;
+  if (sqlo_is_oby_key_completion (ot, sel_dfe))
+    {
+      so->so_place_code_forr_cond = 1;
+      return;
+    }
   if (IS_BOX_POINTER (top_exp) && top_exp->_.top.skip_exp)
     {
       if (ot->ot_group_dfe || ot->ot_fun_refs)

@@ -3054,6 +3054,81 @@ sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
   END_DO_BOX;
 }
 
+static int
+sqlo_is_rdf_sqlval_exp (sqlo_t * so, ST * exp)
+{
+  /* __ro2sq () of an RDF term, directly or as a column of a dt */
+  int inx;
+  while (ST_P (exp, BOP_AS))
+    exp = exp->_.as_exp.left;
+  if (st_is_call (exp, "__ro2sq", 1) || st_is_call (exp, "__rdf_sqlval_of_obj", 1))
+    return 1;
+  if (ST_COLUMN (exp, COL_DOTTED) && exp->_.col_ref.prefix)
+    {
+      op_table_t * ot = sqlo_cname_ot_1 (so, exp->_.col_ref.prefix, 0);
+      ST * dt = ot ? ot->ot_dt : NULL;
+      if (!dt || !ST_P (dt, SELECT_STMT) || dt != sqlp_union_tree_select (dt))
+	return 0;
+      DO_BOX (ST *, as, inx, dt->_.select_stmt.selection)
+	{
+	  if (ST_P (as, BOP_AS) && 0 == CASEMODESTRCMP (as->_.as_exp.name, exp->_.col_ref.name))
+	    return sqlo_is_rdf_sqlval_exp (so, as->_.as_exp.left);
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
+
+
+static int
+sqlo_is_spec_col (ST ** specs, ST * exp)
+{
+  int inx;
+  DO_BOX (ST *, spec, inx, specs)
+    {
+      if (box_equal ((box_t) spec->_.o_spec.col, (box_t) exp))
+	return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
+
+
+static void
+sqlo_rdf_key_late_complete (sqlo_t * so, ST * tree)
+{
+  /* A GROUP BY or ORDER BY key that is an RDF term made SQL value by __ro2sq () is kept in the key by its RDF_OBJ id,
+     or by id and prefix, so a select col that is the key comes back as the id or the prefix.  Select it as
+     __ro2sq (key), computed from the key after the group or sort: an incomplete box is completed there. */
+  ST * texp = tree->_.select_stmt.table_exp;
+  ST ** gb = texp ? texp->_.table_exp.group_by : NULL;
+  ST ** oby = texp ? texp->_.table_exp.order_by : NULL;
+  int inx;
+  if (!gb && !oby)
+    return;
+  if (texp->_.table_exp.group_by_full && BOX_ELEMENTS (texp->_.table_exp.group_by_full) > 1)
+    return; /* grouping sets, rollup, cube: the select reads each key the way its grouping set has it */
+  DO_BOX (ST *, sel, inx, tree->_.select_stmt.selection)
+    {
+      ST ** place = (ST **) &tree->_.select_stmt.selection[inx];
+      while (ST_P (*place, BOP_AS))
+	place = &(*place)->_.as_exp.left;
+      if (!(gb && sqlo_is_spec_col (gb, *place)) && !(oby && sqlo_is_spec_col (oby, *place)))
+	continue;
+      if (!sqlo_is_rdf_sqlval_exp (so, *place))
+	continue;
+      if (ST_COLUMN (*place, COL_DOTTED) && place == (ST **) &tree->_.select_stmt.selection[inx])
+	{
+	  /* keep the name of an unaliased column */
+	  *place = t_listst (5, BOP_AS, t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__ro2sq"), t_listst (1, *place)),
+	      NULL, t_box_copy ((*place)->_.col_ref.name), NULL);
+	  continue;
+	}
+      *place = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__ro2sq"), t_listst (1, *place));
+    }
+  END_DO_BOX;
+}
+
 /*
    We check all columns in gb are in select list, if so the distinct is redundant.
    The columns in gb can't be less than selection as in previous step for checking gb, missing columns are added in selection  
@@ -3408,6 +3483,8 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       ((sql_tree_t *) ot->ot_fun_refs->data)->_.fn_ref.fn_code <= AMMSC_COUNTSUM)
     SEL_SET_DISTINCT (tree, 0)
 
+  if (texp && enable_ro2sq_late_complete)
+    sqlo_rdf_key_late_complete (so, tree);
   if (texp && texp->_.table_exp.where)
     texp->_.table_exp.where = sqlo_bop_expand_or_exp (so, texp->_.table_exp.where);
   so->so_scope = so->so_scope->sco_super;

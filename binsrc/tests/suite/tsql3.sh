@@ -309,6 +309,13 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_dt_long
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_dt_long.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: long literals sorted and grouped in SQL -- tsparql_dt_long.sql"
+    exit 1
+fi
 
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]

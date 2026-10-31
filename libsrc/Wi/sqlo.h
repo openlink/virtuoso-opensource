@@ -986,6 +986,8 @@ int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_r
 int sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
+int sqlo_is_oby_key_completion (op_table_t * ot, df_elt_t * sel_dfe);
+extern int enable_ro2sq_late_complete;
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
 float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols, float * size_ret);
