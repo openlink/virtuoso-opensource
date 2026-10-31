@@ -2650,6 +2650,15 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
         (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) ||
         eq->e_replaces_filter )
 	continue; /* Do not remove if in use */
+      /* an OPTIONAL that only reads the variable in its FILTER gets it from here, see sparp_dig_and_glue_loj_filter_for_eq () */
+      for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
+          if ((OPTIONAL_L == sub_eq->e_gp->_.gp.subtype) && (0 != sub_eq->e_const_reads) && !SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
+            break;
+        }
+      if (0 <= sub_ctr)
+        continue;
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
