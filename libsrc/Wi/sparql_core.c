@@ -1851,7 +1851,51 @@ SPART *
 spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows)
 {
   SPART *gp = spar_gp_finalize (sparp, NULL);
-  SPART *binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
+  SPART *binv;
+  int varcount = BOX_ELEMENTS (vars), rowcount = BOX_ELEMENTS (rows), varctr, rowctr, keepcount = 0;
+  char *keep = t_alloc (varcount + 1);
+  for (varctr = 0; varctr < varcount; varctr++)
+    {
+      keep[varctr] = 0;
+      for (rowctr = 0; rowctr < rowcount; rowctr++)
+        if (NULL != rows[rowctr][varctr])
+          {
+            keep[varctr] = 1;
+            keepcount++;
+            break;
+          }
+    }
+  /* a column that is UNDEF in every row binds nothing, so it is dropped; otherwise the variable would look bound here and an outer value would not reach a FILTER of an enclosing OPTIONAL */
+  if ((0 < rowcount) && (keepcount < varcount))
+    {
+      if (0 == keepcount)
+        {
+          if (1 == rowcount)
+            {
+              gp->_.gp.subtype = 0;
+              return gp;
+            }
+        }
+      else
+        {
+          SPART **new_vars = (SPART **)t_alloc_list (keepcount);
+          int new_ctr = 0;
+          for (varctr = 0; varctr < varcount; varctr++)
+            if (keep[varctr])
+              new_vars[new_ctr++] = vars[varctr];
+          for (rowctr = 0; rowctr < rowcount; rowctr++)
+            {
+              SPART **new_row = (SPART **)t_alloc_list (keepcount);
+              new_ctr = 0;
+              for (varctr = 0; varctr < varcount; varctr++)
+                if (keep[varctr])
+                  new_row[new_ctr++] = rows[rowctr][varctr];
+              rows[rowctr] = new_row;
+            }
+          vars = new_vars;
+        }
+    }
+  binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
   gp->_.gp.subquery = binv;
   return gp;
 }
