@@ -1956,7 +1956,7 @@ int
 sparp_equiv_contains_t_io (sparp_t *sparp, sparp_equiv_t *eq)
 {
   int sub_ctr;
-  if ((0 != eq->e_pos1_t_in) || (0 != eq->e_pos1_t_in))
+  if ((0 != eq->e_pos1_t_in) || (0 != eq->e_pos1_t_out))
     return 1;
   DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
     {
@@ -4757,6 +4757,9 @@ spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *mem
   if (NULL == eq)
     return 0;
   if ((UNION_L == parent_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == parent_gp->_.gp.subtype))
+    return 0;
+  /* a transitive subquery takes its T_IN / T_OUT values only from equalities, not from an IN filter */
+  if (sparp_equiv_contains_t_io (sparp, eq))
     return 0;
   {
     int memb_idx;
