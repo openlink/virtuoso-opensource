@@ -5721,6 +5721,10 @@ sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp)
           if (0 == BOX_ELEMENTS_0 (memb->_.gp.members))
             goto do_detach_or_zap; /* see below: a union without branches has no solutions, it is not {} */
           continue;
+        case VALUES_L:
+          if (0 == memb->_.gp.subquery->_.binv.rows_in_use)
+            goto do_detach_or_zap; /* see below: VALUES without rows has no solutions, but its variables are not NOT_NULL as they may be UNDEF */
+          /* no break */
         default:
           SPARP_FOREACH_GP_EQUIV (sparp, memb, eq_ctr, eq)
             {
