@@ -4244,10 +4244,11 @@ mcall_not_found: ;
 plain_triple_in_ctor:
   /* RDF 1.2: Fallback conversion of SPAR_TRIPLE_TERM to SPAR_QNAME IRI for any
      positions not already handled by grammar-level decomposition (e.g. collections). */
-#define SPAR_TT_COMP_STR(node) \
-  ((NULL == (node)) ? "" : \
-   (SPAR_IS_LIT_OR_QNAME(node) ? (const char *)SPAR_LIT_OR_QNAME_VAL(node) : \
-    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : "")))
+  /* Pass value boxes as is: a literal may be an unboxed int, not a string */
+#define SPAR_TT_COMP_VAL(node) \
+  ((NULL == (node)) ? NULL : \
+   (SPAR_IS_LIT_OR_QNAME(node) ? SPAR_LIT_OR_QNAME_VAL(node) : \
+    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : NULL)))
   if ((NULL != subject) && (SPAR_TRIPLE_TERM == SPART_TYPE (subject)))
     {
       SPART *tts = subject->_.triple_term.subject;
@@ -4256,18 +4257,8 @@ plain_triple_in_ctor:
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
       if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
         {
-          const char *s = SPAR_TT_COMP_STR (tts);
-          const char *p = SPAR_TT_COMP_STR (ttp);
-          const char *o = SPAR_TT_COMP_STR (tto);
-          caddr_t s_box, p_box, o_box, tt_iri;
-          if (!s) s = ""; if (!p) p = ""; if (!o) o = "";
-          s_box = box_dv_short_string (s);
-          p_box = box_dv_short_string (p);
-          o_box = box_dv_short_string (o);
-          tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst, s_box, p_box, o_box, 0);
-          dk_free_tree (s_box);
-          dk_free_tree (p_box);
-          dk_free_tree (o_box);
+          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
+              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
           if (NULL != tt_iri)
             subject = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
@@ -4280,23 +4271,13 @@ plain_triple_in_ctor:
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
       if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
         {
-          const char *s = SPAR_TT_COMP_STR (tts);
-          const char *p = SPAR_TT_COMP_STR (ttp);
-          const char *o = SPAR_TT_COMP_STR (tto);
-          caddr_t s_box, p_box, o_box, tt_iri;
-          if (!s) s = ""; if (!p) p = ""; if (!o) o = "";
-          s_box = box_dv_short_string (s);
-          p_box = box_dv_short_string (p);
-          o_box = box_dv_short_string (o);
-          tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst, s_box, p_box, o_box, 0);
-          dk_free_tree (s_box);
-          dk_free_tree (p_box);
-          dk_free_tree (o_box);
+          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
+              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
           if (NULL != tt_iri)
             object = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
-#undef SPAR_TT_COMP_STR
+#undef SPAR_TT_COMP_VAL
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
@@ -5828,7 +5809,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "concat"		, SPAR_BIF_CONCAT		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0xFFF	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "contains"		, SPAR_BIF_CONTAINS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
   { "contains_token"	, SPAR_BIF_CONTAINS_TOKEN	, 'B'	, SSG_SD_SPARQL12	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
-  { "cube"		, SPAR_BIF__CUBE			, '-'	, SSG_SD_VIRTSPECIFIC	, 2	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "cube"		, SPAR_BIF__CUBE			, '-'	, SSG_SD_VIRTSPECIFIC	, 1	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "datatype"		, DATATYPE_L			, '-'	, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "day"		, SPAR_BIF_DAY			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "ebv"		, SPAR_BIF_EBV			, '-'	, SSG_SD_VIRTSPECIFIC	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
@@ -5865,7 +5846,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "round"		, SPAR_BIF_ROUND		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "sameterm"		, SPAR_BIF_SAMETERM		, '-'	, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
   { "samevalue"		, SPAR_BIF_SAMEVALUE		, '-'	, SSG_SD_SPARQL12	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
-  { "rollup"		, SPAR_BIF__ROLLUP		, '-'	, SSG_SD_VIRTSPECIFIC	, 2	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "rollup"		, SPAR_BIF__ROLLUP		, '-'	, SSG_SD_VIRTSPECIFIC	, 1	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "seconds"		, SPAR_BIF_SECONDS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "sha1"		, SPAR_BIF_SHA1			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha224"		, SPAR_BIF_SHA224		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
@@ -5901,9 +5882,9 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "isTriple"		, SPAR_BIF_ISTRIPLE		, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
   { "triple"		, SPAR_BIF_TRIPLE		, 'B'	, SSG_SD_BI		, 3	, 3	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}	, SPART_VARR_IS_REF	},
-  { "triple_subject"	, SPAR_BIF_TRIPLE_SUBJECT	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_REF	},
-  { "triple_predicate"	, SPAR_BIF_TRIPLE_PREDICATE	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_REF	},
-  { "triple_object"	, SPAR_BIF_TRIPLE_OBJECT	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_REF	},
+  { "triple_subject"	, SPAR_BIF_TRIPLE_SUBJECT	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_REF	},
+  { "triple_predicate"	, SPAR_BIF_TRIPLE_PREDICATE	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_REF	},
+  { "triple_object"	, SPAR_BIF_TRIPLE_OBJECT	, 'B'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, 0	},
   { "strlen"		, SPAR_BIF_STRLEN		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "lcase"		, SPAR_BIF_LCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},

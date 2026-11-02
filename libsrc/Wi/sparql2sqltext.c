@@ -3872,8 +3872,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
 {
   const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
   SPART **args = tree->_.builtin.args;
-  SPART *arg1 = ((NULL != args) ? args[0] : NULL);
-  ssg_valmode_t arg1_native = ((NULL != args) ? sparp_expn_native_valmode (ssg->ssg_sparp, arg1) : NULL);
+  SPART *arg1 = ((0 < BOX_ELEMENTS_0 (args)) ? args[0] : NULL);
+  ssg_valmode_t arg1_native = ((NULL != arg1) ? sparp_expn_native_valmode (ssg->ssg_sparp, arg1) : NULL);
   int argctr;
   ssg_valmode_t op_fmt = NULL;
   int arg1_restr_bits;
@@ -4633,17 +4633,17 @@ expanded_sameterm_ready:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           case SPAR_BIF_TRIPLE_PREDICATE:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL, NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           case SPAR_BIF_TRIPLE_OBJECT:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
             ssg_puts (", NULL)");
-            goto cant_have_asname;
+            goto print_asname;
           default:
             break;
           }
@@ -4833,21 +4833,21 @@ expanded_sameterm_ready:
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_TRIPLE_PREDICATE:
                 {
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_P (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL, NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_TRIPLE_OBJECT:
                 {
                   ssg_puts (" DB.DBA.RDF_STAR_TT_GET_O (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                   ssg_puts (", NULL)");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_UNNEST:
                 {
@@ -5045,6 +5045,9 @@ valmode_is_found:
           ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
           if (IS_BOX_POINTER (arg1_native))
             {
+              /* the argument is aggregated as is, see sparp_argtype_of_function () */
+              if (arg1_native->qmfIsSubformatOfLongWhenEqToSql && (uname_SPECIAL_cc_bif_c_GROUPING != name))
+                return arg1_native;
               return SSG_VALMODE_SQLVAL;
             }
           if (SSG_VALMODE_NUM == arg1_native)
@@ -8367,6 +8370,9 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         int bigtext, curr_arg_is_long = 0, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
+        /* MIN/MAX of a raw object returns the object's format, a stored box */
+        if (IS_BOX_POINTER (native) && !IS_BOX_POINTER (needed) && (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql))
+          native = SSG_VALMODE_LONG;
         if (((SSG_VALMODE_SHORT_OR_LONG == needed) && ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
           ((SSG_VALMODE_NUM == needed) && ((SSG_VALMODE_SQLVAL == native) || (SSG_VALMODE_BOOL == native))) ||
           ((SSG_VALMODE_SQLVAL == needed) && ((SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
@@ -9885,8 +9891,11 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       int rset_len = BOX_ELEMENTS (rset_varnames);
       int rvals_len = BOX_ELEMENTS (rvals);
       int vname_ctr, expn_ctr;
+      caddr_t *sent_varnames;
       if (rset_len != rvals_len)
         goto failed_single_subq_optimization; /* see below */
+/* Names the endpoint sends back: (?x AS ?alias) is printed as ?x to a SPARQL 1.0 endpoint (see ssg_sdprint_tree) */
+      sent_varnames = (caddr_t *)t_alloc_box (rset_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       for (vname_ctr = rset_len; vname_ctr--; /* no step */)
         {
           caddr_t rset_varname = rset_varnames[vname_ctr];
@@ -9911,10 +9920,28 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
             }
           if (0 > expn_ctr)
             goto failed_single_subq_optimization; /* see below */
+          sent_varnames[vname_ctr] = rset_varname;
+          if ((SPAR_ALIAS == SPART_TYPE (rvals [expn_ctr])) && !rvals [expn_ctr]->_.alias.was_expanded
+            && !((SSG_SD_BI | SSG_SD_SPARQL11_MORE) & ssg->ssg_sd_flags) )
+            {
+              SPART *arg = rvals [expn_ctr];
+              while (SPAR_ALIAS == SPART_TYPE (arg))
+                arg = arg->_.alias.arg;
+              if ((SPAR_VARIABLE == SPART_TYPE (arg)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (arg)))
+                sent_varnames[vname_ctr] = arg->_.var.vname;
+            }
+        }
+/* Two aliases of one variable would come back as one name twice */
+      for (vname_ctr = rset_len; vname_ctr--; /* no step */)
+        {
+          int vname_ctr2;
+          for (vname_ctr2 = vname_ctr; vname_ctr2--; /* no step */)
+            if (!strcmp (sent_varnames[vname_ctr], sent_varnames[vname_ctr2]))
+              goto failed_single_subq_optimization; /* see below */
         }
       if ((NULL != limit_expn) && (DV_LONG_INT == DV_TYPE_OF (limit_expn)) && (0 == sparp_req_top_has_limofs (single_subq)))
         single_subq->_.req_top.limit = limit_expn;
-      final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
+      final_rset_varnames_ret[0] = sent_varnames;
       ssg_sdprint_tree (ssg, single_subq);
       goto query_text_is_composed; /* see below */
 failed_single_subq_optimization: ;

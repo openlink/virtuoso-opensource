@@ -157,11 +157,173 @@ echo both $if $equ $LAST[1] 3 "PASSED" "***FAILED";
 echo both ": the {| p v |} insert stored the same 3 quads TTLP stores\n";
 
 --------------------------------------------------------------------------
--- 6. cleanup
+-- 6. SUBJECT, PREDICATE and OBJECT.  Over a triple term built in the query
+--    with TRIPLE (), an in-memory vector, they raised SR066 (Unsupported
+--    case in CONVERT (ARRAY_OF_POINTER -> VARCHAR)).  Over a stored triple
+--    term they return the right values, but an IRI component was taken for
+--    a literal and a literal object for a reference: isIRI and isLITERAL
+--    of them were 0, and in BIND they raised SP031.  A select of 99 before
+--    each assertion keeps an error from passing on the previous statement's
+--    value.
+--------------------------------------------------------------------------
+
+select 99;
+SPARQL SELECT (SUBJECT (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, <urn:trdfstar:o>)) AS ?x) {};
+echo both $if $equ $LAST[1] "urn:trdfstar:s" "PASSED" "***FAILED";
+echo both ": SUBJECT of TRIPLE (...) " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (PREDICATE (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, <urn:trdfstar:o>)) AS ?x) {};
+echo both $if $equ $LAST[1] "urn:trdfstar:p" "PASSED" "***FAILED";
+echo both ": PREDICATE of TRIPLE (...) " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (OBJECT (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, <urn:trdfstar:o>)) AS ?x) {};
+echo both $if $equ $LAST[1] "urn:trdfstar:o" "PASSED" "***FAILED";
+echo both ": OBJECT of TRIPLE (...) " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (OBJECT (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, "lit")) AS ?x) {};
+echo both $if $equ $LAST[1] "lit" "PASSED" "***FAILED";
+echo both ": OBJECT of TRIPLE (...) with a literal object " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (isIRI (SUBJECT (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, <urn:trdfstar:o>))) AS ?x) {};
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": isIRI of SUBJECT of TRIPLE (...) " $LAST[1] "\n";
+
+SPARQL INSERT DATA { GRAPH <urn:trdfstar:acc> {
+  <urn:trdfstar:r1> <urn:trdfstar:about> <<( <urn:trdfstar:s> <urn:trdfstar:p> <urn:trdfstar:o> )>> .
+  <urn:trdfstar:r2> <urn:trdfstar:about> <<( <urn:trdfstar:s> <urn:trdfstar:p> "lit" )>> } };
+
+select 99;
+SPARQL SELECT (isIRI (SUBJECT (?t)) AS ?x) FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r1> <urn:trdfstar:about> ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": isIRI of SUBJECT of a stored triple term " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (isIRI (OBJECT (?t)) AS ?x) FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r1> <urn:trdfstar:about> ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": isIRI of OBJECT of a stored triple term, an IRI " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (isLITERAL (OBJECT (?t)) AS ?x) FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r2> <urn:trdfstar:about> ?t };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": isLITERAL of OBJECT of a stored triple term, a literal " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:trdfstar:acc> WHERE { ?r <urn:trdfstar:about> ?t FILTER (SUBJECT (?t) = <urn:trdfstar:s>) };
+echo both $if $equ $LAST[1] 2 "PASSED" "***FAILED";
+echo both ": SUBJECT of a stored triple term compared with an IRI (guard) " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:trdfstar:acc> WHERE { ?r <urn:trdfstar:about> ?t FILTER (OBJECT (?t) = "lit") };
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": OBJECT of a stored triple term compared with a literal (guard) " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (STR (SUBJECT (?t)) AS ?x) FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r1> <urn:trdfstar:about> ?t };
+echo both $if $equ $LAST[1] "urn:trdfstar:s" "PASSED" "***FAILED";
+echo both ": STR of SUBJECT of a stored triple term (guard) " $LAST[1] "\n";
+
+-- In BIND the accessors raised SP031, Internal error: Weird use of asname
+-- with special built-in.
+select 99;
+SPARQL SELECT ?x FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r1> <urn:trdfstar:about> ?t . BIND (SUBJECT (?t) AS ?x) };
+echo both $if $equ $LAST[1] "urn:trdfstar:s" "PASSED" "***FAILED";
+echo both ": SUBJECT of a stored triple term in BIND " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT ?x FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r2> <urn:trdfstar:about> ?t . BIND (OBJECT (?t) AS ?x) };
+echo both $if $equ $LAST[1] "lit" "PASSED" "***FAILED";
+echo both ": OBJECT of a stored triple term in BIND " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT ?x WHERE { BIND (PREDICATE (TRIPLE (<urn:trdfstar:s>, <urn:trdfstar:p>, <urn:trdfstar:o>)) AS ?x) };
+echo both $if $equ $LAST[1] "urn:trdfstar:p" "PASSED" "***FAILED";
+echo both ": PREDICATE of TRIPLE (...) in BIND " $LAST[1] "\n";
+
+select 99;
+SPARQL SELECT (SUBJECT (?t) AS ?x) FROM <urn:trdfstar:acc> WHERE { <urn:trdfstar:r1> <urn:trdfstar:about> ?t };
+echo both $if $equ $LAST[1] "urn:trdfstar:s" "PASSED" "***FAILED";
+echo both ": SUBJECT of a stored triple term as a result column (guard) " $LAST[1] "\n";
+
+--------------------------------------------------------------------------
+-- 7. RDF 1.2 triple-term DATA syntax  <<( s p o )>>  in a ground / constructor
+--    context, with an inline-valued literal (integer, boolean) component.
+--
+--    The plain_triple_in_ctor fallback in spar_gp_add_triplelike() passed a
+--    literal component's value box straight to box_dv_short_string(), which
+--    reads an inline-tagged small integer or boolean (1 -> 0x10) as a pointer,
+--    so the query could not be compiled.
+--
+--    The Turtle (TTLP) and  << s p o >>  paths already stringify every
+--    datatype through spart_safe_strval, so the <<( )>> constructor path must
+--    mint the *same* triple-term IRI they do -- a fix that only avoids the
+--    failure but keeps hashing raw value bytes is still red at 7e.
+--------------------------------------------------------------------------
+
+SPARQL CLEAR GRAPH <urn:trdfstar:ttnum>;
+SPARQL CLEAR GRAPH <urn:trdfstar:ttnum_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar:ttbool>;
+
+-- 7a. a triple term with an integer object in INSERT DATA.
+SPARQL INSERT DATA { GRAPH <urn:trdfstar:ttnum>
+  { <urn:trdfstar:r> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <<( <urn:trdfstar:a> <urn:trdfstar:e> 23 )>> } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7a INSERT DATA of <<( s p INT )>> compiles\n";
+
+-- 7b. the server is still answering.
+SPARQL ASK { FILTER (1 = 1) };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7b the server is still answering after the integer triple term\n";
+
+-- 7c. an integer triple term in a CONSTRUCT template.
+SPARQL CONSTRUCT { <urn:trdfstar:a> <urn:trdfstar:e> <<( <urn:trdfstar:c> <urn:trdfstar:d> 1 )>> } WHERE { };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7c CONSTRUCT with an integer triple term compiles\n";
+
+-- 7d. a boolean component is inline-tagged the same way.
+SPARQL INSERT DATA { GRAPH <urn:trdfstar:ttbool>
+  { <urn:trdfstar:r> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <<( <urn:trdfstar:a> <urn:trdfstar:e> true )>> } };
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7d INSERT DATA of <<( s p BOOL )>> compiles\n";
+
+-- 7e. consistency: the <<( )>> constructor path must mint the SAME triple-term
+--     IRI the authoritative Turtle path mints for the identical triple.
+DB.DBA.TTLP ('<urn:trdfstar:r> <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> <<( <urn:trdfstar:a> <urn:trdfstar:e> 23 )>> .', '', 'urn:trdfstar:ttnum_ttl');
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 7e TTLP loads the same integer triple term (fixture)\n";
+
+select (case when
+    (select id_to_iri (O) from DB.DBA.RDF_QUAD
+       where G = iri_to_id ('urn:trdfstar:ttnum')
+         and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies'))
+  = (select id_to_iri (O) from DB.DBA.RDF_QUAD
+       where G = iri_to_id ('urn:trdfstar:ttnum_ttl')
+         and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies'))
+  then 1 else 0 end);
+echo both $if $equ $LAST[1] 1 "PASSED" "***FAILED";
+echo both ": 7e the <<( )>> SPARQL path mints the same triple-term IRI as Turtle for <<( s p 23 )>>\n";
+
+-- 7f. and that IRI is the self-describing urn:rdf-star:triple: form.
+select subseq (
+    (select id_to_iri (O) from DB.DBA.RDF_QUAD
+       where G = iri_to_id ('urn:trdfstar:ttnum')
+         and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies')), 0, 20);
+echo both $if $equ $LAST[1] "urn:rdf-star:triple:" "PASSED" "***FAILED";
+echo both ": 7f the minted triple-term IRI is a urn:rdf-star:triple: IRI\n";
+
+--------------------------------------------------------------------------
+-- 8. cleanup
 --------------------------------------------------------------------------
 
 SPARQL CLEAR GRAPH <urn:trdfstar:load>;
 SPARQL CLEAR GRAPH <urn:trdfstar:tt>;
 SPARQL CLEAR GRAPH <urn:trdfstar:ann>;
+SPARQL CLEAR GRAPH <urn:trdfstar:acc>;
+SPARQL CLEAR GRAPH <urn:trdfstar:ttnum>;
+SPARQL CLEAR GRAPH <urn:trdfstar:ttnum_ttl>;
+SPARQL CLEAR GRAPH <urn:trdfstar:ttbool>;
 
 ECHO BOTH "COMPLETED: RDF 1.2 triple term tests (trdfstar.sql)\n";

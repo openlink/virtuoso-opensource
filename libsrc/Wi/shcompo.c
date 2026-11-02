@@ -284,7 +284,10 @@ shcompo_recompile (shcompo_t **shc_ptr)
       new_shc->shcompo_key = NULL;
       mutex_leave (vt->shcompo_cache_mutex);
       SHC_LEAVE (new_shc);
-      shcompo_release (new_shc);
+      /* The caller gets the failed compilation and its error.  The old one is
+         stale: its plan may read the index of a dropped table. */
+      shcompo_release (old_shc);
+      shc_ptr[0] = new_shc;
       return;
     }
   mutex_enter (vt->shcompo_cache_mutex);

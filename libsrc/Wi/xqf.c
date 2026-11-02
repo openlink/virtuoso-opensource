@@ -3574,6 +3574,8 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
     "__xqf_str_parse_to_rdf_box", dv_type_title (type_iri_dtp), type_iri_dtp);
       }
   }
+  if (NULL == type_iri)
+    return NEW_DB_NULL;	/* no datatype (the arg accessor gives NULL for a NULL): nothing to parse to, as for one that is not known */
   if ((strlen (type_iri) <= XMLSCHEMA_NS_URI_LEN) || ('#' != type_iri[XMLSCHEMA_NS_URI_LEN]))
     {
       if (!strcmp (type_iri, uname_rdf_ns_uri_XMLLiteral))

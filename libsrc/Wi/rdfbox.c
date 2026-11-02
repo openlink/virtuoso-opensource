@@ -1860,6 +1860,9 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
   int len1, len2, cmp_len, cmp_headlen, mcmp;
   caddr_t data1 = NULL, data2 = NULL;
 
+  /* as in cmp_boxes, which hands over before its own NULL check: a NULL compares as unknown */
+  if (DV_DB_NULL == dtp1 || DV_DB_NULL == dtp2)
+    return DVC_UNKNOWN;
   /* arrange so that if both are not RDF boxes, the one that is a box is first */
   if (DV_RDF != dtp1)
     {

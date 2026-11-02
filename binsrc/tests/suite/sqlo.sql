@@ -1922,12 +1922,80 @@ echo both $if $equ $state OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": Bug#18907 control exp with aggregate outside of dt\n";
 
+-- A SERVICE whose body is one sub-SELECT is sent as that sub-SELECT.  To an
+-- endpoint with no loaded service description (SPARQL 1.0 is assumed) an
+-- aliased projection, (?c AS ?country), is sent as ?c, so the names read
+-- back must be the names sent; they were the aliases, and every such query
+-- failed at run time (SPARQL_REXEC: unexpected variable name 'c').  Checked
+-- on the SQL text, without calling the endpoint: every name in
+-- expected_vars must be a ?name of qtext_template.
+create procedure DB.DBA.SINV_ALIAS_T_AGREE (in q varchar) returns integer
+{
+  declare t, qt, ev, vname varchar;
+  declare a, b, n integer;
+  t := cast (sparql_to_sql_text (q) as varchar);
+  a := strstr (t, 'qtext_template =');
+  b := strstr (t, 'qtext_posmap =');
+  if (a is null or b is null)
+    return -1;
+  qt := subseq (t, a, b);
+  a := strstr (t, 'expected_vars = vector (');
+  if (a is null)
+    return -2;
+  ev := subseq (t, a + length ('expected_vars = vector ('));
+  ev := subseq (ev, 0, strchr (ev, ')'));
+  n := 0;
+  while (strchr (ev, '''') is not null)
+    {
+      ev := subseq (ev, strchr (ev, '''') + 1);
+      b := strchr (ev, '''');
+      vname := subseq (ev, 0, b);
+      ev := subseq (ev, b + 1);
+      if (strstr (qt, concat ('?', vname)) is null)
+        return 0;
+      n := n + 1;
+    }
+  return case when n > 0 then 1 else -3 end;
+}
+;
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?country WHERE { SERVICE <http://data.example.org/sparql> { SELECT (?c AS ?country) WHERE { ?c a <http://example.org/Country> } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT (?c AS ?country): the names expected back are the names sent: " $last[1] "\n";
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?country ?cap ?label WHERE { SERVICE <http://data.example.org/sparql> { SELECT (?c AS ?country) ?cap (?l AS ?label) WHERE { ?c <http://example.org/capital> ?cap ; <http://example.org/label> ?l } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT with two aliases and a variable: " $last[1] "\n";
+
+select DB.DBA.SINV_ALIAS_T_AGREE ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> { SELECT ?c WHERE { ?c a <http://example.org/Country> } } }');
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE sub-SELECT without an alias (guard): " $last[1] "\n";
+
 sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
 sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
 select __box_flags ("u") from (sparql select (URI(CONCAT('http://host/',?o)) as ?u) from <urn:b19410> { ?s <#pred> ?o  } order by ?u) dt;
 echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": box flags are preserved on group by\n";
+
+-- A SERVICE body sent to a Virtuoso endpoint -- a dialect with QUAD MAP,
+-- set here with DEFINE lang:dialect as SPARQL LOAD SERVICE sets it -- was
+-- wrapped in QUAD MAP <virtrdf:DefaultServiceMap> { ... } whenever the
+-- local default storage had user quad maps, which every database has had
+-- since the vector index added two.  The endpoint keeps nothing in a map
+-- of that name, and returned no rows.  The local service map is not sent.
+select case when strstr (cast (sparql_to_sql_text ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> (DEFINE lang:dialect 13155) { ?c a <http://example.org/Country> } }') as varchar), 'DefaultServiceMap') is null then 1 else 0 end;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE to an endpoint of Virtuoso's dialect is not pinned to the local service map: " $last[1] "\n";
+
+select case when strstr (cast (sparql_to_sql_text ('SELECT ?c WHERE { SERVICE <http://data.example.org/sparql> { ?c a <http://example.org/Country> } }') as varchar), 'QUAD MAP') is null then 1 else 0 end;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": SERVICE to an endpoint of the plain dialect, no QUAD MAP (guard): " $last[1] "\n";
 
 drop table case1172;
 CREATE TABLE case1172 ( v1 DECIMAL ) ;
@@ -3592,5 +3660,193 @@ SELECT x.ID, x.U FROM (SELECT TOP 3 ID, UPPER (S) AS U, N FROM lateproj_t WHERE 
 ECHO BOTH $IF $EQU $STATE OK $IF $EQU $ROWCNT 3 $IF $EQU $LAST[1] 3 $IF $EQU $LAST[2] C "PASSED" "***FAILED" "***FAILED" "***FAILED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case late-proj - last of the top 3 by N desc is (3, C); got " $ROWCNT " row(s), last (" $LAST[1] ", " $LAST[2] ") STATE=" $STATE "\n";
+
+-- --------------------------------------------------------------------------
+-- Case nondet-union: a group joined with a UNION is one solution sequence;
+-- the join is not to evaluate it once per branch of the UNION.  It did: the
+-- rewrite of a join of a UNION into a UNION of joins gave each branch its
+-- own copy of the group, and a STRUUID, UUID, RAND or BNODE computed in it
+-- had a different value in each branch; in an update, one new resource per
+-- branch.
+-- --------------------------------------------------------------------------
+SPARQL CLEAR GRAPH <urn:sqlo:nondet>;
+SPARQL INSERT DATA { GRAPH <urn:sqlo:nondet> {
+  <urn:sqlo:carl> a <urn:sqlo:Person> ; <urn:sqlo:name> "Carl" ; <urn:sqlo:knows> <urn:sqlo:dora> .
+  <urn:sqlo:ed> <urn:sqlo:knows> <urn:sqlo:carl> } };
+
+SPARQL SELECT (COUNT (DISTINCT ?u) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - STRUUID () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?r) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (RAND () AS ?r) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - RAND () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?r) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (bif:rnd (1000000000) AS ?r) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - bif:rnd () in a sub-select joined with a UNION: expected 1 value, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (DISTINCT ?u) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { SELECT * WHERE { { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } } } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - the same with the UNION in a sub-select of its own (guard): expected 1 value, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:nondet> WHERE {
+  { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (STRUUID () AS ?u) } }
+  { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 4 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - the join has one row per triple of Carl (guard): expected 4, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL DELETE { GRAPH <urn:sqlo:nondet> { ?p ?p0 ?o0 . ?s0 ?q0 ?p } }
+  INSERT { GRAPH <urn:sqlo:nondet> { ?new a <urn:sqlo:Person> ; <urn:sqlo:name> "Carla" } }
+  WHERE { GRAPH <urn:sqlo:nondet> {
+    { SELECT DISTINCT * WHERE { ?p <urn:sqlo:name> "Carl" . BIND (IRI (CONCAT ("urn:sqlo:node_", STRUUID ())) AS ?new) } }
+    { ?p ?p0 ?o0 } UNION { ?s0 ?q0 ?p } } };
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:nondet> WHERE { ?s <urn:sqlo:name> "Carla" };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case nondet-union - an update minting one IRI in a sub-select joined with a UNION: expected 1 new node, got " $LAST[1] " STATE=" $STATE "\n";
+SPARQL CLEAR GRAPH <urn:sqlo:nondet>;
+-- Case oj-dt-exp: a derived table on the right of a LEFT OUTER JOIN gives
+-- NULL in every column for a row with no match.  Inlined into the join, an
+-- expression of its select list was computed on the row the join makes for
+-- no match, from that row's NULL columns: concat ('x|', NULL) is 'x|' and
+-- coalesce (NULL, 'none') is 'none'.  SPARQL BIND inside OPTIONAL is such a
+-- derived table.
+-- --------------------------------------------------------------------------
+DROP TABLE ojdt_t1 IF EXISTS;
+DROP TABLE ojdt_t2 IF EXISTS;
+CREATE TABLE ojdt_t1 (A INT PRIMARY KEY);
+CREATE TABLE ojdt_t2 (A INT PRIMARY KEY, B VARCHAR);
+INSERT INTO ojdt_t1 VALUES (1);
+INSERT INTO ojdt_t1 VALUES (2);
+INSERT INTO ojdt_t2 VALUES (1, 'x');
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, concat ('x|', B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - concat () of a derived table, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, coalesce (B, 'none') AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - coalesce () of a derived table, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, concat ('x|', B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] "x|x" "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - concat () of a derived table, the row with a match (guard): expected x|x, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, 'c' AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - a constant of a derived table, the row with no match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, upper (B) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - upper () of a derived table, the row with no match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, case when B is null then 'none' else B end AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - case with a constant branch, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, case 1 when 0 then null else null end AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - case of null constants, the row with a match (guard): expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, A + 10 AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - column + 10, inlined, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, A + 10 AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 1;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 11 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - column + 10, inlined, the row with a match: expected 11, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT D.E FROM ojdt_t1 LEFT OUTER JOIN (SELECT A, coalesce (B, case when A > 5 then B end) AS E FROM ojdt_t2) D ON ojdt_t1.A = D.A WHERE ojdt_t1.A = 2;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] NULL "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - coalesce and case of columns only, inlined, the row with no match: expected NULL, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL CLEAR GRAPH <urn:sqlo:ojdt>;
+SPARQL INSERT DATA { GRAPH <urn:sqlo:ojdt> { <urn:sqlo:a> a <urn:sqlo:P> ; <urn:sqlo:knows> <urn:sqlo:b> . <urn:sqlo:b> a <urn:sqlo:P> ; <urn:sqlo:name> "B" } };
+
+SPARQL SELECT (COUNT (?e) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s ?p ?o . FILTER (isIRI (?o) && ?p != rdf:type) BIND (CONCAT ("x|", STR (?o)) AS ?e) } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - SPARQL BIND inside OPTIONAL binds only the row with a match: expected 1, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (*) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s ?p ?o . FILTER (isIRI (?o) && ?p != rdf:type) BIND (CONCAT ("x|", STR (?o)) AS ?e) } FILTER (!BOUND (?e)) };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - SPARQL BIND inside OPTIONAL leaves the row with no match unbound: expected 1, got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SPARQL SELECT (COUNT (?o) AS ?n) FROM <urn:sqlo:ojdt> WHERE { ?s a <urn:sqlo:P> . OPTIONAL { ?s <urn:sqlo:knows> ?o } };
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case oj-dt-exp - OPTIONAL without BIND (guard): expected 1, got " $LAST[1] " STATE=" $STATE "\n";
+
+SPARQL CLEAR GRAPH <urn:sqlo:ojdt>;
+DROP TABLE ojdt_t1;
+DROP TABLE ojdt_t2;
+-- Case sinv-exists: a variable that a FILTER [NOT] EXISTS or a MINUS inside a
+-- SERVICE takes from the SERVICE's own pattern is bound inside the SERVICE.
+-- It was taken for a parameter of the SERVICE: the query sent named it
+-- ?!000001, and the parameter was sent unbound ("runaway ... after
+-- reorder"), as UNDEF.  The endpoint is declared SPARQL 1.1, which allows
+-- EXISTS; the SQL text shows what would be sent, and no endpoint is called.
+-- --------------------------------------------------------------------------
+create function DB.DBA.SQLO_SINV_SENDS_ITS_VARS (in q varchar) returns integer
+{
+  declare t varchar;
+  t := cast (sparql_to_sql_text (q) as varchar);
+  if (strstr (t, 'runaway') is not null or strstr (t, '?!0000') is not null)
+    return 0;
+  return 1;
+}
+;
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o FILTER NOT EXISTS { ?a a <urn:sqlo:S> } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - FILTER NOT EXISTS inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o MINUS { ?a a <urn:sqlo:S> } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - MINUS inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?x WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { SELECT (?a AS ?x) WHERE { { SELECT DISTINCT ?a WHERE { ?a ?p ?o FILTER NOT EXISTS { ?a a <urn:sqlo:S> } } } ?a <urn:sqlo:q> ?v } } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - FILTER NOT EXISTS in a sub-select inside SERVICE sends its variable: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT DB.DBA.SQLO_SINV_SENDS_ITS_VARS ('SELECT ?a WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?a ?p ?o } }');
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - SERVICE without EXISTS (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT case when regexp_match ('param_row = vector [(][^)]*"S"', cast (sparql_to_sql_text ('SELECT ?a ?o WHERE { ?a <urn:sqlo:p> <urn:sqlo:x> . SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864 IN ?a) { ?a ?q ?o } }') as varchar)) is not null then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-exists - a declared IN variable is still passed from the outer pattern (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+drop function DB.DBA.SQLO_SINV_SENDS_ITS_VARS;
 
 ECHO BOTH "COMPLETED: optimizer regression cases #1452 onward WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

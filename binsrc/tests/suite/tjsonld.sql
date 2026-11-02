@@ -295,6 +295,91 @@ create procedure jacts_dump_results ()
 }
 ;
 
+--
+-- A document big enough that the vectored loader sends quads to the store while
+-- it is still parsing: DB.DBA.TTLP_RL_TRIPLE_L sends a batch once the dpipe holds
+-- more than 30 MB, about 90,000 short quads.  The JSON-LD loader never gave the
+-- triple feed its graph, so the callbacks got graph 0, that batch failed with
+-- SR130 and the load stopped part way.
+--
+create function TJSONLD_BIG_DOC (in n integer) returns varchar
+{
+  declare ses any;
+  declare i integer;
+  ses := string_output ();
+  http ('{ "@context": { "v": { "@id": "urn:tjsonld:big:v" } }, "@graph": [', ses);
+  for (i := 0; i < n; i := i + 1)
+    http (sprintf ('%s{ "@id": "urn:tjsonld:big:s%d", "v": [ "a%d", "b%d" ] }', case when i > 0 then ',' else '' end, i, i, i), ses);
+  http (' ] }', ses);
+  return string_output_string (ses);
+}
+;
+
+SPARQL CLEAR GRAPH <urn:tjsonld:big>;
+DB.DBA.RDF_LOAD_JSON_LD (TJSONLD_BIG_DOC (60000), '', 'urn:tjsonld:big');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": a JSON-LD document of 120000 quads, sent to the store while parsing, loads STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select count (*) from DB.DBA.RDF_QUAD where G = iri_to_id ('urn:tjsonld:big');
+ECHO BOTH $IF $EQU $LAST[1] 120000 "PASSED" "***FAILED";
+ECHO BOTH ": all 120000 quads of the big JSON-LD document are in its graph, got " $LAST[1] "\n";
+
+SPARQL CLEAR GRAPH <urn:tjsonld:big>;
+
+--
+-- The parser keeps its working memory in the thread's temp pool and ran the
+-- triple callbacks inside it, so SQL in a callback saw the parser's pool.
+-- json_parse () in a callback started a pool of its own over it ("MP
+-- reallocated"), and a vectored insert in a callback (insert ... select)
+-- cleared the thread's pool, so the parser then had none for its next
+-- allocation.
+--
+create procedure TJSONLD_CB_JSON (inout g_iid any, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar, inout app_env any)
+{
+  dict_put (app_env, vector (s_uri, p_uri, o_val), length (json_parse ('{ "k": [ 1, 2 ] }')));
+}
+;
+
+create table TJSONLD_CB_LOG (S varchar primary key)
+;
+
+create procedure TJSONLD_CB_INSERT (inout g_iid any, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar, inout app_env any)
+{
+  insert soft TJSONLD_CB_LOG (S) select s_uri from DB.DBA.SYS_USERS where U_NAME = 'dba';
+  dict_put (app_env, vector (s_uri, p_uri, o_val), 1);
+}
+;
+
+-- loads three triples through the given literal callback, returns how many it got
+create function TJSONLD_CB_LOAD (in cb varchar) returns integer
+{
+  declare d any;
+  d := dict_new ();
+  rdf_load_jsonld ('{ "@graph": [ { "@id": "urn:tjsonld:cb:s1", "urn:tjsonld:cb:p": "one" },
+    { "@id": "urn:tjsonld:cb:s2", "urn:tjsonld:cb:p": "two" },
+    { "@id": "urn:tjsonld:cb:s3", "urn:tjsonld:cb:p": 3.5 } ] }', '', 'urn:tjsonld:cb', 0,
+    vector ('DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH', 'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK', 'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE', cb, '', 'DB.DBA.TTLP_EV_REPORT_DEFAULT'), d);
+  return dict_size (d);
+}
+;
+
+select TJSONLD_CB_LOAD ('DB.DBA.TJSONLD_CB_JSON');
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+ECHO BOTH ": a JSON-LD triple callback that calls json_parse () gets all 3 triples, got " $LAST[1] "\n";
+
+select TJSONLD_CB_LOAD ('DB.DBA.TJSONLD_CB_INSERT');
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+ECHO BOTH ": a JSON-LD triple callback that runs insert ... select gets all 3 triples, got " $LAST[1] "\n";
+
+select count (*) from TJSONLD_CB_LOG;
+ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
+ECHO BOTH ": the insert ... select callback stored a row for each subject, got " $LAST[1] "\n";
+
+drop table TJSONLD_CB_LOG;
+
 jacts_run_all();
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;

@@ -135,6 +135,7 @@ trecov \
 tlubm \
 rtest \
 trepl_rdf \
+trdfstar \
 tsoap12 \
 tvspxex \
 tgraphql \

@@ -270,15 +270,6 @@ then
 fi
 
 
-LOG + running sql script trdfstar
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfstar.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: RDF 1.2 triple terms -- trdfstar.sql"
-    exit 1
-fi
-
-
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
@@ -320,6 +311,30 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_
 if test $STATUS -ne 0
 then
     LOG "***ABORTED:tsparup "
+    exit 1
+fi
+
+LOG + running sql script texec_cache
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/texec_cache.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: exec () statement cache after DDL -- texec_cache.sql"
+    exit 1
+fi
+
+LOG + running sql script txqf_null_datatype
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/txqf_null_datatype.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: __xqf_str_parse_to_rdf_box with a NULL datatype -- txqf_null_datatype.sql"
+    exit 1
+fi
+
+LOG + running sql script tqn_stack
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tqn_stack.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: a long chain of query nodes and the thread stack -- tqn_stack.sql"
     exit 1
 fi
 
