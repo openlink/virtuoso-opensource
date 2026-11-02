@@ -196,6 +196,7 @@ EXTRA_DIST= \
 	$(srcdir)/tdav_meta_050512.zip \
 	$(srcdir)/tdav_meta_050528.zip \
 	$(srcdir)/tgql_intro.ql \
+	$(srcdir)/test_gql_pg_ddl.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \
 	$(srcdir)/treplh-dsn-odbc.cfg \

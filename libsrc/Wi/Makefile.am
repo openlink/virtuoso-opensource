@@ -720,7 +720,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/gql_plan.sql \
 	$(srcdir)/gql_var_pass.sql \
 	$(srcdir)/gql_translate.sql \
-	$(srcdir)/gql_sparql_gen.sql
+	$(srcdir)/gql_sparql_gen.sql \
+	$(srcdir)/gql_pg_ddl.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
