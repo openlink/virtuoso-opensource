@@ -1742,7 +1742,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 }
 ;
 
-create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
+create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any array
 {
   declare t int;
   t := __tag (longobj);
@@ -1839,7 +1839,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_LITERAL (in v any) returns any
 ;
 
 
-create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar) returns any
+create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar, in find_stored integer := 0) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
@@ -1892,7 +1892,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
     lang_twobyte := DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang);
   else
     lang_twobyte := 257;
-  res := rdf_box (v, dt_twobyte, lang_twobyte, 0, 1);
+  res := rdf_box (v, dt_twobyte, lang_twobyte, case when find_stored then -1 else 0 end, 1);
   return res;
 }
 ;
@@ -2462,11 +2462,15 @@ create function DB.DBA.rdf_strdt_impl (in str varchar, in dt_iri any)
   if (parsed is not null)
     {
       if (__tag of rdf_box = __tag (parsed))
-        rdf_box_set_type (parsed,
-          DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid));
+        {
+          if (__tag of varchar = __tag (rdf_box_data (parsed)))
+            return rdf_box (rdf_box_data (parsed), DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid), 257, -1, 1);
+          rdf_box_set_type (parsed,
+            DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid));
+        }
       return parsed;
     }
-  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, dt_iid, null);
+  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, dt_iid, null, 1);
 }
 ;
 
@@ -2483,7 +2487,7 @@ create function DB.DBA.rdf_strlang_impl (in str any, in lang any)
     str := charset_recode (str, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> t)
     return null;
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), 0, 1);
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), -1, 1);
 }
 ;
 
@@ -2577,7 +2581,7 @@ create function DB.DBA.rdf_strlangdir_impl (in str any, in lang any, in dir any)
   if ((dir is null) or (not (dir in ('ltr', 'rtl'))))
     return null;
   full_lang := concat (lang, '--', dir);
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), 0, 1);
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), -1, 1);
 }
 ;
 
@@ -2600,7 +2604,7 @@ create function DB.DBA.rdf_strdir_impl (in str any, in dir any)
     return str;
   declare full_lang varchar;
   full_lang := concat(chr(45), chr(45), dir);
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), 0, 1);
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), -1, 1);
 }
 ;
 

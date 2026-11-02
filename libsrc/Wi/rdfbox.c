@@ -459,16 +459,20 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
 caddr_t
 bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  /* data, type, lamg, ro_id, is_complete */
+  /* data, type, lamg, ro_id, is_complete.  ro_id -1 is the id of the same literal in RDF_OBJ, if it is stored */
   rdf_box_t * rb;
   caddr_t box, bcopy, chksum = NULL;
   dtp_t box_dtp;
   long type, lang, ro_id, is_complete;
+  int find_stored;
   box = bif_arg (qst, args, 0, "rdf_box");
   type = bif_long_arg (qst, args, 1, "rdf_box");
   lang = bif_long_arg (qst, args, 2, "rdf_box");
   ro_id = bif_long_arg (qst, args, 3, "rdf_box");
   is_complete = bif_long_arg (qst, args, 4, "rdf_box");
+  find_stored = (-1 == ro_id);
+  if (find_stored)
+    ro_id = 0;
   if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff) || (RDF_BOX_ILL_TYPE == type))
     sqlr_new_error ("22023", "SR547", "Invalid datatype id %ld as argument 2 of rdf_box()", type);
   if ((RDF_BOX_DEFAULT_LANG > lang) || (lang & ~0xffff) || (RDF_BOX_ILL_LANG == lang))
@@ -562,6 +566,15 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     rb->rb_is_outlined = 1;
   rb->rb_is_complete = is_complete;
   rb->rb_serialize_id_only = is_complete >> 1;
+  if (find_stored && is_complete && (DV_STRING == DV_TYPE_OF (bcopy))
+      && ((RDF_BOX_DEFAULT_TYPE != type) || (RDF_BOX_DEFAULT_LANG != lang)))
+    {
+      /* a literal made at run time is the same term as the stored one only with its id: =, DISTINCT and GROUP BY
+         go by the id of a box that has one, and the stored O is the id alone */
+      key_find_rdf_obj (((query_instance_t *) qst)->qi_trx, rb);
+      if (rb->rb_ro_id)
+        rb->rb_is_outlined = 1;
+    }
   rdf_box_audit(rb);
   return (caddr_t) rb;
 }
@@ -7409,7 +7422,7 @@ rdf_box_init (void)
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
   bif_define_ex ("__rdf_set_bnode_t_threshold", bif_rdf_set_bnode_t_threshold, BMD_ALIAS, "__rdf_set_bnode_t_treshold", BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rdf_set_bnode_t_threshold);
-  bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id, BMD_IS_PURE, BMD_DONE);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_ex ("is_rdf_box", bif_is_rdf_box, BMD_RET_TYPE, &bt_integer, BMD_DONE);

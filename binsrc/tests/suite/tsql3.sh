@@ -357,6 +357,22 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_value_in_o
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_value_in_o.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: a computed value looked up in the O column -- tsparql_value_in_o.sql"
+    exit 1
+fi
+
+LOG + running sql script tsparql_strlang_eq
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_strlang_eq.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: STRLANG () / STRDT () literal and the stored literal -- tsparql_strlang_eq.sql"
+    exit 1
+fi
+
 LOG + running sql script trdfview_nomatch
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfview_nomatch.sql
 if test $STATUS -ne 0
