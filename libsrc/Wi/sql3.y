@@ -30,7 +30,7 @@
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/
 /*%lex-param {sql_comp_context_t* scs_arg}*/
-%expect 19
+%expect 21
 
 
 %{
@@ -138,6 +138,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %type <tree> opt_corresponding
 %type <tree> sqlonly_query_term
 %type <tree> sparqlonly_query_term
+%type <tree> gqlonly_query_term
 %type <tree> query_term
 %type <tree> table_exp_opt
 %type <tree> table_exp
@@ -600,7 +601,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %token ARRAY SETS
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L GQL_L UNAME_L
 %token DICTIONARY_L REFERENCE_L
 
 /* Admin statements */
@@ -1246,6 +1247,10 @@ view_def_select_and_opt
 			sqlp_view_def ((ST **) $1,
 			  $3, 0), NULL, (ptrlong) $4); }
 	| opt_column_commalist AS SPARQL_L sqlonly_query_exp
+		{ $$ = t_listst (5, VIEW_DEF, NULL /* temp value, will set in view_def rule */,
+			sqlp_view_def ((ST **) $1,
+			  $4, 0), NULL, (ptrlong) 0); }
+	| opt_column_commalist AS GQL_L sqlonly_query_exp
 		{ $$ = t_listst (5, VIEW_DEF, NULL /* temp value, will set in view_def rule */,
 			sqlp_view_def ((ST **) $1,
 			  $4, 0), NULL, (ptrlong) 0); }
@@ -2075,11 +2080,13 @@ sqlonly_query_exp
 query_exp
 	: sqlonly_query_exp
         | sparqlonly_query_term
+        | gqlonly_query_term
 	;
 
 query_or_sparql_exp
 	: sqlonly_query_exp
 	| SPARQL_L sqlonly_query_exp	{ $$ = $2; }
+	| GQL_L sqlonly_query_exp	{ $$ = $2; }
 	;
 
 non_final_union_exp
@@ -2113,9 +2120,14 @@ sparqlonly_query_term
 	: '(' SPARQL_L sqlonly_query_exp ')' opt_order_by_clause	{ $$ = sqlp_inline_order_by ($3, (ST **) $5); }
 	;
 
+gqlonly_query_term
+	: '(' GQL_L sqlonly_query_exp ')' opt_order_by_clause	{ $$ = sqlp_inline_order_by ($3, (ST **) $5); }
+	;
+
 query_term
 	: sqlonly_query_term	{ $$ = $1; }
 	| sparqlonly_query_term	{ $$ = $1; }
+	| gqlonly_query_term	{ $$ = $1; }
 	;
 
 opt_corresponding
@@ -2574,6 +2586,7 @@ scalar_subquery
 subquery
 	: '(' sqlonly_query_exp ')'	{ $$ = $2; }
 	| '(' SPARQL_L sqlonly_query_exp ')'	{ $$ = $3; }
+	| '(' GQL_L sqlonly_query_exp ')'	{ $$ = $3; }
 	;
 
 /* scalar expressions */
@@ -3607,6 +3620,10 @@ statement_in_cs_oper
           ST *qry = $2;
           ST *scalar_qry = $$ = (ST *) t_list (2, SCALAR_SUBQ, sqlp_add_top_1 (qry));
           $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("isnull"), t_list (1, scalar_qry)); }
+        | GQL_L sqlonly_query_exp ';' {
+          ST *qry = $2;
+          ST *scalar_qry = $$ = (ST *) t_list (2, SCALAR_SUBQ, sqlp_add_top_1 (qry));
+          $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("isnull"), t_list (1, scalar_qry)); }
 	;
 
 statement
@@ -3762,6 +3779,7 @@ call_statement
 	: CALL function_name '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
 	| SPARQL_L function_call	{ $$ = $2; }
+	| GQL_L function_call	{ $$ = $2; }
 	| function_call			{ $$ = $1; }
 	;
 

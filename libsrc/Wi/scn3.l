@@ -354,6 +354,11 @@ scn3_set_file_line (char *file, int file_nchars, int line_no)
 
 void yyfatalerror (const char *s);
 
+#ifndef SCN3SPLIT
+struct scn3_include_fragment_s;
+void scn3_gql_inline (const char * tail_sql_text, struct scn3_include_fragment_s *outer, yyscan_t yyscanner);
+#endif
+
 #define YY_FATAL_ERROR(msg) yyfatalerror (msg)
 
 extern int yylex (YYSTYPE *yylval, yyscan_t yyscanner);
@@ -388,6 +393,13 @@ extern int yylex (YYSTYPE *yylval, yyscan_t yyscanner);
 	/* Internals of triple-double-quoted SPARQL string lit */
 %x SPARQL_DDDQ_SKIP
 
+%x GQL_SKIP
+
+	/* String lits inside GQL text: as the SPARQL_*Q_SKIP ones, but closing back to GQL_SKIP */
+%x GQL_SQ_SKIP
+%x GQL_DQ_SKIP
+%x GQL_SSSQ_SKIP
+%x GQL_DDDQ_SKIP
 
 S_NL	(\r\n|\n|\r)
 SPAR_SQ_PLAIN	([^\\''\r\n])
@@ -395,6 +407,17 @@ SPAR_DQ_PLAIN	([^\\""\r\n])
 SPAR_UCHAR		([\\](("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
 SPAR_ECHAR		(([\\][atbvnrf\\""''])|{SPAR_UCHAR})
 HEX			([0-9A-Fa-f])
+
+	/* "GQL" starts an embedded GQL statement only when the next word can
+	   start one; elsewhere gql is an ordinary name (a column, a variable).
+	   Words that may also follow a name in SQL (FROM, WITH, FOR, SET,
+	   WHERE, ORDER, ...) are not in the list, or only in a form SQL
+	   cannot have after a name: FROM <iri>, FROM NAMED, WITH <iri>,
+	   FOR x IN.  COMMIT and ROLLBACK may end the text. */
+GQL_WS		([ \t\r\n]+)
+GQL_KW_END	([^A-Za-z0-9_@\x80-\xFF])
+GQL_FIRST_WORD	([Mm][Aa][Tt][Cc][Hh]|[Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll]|[Ii][Nn][Ss][Ee][Rr][Tt]|[Cc][Rr][Ee][Aa][Tt][Ee]|[Dd][Rr][Oo][Pp]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Dd][Ee][Tt][Aa][Cc][Hh]|[Nn][Oo][Dd][Ee][Tt][Aa][Cc][Hh]|[Rr][Ee][Mm][Oo][Vv][Ee]|[Cc][Aa][Ll][Ll]|[Rr][Ee][Tt][Uu][Rr][Nn]|[Uu][Ss][Ee]|[Ll][Ee][Tt]|[Ff][Ii][Ll][Tt][Ee][Rr]|[Ff][Ii][Nn][Ii][Ss][Hh]|[Uu][Nn][Nn][Ee][Ss][Tt]|[Aa][Ss][Kk]|[Mm][Oo][Dd][Ii][Ff][Yy]|[Cc][Oo][Nn][Ss][Tt][Rr][Uu][Cc][Tt]|[Dd][Ee][Ss][Cc][Rr][Ii][Bb][Ee]|[Ll][Oo][Aa][Dd]|[Cc][Ll][Ee][Aa][Rr]|[Pp][Rr][Ee][Ff][Ii][Xx]|[Dd][Ee][Ff][Ii][Nn][Ee]|[Bb][Aa][Ss][Ee]|[Vv][Ee][Rr][Ss][Ii][Oo][Nn]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn]|[Ss][Tt][Aa][Rr][Tt]|[Gg][Rr][Aa][Pp][Hh]|[Ss][Ee][Rr][Vv][Ii][Cc][Ee]|[Ff][Oo][Rr][Cc][Ee])
+GQL_FIRST	(({GQL_FIRST_WORD}{GQL_KW_END})|([Cc][Oo][Mm][Mm][Ii][Tt])|([Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk])|([Ff][Rr][Oo][Mm]{GQL_WS}?"<")|([Ff][Rr][Oo][Mm]{GQL_WS}[Nn][Aa][Mm][Ee][Dd]{GQL_KW_END})|([Ww][Ii][Tt][Hh]{GQL_WS}?"<")|([Ff][Oo][Rr]{GQL_WS}[A-Za-z_][A-Za-z0-9_]*{GQL_WS}[Ii][Nn]{GQL_KW_END}))
 
 SPAR_VARNAME	([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
 
@@ -490,6 +513,24 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	/* the commented double-quote below is to cure syntax highlighting */
 <SQL>\"([^\"\n]|(\"\"))+\"	{ /*"*/ TOKBOX_QUOTED(1, NAME); }
 	/*<SQL>\"[^\"\n]*\"	TOKBOX_QUOTED(1, NAME)*/
+<SQL>[Gg][Qq][Ll]/{GQL_WS}{GQL_FIRST} {
+  global_scs->scs_scn3c.last_keyword_yytext = yytext;
+  global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
+  {
+#ifndef SCN3SPILT
+    scn3_include_fragment_t *outer;
+    outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
+    outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
+    outer->_.sif_saved_lineno_increment = global_scs->scs_scn3c.lineno_increment;
+    outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
+    outer->_.sif_skipped_part = strses_allocate ();
+#endif
+    yylval->subtok = 1;
+    BEGIN (GQL_SKIP);
+    RETURN_CODE (GQL_L);
+  }
+}
 <SQL>[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]* {
   const struct keyword *k;
 #define WORD_BUF_SIZE 30
@@ -1030,30 +1071,34 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>[""][""][""]		{ BEGIN(SPARQL_DDDQ_SKIP); TOK_SKIP; }
 <SPARQL_SSSQ_SKIP>['']['']['']	{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
 <SPARQL_DDDQ_SKIP>[""][""][""]	{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
-<SPARQL_SSSQ_SKIP>(([''](['']?))?{S_NL})		{ TOK_NL_SKIP; }
-<SPARQL_DDDQ_SKIP>(([""]([""]?))?{S_NL})		{ TOK_NL_SKIP; }
-<SPARQL_SSSQ_SKIP>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
-<SPARQL_DDDQ_SKIP>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
-<SPARQL_SSSQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL long single-quoted string"); }
-<SPARQL_DDDQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL long double-quoted string"); }
-<SPARQL_SSSQ_SKIP>.			{ scn3yyerror ("Bad character in a SPARQL long single-quoted string"); }
-<SPARQL_DDDQ_SKIP>.			{ scn3yyerror ("Bad character in a SPARQL long double-quoted string"); }
-<SPARQL_SSSQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL long single-quoted string"); }
-<SPARQL_DDDQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL long double-quoted string"); }
+<GQL_SSSQ_SKIP>['']['']['']	{ BEGIN(GQL_SKIP); TOK_SKIP; }
+<GQL_DDDQ_SKIP>[""][""][""]	{ BEGIN(GQL_SKIP); TOK_SKIP; }
+<SPARQL_SSSQ_SKIP,GQL_SSSQ_SKIP>(([''](['']?))?{S_NL})		{ TOK_NL_SKIP; }
+<SPARQL_DDDQ_SKIP,GQL_DDDQ_SKIP>(([""]([""]?))?{S_NL})		{ TOK_NL_SKIP; }
+<SPARQL_SSSQ_SKIP,GQL_SSSQ_SKIP>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
+<SPARQL_DDDQ_SKIP,GQL_DDDQ_SKIP>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
+<SPARQL_SSSQ_SKIP,GQL_SSSQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL long single-quoted string"); }
+<SPARQL_DDDQ_SKIP,GQL_DDDQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL long double-quoted string"); }
+<SPARQL_SSSQ_SKIP,GQL_SSSQ_SKIP>.			{ scn3yyerror ("Bad character in a SPARQL long single-quoted string"); }
+<SPARQL_DDDQ_SKIP,GQL_DDDQ_SKIP>.			{ scn3yyerror ("Bad character in a SPARQL long double-quoted string"); }
+<SPARQL_SSSQ_SKIP,GQL_SSSQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL long single-quoted string"); }
+<SPARQL_DDDQ_SKIP,GQL_DDDQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL long double-quoted string"); }
 
 
 <SPARQL_SKIP>['']		{ BEGIN(SPARQL_SQ_SKIP); TOK_SKIP; }
 <SPARQL_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP; }
 <SPARQL_SQ_SKIP>['']		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
 <SPARQL_DQ_SKIP>[""]		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
-<SPARQL_SQ_SKIP>{S_NL}	{ scn3yyerror ("End-of-line in a SPARQL short single-quoted string"); }
-<SPARQL_DQ_SKIP>{S_NL}	{ scn3yyerror ("End-of-line in a SPARQL short double-quoted string"); }
-<SPARQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
-<SPARQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
-<SPARQL_SQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL short single-quoted string"); }
-<SPARQL_DQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL short double-quoted string"); }
-<SPARQL_SQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short single-quoted string"); }
-<SPARQL_DQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short double-quoted string"); }
+<GQL_SQ_SKIP>['']		{ BEGIN(GQL_SKIP); TOK_SKIP; }
+<GQL_DQ_SKIP>[""]		{ BEGIN(GQL_SKIP); TOK_SKIP; }
+<SPARQL_SQ_SKIP,GQL_SQ_SKIP>{S_NL}	{ scn3yyerror ("End-of-line in a SPARQL short single-quoted string"); }
+<SPARQL_DQ_SKIP,GQL_DQ_SKIP>{S_NL}	{ scn3yyerror ("End-of-line in a SPARQL short double-quoted string"); }
+<SPARQL_SQ_SKIP,GQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
+<SPARQL_DQ_SKIP,GQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
+<SPARQL_SQ_SKIP,GQL_SQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL short single-quoted string"); }
+<SPARQL_DQ_SKIP,GQL_DQ_SKIP>[\\]		{ scn3yyerror ("Bad escape sequence in a SPARQL short double-quoted string"); }
+<SPARQL_SQ_SKIP,GQL_SQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short single-quoted string"); }
+<SPARQL_DQ_SKIP,GQL_DQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short double-quoted string"); }
 
 <SPARQL_SKIP>({PN_PREFIX}?)":"{PN_LOCAL}	TOK_SKIP;
 <SPARQL_SKIP>({PN_PREFIX}?)":"			TOK_SKIP;
@@ -1076,6 +1121,95 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>{S_NL}	TOK_NL_SKIP;
 <SPARQL_SKIP>[<>]	TOK_SKIP;
 <SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SPARQL text */
+
+	/* GQL - skipped like SPARQL text; the gql statement hands it to GQL_EXECUTE */
+
+<GQL_SKIP>"("	TOKOPEN_SKIP ('(',')');
+<GQL_SKIP>")"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_gql_inline ("\n)\n", outer, yyscanner);
+#else
+        TOKCLOSE (')',')');
+#endif
+      }
+    else
+      {
+        TOKCLOSE_SKIP (')',')');
+      }
+  }
+
+<GQL_SKIP>";"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_gql_inline ("\n;\n", outer, yyscanner);
+#else
+        TOK (';');
+#endif
+      }
+    else
+      {
+        TOK_SKIP;
+      }
+  }
+
+<GQL_SKIP>"{"	TOKOPEN_SKIP ('{','}');
+<GQL_SKIP>"}"	{
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    if (outer->_.sif_saved_lexdepth == global_scs->scs_scn3c.lexdepth)
+      {
+        BEGIN(SQL);
+
+#ifndef SCN3SPLIT
+        scn3_gql_inline ("\n}\n", outer, yyscanner);
+#else
+        TOKCLOSE ('}','}');
+#endif
+      }
+    else
+      {
+        TOKCLOSE_SKIP ('}','}');
+      }
+  }
+<GQL_SKIP>"["	TOKOPEN_SKIP ('[',']');
+<GQL_SKIP>"]"	TOKCLOSE_SKIP (']',']');
+
+<GQL_SKIP>"<"([^<>"{}|^`\001-\040\\])*">"		{ TOK_SKIP; }
+<GQL_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	{ TOK_SKIP; }
+
+<GQL_SKIP>['']['']['']		{ BEGIN(GQL_SSSQ_SKIP); TOK_SKIP; }
+<GQL_SKIP>[""][""][""]		{ BEGIN(GQL_DDDQ_SKIP); TOK_SKIP; }
+
+<GQL_SKIP>['']		{ BEGIN(GQL_SQ_SKIP); TOK_SKIP; }
+<GQL_SKIP>[""]		{ BEGIN(GQL_DQ_SKIP); TOK_SKIP; }
+
+<GQL_SKIP>({PN_PREFIX}?)":"{PN_LOCAL}	TOK_SKIP;
+<GQL_SKIP>({PN_PREFIX}?)":"			TOK_SKIP;
+<GQL_SKIP>"_:"{PN_LOCAL}			TOK_SKIP;
+<GQL_SKIP>[^#''""\\\n\r(){}\[\];:<>]+	TOK_SKIP;
+
+<GQL_SKIP><<EOF>>  {
+#ifndef SCN3SPLIT
+    scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+    BEGIN(SQL);
+    scn3_gql_inline ("\n;\n", outer, yyscanner);
+#else
+    yyterminate();
+#endif
+  }
+
+<GQL_SKIP>[#]([^\n\r]*){S_NL}	TOK_NL_SKIP;
+<GQL_SKIP>{S_NL}	TOK_NL_SKIP;
+<GQL_SKIP>[<>]	TOK_SKIP;
+<GQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-GQL text */
 
 .		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 %%
@@ -1120,6 +1254,52 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
    outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
    global_scs->scs_scn3c.include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
    global_scs->scs_scn3c.lineno_increment = 0;
+}
+
+void
+scn3_gql_inline (const char * tail_sql_text, scn3_include_fragment_t *outer, yyscan_t yyscanner)
+{
+   struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+   caddr_t gql_text;
+   dk_session_t *out;
+   caddr_t compiled;
+   int i, len;
+
+   gql_text = t_strses_string (outer->_.sif_skipped_part);
+   strses_free (outer->_.sif_skipped_part);
+   outer->_.sif_skipped_part = NULL;
+
+   out = strses_allocate ();
+   session_buffered_write (out, " \"DB\".\"DBA\".\"GQL_EXECUTE\" ('", 28);
+
+   len = (int) strlen (gql_text);
+   for (i = 0; i < len; i++)
+     {
+       if (gql_text[i] == '\'')
+         session_buffered_write (out, "''", 2);
+       else if (gql_text[i] == '\\' && !parse_not_char_c_escape)
+         session_buffered_write (out, "\\\\", 2);
+       else
+         session_buffered_write_char (gql_text[i], out);
+     }
+
+   session_buffered_write (out, "')", 2);
+   session_buffered_write (out, tail_sql_text, strlen (tail_sql_text));
+   session_buffered_write_char (0, out);
+   session_buffered_write_char (0, out);
+
+   compiled = t_strses_string (out);
+   strses_free (out);
+
+   outer->sif_buffer = YY_CURRENT_BUFFER;
+   outer->_.sif_saved_lineno = global_scs->scs_scn3c.lineno;
+   outer->_.sif_saved_plineno = global_scs->scs_scn3c.plineno;
+   outer->_.sif_saved_lineno_increment = global_scs->scs_scn3c.lineno_increment;
+   outer->_.sif_saved_lexdepth = global_scs->scs_scn3c.lexdepth;
+   global_scs->scs_scn3c.include_depth++;
+   global_scs->scs_scn3c.lineno_increment = 0;
+
+   yy_scan_buffer (compiled, box_length (compiled) - 1, yyscanner);
 }
 #endif
 
