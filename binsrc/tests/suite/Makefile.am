@@ -61,6 +61,8 @@ check_SCRIPTS = \
 	testall.sh \
 	testlib.sh \
 	tgraphql.sh \
+	tgql_rdf_equiv.sh \
+	tgql_unit.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
@@ -196,6 +198,31 @@ EXTRA_DIST= \
 	$(srcdir)/tdav_meta_050512.zip \
 	$(srcdir)/tdav_meta_050528.zip \
 	$(srcdir)/tgql_intro.ql \
+	$(srcdir)/test_gql_rdf_api.sql \
+	$(srcdir)/test_gql_rdf_inference.sql \
+	$(srcdir)/test_gql_rdf_load.sql \
+	$(srcdir)/test_gql_rdf_acid.sql \
+	$(srcdir)/test_gql_rdf_runner.sql \
+	$(srcdir)/test_gql_golden.sql \
+	$(srcdir)/test_gql_lexer.sql \
+	$(srcdir)/test_gql_expr.sql \
+	$(srcdir)/test_gql_parser.sql \
+	$(srcdir)/test_gql_translate.sql \
+	$(srcdir)/test_gql_functions.sql \
+	$(srcdir)/test_gql_runtime.sql \
+	$(srcdir)/test_gql_stats.sql \
+	$(srcdir)/test_gql_e2e.sql \
+	$(srcdir)/test_gql_scaling.sql \
+	$(srcdir)/test_gql_exec.sql \
+	$(srcdir)/test_gql_cache.sql \
+	$(srcdir)/test_gql_param.sql \
+	$(srcdir)/test_gql_batch.sql \
+	$(srcdir)/test_gql_edges.sql \
+	$(srcdir)/test_gql_match_semantics.sql \
+	$(srcdir)/test_gql_dml_semantics.sql \
+	$(srcdir)/test_gql_count_preagg.sql \
+	$(srcdir)/test_gql_shortest_groups.sql \
+	$(srcdir)/test_gql_large.sql \
 	$(srcdir)/test_gql_pg_ddl.sql \
 	$(srcdir)/tpcd.sh \
 	$(srcdir)/tpc-h/*.sql \

@@ -713,6 +713,7 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdf_void.sql \
 	$(srcdir)/rdflddir2.sql \
 	$(srcdir)/sparql_vec_index_view.sql \
+	$(srcdir)/gql_runtime.sql \
 	$(srcdir)/gql_pl.sql \
 	$(srcdir)/gql_lexer.sql \
 	$(srcdir)/gql_expr.sql \
@@ -721,6 +722,10 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/gql_var_pass.sql \
 	$(srcdir)/gql_translate.sql \
 	$(srcdir)/gql_sparql_gen.sql \
+	$(srcdir)/gql_main.sql \
+	$(srcdir)/gql_stats.sql \
+	$(srcdir)/gql_endpoint.sql \
+	$(srcdir)/gql_bootstrap.sql \
 	$(srcdir)/gql_pg_ddl.sql
 
 SQL_FILES_SYS 		= \

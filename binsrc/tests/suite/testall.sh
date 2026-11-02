@@ -176,7 +176,9 @@ tvvec_refresh_log_limit \
 tvvec_refresh_threads \
 tvvec_onnx_bpe \
 tvvec_rollback_undo \
-tvvec_rdf_quad "
+tvvec_rdf_quad \
+tgql_rdf_equiv \
+tgql_unit "
 
 QUICKTEST=1
 TPCDMODE=local
