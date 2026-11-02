@@ -714,7 +714,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdflddir2.sql \
 	$(srcdir)/sparql_vec_index_view.sql \
 	$(srcdir)/gql_lexer.sql \
-	$(srcdir)/gql_expr.sql
+	$(srcdir)/gql_expr.sql \
+	$(srcdir)/gql_parser.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
