@@ -695,6 +695,18 @@ edge_path_member (trans_state_t * tst, caddr_t edge)
 }
 
 
+static int
+tst_halves_share_only_end (trans_state_t * half1, trans_state_t * half2)
+{
+  /* the two halves of a path searched from both ends end in the same node; a path without cycles has no other node in both */
+  trans_state_t * tst;
+  for (tst = half1->tst_prev; tst; tst = tst->tst_prev)
+    if (path_member (half2->tst_prev, tst->tst_value))
+      return 0;
+  return 1;
+}
+
+
 trans_state_t *
 tn_rl_shifted_copy (trans_state_t * rl, caddr_t data)
 {
@@ -754,19 +766,43 @@ ts_check_target (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       dk_set_t * place;
       if ((place = (dk_set_t*)id_hash_get (ts->ts_target_ts->ts_traversed, (caddr_t)&tst->tst_value)))
 	{
-	  if (tn->tn_distinct )
-	    complements = t_CONS ((void*)*place, NULL);
-	  else
-	    complements = *place;
+	  int min_depth = tn->tn_min_depth ? unbox (qst_get (inst, tn->tn_min_depth)) : 0, merged = 0;
+	  int paths = tn->tn_no_cycles && !tn->tn_distinct;
+	  if (tn->tn_distinct)
+	    {
+	      /* with t_distinct the two ends are joined once, at their shortest distance, as by a search from one end.
+	       * The shortest meeting of this step is kept in the primary's set and joined at the end of the step, ts_distinct_join () */
+	      trans_set_t * primary_ts = tn->tn_is_primary ? ts : ts->ts_target_ts;
+	      trans_state_t * complement = (trans_state_t *) *place;
+	      if (!primary_ts->ts_joined
+		  && (!primary_ts->ts_join_tst
+		      || tst->tst_depth + complement->tst_depth < primary_ts->ts_join_tst->tst_depth + primary_ts->ts_join_complement->tst_depth))
+		{
+		  primary_ts->ts_join_tst = tst;
+		  primary_ts->ts_join_complement = complement;
+		}
+	      return 1;
+	    }
+	  complements = *place;
 	  DO_SET (trans_state_t *, complement, &complements)
 	    {
+	      /* the two halves make a path of their depths together; a path shorter than t_min is not a result */
+	      if (tst->tst_depth + complement->tst_depth < min_depth)
+		continue;
+	      /* with t_no_cycles every path is a result once: it is joined when the levels of the two searches add up to its length,
+	       * from the halves at those levels, and only if the halves have no other node in common */
+	      if (paths
+		  && (complement->tst_depth != ts->ts_target_ts->ts_level || !tst_halves_share_only_end (tst, complement)))
+		continue;
 	      if (tn->tn_is_primary)
 		tn_merge_path (tn, inst, ts, complement, tst);
 	      else
 		tn_merge_path (tn, inst, ts->ts_target_ts, tst, complement);
+	      merged = 1;
 	    }
 	  END_DO_SET();
-	  return 1;
+	  /* with t_no_cycles the search goes on through the node, the longer paths through it are joined later */
+	  return paths ? 0 : merged;
 	}
       else
 	return 0;
@@ -790,6 +826,7 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
   id_hash_t * relation = (id_hash_t*)qst_get (inst, tn->tn_relation);
   TN_LIMIT_DECL;
   dk_set_t * rel_place;
+  int min_depth = tn->tn_min_depth ? unbox (qst_get (inst, tn->tn_min_depth)) : 0;
   if (tn->tn_max_depth
       && tst->tst_depth >= ts->ts_max_depth)
     return;
@@ -844,6 +881,7 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       else if (tn->tn_complement)
 	{
 	  dk_set_t * set_place = (dk_set_t*) id_hash_get (ts->ts_traversed, (caddr_t)&related);
+	  ts->ts_level = rel->tst_depth;
 	  if (set_place)
 	    t_set_push (set_place, (void*)rel);
 	  else
@@ -866,17 +904,47 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
 	    t_set_push (new_ret, (void*)rel);
 	  continue;
 	}
-      if (ts_check_target (tn, inst, ts, rel))
-	continue;
+      /* the end of a search from one end is checked here, the meeting of two searches in ts_check_target.
+       * The end reached on a path shorter than t_min is not a result, the search goes on through it */
+      if (ts->ts_target_ts)
+	{
+	  if (ts_check_target (tn, inst, ts, rel))
+	    continue;
+	}
+      else if (ts->ts_target && rel->tst_depth >= min_depth && box_equal (ts->ts_target, rel->tst_value))
+	{
+	  ts_new_result (tn, inst, ts, rel);
+	  continue;
+	}
 
       if (!ts->ts_max_depth || rel->tst_depth < ts->ts_max_depth)
 	t_set_push (new_ret, (void*)rel);
-      if (tn->tn_min_depth && rel->tst_depth < unbox (qst_get (inst, tn->tn_min_depth)))
+      if (rel->tst_depth < min_depth)
 	continue;
       if (!ts->ts_target && !ts->ts_target_ts)
 	ts_new_result (tn, inst, ts, rel);
     }
   END_DO_SET();
+}
+
+
+static void
+ts_distinct_join (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
+{
+  /* t_distinct from both ends: the shortest meeting of the step tn has made from ts is the distance of the ends, a row if it is at least t_min */
+  trans_set_t * primary_ts = tn->tn_is_primary ? ts : ts->ts_target_ts;
+  trans_state_t * tst = primary_ts->ts_join_tst, * complement = primary_ts->ts_join_complement;
+  int min_depth;
+  if (!tst || primary_ts->ts_joined)
+    return;
+  primary_ts->ts_joined = 1;
+  min_depth = tn->tn_min_depth ? unbox (qst_get (inst, tn->tn_min_depth)) : 0;
+  if (tst->tst_depth + complement->tst_depth < min_depth)
+    return;
+  if (tn->tn_is_primary)
+    tn_merge_path (tn, inst, ts, complement, tst);
+  else
+    tn_merge_path (tn, inst, ts->ts_target_ts, tst, complement);
 }
 
 
@@ -886,7 +954,9 @@ ts_advance (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
   QNCAST (QI, qi, inst);
   int64 card_co = TN_CARD_CO (qi->qi_client);
   dk_set_t next = NULL;
-  if (tn->tn_shortest_only && (ts->ts_result || (ts->ts_target_ts && ts->ts_target_ts->ts_result)))
+  /* a search from both ends with t_distinct has nothing more to find once the ends are joined */
+  if ((tn->tn_shortest_only && (ts->ts_result || (ts->ts_target_ts && ts->ts_target_ts->ts_result)))
+      || (tn->tn_distinct && ts->ts_target_ts && (tn->tn_is_primary ? ts : ts->ts_target_ts)->ts_joined))
     {
       ts->ts_new = NULL;
       return;
@@ -929,6 +999,8 @@ ts_advance (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
     }
   END_DO_SET ();
   ts->ts_new = next;
+  if (tn->tn_distinct && ts->ts_target_ts)
+    ts_distinct_join (tn, inst, ts);
 }
 
 
@@ -1528,7 +1600,11 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state, int n_sets
 	if (tn->tn_min_depth && 0 == unbox (qst_get (inst, tn->tn_min_depth)))
 	  {
 	    if (ts->ts_target || ts->ts_target_ts)
-	      ts_check_target (tn, inst, ts, tst);
+	      {
+		ts_check_target (tn, inst, ts, tst);
+		if (tn->tn_distinct && ts->ts_target_ts)
+		  ts_distinct_join (tn, inst, ts);
+	      }
 	    else
 	      ts_new_result (tn, inst, ts,tst);
 	  }

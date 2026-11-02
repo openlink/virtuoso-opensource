@@ -307,6 +307,30 @@ then
     exit 1
 fi
 
+LOG + running sql script ttrans_bidir
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_bidir.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table searched from both ends -- ttrans_bidir.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_min_depth
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_min_depth.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table, T_MIN with the end bound -- ttrans_min_depth.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_bidir_paths
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_bidir_paths.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive paths searched from both ends -- ttrans_bidir_paths.sql"
+    exit 1
+fi
+
 
 LOG + running sql script tclforvec
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclforvec.sql 

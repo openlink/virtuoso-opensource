@@ -141,6 +141,10 @@ typedef struct trans_set_s
   struct trans_set_s *	ts_target_ts; /* if doing both ends against the middle, a tst is a result if its input equals the input of one of the values in this ts */
   int	ts_target_flag_col; /* if the dt has a col that indicates a successful path, this is its position */
   int		ts_max_depth;
+  int		ts_level; /* depth of the newest states.  Searching from both ends, a path is joined where the levels of the two add up to its length */
+  trans_state_t *	ts_join_tst; /* with t_distinct from both ends, the shortest meeting found in the current step, kept in the primary's set */
+  trans_state_t *	ts_join_complement;
+  char		ts_joined; /* the ends have been joined, with a row or without one if shorter than t_min */
   dk_set_t	ts_result;
   dk_set_t	ts_last_result;
   dk_set_t 	ts_current_result;
