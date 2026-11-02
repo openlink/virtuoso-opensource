@@ -2625,6 +2625,19 @@ sparp_gp_trav_make_aliases_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_st
   return 0;
 }
 
+static int
+sparp_equiv_is_global (sparp_equiv_t *eq)
+{
+  int varname_ctr;
+  DO_BOX_FAST (caddr_t, vname, varname_ctr, eq->e_varnames)
+    {
+      if (SPART_VARNAME_IS_GLOB (vname))
+        return 1;
+    }
+  END_DO_BOX_FAST;
+  return 0;
+}
+
 int
 sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -2650,15 +2663,19 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
         (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) ||
         eq->e_replaces_filter )
 	continue; /* Do not remove if in use */
-      /* an OPTIONAL that only reads the variable in its FILTER gets it from here, see sparp_dig_and_glue_loj_filter_for_eq () */
-      for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
+      /* an OPTIONAL that only reads the variable in its FILTER gets it from here, see sparp_dig_and_glue_loj_filter_for_eq ();
+         not a global (?:param), which every group reads as it is */
+      if (!sparp_equiv_is_global (eq))
         {
-          sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
-          if ((OPTIONAL_L == sub_eq->e_gp->_.gp.subtype) && (0 != sub_eq->e_const_reads) && !SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
-            break;
+          for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
+            {
+              sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
+              if ((OPTIONAL_L == sub_eq->e_gp->_.gp.subtype) && (0 != sub_eq->e_const_reads) && !SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
+                break;
+            }
+          if (0 <= sub_ctr)
+            continue;
         }
-      if (0 <= sub_ctr)
-        continue;
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
