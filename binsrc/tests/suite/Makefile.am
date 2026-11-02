@@ -73,6 +73,7 @@ check_SCRIPTS = \
 	toptitpcd.sh \
 	tp.sh \
 	tpcd.sh \
+	tplugin_load.sh \
 	tproviders.sh \
 	tproxy.sh \
 	tr2rml.sh \

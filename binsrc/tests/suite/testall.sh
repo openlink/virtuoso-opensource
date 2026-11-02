@@ -142,6 +142,7 @@ tsoap12 \
 tvspxex \
 tgraphql \
 tlongany \
+tplugin_load \
 tvvec \
 tvvec_crash_recovery \
 tvvec_chunked_replay \
