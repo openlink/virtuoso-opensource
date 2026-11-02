@@ -975,6 +975,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsparql_maxrows
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsparql_maxrows.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: SPARQL endpoint row limits -- tsparql_maxrows.sql"
+      exit 1
+   fi
+
    LOG + running sql script tsparul_load
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparul_load.sql
    if test $STATUS -ne 0

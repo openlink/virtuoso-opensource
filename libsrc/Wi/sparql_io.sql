@@ -3845,7 +3845,7 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
   in qry varchar, inout state varchar, inout msg varchar, inout qry_params any, in maxrows integer, in stream_maxrows integer,
   inout metas any, inout rset any, inout ses any, in accept varchar, in flags integer, in jsonp_callback any ) returns integer
 {
-  declare hnd, row, env, acc any;
+  declare hnd, row, env, acc, hdr any;
   declare kind, ret_mime, ret_format, row_cb varchar;
   declare rc, rowno, lim, streaming, flush_msec, last_flush integer;
   flush_msec := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'StreamingFlushMsec'), '500'));
@@ -3894,6 +3894,11 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
         -- the first row decides: a CONSTRUCT/DESCRIBE dictionary or no chunked encoding is collected as exec() does
         if (0 = rowno and row_cb is not null and not (1 = length (row) and __tag of dictionary reference = __tag (row[0])))
           {
+            -- a stream cannot know before its first row whether the limit will cut it, so it says what the limit is;
+            -- X-SPARQL-MaxRows stays the collected result's, sent when the result reached the limit
+            hdr := http_header_get ();
+            if (stream_maxrows > 0)
+              http_header (coalesce (hdr, '') || sprintf ('X-SPARQL-MaxRows-Limit: %d\r\n', stream_maxrows));
             streaming := DB.DBA.SPARQL_RESULTS_STREAM_BEGIN (ret_mime, ret_format, flags);
             if (streaming)
               {
@@ -3902,6 +3907,8 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
                   http (jsonp_callback || '(\n', ses);
                 DB.DBA.SPARQL_RESULTS_STREAM_HEAD (ses, metas, kind, env);
               }
+            else if (stream_maxrows > 0)
+              http_header (coalesce (hdr, ''));
           }
         if (streaming)
           {
