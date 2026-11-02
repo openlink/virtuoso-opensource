@@ -250,6 +250,14 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfnumwrite
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfnumwrite.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: numeric literals in RDF serializations -- trdfnumwrite.sql"
+    exit 1
+fi
+
 LOG + running sql script trdfinf
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf.sql 
 if test $STATUS -ne 0

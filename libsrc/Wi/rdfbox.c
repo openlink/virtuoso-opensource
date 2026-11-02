@@ -3425,6 +3425,21 @@ http_json_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *xe)
   session_buffered_write_char ('"', ses);
 }
 
+/* What Turtle needs after the text of a native xsd:decimal or xsd:double to read it back with that datatype:
+   it reads 12000 as an xsd:integer and 1500.0 as an xsd:decimal.  NULL if the text has it already, or is NaN or INF. */
+static const char *
+http_ttl_number_suffix (caddr_t txt, dtp_t dtp)
+{
+  size_t len = box_length (txt) - 1;
+  if (!len || !isdigit ((unsigned char) txt[len - 1]))
+    return NULL;
+  if (DV_NUMERIC == dtp)
+    return memchr (txt, '.', len) ? NULL : ".0";
+  if (DV_DOUBLE_FLOAT == dtp && !memchr (txt, 'e', len) && !memchr (txt, 'E', len))
+    return memchr (txt, '.', len) ? "e0" : ".0e0";
+  return NULL;
+}
+
 static void
 http_ttl_write_duration (dk_session_t * ses, double boxdbl, char * intl)
 {
@@ -3556,7 +3571,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
 	    break;
 	  }
         buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
-        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        if ((NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
           {
             if (isalpha(tmpbuf[1]))
               {
@@ -3569,7 +3584,13 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
               }
             else
               {
-                strcpy (tmpbuf+buffill, ".0");
+                /* without an exponent Turtle reads it as an xsd:decimal */
+                if (NULL == strchr (tmpbuf, '.'))
+                  {
+                    strcpy (tmpbuf+buffill, ".0");
+                    buffill += 2;
+                  }
+                strcpy (tmpbuf+buffill, "e0");
                 buffill += 2;
               }
           }
@@ -3610,6 +3631,12 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         if (need_quotes)
           session_buffered_write_char ('"', ses);
+        else if (DV_NUMERIC == obj_box_value_dtp)
+          {
+            const char *sfx = http_ttl_number_suffix (tmp_utf8_box, DV_NUMERIC);
+            if (sfx)
+              session_buffered_write (ses, sfx, strlen (sfx));
+          }
         dk_free_box (tmp_utf8_box);
         break;
       }
@@ -4303,7 +4330,10 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         if (abbreviated_numbers)
           {
             caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
+            const char *sfx = http_ttl_number_suffix (tmp_utf8_box, obj_box_value_dtp);
             session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            if (sfx)
+              session_buffered_write (ses, sfx, strlen (sfx));
             dk_free_box (tmp_utf8_box);
             return;
           }
@@ -5000,7 +5030,7 @@ http_ld_json_obj_can_be_simplified (query_instance_t *qi, caddr_t obj)
           return 1;
         return 0;
       }
-    case DV_LONG_INT: case DV_DOUBLE_FLOAT: case DV_WIDE:
+    case DV_LONG_INT: case DV_WIDE:
       return 1;
     case DV_STRING:
       if (BF_IRI & box_flags (obj))
@@ -5034,13 +5064,14 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       obj_box_value_dtp = obj_dtp;
       switch (obj_box_value_dtp)
         {
+        /* JSON-LD reads a JSON number as an xsd:integer or an xsd:double, so an xsd:decimal or xsd:double is a
+           value object with its @type, below */
         case DV_LONG_INT:
         case DV_SINGLE_FLOAT:
-        case DV_DOUBLE_FLOAT:
-        case DV_NUMERIC:
           {
             caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
             session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            dk_free_box (tmp_utf8_box);
             return;
           }
         }
@@ -5126,10 +5157,11 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     default:
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
+        int quoted = (DV_RDF == obj_dtp || DV_GEO == obj_dtp || DV_NUMERIC == obj_dtp || DV_DOUBLE_FLOAT == obj_dtp);
+        if (quoted)
           session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
+        if (quoted)
           session_buffered_write_char ('\"', ses);
         dk_free_box (tmp_utf8_box);
         if (NULL == type_uri)
