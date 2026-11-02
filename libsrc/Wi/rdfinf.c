@@ -2163,20 +2163,45 @@ pred_body_references (sqlo_t * so, df_elt_t ** pred, df_elt_t * refd)
     return 0;
   op = (ptrlong)pred[0];
   if (BOP_AND == op || BOP_OR == op || BOP_NOT == op)
-    return pred_body_references (so, (df_elt_t**)pred[1], refd);
+    {
+      uint32_t inx;
+      /* a join test is the and of all the table's after tests, not only of two */
+      for (inx = 1; inx < BOX_ELEMENTS (pred); inx++)
+	if (pred_body_references (so, (df_elt_t**)pred[inx], refd))
+	  return 1;
+      return 0;
+    }
   if (DFE_PRED_BODY == op)
     {
       uint32_t inx;
+      /* the code computing the operands, then the comparison itself: a != or an in list of the column is one */
       for (inx = 1; inx < BOX_ELEMENTS (pred); inx++)
 	{
 	  df_elt_t * dfe = pred[inx];
-	  if (DFE_BOP_PRED == dfe->dfe_type)
-	    return 0;
 	  if (dfe_references (so, dfe, refd))
 	    return NULL != refd;
 	}
     }
   return 0;
+}
+
+
+static data_source_t *
+sqlg_join_test_holder (data_source_t * ts)
+{
+  /* The node with the table's join test: the table source, the one after it that fetches the rest of the row, or a
+     trailing iterator that took the test for another column.  An end node after them, e.g. the post filter of a
+     leading subclass iterator, has a test of its own. */
+  data_source_t * qn, * holder = NULL;
+  for (qn = ts; qn; qn = qn_next (qn))
+    {
+      if (!IS_TS (qn) && !IS_HS (qn)
+	  && !(IS_QN (qn, rdf_inf_pre_input) && ((rdf_inf_pre_node_t *) qn)->ri_is_after))
+	continue;
+      if (qn->src_after_test)
+	holder = qn;
+    }
+  return holder;
 }
 
 
@@ -2208,13 +2233,11 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
     ri->ri_p = sqlg_col_ssl (tb_dfe, "P");
   if (pred_body_references (so, tb_dfe->_.table.join_test, o_col))
     {
-      data_source_t * last_with_test = qn_last(ts);
-      while (last_with_test && !last_with_test->src_after_test)
-        last_with_test = qn_prev(q_head, last_with_test);
-      if (last_with_test) /* precaution, NULL should not happen since tb has jt */
+      data_source_t * holder = sqlg_join_test_holder (ts);
+      if (holder) /* precaution, NULL should not happen since tb has jt */
         {
-          ri->src_gen.src_after_test = last_with_test->src_after_test;
-          last_with_test->src_after_test = NULL;
+          ri->src_gen.src_after_test = holder->src_after_test;
+          holder->src_after_test = NULL;
         }
     }
   ri->ri_ctx = ctx;
@@ -2291,13 +2314,11 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
   ri->ri_ctx = ctx;
   if (pred_body_references (so, tb_dfe->_.table.join_test, p_col))
     {
-      data_source_t * last_with_test = qn_last(ts);
-      while (last_with_test && !last_with_test->src_after_test)
-        last_with_test = qn_prev(q_head, last_with_test);
-      if (last_with_test) /* precaution, NULL should not happen since tb has jt */
+      data_source_t * holder = sqlg_join_test_holder (ts);
+      if (holder) /* precaution, NULL should not happen since tb has jt */
         {
-          ri->src_gen.src_after_test = last_with_test->src_after_test;
-          last_with_test->src_after_test = NULL;
+          ri->src_gen.src_after_test = holder->src_after_test;
+          holder->src_after_test = NULL;
         }
     }
 }

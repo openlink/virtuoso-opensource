@@ -48,6 +48,7 @@
 #include "sqloinv.h"
 #include "wifn.h"
 #include "mhash.h"
+#include "rdfinf.h"
 
 
 
@@ -4732,6 +4733,81 @@ next_pred:;
   END_DO_SET ();
 }
 
+
+static int
+dfe_is_non_iri_const (df_elt_t * dfe)
+{
+  dtp_t dtp;
+  if (DFE_CONST != dfe->dfe_type)
+    return 0;
+  dtp = DV_TYPE_OF (dfe->dfe_tree);
+  if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
+    return 0;
+  return !(IS_STRING_DTP (dtp) && (BF_IRI & box_flags (dfe->dfe_tree)));
+}
+
+
+static int
+sqlo_cp_is_iri_cmp (df_elt_t * cp)
+{
+  /* a comparison that a superclass or superproperty can satisfy differently than the stored value: not with literals only */
+  df_elt_t ** in_list = sqlo_in_list (cp, NULL, NULL);
+  uint32 inx;
+  if (!in_list)
+    return !dfe_is_non_iri_const (cp->_.bin.right);
+  for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+    if (!dfe_is_non_iri_const (in_list[inx]))
+      return 1;
+  return 0;
+}
+
+
+static void
+sqlo_rdf_inf_after_preds (df_elt_t * tb_dfe, dk_set_t * col_preds, dk_set_t * after_preds)
+{
+  /* With inference, an O of rdf:type that is not given ranges over the stored class and its superclasses and a P that
+     is not given over the stored property and its superproperties: sqlg_rdf_inf_1 adds a trailing iterator for them.
+     A condition on such a column must see the inferred values, so it goes to the join test, which the iterator takes
+     behind itself.  Given means as in sqlg_rdf_inf_1: a single equality. */
+  extern caddr_t rdfs_type;
+  df_elt_t * p_dfe = NULL;
+  int o_given = 0, o_iterated, p_iterated;
+  caddr_t p_const;
+  dk_set_t to_move = NULL;
+  if (tb_dfe->_.table.is_inf_col_given || !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table)
+      || !rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE)))
+    return;
+  DO_SET (df_elt_t *, cp, col_preds)
+    {
+      dbe_column_t * col = cp_left_col (cp);
+      if (BOP_EQ != cp->_.bin.op || cp->_.bin.left == cp->_.bin.right || sqlo_in_list (cp, NULL, NULL))
+	continue;
+      if ('P' == col->col_name[0])
+	p_dfe = cp->_.bin.right;
+      else if ('O' == col->col_name[0])
+	o_given = 1;
+    }
+  END_DO_SET ();
+  p_const = dfe_iri_const (p_dfe);
+  o_iterated = !o_given && (!p_const || box_equal (rdfs_type, p_const));
+  p_iterated = !p_dfe;
+  dk_free_box (p_const);
+  DO_SET (df_elt_t *, cp, col_preds)
+    {
+      dbe_column_t * col = cp_left_col (cp);
+      if ((('O' == col->col_name[0] && o_iterated) || ('P' == col->col_name[0] && p_iterated))
+	  && sqlo_cp_is_iri_cmp (cp))
+	t_set_push (&to_move, (void*) cp);
+    }
+  END_DO_SET ();
+  DO_SET (df_elt_t *, pred, &to_move)
+    {
+      t_set_push (after_preds, (void*) pred);
+      t_set_delete (col_preds, (void*) pred);
+    }
+  END_DO_SET ();
+}
+
 void
 sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 		   dk_set_t nj_preds)
@@ -4833,6 +4909,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       pred->dfe_is_placed = DFE_PLACED;
     }
   END_DO_SET();
+  sqlo_rdf_inf_after_preds (tb_dfe, &col_preds, &after_preds);
   sqlo_table_locus (so, tb_dfe, col_preds, &after_preds, nj_preds, &vdb_preds);
 
   tb_dfe->_.table.col_preds = col_preds;
