@@ -7814,6 +7814,16 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
       /* all tables in sequence, now groups and top select and what else */
       if (ST_P (ot->ot_dt, SELECT_STMT))
 	{
+	  if (!ot->ot_from_dfes && ot->ot_preds)
+	    {
+	      /* A select without FROM, as (select 1 as x) s in ... where s.x = 2, has no table to place the preds
+	         imported into it with: place them as a filter in front of the selection.  All of ot_preds go in,
+	         nothing else can have placed them. */
+	      df_elt_t * filter = sqlo_new_dfe (so, DFE_FILTER, NULL);
+	      filter->_.filter.body = sqlo_and_list_body (so, LOC_LOCAL, so->so_gen_pt, ot->ot_preds);
+	      filter->_.filter.preds = t_set_copy (ot->ot_preds);
+	      sqlo_place_dfe_after (so, LOC_LOCAL, so->so_gen_pt, filter);
+	    }
 	  sqlo_fun_ref_epilogue (so, ot);
 	  if (is_top || SEL_IS_DISTINCT (ot->ot_dt) || sel_n_breakup (ot->ot_dt))
 	    {

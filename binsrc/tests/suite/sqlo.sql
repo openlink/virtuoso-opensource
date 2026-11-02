@@ -2545,9 +2545,11 @@ ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 set U{caseno} case1229;
 drop table case1229;
+--  The CHECK holds ( SELECT case1229 FROM ( SELECT case1229 ) AS case1229 WHERE case1229 = ( ... ON ( ( ( SELECT case1229 ( ... ) , 1 , 'case1229' ) ) , 1 ) ... ) ):
+--  a scalar subquery of three columns in the WHERE of a derived table without FROM.  That WHERE
+--  used to be dropped unread and the table was created; compiled, it is SQ142, as anywhere else.
 CREATE TABLE case1229 ( case1229 INT PRIMARY KEY CHECK ( CASE WHEN case1229 = ( SELECT case1229 FROM case1229 WHERE ( 'case1229' ) GROUP BY case1229 HAVING case1229 ( ) > 1 OR case1229 ( case1229 ) = case1229 ( case1229 ) ) THEN 'case1229' WHEN case1229 > 1 OR CASE WHEN ( SELECT 1 FROM ( SELECT case1229 ( case1229 ( case1229 ) , case1229 ) ISNULL FROM case1229 ORDER BY - case1229 , case1229 ) AS case1229 WHERE case1229 = 'case1229' OR case1229 ( case1229 ( ) ) = case1229 OR case1229 = 'case1229' GROUP BY case1229 , case1229 , case1229 ) THEN ( - case1229 ( 1 ) ) ELSE ( 1 * case1229 ) END AND - case1229 ( 1 ) >= case1229 OR ( SELECT case1229 FROM ( SELECT case1229 ) AS case1229 WHERE case1229 = ( SELECT case1229 FROM case1229 AS case1229 JOIN case1229 ON ( ( ( SELECT case1229 ( case1229 , CASE WHEN 1 THEN 'case1229' WHEN case1229 = 1 AND case1229 ( 1.000000 ) AND case1229 = 1 AND case1229 = 1 OR case1229 = 1 AND ( case1229 = 1 OR case1229 = 1 OR case1229 = 1 ) THEN 'case1229' ELSE 'case1229' END , CASE 1 WHEN 1 THEN 'case1229' WHEN 1 THEN 'case1229' ELSE 'case1229' END ) , 1 , 'case1229' ) ) , 1 ) = case1229 WHERE ( - 'case1229' >= case1229 AND case1229 = 1 * 1 ) ) ) THEN 'case1229' ELSE 'case1229' END ) ) ;
-INSERT INTO case1229 ( case1229 ) VALUES ( 78 ) ;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

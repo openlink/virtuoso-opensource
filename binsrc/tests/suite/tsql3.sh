@@ -183,6 +183,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tdt_no_from_where
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdt_no_from_where.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: WHERE over a derived table without FROM -- tdt_no_from_where.sql"
+    exit 1
+fi
+
 LOG + running sql script tft_offband
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tft_offband.sql
 if test $STATUS -ne 0
