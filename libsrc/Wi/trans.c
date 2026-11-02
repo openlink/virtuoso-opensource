@@ -891,6 +891,32 @@ ts_advance (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
       ts->ts_new = NULL;
       return;
     }
+  /* GQL SHORTEST k GROUPS (k > 1): stop exploring once results span at
+     least k distinct path lengths.  This is the generalization of
+     tn_shortest_only (which is the k=1 case).  The search is breadth-first
+     by depth, so once k distinct result depths are accumulated, any further
+     expansion would only yield paths at longer lengths.  Results are
+     appended in BFS order (non-decreasing depth), so a single pass with a
+     running prev_depth suffices to count distinct lengths. */
+  if (tn->tn_shortest_k_groups > 0 && ts->ts_result)
+    {
+      int distinct_depths = 0;
+      int prev_depth = -1;
+      DO_SET (trans_state_t *, tst, &ts->ts_result)
+	{
+	  if (tst->tst_depth != prev_depth)
+	    {
+	      distinct_depths++;
+	      prev_depth = tst->tst_depth;
+	    }
+	}
+      END_DO_SET ();
+      if (distinct_depths >= tn->tn_shortest_k_groups)
+	{
+	  ts->ts_new = NULL;
+	  return;
+	}
+    }
   if (card_co && ts->ts_traversed && ts->ts_traversed->ht_count >= card_co)
     {
       ts->ts_new = NULL;
@@ -1295,9 +1321,20 @@ tn_results (trans_node_t * tn, caddr_t * inst)
   if (-1 == QST_INT (inst, tn->clb.clb_nth_set))
     {
       SET_THR_TMP_POOL (itcl->itcl_pool);
-      if (tn->tn_complement)
-	tn_init_pair (tn, inst);
-      while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+      /* T_SHORTEST_K_GROUPS requires unidirectional BFS so that results
+	 are produced in non-decreasing depth order.  The bidirectional
+	 (complement) optimization produces results at multiple depths in
+	 a single expansion step, which makes depth-group counting
+	 unreliable.  Fall through to plain tn_advance which processes
+	 only the primary trans_node's sets. */
+      if (tn->tn_shortest_k_groups > 0)
+	while (tn_advance (tn, inst));
+      else
+	{
+	  if (tn->tn_complement)
+	    tn_init_pair (tn, inst);
+	  while (tn->tn_complement ? tn_advance_pair (tn, inst) : tn_advance (tn, inst));
+	}
       SET_THR_TMP_POOL (NULL);
       QST_INT (inst, tn->clb.clb_nth_set) = 0;
     }
