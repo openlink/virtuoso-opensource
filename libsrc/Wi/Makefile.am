@@ -712,7 +712,9 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
 	$(srcdir)/rdflddir2.sql \
-	$(srcdir)/sparql_vec_index_view.sql
+	$(srcdir)/sparql_vec_index_view.sql \
+	$(srcdir)/gql_lexer.sql \
+	$(srcdir)/gql_expr.sql
 
 SQL_FILES_SYS 		= \
 	$(srcdir)/users.sql
