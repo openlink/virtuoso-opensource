@@ -683,6 +683,17 @@ path_member (trans_state_t * tst, caddr_t value)
   return 0;
 }
 
+int
+edge_path_member (trans_state_t * tst, caddr_t edge)
+{
+  if (!edge)
+    return 0;
+  for (tst = tst; tst; tst = tst->tst_prev)
+    if (tst->tst_edge && box_equal (tst->tst_edge, edge))
+      return 1;
+  return 0;
+}
+
 
 trans_state_t *
 tn_rl_shifted_copy (trans_state_t * rl, caddr_t data)
@@ -806,6 +817,12 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       if (tn->tn_no_cycles
 	  && path_member (tst, related))
 	continue;
+      if (tn->tn_trail)
+	{
+	  caddr_t edge = (caddr_t)t_list (2, tst->tst_value, related);
+	  if (edge_path_member (tst, edge))
+	    continue;
+	}
       if (mem_co && mp->mp_bytes > mem_co)
 	continue;
       if (mp->mp_bytes > tn->tn_max_memory)
@@ -816,6 +833,8 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
       rel = (trans_state_t*)t_alloc (sizeof (trans_state_t));
       memset (rel, 0, sizeof (trans_state_t));
       rel->tst_value = related;
+      if (tn->tn_trail)
+	rel->tst_edge = (caddr_t)t_list (2, tst->tst_value, related);
       if (tn->tn_data)
 	rel->tst_data = related_tuple[1];
       rel->tst_prev = tst;
