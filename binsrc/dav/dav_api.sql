@@ -1575,6 +1575,16 @@ create function DAV_LOCK_INT (
   compare_mode := case when check_token = '' then 0 else 1 end;
 
   set isolation = 'serializable';
+  -- Serialize lock acquisition on the target object.  The lock-table lookup
+  -- below cannot lock a missing row, so two concurrent LOCK requests could
+  -- both pass the check and overwrite each other's subsequent PUT update.
+  if (not id_is_bad)
+  {
+    if (x_st = 'R')
+      rc := (select RES_ID from WS.WS.SYS_DAV_RES where RES_ID = x_id for update);
+    else
+      rc := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = x_id for update);
+  }
   rc := DB.DBA.DAV_IS_LOCKED_INT (x_id, x_st, check_token, compare_mode);
   if (rc < 0)
     return rc;
