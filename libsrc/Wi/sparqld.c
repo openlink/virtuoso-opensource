@@ -236,6 +236,9 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case false_L: return "false";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
+    case SPAR_GOPT_DAMPING: return "DAMPING";
+    case SPAR_GOPT_DIRECTION: return "DIRECTION";
+    case SPAR_GOPT_DIRECTED: return "DIRECTED";
     case FUZZY_L: return "FUZZY";
     case FUZZY_THRESHOLD_L: return "FUZZY_THRESHOLD";
     case FUZZY_N_L: return "FUZZY_N";
@@ -251,8 +254,10 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case LANG_L: return "LANG";
     case LIKE_L: return "LIKE";
     case LIMIT_L: return "LIMIT";
+    case SPAR_GOPT_MAX_ITER: return "MAX_ITER";
     /* case NAMED_L: return "FROM NAMED"; */
     case NIL_L: return "NIL";
+    case SPAR_GOPT_NORMALIZED: return "NORMALIZED";
     /* case OBJECT_L: return "OBJECT"; */
     case OFFBAND_L: return "OFFBAND";
     case OFFSET_L: return "OFFSET";
@@ -269,7 +274,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case SIMILARITY_L: return "SIMILARITY";
     /* case SUBJECT_L: return "SUBJECT"; */
     case T_CYCLES_ONLY_L: return "T_CYCLES_ONLY";
-    case T_DIRECTION_L: return "T_DIRECTORY";
+    case T_DIRECTION_L: return "T_DIRECTION";
     case T_DISTINCT_L: return "T_DISTINCT";
     case T_END_FLAG_L: return "T_END_FLAG";
     case T_EXISTS_L: return "T_EXISTS";
@@ -294,6 +299,13 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case UNION_L: return "UNION";
     case SPAR_UNION_WO_ALL: return "UNION";
     /* case WHERE_L: return "WHERE"; */
+    case SPAR_GOPT_WEIGHT: return "WEIGHT";
+    case SPAR_GOPT_TOLERANCE: return "TOLERANCE";
+    case SPAR_GOPT_RESOLUTION: return "RESOLUTION";
+    case SPAR_GOPT_RETURN_TYPE: return "RETURN_TYPE";
+    case SPAR_GOPT_SOURCE_NODE: return "SOURCE_NODE";
+    case SPAR_GOPT_MODE: return "MODE";
+    case SPAR_GOPT_EDGES: return "EDGES";
 
 #if 0
     case SPAR_BLANK_NODE_LABEL: return "blank node label";

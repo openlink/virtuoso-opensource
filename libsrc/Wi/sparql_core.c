@@ -3024,6 +3024,469 @@ spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype)
   return sources;
 }
 
+/* Find, among a group's members, the subselect that holds the analytics
+ * call OPTION (edges ...) left a variable for.
+ *
+ * The shape is not obvious and it decides everything.  By the time a
+ * group reaches spar_make_top(), spar_gp_finalize_binds() has already
+ * moved the analytics call into a subselect of its own:
+ *
+ *   outer_gp                         <- the FILTERs live here
+ *     wrapper_gp (SELECT)
+ *       subselect_top   retvals: BIND (algo(?n, ?__edges_gN, ...) AS ?d)
+ *         inner_gp                   <- the triples live here
+ *
+ * So the call is in the retvals of subselect_top, and the graph variable
+ * it names has to be bound *inside* that subselect -- a subselect cannot
+ * see a variable from the group around it.  The edges subselect therefore
+ * belongs in inner_gp, while the filters that must shape it are two
+ * levels up.  Reaching both at once is why this runs at spar_make_top()
+ * and not where the option is parsed.
+ *
+ * Returns inner_gp, or NULL when this group is not the one. */
+static SPART *
+spar_edges_target_inner_gp (SPART *pattern, ccaddr_t gvarname)
+{
+  int m, n_m;
+  if ((NULL == pattern) || (SPAR_GP != SPART_TYPE (pattern)))
+    return NULL;
+  n_m = BOX_ELEMENTS_INT (pattern->_.gp.members);
+  for (m = 0; m < n_m; m++)
+    {
+      SPART *memb = pattern->_.gp.members[m];
+      SPART *sub;
+      int r, n_r;
+      if ((NULL == memb) || (SPAR_GP != SPART_TYPE (memb)))
+        continue;
+      sub = memb->_.gp.subquery;
+      if ((NULL == sub) || (SPAR_REQ_TOP != SPART_TYPE (sub)))
+        continue;
+      n_r = BOX_ELEMENTS_INT (sub->_.req_top.retvals);
+      for (r = 0; r < n_r; r++)
+        {
+          SPART *rv = sub->_.req_top.retvals[r];
+          SPART *fc;
+          int a, n_a;
+          if ((NULL == rv) || (SPAR_ALIAS != SPART_TYPE (rv)))
+            continue;
+          fc = rv->_.alias.arg;
+          if ((NULL == fc) || (SPAR_FUNCALL != SPART_TYPE (fc)))
+            continue;
+          n_a = BOX_ELEMENTS_INT (fc->_.funcall.argtrees);
+          for (a = 0; a < n_a; a++)
+            {
+              SPART *arg = fc->_.funcall.argtrees[a];
+              if ((NULL != arg) && (SPAR_VARIABLE == SPART_TYPE (arg)) &&
+                  (NULL != arg->_.var.vname) && !strcmp (arg->_.var.vname, gvarname))
+                return sub->_.req_top.pattern;
+            }
+        }
+    }
+  return NULL;
+}
+
+/* True when every variable the filter names is bound inside the group.
+ *
+ * A filter that mentions anything else would turn into a reference to a
+ * name the subselect does not bind, so it is left where it is: the rows
+ * still get filtered by it in the outer query, the graph simply is not
+ * narrowed by it. */
+/* Every variable name this group makes available.
+ *
+ * sparp_distinct_varnames_of_tree() alone is not enough: a nested
+ * subselect binds the names it projects, and those live in its retvals
+ * rather than anywhere that walk would reach.  A SERVICE block holding a
+ * SELECT -- the shape this feature exists for -- hides them two levels
+ * down, so nested groups are followed too.  spar_gp_finalize_binds()
+ * reads retvals for the same reason.
+ *
+ * Used only to reject an endpoint the pattern cannot bind, so counting a
+ * name some branch would not in fact bind costs a diagnostic, while
+ * missing one rejects a query that works. */
+static void
+spar_edges_bound_varnames (sparp_t *sparp, SPART *gp, dk_set_t *acc)
+{
+  int m, n_m;
+  sparp_distinct_varnames_of_tree (sparp, gp, acc);
+  if ((NULL == gp) || (SPAR_GP != SPART_TYPE (gp)))
+    return;
+  n_m = BOX_ELEMENTS_INT (gp->_.gp.members);
+  for (m = 0; m < n_m; m++)
+    {
+      SPART *memb = gp->_.gp.members[m];
+      SPART *sub;
+      int r, n_r;
+      if ((NULL == memb) || (SPAR_GP != SPART_TYPE (memb)))
+        continue;
+      sub = memb->_.gp.subquery;
+      if ((NULL == sub) || (SPAR_REQ_TOP != SPART_TYPE (sub)))
+        { /* A plain nested group -- a SERVICE block is one, and the
+           * subselect that binds the names sits inside it. */
+          spar_edges_bound_varnames (sparp, memb, acc);
+          continue;
+        }
+      n_r = BOX_ELEMENTS_INT (sub->_.req_top.retvals);
+      for (r = 0; r < n_r; r++)
+        {
+          SPART *rv = sub->_.req_top.retvals[r];
+          caddr_t vname = NULL;
+          if (NULL == rv)
+            continue;
+          switch (SPART_TYPE (rv))
+            {
+            case SPAR_VARIABLE: vname = rv->_.var.vname; break;
+            case SPAR_ALIAS: vname = rv->_.alias.aname; break;
+            default: break;
+            }
+          if ((NULL != vname) && (0 > dk_set_position_of_string (acc[0], vname)))
+            t_set_push (acc, vname);
+        }
+    }
+}
+
+/* Every variable name mentioned anywhere below this group, including
+ * inside the subqueries whose scope keeps them from being visible.
+ *
+ * Only used to tell two failures apart: a name the pattern genuinely
+ * never mentions, and a name a subquery binds but does not project.  The
+ * second is what a SERVICE block wrapping a SELECT falls into, and the
+ * name is right there in the query text -- so "not bound" reads like the
+ * engine cannot see it, when the fix is one word in a projection. */
+static void
+spar_edges_all_varnames (sparp_t *sparp, SPART *gp, dk_set_t *acc)
+{
+  int m, n_m;
+  if (NULL == gp)
+    return;
+  sparp_distinct_varnames_of_tree (sparp, gp, acc);
+  if (SPAR_GP != SPART_TYPE (gp))
+    return;
+  n_m = BOX_ELEMENTS_INT (gp->_.gp.members);
+  for (m = 0; m < n_m; m++)
+    {
+      SPART *memb = gp->_.gp.members[m];
+      SPART *sub;
+      if ((NULL == memb) || (SPAR_GP != SPART_TYPE (memb)))
+        continue;
+      sub = memb->_.gp.subquery;
+      if ((NULL != sub) && (SPAR_REQ_TOP == SPART_TYPE (sub)))
+        spar_edges_all_varnames (sparp, sub->_.req_top.pattern, acc);
+      else
+        spar_edges_all_varnames (sparp, memb, acc);
+    }
+}
+
+static int
+spar_edges_filter_fits (sparp_t *sparp, SPART *filt, dk_set_t inner_varnames)
+{
+  dk_set_t filt_varnames = NULL;
+  int fits = 1;
+  sparp_distinct_varnames_of_tree (sparp, filt, &filt_varnames);
+  DO_SET (caddr_t, vname, &filt_varnames)
+    {
+      if (0 > dk_set_position_of_string (inner_varnames, vname))
+        { fits = 0; break; }
+    }
+  END_DO_SET ();
+  return fits;
+}
+
+/* Add the subselects OPTION (edges (?a, ?b)) asked for.
+ *
+ * The group that holds the analytics call gains a member
+ *
+ *   { SELECT (sql:GRAPH_EDGES_AGG (?a, ?b) AS ?__edges_gN) WHERE { <triples + filters> } }
+ *
+ * binding the variable that call already uses as its graph.  A one-row
+ * subselect joins to everything, and the SQL it becomes is an
+ * uncorrelated scalar subquery, which Virtuoso hoists -- measured, one
+ * evaluation for the whole result rather than one per row.
+ *
+ * An aggregate, not a BIF: a graph is the whole solution set and a BIF
+ * sees one row or one vectored batch, so a batch-built graph would be
+ * right below the vector size and wrong above it.
+ *
+ * The edge patterns are therefore evaluated twice in all: once for the
+ * graph, once for the rows.  That is the accepted price of being correct
+ * at any size.
+ */
+static SPART *
+spar_add_edges_subselects (sparp_t *sparp, SPART *pattern)
+{
+  dk_set_t still_pending = NULL;
+  dk_set_t pending;
+  if ((NULL == pattern) || (SPAR_GP != SPART_TYPE (pattern)))
+    return pattern;
+  pending = sparp->sparp_edges_pending;
+  sparp->sparp_edges_pending = NULL;
+  while (NULL != pending)
+    {
+      caddr_t *rec = (caddr_t *)t_set_pop (&pending);
+      caddr_t gvarname = rec[0];
+      SPART *a_var = (SPART *)(rec[1]);
+      SPART *b_var = (SPART *)(rec[2]);
+      SPART *w_var = (SPART *)(rec[3]);
+      SPART *inner, *clone, *agg, *alias, *sub_top, *wrapper;
+      SPART **members;
+      dk_set_t inner_varnames = NULL;
+      int n_old, i, n_filt;
+      inner = spar_edges_target_inner_gp (pattern, gvarname);
+      if (NULL == inner)
+        { /* Not this group.  spar_make_top() runs more than once per
+           * query; a later call is handed the one that holds the call. */
+          t_set_push (&still_pending, (void *) rec);
+          continue;
+        }
+      /* A clone, not a copy: the subselect needs selids and tabids of its
+       * own.  Two groups claiming one selid collapse into a single
+       * equivalence class, which the SQL printer reports as a conflict
+       * and emits as NULL -- dropping the subselect without a word. */
+      clone = sparp_gp_full_clone (sparp, inner);
+      spar_edges_bound_varnames (sparp, inner, &inner_varnames);
+      /* Both endpoints have to be bound by the rows being collected.  An
+       * unbound one would otherwise reach GRAPH_LOAD_EDGES as a NULL and
+       * fail there, naming an edge number rather than the variable. */
+      for (i = 1; i <= 3; i++)
+        {
+          SPART *ev = (SPART *)(rec[i]);
+          if ((3 == i) && (NULL == ev))
+            continue;           /* the weight is optional */
+          caddr_t evname = ((NULL != ev) && (SPAR_VARIABLE == SPART_TYPE (ev)))
+            ? ev->_.var.vname : NULL;
+          if ((NULL == evname) || (0 > dk_set_position_of_string (inner_varnames, evname)))
+            {
+              dk_set_t all_varnames = NULL;
+              spar_edges_all_varnames (sparp, inner, &all_varnames);
+              if ((NULL != evname) &&
+                  (0 <= dk_set_position_of_string (all_varnames, evname)))
+                spar_error (sparp, "OPTION (edges (...)) names ?%.100s, which a subquery "
+                  "it collects binds but does not project: a subquery exports only the "
+                  "variables it selects, so add ?%.100s to that SELECT", evname, evname);
+              spar_error (sparp, "OPTION (edges (...)) names ?%.100s, which is not bound by "
+                "the pattern it collects", (NULL != evname) ? evname : (caddr_t)"?");
+            }
+        }
+      n_filt = BOX_ELEMENTS_INT (pattern->_.gp.filters);
+      if (0 < n_filt)
+        {
+          dk_set_t keep = NULL;
+          int n_keep = 0, n_clone_filt = BOX_ELEMENTS_INT (clone->_.gp.filters);
+          for (i = n_filt; i--; /* no step */)
+            {
+              SPART *filt = pattern->_.gp.filters[i];
+              if (NULL == filt)
+                continue;
+              if (!spar_edges_filter_fits (sparp, filt, inner_varnames))
+                continue;
+              /* Variables in a filter carry no selid -- they bind by name
+               * against the group they sit in -- so a plain copy lands in
+               * the clone correctly. */
+              t_set_push (&keep, sparp_tree_full_copy (sparp, filt, NULL));
+              n_keep++;
+            }
+          if (0 < n_keep)
+            {
+              SPART **new_filts = (SPART **)t_alloc_box (
+                (n_clone_filt + n_keep) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+              for (i = 0; i < n_clone_filt; i++)
+                new_filts[i] = clone->_.gp.filters[i];
+              for (i = 0; i < n_keep; i++)
+                new_filts[n_clone_filt + i] = (SPART *)t_set_pop (&keep);
+              clone->_.gp.filters = new_filts;
+            }
+        }
+      /* Two aggregates, not one with an optional argument: a user
+       * aggregate is dispatched by name and arity, and a weighted row
+       * means something different from an unweighted one. */
+      if (NULL != w_var)
+        agg = spar_make_funcall (sparp, 1 /* aggregate */, "sql:GRAPH_EDGES_W_AGG",
+          (SPART **)t_list (3,
+            sparp_tree_full_copy (sparp, a_var, NULL),
+            sparp_tree_full_copy (sparp, b_var, NULL),
+            sparp_tree_full_copy (sparp, w_var, NULL)));
+      else
+        agg = spar_make_funcall (sparp, 1 /* aggregate */, "sql:GRAPH_EDGES_AGG",
+          (SPART **)t_list (2,
+            sparp_tree_full_copy (sparp, a_var, NULL),
+            sparp_tree_full_copy (sparp, b_var, NULL)));
+      alias = spartlist (sparp, 6, SPAR_ALIAS, agg, gvarname,
+        SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0);
+      spar_env_push (sparp);
+      sub_top = spar_make_top (sparp, SELECT_L, (SPART **)t_list (1, alias),
+        clone, (SPART **)NULL, (SPART *)NULL, (SPART **)NULL,
+        (SPART *)NULL, (SPART *)t_box_num_nonull (0), NULL);
+      spar_env_pop (sparp);
+      spar_gp_init (sparp, SELECT_L);
+      wrapper = spar_gp_finalize_with_subquery (sparp, NULL, sub_top);
+      n_old = BOX_ELEMENTS_INT (inner->_.gp.members);
+      members = (SPART **)t_alloc_box ((n_old + 1) * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+      for (i = 0; i < n_old; i++)
+        members[i] = inner->_.gp.members[i];
+      members[n_old] = wrapper;
+      inner->_.gp.members = members;
+    }
+  sparp->sparp_edges_pending = still_pending;
+  return pattern;
+}
+
+/* Graph analytics in expression position: give the call the query's FROM.
+ *
+ * In predicate position the graph scope is injected as a hidden argument
+ * (see the graph_for_call construction in the special-predicate branch
+ * below).  A call written as a function got nothing, and because an absent
+ * graph resolves to the empty default graph rather than raising, the answer
+ * came back as a plausible NULL / -1 / 0.
+ *
+ * The dataset is not known while the projection is being parsed -- FROM is
+ * written after SELECT -- so this runs at spar_make_top(), by which point
+ * the whole request, dataset included, has been built.  It is a compile-time
+ * rewrite and costs nothing at run time.
+ *
+ * Only the unambiguous case is touched: the caller supplied exactly the node
+ * argument(s) and no graph.  The arguments are positional and the graph is
+ * the first optional one, so anything longer is already passing a graph, or
+ * is the documented positional mistake (bif:pagerank(?n, 0.9) reads 0.9 as
+ * the graph and fails with 42006) which must stay loud rather than become a
+ * different silent answer.
+ */
+typedef struct vgraph_expr_bif_s {
+    const char *name;
+    int n_node_args;            /*!< arguments before the graph argument */
+} vgraph_expr_bif_t;
+
+/* triangle_count and clustering_coefficient are deliberately absent: their
+ * SQL forms dispatch on argument *shape*, so bif:triangle_count(<g>) is a
+ * valid whole-graph call with one argument.  Injecting there would turn a
+ * working global call into a per-node call over a different graph. */
+static const vgraph_expr_bif_t vgraph_expr_bifs[] = {
+    {"degree_centrality", 1}, {"pagerank", 1}, {"betweenness", 1},
+    {"closeness", 1}, {"harmonic", 1}, {"eigenvector", 1},
+    {"hits_hub", 1}, {"hits_authority", 1}, {"wcc", 1}, {"scc", 1},
+    {"community_id", 1}, {"label_propagation", 1},
+    {"shortest_path", 2}, {"shortest_path_length", 2},
+    {"bfs", 2}, {"dfs", 2}, {"jaccard_similarity", 2},
+    {NULL, 0}
+};
+
+static const vgraph_expr_bif_t *
+vgraph_expr_bif_by_qname (const char *qname)
+{
+  const vgraph_expr_bif_t *d;
+  const char *bare;
+  if (NULL == qname)
+    return NULL;
+  /* The parser stores these as "bif:<name>"; accept the expanded IRI too. */
+  if (!strncmp (qname, "bif:", 4))
+    bare = qname + 4;
+  else if (!strncmp (qname, OPENLINKSW_BIF_NS_URI, OPENLINKSW_BIF_NS_URI_LEN))
+    bare = qname + OPENLINKSW_BIF_NS_URI_LEN;
+  else
+    return NULL;
+  for (d = vgraph_expr_bifs; NULL != d->name; d++)
+    if (!strcmp (bare, d->name))
+      return d;
+  return NULL;
+}
+
+/*! Resolve the single graph this query's dataset names, or NULL.
+    Same rule the predicate-position branch uses: one constant FROM. */
+static SPART *
+vgraph_single_default_graph (sparp_t *sparp)
+{
+  dk_set_t dflts;
+  SPART *single_dflt;
+  if (NULL == sparp->sparp_env)
+    return NULL;
+  dflts = sparp->sparp_env->spare_src.ssrc_default_graphs;
+  if (NULL == dflts || NULL != dflts->next)
+    return NULL;
+  single_dflt = (SPART *)(dflts->data);
+  if (SPART_GRAPH_FROM != single_dflt->_.graph.subtype)
+    return NULL;
+  if (!SPAR_IS_LIT_OR_QNAME (single_dflt->_.graph.expn))
+    return NULL;
+  return sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
+}
+
+/* SPART arrays are not always boxes: retvals can be the small-int marker
+ * (SPART **)_STAR, and several fields hold inline ptrlong values.  Counting
+ * elements of one of those dereferences a non-pointer. */
+#define VGRAPH_N_ELTS(a) (IS_BOX_POINTER (a) ? BOX_ELEMENTS_INT_0 (a) : 0)
+
+static void
+vgraph_inject_scope_in_expn (sparp_t *sparp, SPART *expn)
+{
+  int ctr, n;
+  if (NULL == expn || !IS_BOX_POINTER (expn))
+    return;
+  switch (SPART_TYPE (expn))
+    {
+    case SPAR_ALIAS:
+      vgraph_inject_scope_in_expn (sparp, expn->_.alias.arg);
+      return;
+    case SPAR_BUILT_IN_CALL:
+      n = VGRAPH_N_ELTS (expn->_.builtin.args);
+      for (ctr = 0; ctr < n; ctr++)
+        vgraph_inject_scope_in_expn (sparp, expn->_.builtin.args[ctr]);
+      return;
+    case SPAR_FUNCALL:
+      {
+        const vgraph_expr_bif_t *d;
+        n = VGRAPH_N_ELTS (expn->_.funcall.argtrees);
+        for (ctr = 0; ctr < n; ctr++)
+          vgraph_inject_scope_in_expn (sparp, expn->_.funcall.argtrees[ctr]);
+        d = vgraph_expr_bif_by_qname (expn->_.funcall.qname);
+        if (NULL == d)
+          return;
+        if (n != d->n_node_args)
+          return;               /* a graph is already being passed */
+        {
+          SPART *g = vgraph_single_default_graph (sparp);
+          SPART **wider;
+          if (NULL == g)
+            return;             /* nothing to inject; left as it was */
+          wider = (SPART **)t_alloc_box (sizeof (SPART *) * (n + 1),
+                                         DV_ARRAY_OF_POINTER);
+          for (ctr = 0; ctr < n; ctr++)
+            wider[ctr] = expn->_.funcall.argtrees[ctr];
+          wider[n] = g;
+          expn->_.funcall.argtrees = wider;
+        }
+        return;
+      }
+    /* Operators carry their operands in bin_exp; a graph BIF call is very
+     * often inside a comparison, which is how FILTERs are written. */
+    case BOP_NOT:
+    case BOP_OR: case BOP_AND:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT:
+    case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_LIKE:
+      vgraph_inject_scope_in_expn (sparp, expn->_.bin_exp.left);
+      vgraph_inject_scope_in_expn (sparp, expn->_.bin_exp.right);
+      return;
+    case ORDER_L:
+      vgraph_inject_scope_in_expn (sparp, expn->_.oby.expn);
+      return;
+    case SPAR_GP:
+      {
+        /* A nested SELECT carries its own dataset and gets its own
+         * spar_make_top(); do not reach into it from here. */
+        if (NULL != expn->_.gp.subquery && IS_BOX_POINTER (expn->_.gp.subquery))
+          return;
+        n = VGRAPH_N_ELTS (expn->_.gp.members);
+        for (ctr = 0; ctr < n; ctr++)
+          vgraph_inject_scope_in_expn (sparp, expn->_.gp.members[ctr]);
+        n = VGRAPH_N_ELTS (expn->_.gp.filters);
+        for (ctr = 0; ctr < n; ctr++)
+          vgraph_inject_scope_in_expn (sparp, expn->_.gp.filters[ctr]);
+        return;
+      }
+    default:
+      return;
+    }
+}
+
 SPART *
 spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv)
@@ -3032,7 +3495,40 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   sparp_globals_t *sg = sparp->sparp_sg;
   caddr_t final_output_format_name;
   caddr_t orig_selid;
-  SPART **sources = spar_make_sources_like_top (sparp, subtype);
+  SPART **sources;
+  /* One test, and NULL for every query that never wrote the option. */
+  if (NULL != sparp->sparp_edges_pending)
+    {
+      pattern = spar_add_edges_subselects (sparp, pattern);
+      /* On the outermost top there is no later call to catch a record, so
+       * anything still pending is a shape this rewrite does not handle.
+       * Say so, rather than compile a query whose graph would be NULL and
+       * whose answer would look like an ordinary empty result. */
+      if ((NULL == env->spare_parent_env) && (NULL != sparp->sparp_edges_pending))
+        spar_error (sparp, "OPTION (edges (...)) can not be used in this position: "
+          "the analytics call it belongs to was not found in the group it was written in");
+    }
+  /* Give any graph analytics call written in expression position the graph
+   * the query's FROM clause names.  Cheap and skipped entirely when the
+   * dataset has no single constant FROM to inject. */
+  if (sparp->sparp_has_graph_bif
+      && NULL != sparp->sparp_env
+      && NULL != sparp->sparp_env->spare_src.ssrc_default_graphs)
+    {
+      int ctr, n;
+      n = VGRAPH_N_ELTS (retvals);
+      for (ctr = 0; ctr < n; ctr++)
+        vgraph_inject_scope_in_expn (sparp, retvals[ctr]);
+      vgraph_inject_scope_in_expn (sparp, having);
+      n = VGRAPH_N_ELTS (order);
+      for (ctr = 0; ctr < n; ctr++)
+        vgraph_inject_scope_in_expn (sparp, order[ctr]);
+      n = VGRAPH_N_ELTS (groupings);
+      for (ctr = 0; ctr < n; ctr++)
+        vgraph_inject_scope_in_expn (sparp, groupings[ctr]);
+      vgraph_inject_scope_in_expn (sparp, pattern);
+    }
+  sources = spar_make_sources_like_top (sparp, subtype);
   if ((NULL != env->spare_parent_env) || (sparp->sparp_env->spare_disable_output_formatting))
     final_output_format_name = NULL;
   else
@@ -3953,8 +4449,10 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *graph;
-  ret_graph_eq_from_option_expn[0] = NULL;
-  ret_graph_can_bring_filters[0] = 0;
+  if (NULL != ret_graph_eq_from_option_expn)
+    ret_graph_eq_from_option_expn[0] = NULL;
+  if (NULL != ret_graph_can_bring_filters)
+    ret_graph_can_bring_filters[0] = 0;
   for (;;)
     {
       dk_set_t dflts;
@@ -3979,7 +4477,8 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
             {
               caddr_t iri_arg = single_dflt->_.graph.iri;
               graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
-              ret_graph_eq_from_option_expn[0] = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
+              if (NULL != ret_graph_eq_from_option_expn)	/* callers may pass NULL, e.g. the graph analytics predicate form */
+                ret_graph_eq_from_option_expn[0] = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
               if (NULL != iri_arg)
                 {
                   graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
@@ -3993,8 +4492,225 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
         }
       else
         graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
-      ret_graph_can_bring_filters[0] = 1;
+      if (NULL != ret_graph_can_bring_filters)	/* callers may pass NULL, e.g. the graph analytics predicate form */
+        ret_graph_can_bring_filters[0] = 1;
       return graph;
+    }
+}
+
+/* Graph analytics predicate options, by the name written in OPTION (...). */
+static const struct { ptrlong id; const char *name; } spar_graph_options[] = {
+  { SPAR_GOPT_WEIGHT, "WEIGHT" }, { SPAR_GOPT_DAMPING, "DAMPING" },
+  { SPAR_GOPT_MAX_ITER, "MAX_ITER" }, { SPAR_GOPT_TOLERANCE, "TOLERANCE" },
+  { SPAR_GOPT_NORMALIZED, "NORMALIZED" }, { SPAR_GOPT_DIRECTED, "DIRECTED" },
+  { SPAR_GOPT_RESOLUTION, "RESOLUTION" }, { SPAR_GOPT_DIRECTION, "DIRECTION" },
+  { SPAR_GOPT_RETURN_TYPE, "RETURN_TYPE" }, { SPAR_GOPT_SOURCE_NODE, "SOURCE_NODE" },
+  { SPAR_GOPT_MODE, "MODE" }, { SPAR_GOPT_EDGES, "EDGES" },
+  { SPAR_GOPT_EDGE_PREDICATE, "EDGE_PREDICATE" }, { GRAPH_L, "GRAPH" } };
+
+/* Name of a graph option id, for diagnostics; NULL for any other option. */
+static const char *
+spar_gp_graph_option_name (ptrlong option_id)
+{
+  int inx;
+  for (inx = 0; inx < sizeof (spar_graph_options) / sizeof (spar_graph_options[0]); inx++)
+    if (spar_graph_options[inx].id == option_id)
+      return spar_graph_options[inx].name;
+  return NULL;
+}
+
+/* One option of a graph analytics predicate, OPTION (name value) or
+   OPTION (edges (?from, ?to [, ?weight])).  The value must be known at parse
+   time: a variable or an expression is only evaluated after the optimizer
+   has fixed the BIF call, so it would silently fall back to the default. */
+SPART **
+sparp_make_graph_option (sparp_t *sparp, caddr_t name, SPART *val, SPART *e_from, SPART *e_to, SPART *e_weight)
+{
+  ptrlong id = 0;
+  int inx;
+  for (inx = 0; inx < sizeof (spar_graph_options) / sizeof (spar_graph_options[0]); inx++)
+    if (GRAPH_L != spar_graph_options[inx].id && !strcasecmp (spar_graph_options[inx].name, name))
+      id = spar_graph_options[inx].id;
+  if (!id)
+    spar_error (sparp, "Unknown option '%.100s'", name);
+  if (SPAR_GOPT_EDGES == id)
+    {
+      if (NULL == e_from)
+        spar_error (sparp, "Option 'edges' takes (?from, ?to) or (?from, ?to, ?weight)");
+      return (SPART **)t_list (2, id, (SPART *)t_list (3, e_from, e_to, e_weight));
+    }
+  if (NULL == val)
+    spar_error (sparp, "Option '%.100s' takes one value, not a list of variables", name);
+  switch (id)
+    {
+    case SPAR_GOPT_SOURCE_NODE:
+      if (SPAR_VARIABLE != SPART_TYPE (val) && SPAR_QNAME != SPART_TYPE (val))
+        spar_error (sparp, "Option 'source_node' takes a variable or an IRI");
+      break;
+    case SPAR_GOPT_EDGE_PREDICATE:
+      if (SPAR_QNAME != SPART_TYPE (val))
+        spar_error (sparp, "Option 'edge_predicate' takes an IRI");
+      break;
+    default:
+      if (!SPAR_IS_LIT_OR_QNAME (val))
+        spar_error (sparp, "Option '%.100s' of a graph analytics predicate requires a literal value", name);
+    }
+  return (SPART **)t_list (2, id, val);
+}
+
+/* Space-delimited membership test: is optname a whole word in valid? */
+static int
+spar_gp_option_in_list (const char *valid, const char *optname)
+{
+  size_t len = strlen (optname);
+  const char *p = valid;
+  while (NULL != (p = strstr (p, optname)))
+    {
+      if ((p == valid || ' ' == p[-1]) && ('\0' == p[len] || ' ' == p[len]))
+        return 1;
+      p += 1;
+    }
+  return 0;
+}
+
+/* Parse-time validation of graph analytics predicate options: reject
+ * options that are invalid for the selected algorithm (listing the
+ * valid ones) and range-check numeric literal values. */
+static void
+spar_gp_check_graph_options (sparp_t *sparp, const char *pname, SPART **options)
+{
+  const char *algo, *valid;
+  int ctr, n_opts;
+  if (NULL == options)
+    return;
+  /* EDGES and GRAPH answer the same question -- where the graph comes
+   * from -- so accepting both would mean silently ignoring one. */
+  {
+    int has_e = 0, has_g = 0, c, n = BOX_ELEMENTS (options) / 2;
+    for (c = 0; c < n; c++)
+      {
+        ptrlong oid = (ptrlong)(options[c * 2]);
+        if (SPAR_GOPT_EDGES == oid) has_e = 1;
+        else if (GRAPH_L == oid) has_g = 1;
+      }
+    if (has_e && has_g)
+      spar_error (sparp, "Graph analytics predicate %.200s takes EDGES or GRAPH, not both: "
+        "EDGES builds the graph from this group's own rows, GRAPH names one that already exists",
+        pname);
+  }
+
+  if (!strcmp (OPENLINKSW_BIF_NS_URI "pagerank", pname))
+    { algo = "pagerank"; valid = "EDGES WEIGHT DAMPING MAX_ITER TOLERANCE DIRECTED GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "betweenness", pname))
+    { algo = "betweenness"; valid = "EDGES WEIGHT NORMALIZED DIRECTED GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "closeness", pname))
+    { algo = "closeness"; valid = "EDGES WEIGHT NORMALIZED DIRECTION GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "eigenvector", pname))
+    { algo = "eigenvector"; valid = "EDGES WEIGHT MAX_ITER TOLERANCE GRAPH EDGE_PREDICATE"; }
+  /* Harmonic does not take WEIGHT: there is no weighted harmonic BIF for
+     the dispatch below to name.  graph_algo_closeness_weighted does honour
+     the harmonic flag, and since its visited set became a bitmap it is
+     correct at any size, so exposing one is possible; it is untested,
+     which is why it is not exposed. */
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "harmonic", pname))
+    { algo = "harmonic"; valid = "EDGES NORMALIZED DIRECTION GRAPH EDGE_PREDICATE"; }
+  /* HITS is a power iteration like eigenvector and takes the same two
+     controls, but has no weighted form in the library. */
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "hits_hub", pname) ||
+           !strcmp (OPENLINKSW_BIF_NS_URI "hits_authority", pname))
+    { algo = "hits"; valid = "EDGES MAX_ITER TOLERANCE GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "degree_centrality", pname))
+    { algo = "degree_centrality"; valid = "EDGES WEIGHT DIRECTION NORMALIZED GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname))
+    { algo = "shortest_path"; valid = "EDGES WEIGHT RETURN_TYPE SOURCE_NODE DIRECTION GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname))
+    { algo = "shortest_path_length"; valid = "EDGES WEIGHT SOURCE_NODE DIRECTION GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "bfs", pname))
+    { algo = "bfs"; valid = "EDGES DIRECTION SOURCE_NODE GRAPH EDGE_PREDICATE"; }
+  /* dfs answers reachability, which is what its SQL form has always
+     returned and is order-independent, so it takes what bfs takes. */
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "dfs", pname))
+    { algo = "dfs"; valid = "EDGES DIRECTION SOURCE_NODE GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "wcc", pname) ||
+           !strcmp (OPENLINKSW_BIF_NS_URI "scc", pname))
+    { algo = "wcc/scc"; valid = "EDGES EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "community_id", pname))
+    { algo = "community_id"; valid = "EDGES RESOLUTION GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "label_propagation", pname))
+    { algo = "label_propagation"; valid = "EDGES MAX_ITER GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "clustering_coefficient", pname))
+    { algo = "clustering_coefficient"; valid = "EDGES DIRECTED GRAPH EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "triangle_count", pname))
+    { algo = "triangle_count"; valid = "EDGES EDGE_PREDICATE"; }
+  else if (!strcmp (OPENLINKSW_BIF_NS_URI "jaccard_similarity", pname))
+    { algo = "jaccard_similarity"; valid = "EDGES SOURCE_NODE MODE EDGE_PREDICATE"; }
+  else
+    return;
+
+  n_opts = BOX_ELEMENTS (options) / 2;
+  for (ctr = 0; ctr < n_opts; ctr++)
+    {
+      ptrlong option_id = (ptrlong)(options[ctr * 2]);
+      SPART *option_value = options[ctr * 2 + 1];
+      const char *optname = spar_gp_graph_option_name (option_id);
+      if (NULL == optname)
+        continue;
+      if (!spar_gp_option_in_list (valid, optname))
+        spar_error (sparp, "Option %.200s is not valid for graph analytics predicate %.200s; valid options: %.200s",
+            optname, algo, ('\0' == valid[0]) ? "(none)" : valid);
+      if (SPAR_IS_LIT_OR_QNAME (option_value))
+        {
+          caddr_t lit_val = SPAR_LIT_OR_QNAME_VAL (option_value);
+          dtp_t dtp = DV_TYPE_OF (lit_val);
+          /* SPARQL integer literals are always boxed as DV_LONG_INT
+           * (SPAR_MAKE_INT_LITERAL), so unbox() is safe here. */
+          if (DV_LONG_INT == dtp)
+            {
+              long v = (long)unbox (lit_val);
+              if (SPAR_GOPT_MAX_ITER == option_id && (v < 1 || v > 100000))
+                spar_error (sparp, "Option MAX_ITER of graph analytics predicate %.200s must be in [1,100000], got %ld", algo, v);
+              if (SPAR_GOPT_DIRECTION == option_id && (v < 0 || v > 2))
+                spar_error (sparp, "Option DIRECTION of graph analytics predicate %.200s must be 0, 1 or 2, got %ld", algo, v);
+              if ((SPAR_GOPT_NORMALIZED == option_id || SPAR_GOPT_DIRECTED == option_id) && (v < 0 || v > 1))
+                spar_error (sparp, "Option %.200s of graph analytics predicate %.200s must be 0 or 1, got %ld", optname, algo, v);
+              if (SPAR_GOPT_RETURN_TYPE == option_id && (v < 0 || v > 1))
+                spar_error (sparp, "Option RETURN_TYPE of graph analytics predicate %.200s must be 0 or 1, got %ld", algo, v);
+              if (SPAR_GOPT_MODE == option_id && (v < 0 || v > 3))
+                spar_error (sparp, "Option MODE of graph analytics predicate %.200s must be 0 (outgoing neighbours), 1 (outgoing predicate/object pairs), 2 (those and incoming) or 3 (neighbours either way), got %ld", algo, v);
+            }
+          else if (DV_STRINGP (lit_val) && (SPAR_GOPT_DIRECTION == option_id))
+            {
+              /* The integers are not portable between predicates -- 2 is
+                 "out" to degree_centrality and "both" to every traversal --
+                 so the direction may be named instead, and a name means the
+                 same thing everywhere.  Checked here so a typo is a compile
+                 error like the range checks above, not a run-time one. */
+              if (strcasecmp (lit_val, "out") && strcasecmp (lit_val, "in")
+                  && strcasecmp (lit_val, "both"))
+                spar_error (sparp, "Option DIRECTION of graph analytics predicate %.200s must be 'out', 'in' or 'both' (or the integer that means it to this predicate), got %.50s", algo, lit_val);
+            }
+          else if (DV_DOUBLE_FLOAT == dtp || DV_SINGLE_FLOAT == dtp)
+            {
+              double v = unbox_double (lit_val);
+              if (SPAR_GOPT_DAMPING == option_id && (v <= 0.0 || v >= 1.0))
+                spar_error (sparp, "Option DAMPING of graph analytics predicate %.200s must be in (0,1), got %g", algo, v);
+              if (SPAR_GOPT_TOLERANCE == option_id && (v <= 0.0 || v >= 1.0))
+                spar_error (sparp, "Option TOLERANCE of graph analytics predicate %.200s must be in (0,1), got %g", algo, v);
+              if (SPAR_GOPT_RESOLUTION == option_id && v <= 0.0)
+                spar_error (sparp, "Option RESOLUTION of graph analytics predicate %.200s must be > 0, got %g", algo, v);
+            }
+          else if (DV_NUMERIC == dtp)
+            {
+              double v;
+              numeric_to_double ((numeric_t)lit_val, &v);
+              if (SPAR_GOPT_DAMPING == option_id && (v <= 0.0 || v >= 1.0))
+                spar_error (sparp, "Option DAMPING of graph analytics predicate %.200s must be in (0,1), got %g", algo, v);
+              if (SPAR_GOPT_TOLERANCE == option_id && (v <= 0.0 || v >= 1.0))
+                spar_error (sparp, "Option TOLERANCE of graph analytics predicate %.200s must be in (0,1), got %g", algo, v);
+              if (SPAR_GOPT_RESOLUTION == option_id && v <= 0.0)
+                spar_error (sparp, "Option RESOLUTION of graph analytics predicate %.200s must be > 0, got %g", algo, v);
+            }
+        }
     }
 }
 
@@ -4194,6 +4910,554 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
                     pname = box_dv_uname_string ("bif:spatial_contains");
                   else
                     spar_error (sparp, "Spatial options can be used only with bif:contains and bif:spatial_contains special predicates, not with %.200s", pname);
+                }
+              if (!strcmp (OPENLINKSW_BIF_NS_URI "degree_centrality", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "pagerank", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "betweenness", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "closeness", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "eigenvector", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "wcc", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "scc", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "community_id", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "bfs", pname) || !strcmp (OPENLINKSW_BIF_NS_URI "dfs", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "triangle_count", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "label_propagation", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "clustering_coefficient", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "jaccard_similarity", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "harmonic", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "hits_hub", pname) ||
+                  !strcmp (OPENLINKSW_BIF_NS_URI "hits_authority", pname))
+                {
+                  spar_gp_check_graph_options (sparp, pname, options);
+                  dk_set_t bind_revlist = NULL;
+                  SPART *call;
+                  SPART *bind;
+                  SPART *graph_for_call;
+                  /* Check for a weight OPTION — if present, dispatch to the
+                   * weighted BIF variant.  The weight option value is the
+                   * weight predicate IRI.  Also extract direction for
+                   * degree_centrality weighted. */
+                  SPART *weight_pred = NULL;
+                  SPART *direction_val = NULL;
+                  SPART *graph_optn_val = NULL;
+                  /* Extract option values by keyword.  The OPTION syntax
+                   * stores key-value pairs as [key1, val1, key2, val2, ...].
+                   * We extract known keywords and convert them to positional
+                   * arguments for the BIF call. */
+                  SPART *damping_val = NULL;
+                  SPART *max_iter_val = NULL;
+                  SPART *tolerance_val = NULL;
+                  SPART *normalized_val = NULL;
+                  SPART *directed_val = NULL;
+                  SPART *resolution_val = NULL;
+                  SPART *return_type_val = NULL;
+                  /* Where a traversal starts.  A predicate pattern has only a
+                   * subject and an object, and the object is the answer, so the
+                   * source has to be named here -- which makes the subject the
+                   * target.  See the pair-predicate argument build below. */
+                  SPART *source_node_val = NULL;
+                  SPART *edge_pred_val = NULL;
+                  /* Which reading of "similar" jaccard_similarity is asked for. */
+                  SPART *mode_val = NULL;
+                  /* OPTION (edges (?a, ?b)) -- the two variables whose bindings
+                   * in this group are the edges of the graph to build. */
+                  SPART *edges_val = NULL;
+                  int edges_has_weight = 0;
+                  if (NULL != options)
+                    {
+                      int ctr, n_opts = BOX_ELEMENTS (options) / 2;
+                      for (ctr = 0; ctr < n_opts; ctr++)
+                        {
+                          ptrlong option_id = (ptrlong)(options[ctr * 2]);
+                          SPART *option_value = options[ctr * 2 + 1];
+                          if (SPAR_GOPT_WEIGHT == option_id)
+                            weight_pred = option_value;
+                          else if (SPAR_GOPT_DIRECTION == option_id)
+                            direction_val = option_value;
+                          else if (SPAR_GOPT_DAMPING == option_id)
+                            damping_val = option_value;
+                          else if (SPAR_GOPT_MAX_ITER == option_id)
+                            max_iter_val = option_value;
+                          else if (SPAR_GOPT_TOLERANCE == option_id)
+                            tolerance_val = option_value;
+                          else if (SPAR_GOPT_NORMALIZED == option_id)
+                            normalized_val = option_value;
+                          else if (SPAR_GOPT_DIRECTED == option_id)
+                            directed_val = option_value;
+                          else if (SPAR_GOPT_RESOLUTION == option_id)
+                            resolution_val = option_value;
+                          else if (SPAR_GOPT_RETURN_TYPE == option_id)
+                            return_type_val = option_value;
+                          else if (SPAR_GOPT_SOURCE_NODE == option_id)
+                            source_node_val = option_value;
+                          else if (SPAR_GOPT_EDGE_PREDICATE == option_id)
+                            edge_pred_val = option_value;
+                          else if (SPAR_GOPT_MODE == option_id)
+                            mode_val = option_value;
+                          else if (SPAR_GOPT_EDGES == option_id)
+                            edges_val = option_value;
+                          else if (GRAPH_L == option_id)
+                            graph_optn_val = option_value;
+                        }
+                    }
+                  if (SPAR_VARIABLE != SPART_TYPE (object))
+                    spar_error (sparp, "The object of graph analytics predicate %.200s must be a variable", pname);
+                  /* Inject the FROM graph scope as a hidden second argument.
+                   * If the graph is not explicitly set here, resolve it from
+                   * the query context so the BIF operates on the correct
+                   * graph.  Explicit graph arguments in the BIND form
+                   * override this.
+                   *
+                   * We always try to extract the FROM graph IRI as a constant
+                   * first, because the graph context variable from the BGP
+                   * may not resolve correctly when passed to the BIF at
+                   * runtime (especially in vectored execution). */
+                  graph_for_call = NULL;
+                  /* An enclosing GRAPH block names the graph the pattern is in
+                   * and wins over the default dataset: with FROM <g1>
+                   * FROM NAMED <g2>, GRAPH <g2> { ... } must analyse g2. */
+                  if (NULL != sparp->sparp_env->spare_context_graphs)
+                      graph_for_call = (SPART *)t_box_copy_tree ((caddr_t)(sparp->sparp_env->spare_context_graphs->data));
+                  if (NULL == graph_for_call)
+                  {
+                      dk_set_t dflts = sparp->sparp_env->spare_src.ssrc_default_graphs;
+                      if ((NULL != dflts) &&
+                          (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) &&
+                          (NULL == dflts->next) &&
+                          SPAR_IS_LIT_OR_QNAME (((SPART *)(dflts->data))->_.graph.expn))
+                        {
+                          SPART *single_dflt = (SPART *)(dflts->data);
+                          graph_for_call = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
+                        }
+                  }
+                  if (NULL == graph_for_call)
+                      graph_for_call = graph;
+                  if (NULL == graph_for_call)
+                    { /* Multiple FROM clauses: pass all their IRIs to the BIF as
+                       * a vector(...) constant so it loads every graph of the
+                       * dataset.  A blank-node graph field (no FROM, or FROM
+                       * with sponge options) must NOT be injected: in the
+                       * generated SQL such a variable is never assigned, so the
+                       * equivalence pass marks it conflicted - poisoning the
+                       * whole BGP with WHERE 0 and NULLing the BIF argument.
+                       * Leaving the argument NULL lets the BIF resolve the scope
+                       * itself at run time, exactly like the SQL scalar form
+                       * pagerank(node, NULL). */
+                      dk_set_t dflts2 = sparp->sparp_env->spare_src.ssrc_default_graphs;
+                      int n_graphs = 0, all_lit = 1;
+                      dk_set_t g_set = NULL;
+                      for (; NULL != dflts2; dflts2 = dflts2->next)
+                        {
+                          SPART *gsp = (SPART *)(dflts2->data);
+                          if (SPART_GRAPH_FROM != ((SPART *)(dflts2->data))->_.graph.subtype ||
+                              !SPAR_IS_LIT_OR_QNAME (gsp->_.graph.expn))
+                            { all_lit = 0; break; }
+                          t_set_push (&g_set, sparp_tree_full_copy (sparp, gsp->_.graph.expn, NULL));
+                          n_graphs++;
+                        }
+                      if (all_lit && 1 < n_graphs)
+                        graph_for_call = spar_make_funcall (sparp, 0, OPENLINKSW_BIF_NS_URI "vector",
+                          (SPART **)t_revlist_to_array (g_set));
+                    }
+                  if (NULL != graph_optn_val)
+                    { /* OPTION (graph <iri>) overrides the FROM/context scope
+                       * with the highest priority. */
+                      graph_for_call = graph_optn_val; }
+                  if (NULL != edges_val)
+                    { /* OPTION (edges (?a, ?b)): the graph is the rows this
+                       * group produces, which are not known yet -- the
+                       * analytics triple is parsed before its siblings.  The
+                       * graph argument becomes a variable here, and
+                       * spar_make_top() adds the subselect that binds it once
+                       * it sees the group that holds this very call.  An
+                       * unbound variable if that never happens, which fails
+                       * the query rather than answering it wrongly. */
+                      SPART **ev = (SPART **)(edges_val);
+                      caddr_t gvarname = t_box_sprintf (60, "__edges_g%d", sparp->sparp_unictr++);
+                      edges_has_weight = (NULL != ev[2]);
+                      t_set_push (&(sparp->sparp_edges_pending),
+                        t_list (4, gvarname, ev[0], ev[1], ev[2]));
+                      graph_for_call = spar_make_variable (sparp, gvarname);
+                    }
+                  /* A weight predicate is read from the quad store, and a graph
+                   * collected from a query's own rows has no triples there, so
+                   * the two cannot be combined: naming one used to be accepted
+                   * and then silently ignored, answering with unweighted
+                   * numbers. */
+                  /* An edge set collected from this group's rows already IS the
+                   * selection; a predicate filter over it would be applied to a
+                   * graph whose every edge carries the one predicate the
+                   * transient loader gave it, so it could only ever match all
+                   * or nothing. */
+                  if ((NULL != edges_val) && (NULL != edge_pred_val))
+                    spar_error (sparp, "Graph analytics predicate %.200s takes EDGES or "
+                      "EDGE_PREDICATE, not both: a graph built from this group's own rows "
+                      "is already the selection, and its edges do not carry the predicate "
+                      "they were read under -- put the restriction in the pattern that "
+                      "OPTION (edges (...)) collects", pname);
+                  if ((NULL != edges_val) && (NULL != weight_pred))
+                    spar_error (sparp, "Graph analytics predicate %.200s takes EDGES or WEIGHT, "
+                      "not both: a weight predicate is read from the quad store, which a graph "
+                      "built from this group's own rows has no triples in -- give the weight as "
+                      "a third variable, OPTION (edges (?s, ?o, ?weight))", pname);
+                  if ((NULL != weight_pred) || edges_has_weight)
+                    {
+                      /* Weighted variant: dispatch to GRAPH_<ALGO>_WEIGHTED
+                       * or GRAPH_DEGREE_W_SPARQL for degree_centrality.
+                       * Build positional arguments from OPTION keywords.
+                       * The weighted BIF signatures are, as the BIFs actually
+                       * read their arguments:
+                       *   GRAPH_PAGERANK_WEIGHTED(node, graph, pred, weight)
+                       *   GRAPH_BETWEENNESS_WEIGHTED(node, graph, pred, weight)
+                       *   GRAPH_CLOSENESS_WEIGHTED(node, graph, pred, weight)
+                       *   GRAPH_EIGENVECTOR_WEIGHTED(node, graph, pred, weight)
+                       *   GRAPH_DEGREE_W_SPARQL(node, graph, pred, weight, direction)
+                       *   GRAPH_SHORTEST_PATH_WEIGHTED(from, to, graph, pred, weight, return_type)
+                       *
+                       * followed by that algorithm's own parameters, which the
+                       * branches below append:
+                       *   pagerank    damping, max_iter, tolerance, directed
+                       *   eigenvector max_iter, tolerance
+                       *   betweenness normalized, directed
+                       *   closeness   normalized
+                       *
+                       * All of those were once parsed, validated and then
+                       * dropped, because the argument lists stopped at the
+                       * weight.  Eigenvector has no `normalized` and never has,
+                       * whatever an older version of this comment claimed.
+                       *
+                       * Each branch below has two arms: one when a graph was
+                       * injected, (node, graph, pred, weight, ...), and one
+                       * when none was, (node, NULL, pred, weight, ...).  The
+                       * second must keep the pred slot -- a NULL edge_pred_val
+                       * when no edge_predicate option was given -- or the
+                       * weight and everything after it slide one place left,
+                       * so pagerank reads max_iter as damping and betweenness
+                       * answers a different question.  The unweighted dispatch
+                       * keeps the slot the same way. */
+                      const char *weighted_name = NULL;
+                      if (!strcmp (OPENLINKSW_BIF_NS_URI "degree_centrality", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_DEGREE_W_SPARQL";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "pagerank", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_PAGERANK_WEIGHTED";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "betweenness", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_BETWEENNESS_WEIGHTED";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "closeness", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_CLOSENESS_WEIGHTED";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "eigenvector", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_EIGENVECTOR_WEIGHTED";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname))
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_SHORTEST_PATH_WEIGHTED";
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname))
+                        /* The BIF has always existed and the option table has
+                         * always documented `weight` for this predicate; only
+                         * this line was missing, so asking for a weighted
+                         * cheapest-cost was refused outright. */
+                        weighted_name = OPENLINKSW_BIF_NS_URI "GRAPH_SHORTEST_PATH_LENGTH_WEIGHTED";
+                      else
+                        spar_error (sparp, "Weighted variant of graph analytics predicate %.200s is not supported", pname);
+                      /* Build the positional option args for the weighted variant.
+                       * Weighted BIFs currently accept only (node, graph, pred, weight)
+                       * and use default algorithm parameters; option keywords like
+                       * damping/max_iter are accepted by the parser but not yet
+                       * forwarded to the weighted BIFs. */
+                      SPART **base_args;
+                      if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname) ||
+                          !strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname))
+                        {
+                          /* Both take (from, to, graph, pred, weight), and both
+                           * are pair predicates, so the endpoints are the ones
+                           * source_node resolved -- not the raw subject and
+                           * object, which are the target and the result. */
+                          /* SOURCE_NODE names the start and makes the
+                           * subject the target, exactly as on the unweighted
+                           * path; without it the subject is the start and the
+                           * object the target. */
+                          SPART *w_from = source_node_val ? source_node_val : subject;
+                          SPART *w_to   = source_node_val ? subject : object;
+                          /* Only the weighted traversals take a direction --
+                           * the unweighted BIFs have never had the argument --
+                           * so it is forwarded here and refused below rather
+                           * than accepted everywhere and honoured in one place.
+                           * 0 is as-recorded, which is what these have always
+                           * done, so an absent keyword changes nothing. */
+                          SPART *dir_arg = direction_val ? direction_val : (SPART *)t_box_num (0);
+                          if ((NULL == source_node_val) && (NULL == object))
+                            spar_error (sparp,
+                              "Graph analytics predicate %.200s needs both endpoints: "
+                              "give the start with OPTION (source_node <iri>), which makes "
+                              "the subject the target, or call it as a function with both",
+                              pname);
+                          if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname))
+                            {
+                              /* (from, to, graph, pred, weight, return_type, direction) */
+                              SPART *rt = return_type_val ? return_type_val : (SPART *)t_box_num (0);
+                              if (graph_for_call)
+                                base_args = (SPART **)t_list (7, w_from, w_to, graph_for_call,
+                                  edge_pred_val, weight_pred, rt, dir_arg);
+                              else
+                                base_args = (SPART **)t_list (7, w_from, w_to, (SPART *)0,
+                                  edge_pred_val, weight_pred, rt, dir_arg);
+                            }
+                          else
+                            {
+                              /* (from, to, graph, pred, weight, direction) */
+                              if (graph_for_call)
+                                base_args = (SPART **)t_list (6, w_from, w_to, graph_for_call,
+                                  edge_pred_val, weight_pred, dir_arg);
+                              else
+                                base_args = (SPART **)t_list (6, w_from, w_to, (SPART *)0,
+                                  edge_pred_val, weight_pred, dir_arg);
+                            }
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "degree_centrality", pname))
+                        {
+                          SPART *dir_arg = direction_val ? direction_val : (SPART *)t_box_num (0);
+                          SPART *dn = normalized_val ? normalized_val : (SPART *)t_box_num (0);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (6, subject, graph_for_call, edge_pred_val, weight_pred, dir_arg, dn);
+                          else
+                            base_args = (SPART **)t_list (6, subject, (SPART *)0, edge_pred_val, weight_pred, dir_arg, dn);
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "pagerank", pname))
+                        {
+                          /* The same four the unweighted form takes.  They
+                           * were parsed, validated and then dropped, because
+                           * the weighted BIF was never given them. */
+                          SPART *d = damping_val ? damping_val : (SPART *)t_box_double (0.85);
+                          SPART *m = max_iter_val ? max_iter_val : (SPART *)t_box_num (100);
+                          SPART *t = tolerance_val ? tolerance_val : (SPART *)t_box_double (0.000001);
+                          SPART *dir = directed_val ? directed_val : (SPART *)t_box_num (1);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (8, subject, graph_for_call, edge_pred_val,
+                              weight_pred, d, m, t, dir);
+                          else
+                            base_args = (SPART **)t_list (8, subject, (SPART *)0,
+                              edge_pred_val, weight_pred, d, m, t, dir);
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "betweenness", pname))
+                        {
+                          /* The same defaults the unweighted branch below
+                           * passes: raw, and undirected.
+                           *
+                           * These used to be the BIF's own -- normalized and
+                           * directed, from GRAPH_BETWEENNESS_DEFAULT -- so one
+                           * graph gave two different numbers depending on which
+                           * half of the implementation a query reached, and
+                           * neither said so.  On unit weights the two forms are
+                           * the same computation and must agree; AE8 is that
+                           * identity.
+                           *
+                           * Raw rather than normalized because it is what the
+                           * unweighted path has always done, so the smaller set
+                           * of existing answers moves, and because raw
+                           * betweenness is a count of shortest-path pairs -- a
+                           * meaningful quantity, where a normalized default
+                           * silently rescales.  Neo4j GDS has no normalization
+                           * option at all; NetworkX normalizes by default.  They
+                           * disagree, so there is no convention to inherit. */
+                          SPART *n = normalized_val ? normalized_val : (SPART *)t_box_num (0);
+                          SPART *dir = directed_val ? directed_val : (SPART *)t_box_num (0);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (6, subject, graph_for_call, edge_pred_val,
+                              weight_pred, n, dir);
+                          else
+                            base_args = (SPART **)t_list (6, subject, (SPART *)0,
+                              edge_pred_val, weight_pred, n, dir);
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "closeness", pname))
+                        {
+                          /* Closeness genuinely defaults to raw, in both forms. */
+                          SPART *n = normalized_val ? normalized_val : (SPART *)t_box_num (0);
+                          SPART *cd = direction_val ? direction_val : (SPART *)t_box_num (0);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (6, subject, graph_for_call, edge_pred_val,
+                              weight_pred, n, cd);
+                          else
+                            base_args = (SPART **)t_list (6, subject, (SPART *)0,
+                              edge_pred_val, weight_pred, n, cd);
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "eigenvector", pname))
+                        {
+                          SPART *m = max_iter_val ? max_iter_val : (SPART *)t_box_num (100);
+                          SPART *t = tolerance_val ? tolerance_val : (SPART *)t_box_double (0.000001);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (6, subject, graph_for_call, edge_pred_val,
+                              weight_pred, m, t);
+                          else
+                            base_args = (SPART **)t_list (6, subject, (SPART *)0,
+                              edge_pred_val, weight_pred, m, t);
+                        }
+                      else
+                        {
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (4, subject, graph_for_call, (SPART *)0, weight_pred);
+                          else
+                            base_args = (SPART **)t_list (4, subject, (SPART *)0, (SPART *)0, weight_pred);
+                        }
+                      call = spar_make_funcall (sparp, 0, weighted_name, base_args);
+                    }
+                  else
+                    {
+                      /* Unweighted variant: standard dispatch.
+                       * Build positional arguments from OPTION keywords.
+                       * The unweighted BIF signatures are:
+                       *   pagerank(node, [graph], [pred], damping, max_iter, tolerance, directed)
+                       *   betweenness(node, [graph], [pred], normalized, directed)
+                       *   closeness(node, [graph], [pred], normalized, direction)
+                       *   eigenvector(node, [graph], [pred], max_iter, tolerance)
+                       *   hits_hub/hits_authority(node, [graph], [pred], max_iter, tolerance)
+                       *   harmonic(node, [graph], [pred], direction, normalized)
+                       *   degree_centrality(node, [graph], [pred], direction, normalized)
+                       *   shortest_path(node, to, [graph], [pred], return_type)
+                       *   bfs(node, to, [graph], [pred], direction)
+                       *   dfs(node, to, [graph], [pred], direction)
+                       *   community_id(node, [graph], [pred], resolution)
+                       *   label_propagation(node, [graph], [pred], max_iter)
+                       *   wcc/scc/triangle_count/clustering_coefficient/jaccard(node, [graph], [pred]) */
+                      dk_set_t uopt_set = NULL;
+                      if (!strcmp (OPENLINKSW_BIF_NS_URI "pagerank", pname))
+                        {
+                          t_set_push (&uopt_set, damping_val ? damping_val : (SPART *)t_box_double (0.85));
+                          t_set_push (&uopt_set, max_iter_val ? max_iter_val : (SPART *)t_box_num (100));
+                          t_set_push (&uopt_set, tolerance_val ? tolerance_val : (SPART *)t_box_double (0.000001));
+                          /* directed=1 keeps the rank of a graph read one way
+                           * per edge; 0 takes the neighbourhood symmetrically,
+                           * which is what an undirected graph wants. */
+                          t_set_push (&uopt_set, directed_val ? directed_val : (SPART *)t_box_num (1));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "betweenness", pname))
+                        {
+                          t_set_push (&uopt_set, normalized_val ? normalized_val : (SPART *)t_box_num (0));
+                          t_set_push (&uopt_set, directed_val ? directed_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "closeness", pname))
+                        {
+                          t_set_push (&uopt_set, normalized_val ? normalized_val : (SPART *)t_box_num (0));
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "eigenvector", pname) ||
+                               !strcmp (OPENLINKSW_BIF_NS_URI "hits_hub", pname) ||
+                               !strcmp (OPENLINKSW_BIF_NS_URI "hits_authority", pname))
+                        {
+                          t_set_push (&uopt_set, max_iter_val ? max_iter_val : (SPART *)t_box_num (100));
+                          t_set_push (&uopt_set, tolerance_val ? tolerance_val : (SPART *)t_box_double (0.000001));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "community_id", pname))
+                        {
+                          t_set_push (&uopt_set, resolution_val ? resolution_val : (SPART *)t_box_double (1.0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "label_propagation", pname))
+                        {
+                          t_set_push (&uopt_set, max_iter_val ? max_iter_val : (SPART *)t_box_num (10));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "degree_centrality", pname))
+                        {
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                          t_set_push (&uopt_set, normalized_val ? normalized_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "harmonic", pname))
+                        {
+                          /* (node, graph, pred, direction, normalized) */
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                          t_set_push (&uopt_set, normalized_val ? normalized_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname))
+                        {
+                          t_set_push (&uopt_set, return_type_val ? return_type_val : (SPART *)t_box_num (0));
+                          /* After return_type: (from, to, graph, pred, return_type, direction) */
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname))
+                        {
+                          /* (from, to, graph, pred, direction) */
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "bfs", pname) ||
+                               !strcmp (OPENLINKSW_BIF_NS_URI "dfs", pname))
+                        {
+                          t_set_push (&uopt_set, direction_val ? direction_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "jaccard_similarity", pname))
+                        {
+                          t_set_push (&uopt_set, mode_val ? mode_val : (SPART *)t_box_num (0));
+                        }
+                      else if (!strcmp (OPENLINKSW_BIF_NS_URI "clustering_coefficient", pname))
+                        {
+                          /* Argument 3 of the BIF: the neighbourhood is taken
+                           * distinctly and the numerator counts directed edges
+                           * inside it.  0 keeps the undirected triangle form. */
+                          t_set_push (&uopt_set, directed_val ? directed_val : (SPART *)t_box_num (0));
+                        }
+                      SPART **uopts = uopt_set ? (SPART **)t_revlist_to_array (uopt_set) : NULL;
+                      /* Pair algorithms take (from, to, graph, pred) — the
+                       * object of the predicate triple is the target node.
+                       * Per-node algorithms take (node, graph, pred). */
+                      int is_pair_pred = (!strcmp (OPENLINKSW_BIF_NS_URI "shortest_path", pname) ||
+                                          !strcmp (OPENLINKSW_BIF_NS_URI "shortest_path_length", pname) ||
+                                          !strcmp (OPENLINKSW_BIF_NS_URI "bfs", pname) ||
+                                          !strcmp (OPENLINKSW_BIF_NS_URI "dfs", pname) ||
+                                          !strcmp (OPENLINKSW_BIF_NS_URI "jaccard_similarity", pname));
+                      SPART **base_args;
+                      if (is_pair_pred)
+                        {
+                          /* These take two nodes, and a predicate pattern offers
+                           * one subject and one object -- of which the object is
+                           * where the result is bound.  SOURCE_NODE names the
+                           * one that is left over, and naming it that way round
+                           * is what lets a whole batch share one traversal: the
+                           * source is fixed for the query and the target is what
+                           * varies per row, which is exactly the shape
+                           * vgraph_wg_bfs already declares with row_arg_index 1.
+                           *
+                           * Without it the object -- an unbound variable -- used
+                           * to be passed as the target.  bfs answers a different
+                           * question when its target is NULL (the size of the
+                           * reachable set), which is deliberate and is left
+                           * alone; for the other three there is no reading, and
+                           * they failed at run time complaining about a NULL
+                           * node argument that named neither the missing option
+                           * nor the form that works. */
+                          /* A variable source has to be re-made here rather
+                           * than reused.  The parser built the option's SPART
+                           * in this group's scope, but this BIND is about to
+                           * be moved into a subselect by
+                           * spar_gp_finalize_binds(); carrying the original in
+                           * takes its selid with it, so the name ends up in two
+                           * equivalence classes and the whole pattern collapses
+                           * to "NULL due to conflict" and WHERE 0.  The subject
+                           * does not need this: its triple moves into the same
+                           * subselect alongside the bind. */
+                          SPART *trav_from = source_node_val;
+                          if ((NULL != trav_from) && (SPAR_VARIABLE == SPART_TYPE (trav_from)))
+                            trav_from = spar_make_variable (sparp, trav_from->_.var.vname);
+                          if (NULL == trav_from)
+                            trav_from = subject;
+                          SPART *trav_to   = source_node_val ? subject : object;
+
+                          if ((NULL == source_node_val) &&
+                              strcmp (OPENLINKSW_BIF_NS_URI "bfs", pname) &&
+                              strcmp (OPENLINKSW_BIF_NS_URI "dfs", pname))
+                            spar_error (sparp,
+                              "Graph analytics predicate %.200s needs both endpoints: "
+                              "give the start with OPTION (source_node <iri>), which makes "
+                              "the subject the target, or call it as a function with both",
+                              pname);
+                          if (graph_for_call)
+                            base_args = (SPART **)t_list (4, trav_from, trav_to, graph_for_call, edge_pred_val);
+                          else
+                            base_args = (SPART **)t_list (4, trav_from, trav_to, (SPART *)0, edge_pred_val);
+                        }
+                      else if (graph_for_call)
+                        base_args = (SPART **)t_list (3, subject, graph_for_call, edge_pred_val);
+                      else
+                        base_args = (SPART **)t_list (3, subject, (SPART *)0, edge_pred_val);
+                      call = spar_make_funcall (sparp, 0, pname,
+                        uopts ? t_spartlist_concat (base_args, uopts) : base_args);
+                    }
+                  bind = spartlist (sparp, 6, SPAR_ALIAS, call, object->_.var.vname,
+                    SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0);
+                  t_set_push (&bind_revlist, bind);
+                  spar_gp_finalize_binds (sparp, bind_revlist);
+                  dk_free_tree ((caddr_t)spec_pred_names);
+                  return NULL;
                 }
               spar_gp_add_filter (sparp,
                 spar_make_funcall (sparp, 0, pname,
@@ -5434,6 +6698,8 @@ static const char *spar_unsafe_bif_names[] = {
   "EXEC",
   "FILE_TO_STRING",
   "FILE_TO_STRING_OUTPUT",
+  "GRAPH_LOAD_TABLE",
+  "GRAPH_UNLOAD_TABLE",
   "HTTP_CLIENT",
   "HTTP_CLIENT_EXT",
   "HTTP_CLIENT_INTERNAL",
@@ -5683,6 +6949,13 @@ int32 enable_sparql_sample_min = 1; /* [Flags] enable_sparql_sample_min */
 SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
+  /* One string compare per funcall, so that spar_make_top() can skip the
+   * expression-position scope walk for every query that never mentions a
+   * graph analytics BIF -- which is nearly all of them. */
+  if (NULL != funname && !sparp->sparp_has_graph_bif
+      && NULL != vgraph_expr_bif_by_qname (funname))
+    sparp->sparp_has_graph_bif = 1;
+
   const char *sql_colon;
   caddr_t proc_full_name;
   query_t *proc;
