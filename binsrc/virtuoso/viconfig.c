@@ -487,6 +487,11 @@ extern int32 enable_qp;
 extern int32 dc_max_batch_sz;
 extern int32 dc_max_q_batch_sz;
 extern int32 dc_batch_sz;
+extern int32 vgraph_max_threads, vgraph_min_batch, vgraph_max_graph_nodes, vgraph_max_graph_triples;
+extern int32 vgraph_cache_ttl, vgraph_cache_max_entries;
+extern size_t vgraph_cache_max, vgraph_max_workspace, vgraph_edge_weight_max;
+extern int32 vgraph_edge_weight_array, vgraph_index_walk, vgraph_dense_node_index;
+extern int32 vgraph_narrow_edge_index, vgraph_one_pred_store, vgraph_pagerank_gather, vgraph_parallel_bfs;
 extern int32 enable_dyn_batch_sz;
 extern int c_query_log;
 extern char * c_query_log_file;
@@ -1715,6 +1720,28 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DynamicLocal", &c_uriqa_dynamic_local) == -1)
     c_uriqa_dynamic_local = 0;
 
+
+  /*
+   *  Parse [Graph] section; a missing key keeps the default the variable
+   *  is initialized to in bif_graph.c, which also checks the ranges.
+   */
+  section = "Graph";
+  cfg_getlong (pconfig, section, "MaxThreads", &vgraph_max_threads);
+  cfg_getlong (pconfig, section, "CacheTTL", &vgraph_cache_ttl);
+  cfg_getlong (pconfig, section, "CacheMaxEntries", &vgraph_cache_max_entries);
+  cfg_getsize (pconfig, section, "CacheMax", &vgraph_cache_max);
+  cfg_getlong (pconfig, section, "MinBatch", &vgraph_min_batch);
+  cfg_getlong (pconfig, section, "MaxNodes", &vgraph_max_graph_nodes);
+  cfg_getsize (pconfig, section, "MaxWorkspace", &vgraph_max_workspace);
+  cfg_getlong (pconfig, section, "MaxTriples", &vgraph_max_graph_triples);
+  cfg_getlong (pconfig, section, "EdgeWeightArray", &vgraph_edge_weight_array);
+  cfg_getsize (pconfig, section, "EdgeWeightMax", &vgraph_edge_weight_max);
+  cfg_getlong (pconfig, section, "IndexWalk", &vgraph_index_walk);
+  cfg_getlong (pconfig, section, "DenseNodeIndex", &vgraph_dense_node_index);
+  cfg_getlong (pconfig, section, "NarrowEdgeIndex", &vgraph_narrow_edge_index);
+  cfg_getlong (pconfig, section, "OnePredStore", &vgraph_one_pred_store);
+  cfg_getlong (pconfig, section, "PageRankGather", &vgraph_pagerank_gather);
+  cfg_getlong (pconfig, section, "ParallelBFS", &vgraph_parallel_bfs);
 
   /*
    *  Parse [SPARQL] section
