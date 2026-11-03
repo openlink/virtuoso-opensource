@@ -517,6 +517,17 @@ semaphore_try_enter (semaphore_t *self)
 }
 
 
+int
+semaphore_enter_timed (semaphore_t *self, long msec)
+{
+  DWORD rc;
+  _thread_num_wait++;
+  rc = WaitForSingleObject (self->sem_handle, msec > 0 ? (DWORD) msec : 0);
+  _thread_num_wait--;
+  return WAIT_TIMEOUT == rc ? 0 : 1;
+}
+
+
 #ifdef SEM_DEBUG
 void
 semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)

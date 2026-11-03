@@ -172,6 +172,7 @@ EXE_EXPORT (semaphore_t *, semaphore_allocate, (int entry_count));
 EXE_EXPORT (void, semaphore_free, (semaphore_t *sem));
 EXE_EXPORT (int, semaphore_enter, (semaphore_t *sem));
 EXE_EXPORT (int, semaphore_try_enter, (semaphore_t *sem));
+EXE_EXPORT (int, semaphore_enter_timed, (semaphore_t *sem, long msec));
 EXE_EXPORT (void, semaphore_leave, (semaphore_t *sem));
 #ifdef SEM_DEBUG
 void semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem);

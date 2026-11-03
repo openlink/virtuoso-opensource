@@ -722,6 +722,88 @@ failed:
 }
 
 
+/* Like semaphore_enter, but gives up after MSEC milliseconds.  Returns 1 when
+   entered, 0 on timeout. */
+int
+semaphore_enter_timed (semaphore_t * sem, long msec)
+{
+  thread_t *thr = current_thread;
+  struct timeval now;
+  struct timespec deadline;
+  int rc, entered = 1;
+
+  rc = pthread_mutex_lock ((pthread_mutex_t*) sem->sem_handle);
+  CKRET (rc);
+
+  if (sem->sem_entry_count)
+    sem->sem_entry_count--;
+  else if (msec <= 0)
+    entered = 0;
+  else
+    {
+      gettimeofday (&now, NULL);
+      deadline.tv_sec = now.tv_sec + msec / 1000;
+      deadline.tv_nsec = (now.tv_usec + (msec % 1000) * 1000L) * 1000L;
+      if (deadline.tv_nsec >= 1000000000L)
+	{
+	  deadline.tv_sec++;
+	  deadline.tv_nsec -= 1000000000L;
+	}
+      thread_queue_to (&sem->sem_waiting, thr);
+      _thread_num_wait++;
+      thr->thr_status = WAITSEM;
+#ifndef SEM_NO_ORDER
+      do
+	{
+	  rc = pthread_cond_timedwait ((pthread_cond_t *) thr->thr_cv, (pthread_mutex_t*) sem->sem_handle, &deadline);
+	  if (ETIMEDOUT == rc)
+	    break;
+	  CKRET (rc);
+	} while (thr->thr_status == WAITSEM);
+      /* semaphore_leave dequeues the thread it hands the entry to, so one still
+         waiting at the deadline was not chosen. */
+      if (thr->thr_status == WAITSEM)
+	{
+	  thread_queue_remove (&sem->sem_waiting, thr);
+	  _thread_num_wait--;
+	  thr->thr_status = RUNNING;
+	  entered = 0;
+	}
+#else
+      do
+	{
+	  rc = pthread_cond_timedwait ((pthread_cond_t *) sem->sem_cv, (pthread_mutex_t*) sem->sem_handle, &deadline);
+	  if (ETIMEDOUT == rc)
+	    break;
+	  CKRET (rc);
+	}
+      while (sem->sem_n_signalled == sem->sem_last_signalled);
+      if (sem->sem_n_signalled != sem->sem_last_signalled)
+	{
+	  sem->sem_n_signalled --;
+	  sem->sem_last_signalled = sem->sem_n_signalled;
+	}
+      else
+	{
+	  /* not signalled: semaphore_leave decrements this only for a thread it releases */
+	  _thread_num_wait--;
+	  entered = 0;
+	}
+      thr->thr_status = RUNNING;
+      thread_queue_remove (&sem->sem_waiting, thr);
+      if (sem->sem_n_signalled < 0) GPF_T1 ("The semaphore counter went wrong");
+#endif
+    }
+
+  pthread_mutex_unlock ((pthread_mutex_t*) sem->sem_handle);
+  return entered;
+
+failed:
+  GPF_T1 ("semaphore_enter_timed() failed");
+  return 0;
+}
+
+
 #ifdef SEM_DEBUG
 void
 semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)
