@@ -323,6 +323,8 @@ extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
 #define RDF_GRAPH_PERM_LIST 0x08
 #define RDF_GRAPH_PERM_DEFAULT (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST)
 
+extern int rdf_graph_configured_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t *u, int check_usr_rdf_graph_perms, int req_perms);
+
 extern id_hash_t *rdf_graph_iri2id_dict_htable;		/*!< Dictionary of IRI_IDs of IRIs of graphs mentioned in graph-level security config, IRI UNAMEs are keys, boxed IRI_IDs are values */
 extern id_hash_iterator_t *rdf_graph_iri2id_dict_hit;	/*!< Hash iterator for \c rdf_graph_iri2id_dict_hit */
 extern id_hash_t *rdf_graph_id2iri_dict_htable;		/*!< Dictionary of IRIs of IRI_IDs of graphs mentioned in graph-level security config, boxed IRI_IDs are keys, IRI UNAMEs are values */
