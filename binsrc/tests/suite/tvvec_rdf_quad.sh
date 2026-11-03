@@ -119,6 +119,17 @@ then
     exit 3
 fi
 
+#  bif:vector_search inside GRAPH ?g and over several FROM graphs.  Here for
+#  the same reason: under CaseMode 2 a score variable ?G meets the graph's
+#  column.  Its own graphs, model and indexes.
+LOG "+ run tvvec_search_graph_var.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_search_graph_var.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_search_graph_var.sql"
+    exit 3
+fi
+
 SHUTDOWN_SERVER
 
 CHECK_LOG

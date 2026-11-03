@@ -5660,8 +5660,8 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
     return t_box_dv_short_string (simple_vname);
   if (triple->_.triple.ft_type == uname_bif_c_vector_search)
     {
-      /* score and distance cols are named after their variables, so ?s or ?S would meet the subject's "S" */
-      if (SPART_TRIPLE_SUBJECT_IDX == field_idx)
+      /* score and distance cols are named after their variables, so ?s or ?S would meet the subject's "S", ?g or ?G the graph's "G" */
+      if ((SPART_TRIPLE_SUBJECT_IDX == field_idx) || (SPART_TRIPLE_GRAPH_IDX == field_idx))
         return t_box_sprintf (210, "vs~%.100s", simple_vname);
       return t_box_dv_short_string (simple_vname);
     }
@@ -9466,6 +9466,10 @@ from_printed:
   ssg->ssg_indent--;
 }
 
+#define SSG_VS_GRAPH_COL_NONE	0	/*!< the search gives no graph: the graph is a constant or nothing reads it */
+#define SSG_VS_GRAPH_COL_FIXED	1	/*!< the graph is a variable fixed to one IRI: searched in it, given as a constant */
+#define SSG_VS_GRAPH_COL_SET	2	/*!< the graph is a variable: searched in a set of graphs, given per hit */
+
 static void
 ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int pass)
 {
@@ -9492,8 +9496,47 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
   int print_score_limit_arg, print_distance_limit_arg, print_required_graph_arg;
   int multi;
   int opt_ctr;
+  int graph_col = SSG_VS_GRAPH_COL_NONE;
+  int graph_mode = 1;
+  SPART *graphs_expn = NULL;
   (void) gp;
   graph_spart_type = (NULL == graph) ? 0 : spar_plain_const_value_of_tree (graph, &required_graph_iri);
+  /* When the rest of the query reads the graph of a hit -- GRAPH ?g, or a
+     default graph of FROM graphs, whose G is filtered -- the search is given
+     the graphs it may return hits from, so that `limit` counts hits in them,
+     and gives the graph of each hit: one row per graph for GRAPH ?g, one row
+     per hit for the default graph, which is the merge of its graphs.  The
+     graphs are the FROM NAMED or the FROM ones, as for free-text search
+     (RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS), the value of a graph variable bound
+     from outside, or any graph.  A constant graph, a variable fixed to one, and
+     the default graph with no FROM keep the search as it was. */
+  if ((NULL != graph) && SPAR_IS_BLANK_OR_VAR (graph))
+    {
+      int is_dflt = SPART_IS_DEFAULT_GRAPH_BLANK (graph);
+      sparp_sources_t *src = &(ssg->ssg_sparp->sparp_env->spare_src);
+      if (SPAR_QNAME == graph_spart_type)
+        graph_col = (is_dflt ? SSG_VS_GRAPH_COL_NONE : SSG_VS_GRAPH_COL_FIXED);
+      else if (!is_dflt && (SPART_VARR_GLOBAL & graph->_.var.rvr.rvrRestrictions))
+        {
+          graph_col = SSG_VS_GRAPH_COL_SET;
+          graphs_expn = spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector", (SPART **)t_list (1, graph));
+        }
+      else if (!is_dflt || src->ssrc_default_graphs_listed)
+        {
+          dk_set_t good_expns = NULL;
+          DO_SET (SPART *, g_src, (is_dflt ? &(src->ssrc_default_graphs) : &(src->ssrc_named_graphs)))
+            {
+              if (!((SPART_GRAPH_NOT_FROM == g_src->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == g_src->_.graph.subtype)))
+                t_set_push (&good_expns, g_src->_.graph.expn);
+            }
+          END_DO_SET()
+          graph_col = SSG_VS_GRAPH_COL_SET;
+          if (NULL != good_expns)
+            graphs_expn = spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector", (SPART **)t_list_to_array (good_expns));
+          if (is_dflt && (NULL != good_expns))
+            graph_mode = 2;
+        }
+    }
   if (SPAR_VARIABLE != SPART_TYPE (subject))
     spar_error (ssg->ssg_sparp, "bif:vector_search requires a variable subject");
   if (NULL != options)
@@ -9561,6 +9604,22 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
       ssg->ssg_indent++;
       ssg_puts ("ann.result_entity_iid AS ");
       ssg_prin_id (ssg, subject_alias);
+      if (SSG_VS_GRAPH_COL_NONE != graph_col)
+        {
+          qm_value_t *graph_qmv = SPARP_FIELD_QMV_OF_QM (qm, SPART_TRIPLE_GRAPH_IDX);
+          ccaddr_t graph_alias_name = "G";
+          if ((NULL != graph_qmv) && (0 != BOX_ELEMENTS_0 (graph_qmv->qmvColumns)))
+            graph_alias_name = graph_qmv->qmvColumns[0]->qmvcColumnName;
+          if (SSG_VS_GRAPH_COL_SET == graph_col)
+            ssg_puts (", ann.result_graph_iid AS ");
+          else
+            {
+              ssg_puts (", __i2idn (__bft (");
+              ssg_print_box_as_sql_atom (ssg, required_graph_iri, SQL_ATOM_UTF8_ONLY);
+              ssg_puts (", 1)) AS ");
+            }
+          ssg_prin_id (ssg, ssg_triple_retval_alias (ssg, tree, SPART_TRIPLE_GRAPH_IDX, 0, graph_alias_name));
+        }
       if (NULL != score_var)
         {
           ssg_puts (", ann.result_score AS ");
@@ -9572,6 +9631,15 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
           ssg_prin_id (ssg, distance_var->_.var.vname);
         }
       ssg_newline (0);
+      if (SSG_VS_GRAPH_COL_SET == graph_col)
+        {
+          /* One index, a list or `*` alike; every argument is listed, and one the
+             query does not give gets no predicate below, so it is NULL. */
+          ssg_puts (" FROM DB.DBA.VEC_INDEX_SEARCH_GRAPH_ROWS (idx_spec, ranking_mode, query_text, limit_count, ef_search,"
+            " score_limit, distance_limit, graphs, graph_mode)"
+            " (result_entity_iid any, result_distance double precision, result_score double precision, result_graph_iid any) ann");
+          goto args_printed;
+        }
       if (multi)
         {
           /* A second table function rather than a widened first argument, so
@@ -9593,10 +9661,11 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
         ssg_puts (", required_graph_iri");
       ssg_puts (") ");
       ssg_puts ("(result_entity_iid any, result_distance double precision, result_score double precision) ann");
+args_printed:
       ssg_newline (0);
       if (multi)
         {
-          ssg_puts (" WHERE idx_list = ");
+          ssg_puts ((SSG_VS_GRAPH_COL_SET == graph_col) ? " WHERE idx_spec = " : " WHERE idx_list = ");
           if (index_all)
             ssg_puts ("'*'");
           else
@@ -9628,11 +9697,13 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
         }
       else
         {
-          ssg_puts (" WHERE idx_iri = ");
+          ssg_puts ((SSG_VS_GRAPH_COL_SET == graph_col) ? " WHERE idx_spec = " : " WHERE idx_iri = ");
           if (NULL != index_iri)
             ssg_print_box_as_sql_atom (ssg, index_iri, SQL_ATOM_UTF8_ONLY);
           else
             ssg_puts ("DB.DBA.VEC_INDEX_INFER_SEARCH_INDEX (NULL)");
+          if (SSG_VS_GRAPH_COL_SET == graph_col)
+            ssg_puts (" AND ranking_mode = 'raw'"); /* one index: rank and score are the same order */
         }
       ssg_puts (" AND query_text = ");
       if (SPAR_LIT == SPART_TYPE (object))
@@ -9669,8 +9740,19 @@ ssg_print_vector_search_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, i
         }
       if (print_required_graph_arg)
         {
+          /* the constant's value: a variable fixed to a graph has one too, where
+             SPAR_LIT_OR_QNAME_VAL (graph) gives 0 */
           ssg_puts (" AND required_graph_iri = ");
-          ssg_print_box_as_sql_atom (ssg, SPAR_LIT_OR_QNAME_VAL (graph), SQL_ATOM_UTF8_ONLY);
+          ssg_print_box_as_sql_atom (ssg, required_graph_iri, SQL_ATOM_UTF8_ONLY);
+        }
+      if (SSG_VS_GRAPH_COL_SET == graph_col)
+        {
+          if (NULL != graphs_expn)
+            {
+              ssg_puts (" AND graphs = ");
+              ssg_print_scalar_expn (ssg, graphs_expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+            }
+          ssg_puts ((2 == graph_mode) ? " AND graph_mode = 2" : " AND graph_mode = 1");
         }
       if (NULL != score_limit_expn)
         {

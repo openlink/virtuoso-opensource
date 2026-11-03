@@ -15460,7 +15460,12 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     -- They show each reader only what its own grants on the label and comment
     -- columns of DB.DBA.SPARQL_VEC_INDEX allow (sparql_vec_index.sql).
     'grant select on DB.DBA.SPARQL_VEC_INDEX_LABELS to SPARQL_SELECT',
-    'grant select on DB.DBA.SPARQL_VEC_INDEX_COMMENTS to SPARQL_SELECT' );
+    'grant select on DB.DBA.SPARQL_VEC_INDEX_COMMENTS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_LIST to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_MERGE to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_ROWS to SPARQL_SELECT' );
 
   foreach (varchar cmd in cmds) do
     {
