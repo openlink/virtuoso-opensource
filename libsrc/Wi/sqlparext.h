@@ -757,9 +757,11 @@ typedef struct sql_tree_s
 	  ptrlong	distinct;
 	  ptrlong	no_cycles;
 	  ptrlong	cycles_only;
+	  ptrlong	trail;
 	  ptrlong	exists;
 	  ptrlong	no_order;
 	  ptrlong	shortest_only;
+	  ptrlong	shortest_k_groups;
 	  ptrlong	direction;
 	} trans;
 	struct {

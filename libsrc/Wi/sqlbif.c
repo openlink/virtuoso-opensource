@@ -15469,6 +15469,197 @@ bif_cache_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+/* GQL: the translation cache shared by every connection.
+
+   The GQL procedures keep the SPARQL a query translates to, keyed by the
+   query text, its graph and the way it was asked for.  Each connection has a
+   private cache in front of this one (a dictionary in a connection variable),
+   so this mutex is taken only on a private miss.  Values are boxed trees: a
+   SPARQL text, or a vector of it and the order of its parameters.
+
+   An entry is served to any connection that asks for its key, so only
+   DBA-owned code -- the GQL procedures -- may call these; a direct call from
+   any other user could publish SPARQL that a DBA's query would then run.
+
+   Bounded: at most GQL_SHAPE_CACHE_MAX_ENTRIES entries and
+   GQL_SHAPE_CACHE_MAX_BYTES of keys and values, and no entry over
+   GQL_SHAPE_CACHE_MAX_ENTRY_BYTES.  Reaching either bound clears the whole
+   cache; the queries after it translate again.  Keys are hashed and compared
+   as whole boxes (treehash), not as C strings.  A generation number,
+   advanced by every flush (property-graph DDL), is handed out with each
+   lookup and checked on publication, so a translation that began before a
+   flush is not stored after it. */
+
+#define GQL_SHAPE_CACHE_MAX_ENTRIES	2000
+#define GQL_SHAPE_CACHE_MAX_BYTES	(16 * 1024 * 1024)
+#define GQL_SHAPE_CACHE_MAX_ENTRY_BYTES	(64 * 1024)
+
+static id_hash_t * gql_shape_cache;
+static dk_mutex_t * gql_shape_cache_mtx;
+static boxint gql_shape_cache_generation = 1;
+static boxint gql_shape_cache_bytes;
+static boxint gql_shape_cache_hits;
+static boxint gql_shape_cache_misses;
+static boxint gql_shape_cache_puts;
+static boxint gql_shape_cache_evictions;
+static boxint gql_shape_cache_invalidations;
+
+/* Bytes held by a cached key or value: strings, numbers and vectors of them,
+   nested a few levels.  Anything deeper counts as too large to cache. */
+static size_t
+gql_shape_cache_tree_bytes (caddr_t x, int depth)
+{
+  size_t sz;
+  int inx;
+  if (!IS_BOX_POINTER (x))
+    return sizeof (caddr_t);
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (x))
+    return box_length (x);
+  if (depth > 4)
+    return GQL_SHAPE_CACHE_MAX_ENTRY_BYTES + 1;
+  sz = box_length (x);
+  DO_BOX (caddr_t, elt, inx, (caddr_t *) x)
+    {
+      sz += gql_shape_cache_tree_bytes (elt, depth + 1);
+    }
+  END_DO_BOX;
+  return sz;
+}
+
+static void
+gql_shape_cache_clear_unlocked (void)
+{
+  id_hash_iterator_t hit;
+  caddr_t *key;
+  caddr_t *value;
+  if (!gql_shape_cache)
+    return;
+  for (id_hash_iterator (&hit, gql_shape_cache);
+       hit_next (&hit, (char **) &key, (char **) &value); /* */)
+    {
+      dk_free_tree (*key);
+      dk_free_tree (*value);
+    }
+  id_hash_clear (gql_shape_cache);
+  gql_shape_cache_bytes = 0;
+}
+
+static caddr_t
+bif_gql_shape_cache_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key, value = NULL;
+  caddr_t *place;
+  boxint generation;
+  sec_check_dba ((query_instance_t *) qst, "__gql_shape_cache_get");
+  key = bif_string_arg (qst, args, 0, "__gql_shape_cache_get");
+  mutex_enter (gql_shape_cache_mtx);
+  generation = gql_shape_cache_generation;
+  place = gql_shape_cache ? (caddr_t *) id_hash_get (gql_shape_cache, (caddr_t) &key) : NULL;
+  if (place)
+    {
+      gql_shape_cache_hits++;
+      value = box_copy_tree (*place);
+    }
+  else
+    gql_shape_cache_misses++;
+  mutex_leave (gql_shape_cache_mtx);
+  return list (2, box_num (generation), value ? value : NEW_DB_NULL);
+}
+
+/* Returns 1 if stored, 0 if refused: a stale generation, or an entry over
+   the per-entry bound. */
+static caddr_t
+bif_gql_shape_cache_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key, value, key_copy, value_copy;
+  caddr_t *place;
+  boxint generation;
+  size_t entry_bytes;
+  int stored = 0;
+  sec_check_dba ((query_instance_t *) qst, "__gql_shape_cache_put");
+  key = bif_string_arg (qst, args, 0, "__gql_shape_cache_put");
+  value = bif_arg (qst, args, 1, "__gql_shape_cache_put");
+  generation = bif_long_arg (qst, args, 2, "__gql_shape_cache_put");
+  entry_bytes = gql_shape_cache_tree_bytes (key, 0) + gql_shape_cache_tree_bytes (value, 0);
+  if (entry_bytes > GQL_SHAPE_CACHE_MAX_ENTRY_BYTES)
+    return box_num (0);
+  value_copy = box_copy_tree (value);
+  mutex_enter (gql_shape_cache_mtx);
+  if (generation == gql_shape_cache_generation)
+    {
+      /* Made on first use, so a server that never runs GQL pays nothing.
+	 Fixed size: twice the entry bound keeps chains short with no rehash. */
+      if (!gql_shape_cache)
+	gql_shape_cache = id_hash_allocate (2 * GQL_SHAPE_CACHE_MAX_ENTRIES + 1,
+	    sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      place = (caddr_t *) id_hash_get (gql_shape_cache, (caddr_t) &key);
+      if (place)
+	{
+	  gql_shape_cache_bytes -= gql_shape_cache_tree_bytes (*place, 0);
+	  dk_free_tree (*place);
+	  *place = value_copy;
+	  gql_shape_cache_bytes += gql_shape_cache_tree_bytes (value_copy, 0);
+	}
+      else
+	{
+	  if (gql_shape_cache->ht_count >= GQL_SHAPE_CACHE_MAX_ENTRIES
+	      || gql_shape_cache_bytes + entry_bytes > GQL_SHAPE_CACHE_MAX_BYTES)
+	    {
+	      gql_shape_cache_evictions += gql_shape_cache->ht_count;
+	      gql_shape_cache_clear_unlocked ();
+	    }
+	  key_copy = box_copy_tree (key);
+	  id_hash_set (gql_shape_cache, (caddr_t) &key_copy, (caddr_t) &value_copy);
+	  gql_shape_cache_bytes += entry_bytes;
+	}
+      value_copy = NULL;
+      gql_shape_cache_puts++;
+      stored = 1;
+    }
+  mutex_leave (gql_shape_cache_mtx);
+  dk_free_tree (value_copy);
+  return box_num (stored);
+}
+
+static caddr_t
+bif_gql_shape_cache_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint generation;
+  sec_check_dba ((query_instance_t *) qst, "__gql_shape_cache_flush");
+  mutex_enter (gql_shape_cache_mtx);
+  if (gql_shape_cache)
+    gql_shape_cache_evictions += gql_shape_cache->ht_count;
+  gql_shape_cache_invalidations++;
+  generation = ++gql_shape_cache_generation;
+  gql_shape_cache_clear_unlocked ();
+  mutex_leave (gql_shape_cache_mtx);
+  return box_num (generation);
+}
+
+static caddr_t
+bif_gql_shape_cache_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t result;
+  sec_check_dba ((query_instance_t *) qst, "__gql_shape_cache_stats");
+  mutex_enter (gql_shape_cache_mtx);
+  result = list (8, box_num (gql_shape_cache_hits), box_num (gql_shape_cache_misses),
+      box_num (gql_shape_cache_puts), box_num (gql_shape_cache_evictions),
+      box_num (gql_shape_cache_generation), box_num (gql_shape_cache ? gql_shape_cache->ht_count : 0),
+      box_num (gql_shape_cache_invalidations), box_num (gql_shape_cache_bytes));
+  mutex_leave (gql_shape_cache_mtx);
+  return result;
+}
+
+/* Read on every private-cache lookup, so without the mutex: an aligned word.
+   A flush racing with a lookup can at worst let that one request finish on
+   the generation it started with. */
+static caddr_t
+bif_gql_shape_cache_generation (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (gql_shape_cache_generation);
+}
+
+
 
 caddr_t
 bif_sqlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -15646,6 +15837,17 @@ fcache_init (void)
   fcache_mtx = mutex_allocate ();
   bif_define ("cache_set", bif_cache_set);
   bif_define ("cache_get", bif_cache_get);
+  gql_shape_cache_mtx = mutex_allocate ();
+  bif_define_ex ("__gql_shape_cache_get", bif_gql_shape_cache_get,
+      BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_DONE);
+  bif_define_ex ("__gql_shape_cache_put", bif_gql_shape_cache_put,
+      BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3, BMD_DONE);
+  bif_define_ex ("__gql_shape_cache_flush", bif_gql_shape_cache_flush,
+      BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0, BMD_DONE);
+  bif_define_ex ("__gql_shape_cache_stats", bif_gql_shape_cache_stats,
+      BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0, BMD_DONE);
+  bif_define_ex ("__gql_shape_cache_generation", bif_gql_shape_cache_generation,
+      BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0, BMD_DONE);
 }
 
 

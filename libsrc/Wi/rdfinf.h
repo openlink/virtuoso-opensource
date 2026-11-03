@@ -124,6 +124,7 @@ typedef struct trans_state_s
 {
   caddr_t	tst_value;
   caddr_t	tst_data;
+  caddr_t	tst_edge; /* for TRAIL: the edge (triple) traversed to reach this node */
   struct trans_state_s * 	tst_prev;
   int		tst_depth;
   int		tst_path_no; /* in result set, identifies the path. Set to -1 if this tst is not the last of the path */
@@ -162,9 +163,11 @@ struct trans_node_s
   char		tn_distinct;
   char		tn_no_cycles;
   char		tn_cycles_only;
+  char		tn_trail; /* GQL TRAIL path mode: no edge (triple) repeated in a path */
   char		tn_ordered;
   char		tn_ends_given; /* both start and end are given */
   char		tn_shortest_only; /* if both ends given, generate all paths with length equal to the shortest path length */
+  ptrlong	tn_shortest_k_groups; /* GQL SHORTEST k GROUPS: if > 0, return all paths belonging to the k shortest distinct path lengths (generalization of tn_shortest_only for k > 1) */
   char		tn_direction;
   char		tn_is_second_in_direction3;
   trans_node_t *	tn_complement; /* from left-right and back */
