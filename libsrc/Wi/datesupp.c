@@ -899,6 +899,23 @@ snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
 }
 
 
+/* A datetime value stored into a DATE or TIME column becomes what
+   cast (x as date) or cast (x as time) makes of it.  Other columns keep it. */
+void
+dt_to_col_dtp (char *dt, dtp_t col_dtp)
+{
+  switch (col_dtp)
+    {
+    case DV_DATE:
+      dt_date_round (dt);
+      break;
+    case DV_TIME:
+      dt_make_day_zero (dt);
+      break;
+    }
+}
+
+
 int isdts_mode = 1;
 
 void

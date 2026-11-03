@@ -969,6 +969,7 @@ void time_t_to_dt (time_t tim, long fraction, char *dt);
 int file_mtime_to_dt (const char * name, char *dt);
 #endif
 void dt_date_round (char *dt);
+void dt_to_col_dtp (char *dt, dtp_t col_dtp);
 void dt_to_tv (char *dt, char *tv);
 
 /* sqltrig.c */

@@ -1704,6 +1704,8 @@ ssl_needs_ins_cast (state_slot_t * ssl, dbe_column_t * col)
 {
   if (ssl->ssl_is_callret || ssl->ssl_vary)
     return 1;
+  if (DV_DATE == col->col_sqt.sqt_dtp || DV_TIME == col->col_sqt.sqt_dtp)
+    return 1; /* the cast makes a date or a time of a datetime, also from a slot declared as one */
   if (DV_WIDE == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
     return 0;
   if (DV_STRING == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_STRING == ssl->ssl_sqt.sqt_dtp))

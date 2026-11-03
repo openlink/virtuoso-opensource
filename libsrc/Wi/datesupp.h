@@ -75,6 +75,7 @@ void dt_to_time_struct (char *dt, TIME_STRUCT *ots);
 void time_struct_to_dt (TIME_STRUCT *ts, char *dt);
 int dt_local_tzmin_for_parts (int year, int month, int day, int hour, int minute, int second);
 void dt_date_round (char *dt);
+void dt_to_col_dtp (char *dt, dtp_t col_dtp);
 void dt_init (void);
 int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (const char *dt, char *str, int len);

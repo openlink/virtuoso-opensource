@@ -25,7 +25,7 @@
 #  
 #  
 
-LOGFILE=tsql.output
+LOGFILE=tdatetime.output
 export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 BANNER "STARTED SERIES OF DATETIME TESTS (tdatetime.sh)"
@@ -40,6 +40,12 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdatetime.s
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdatetime.sql, timezoneless $TIMEZONELESS"
+    exit 1
+fi
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdatecol.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tdatecol.sql, timezoneless $TIMEZONELESS"
     exit 1
 fi
 SHUTDOWN_SERVER

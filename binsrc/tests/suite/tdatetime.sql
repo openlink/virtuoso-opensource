@@ -34,6 +34,12 @@ create function TZL_TEST (in expn varchar, in tz0 varchar, in tz1 varchar, in tz
   exec (expn, stat, msg, vector(), 10, mdata, rset);
   res := case stat when '00000' then cast (rset[0][0] as varchar) else 'Error ' || stat end;
   right_res := case tzmode when 0 then tz0 when 1 then tz1 when 2 then tz2 when 3 then tz3 when 4 then tz4 else 'Weird TimezonelessDatetimes' || tzmode end;
+  -- the expected results are written for a server at +06:00; use the local
+  -- offset the server gives to that date instead
+  declare tz integer;
+  tz := timezone (cast ('1999-12-31 00:00:00' as datetime), 1);
+  right_res := replace (right_res, '+06:00',
+      case when tz = 0 then 'Z' else sprintf ('%s%02d:%02d', case when tz < 0 then '-' else '+' end, abs (tz) / 60, mod (abs (tz), 60)) end);
   if (res = right_res)
     return 'PASSED: ' || expn || ' returns "' || res || '"' || case msg when '' then '' else ' (' || msg || ')' end || ' in mode ' || tzmode;
   else
