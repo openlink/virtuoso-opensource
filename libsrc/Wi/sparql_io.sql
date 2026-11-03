@@ -4205,6 +4205,35 @@ grant execute on DB.DBA.rdf_find_str to public
 ;
 
 
+-- The GQL text of a request sent as "gql <statement>", '' for "gql" alone,
+-- null for anything else.  Runs on every request, so it reads only the
+-- first characters: copying a query of megabytes (trim, lower) to test
+-- three letters cost every SPARQL request time in proportion to its size.
+-- Leading and trailing blanks are skipped as trim skips them.
+create procedure WS.WS.SPARQL_ENDPOINT_GQL_BODY (in query varchar)
+{
+  declare len, i, c integer;
+
+  if (query is null)
+    return null;
+
+  len := length (query);
+  i := 0;
+  while (i < len and aref (query, i) = 32)
+    i := i + 1;
+  if (len - i < 3 or lower (subseq (query, i, i + 3)) <> 'gql')
+    return null;
+  while (len > i and aref (query, len - 1) = 32)
+    len := len - 1;
+  if (len - i = 3)
+    return '';
+  c := aref (query, i + 3);
+  if (c <> 32 and c <> 9 and c <> 10 and c <> 13)
+    return null;
+  return trim (subseq (query, i + 3, len));
+}
+;
+
 
 -- Web service endpoint.
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -4417,6 +4446,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
           if (def_qry is null)
             def_qry := 'SELECT * WHERE {?s ?p ?o}';
         }
+
+      -- Form-render path: leave GQL queries as-is so the textarea
+      -- shows the user's original GQL source. Translation happens
+      -- only when the query is actually executed.
 
       if (qtxt <> 1)
 	{
@@ -4706,6 +4739,117 @@ execute_query:
       return;
     }
 
+  -- GQL requests: "gql <statement>" in query, or language=gql
+  declare gql_lang, gql_body, gql_graph, gql_dryrun varchar;
+  declare gql_translated varchar;
+  declare gql_request integer;
+  declare gql_pg_ddl any;
+  gql_request := 0;
+
+  gql_lang := lower (trim (coalesce (get_keyword ('language', params, ''), '')));
+  gql_body := WS.WS.SPARQL_ENDPOINT_GQL_BODY (query);
+  if (gql_lang = 'gql' and gql_body is null)
+    gql_body := query;
+
+  if (gql_body is not null)
+    {
+      gql_request := 1;
+      gql_graph := coalesce (
+        trim (get_keyword ('graph', params, null)),
+        trim (get_keyword ('default-graph-uri', params, null)),
+        '');
+      if (gql_graph = '') gql_graph := null;
+      gql_dryrun := lower (trim (coalesce (get_keyword ('dryrun', params, ''), '')));
+
+      if (gql_body = '' or trim (gql_body) = '')
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '400', 'GQL Request Empty',
+            '', 'GQ101', 'A GQL request must contain a query', format);
+          return;
+        }
+
+      if (__proc_exists ('DB.DBA.GQL_TO_SPARQL_PARAMS', 1) is null)
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '501', 'GQL Support Not Loaded',
+            gql_body, 'GQ102', 'GQL support is not loaded in this server', format);
+          return;
+        }
+
+      {
+        -- Any lexer/parser/translator error becomes a 400 with the GQ*
+        -- code and message. (GQL is translated to SPARQL and then executed
+        -- on the normal SPARQL path below, so it inherits the endpoint's
+        -- content negotiation, result serialization, and authorization.)
+        declare exit handler for sqlstate '*'
+          {
+            connection_set ('gql_pg_ddl_deferred', null);
+            DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+              '400', 'GQL Translation Failed',
+              gql_body, __SQL_STATE, __SQL_MESSAGE, format);
+            return;
+          };
+        -- property graph DDL is recorded, not run, so that dryrun and the user's rights are checked first
+        connection_set ('gql_pg_ddl_deferred', vector ());
+        gql_translated := DB.DBA.GQL_TO_SPARQL_PARAMS (gql_body, gql_graph, null);
+        gql_pg_ddl := connection_get ('gql_pg_ddl_deferred');
+        connection_set ('gql_pg_ddl_deferred', null);
+      }
+
+    gql_translate_ok:
+      query := ltrim (coalesce (gql_translated, ''));
+      if (strcasestr (query, 'SPARQL ') = 0)
+        query := subseq (query, 7);
+      -- The full translated SPARQL is always available to the in-process HTML
+      -- result panel (via this connection variable) and to clients via
+      -- dryrun=1. It is echoed in an X-Generated-SPARQL response header only
+      -- when registry '__gql_generated_sparql_header' is 'on' (off by
+      -- default: it is debugging output, and dryrun=1 gives the same text),
+      -- and only up to a size, so a very large translation cannot emit an
+      -- oversized header that some proxies/clients reject.
+      connection_set ('gql_generated_sparql', query);
+      if (registry_get ('__gql_generated_sparql_header', 'off') = 'on'
+          and length (query) <= 8000)
+        http_header (concat (coalesce (http_header_get (), ''),
+            'X-Generated-SPARQL: ', sprintf ('%U', query), '\r\n'));
+      if (gql_dryrun = '1' or gql_dryrun = 'true')
+        {
+          http_header ('Content-Type: text/plain; charset=UTF-8\r\n');
+          foreach (any ddl in gql_pg_ddl) do
+            http (sprintf ('# %s PROPERTY GRAPH %s (not run: dryrun)\n', ddl[0], ddl[1]));
+          http (query);
+          return;
+        }
+      if (length (gql_pg_ddl))
+        {
+          declare is_dba integer;
+          is_dba := 0;
+          {
+            declare exit handler for sqlstate '*' { is_dba := 0; };
+            is_dba := user_is_dba (user_id);
+          }
+          if (not is_dba)
+            {
+              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '403', 'Prohibited',
+                gql_body, 'GQ215', sprintf ('Property graph DDL is not allowed for user %s', user_id), format);
+              return;
+            }
+          {
+            declare exit handler for sqlstate '*'
+              {
+                DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                  '400', 'GQL Property Graph DDL Failed',
+                  gql_body, __SQL_STATE, __SQL_MESSAGE, format);
+                return;
+              };
+            foreach (any ddl in gql_pg_ddl) do
+              DB.DBA.GQL_PG_DDL_DO (ddl[0], ddl[1], ddl[2], ddl[3]);
+          }
+        }
+    }
+
   full_query := query;
   -- dbg_obj_princ ('dflt_graphs = ', dflt_graphs, ', named_graphs = ', named_graphs);
   --if (quiet_geo <> '')
@@ -4923,6 +5067,13 @@ again:
   if (isvector (rset) and length (rset) = maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
+  if (gql_request and state = '01W01' and metas is not null)
+    {
+      state := '00000';
+      msg := '';
+      if (rset is null)
+        rset := vector ();
+    }
   if (state = '00000')
     goto write_results;
   if (state = 'S1TAT')

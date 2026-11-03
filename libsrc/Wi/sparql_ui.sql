@@ -1711,6 +1711,17 @@ create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout
     http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
     http_value (title);
     http ('</a></nav>\n', ses);
+
+    declare gql_panel any;
+    gql_panel := connection_get ('gql_generated_sparql');
+    if (isstring (gql_panel) and length (gql_panel) > 0)
+    {
+      http ('<details class="my-2"><summary class="fw-bold">Generated SPARQL (translated from GQL)</summary>\n', ses);
+      http ('<pre class="bg-light p-2 border rounded"><code>', ses);
+      http_escape (gql_panel, 11, ses, 1, 1);
+      http ('</code></pre></details>\n', ses);
+      connection_set ('gql_generated_sparql', null);
+    }
 }
 ;
 

@@ -178,7 +178,8 @@ tvvec_onnx_bpe \
 tvvec_rollback_undo \
 tvvec_rdf_quad \
 tgql_rdf_equiv \
-tgql_unit "
+tgql_unit \
+tgql_compat "
 
 QUICKTEST=1
 TPCDMODE=local

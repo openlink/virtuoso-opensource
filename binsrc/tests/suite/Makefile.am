@@ -61,6 +61,7 @@ check_SCRIPTS = \
 	testall.sh \
 	testlib.sh \
 	tgraphql.sh \
+	tgql_compat.sh \
 	tgql_rdf_equiv.sh \
 	tgql_unit.sh \
 	thttp.sh \
@@ -198,6 +199,7 @@ EXTRA_DIST= \
 	$(srcdir)/tdav_meta_050512.zip \
 	$(srcdir)/tdav_meta_050528.zip \
 	$(srcdir)/tgql_intro.ql \
+	$(srcdir)/tgql_compat.sql \
 	$(srcdir)/test_gql_rdf_api.sql \
 	$(srcdir)/test_gql_rdf_inference.sql \
 	$(srcdir)/test_gql_rdf_load.sql \
