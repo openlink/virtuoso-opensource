@@ -64,6 +64,8 @@ check_SCRIPTS = \
 	tgql_compat.sh \
 	tgql_rdf_equiv.sh \
 	tgql_unit.sh \
+	tgraphalgo.sh \
+	tgraphalgo.sql \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \

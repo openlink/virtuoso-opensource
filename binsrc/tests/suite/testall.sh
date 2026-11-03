@@ -179,7 +179,8 @@ tvvec_rollback_undo \
 tvvec_rdf_quad \
 tgql_rdf_equiv \
 tgql_unit \
-tgql_compat "
+tgql_compat \
+tgraphalgo"
 
 QUICKTEST=1
 TPCDMODE=local
