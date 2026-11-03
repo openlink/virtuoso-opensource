@@ -814,7 +814,9 @@ scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
 scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
-$(top_srcdir)/binsrc/cached_resources/cached_resources.c:
+#  Always ask binsrc/cached_resources, which only replaces the file when its
+#  contents change, so an edited resource is picked up in the same build.
+$(top_srcdir)/binsrc/cached_resources/cached_resources.c:FORCE
 	@echo "* Generating cached_resources.c"
 	@cd $(top_srcdir)/binsrc/cached_resources && $(MAKE)
 
