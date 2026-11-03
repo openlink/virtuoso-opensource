@@ -43,6 +43,7 @@
 #include "sqlintrp.h"
 #include "sqlparext.h"
 #include "sqlbif.h"
+#include "bif_graph.h"
 #include "arith.h"
 #include "security.h"
 #include "sqlpfn.h"
@@ -18938,6 +18939,7 @@ bif_define ("je_heap_profile_active", bif_je_heap_profile_active);
   bif_http_client_init ();
   bif_smtp_init ();
 #endif
+  bif_graph_init ();
 #ifdef _IMSG
   bif_pop3_init ();
   bif_imap_init ();
