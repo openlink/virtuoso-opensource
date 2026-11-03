@@ -5032,6 +5032,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       so->so_context_dt = old_ctx;
     }
   END_DO_SET ();
+  sqlo_rdf_inf_out_cols (so, tb_dfe);
   sqlo_choose_index (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_in_place_in_pred (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_tb_order (so, tb_dfe, merged_col_preds);
@@ -6418,6 +6419,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     }
   dfe->dfe_remote_locus_refs = hash_pred_locus_refs;/* Bug 1500 */
   dfe->_.table.join_test = sqlo_and_list_body (so, LOC_LOCAL, dfe, post_preds);
+  sqlo_rdf_inf_out_cols (so, dfe);
   dfe->dfe_unit = 0;
   *score_ret = sqlo_score (super_ot->ot_work_dfe, super_ot->ot_work_dfe->_.sub.in_arity);
   if (!dfe->_.table.is_unique)

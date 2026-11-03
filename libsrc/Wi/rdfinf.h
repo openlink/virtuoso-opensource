@@ -50,6 +50,8 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */
   dk_hash_t *	ric_p_stat;
+  float		ric_superclass_fanout;			/*!< Rows per stored type triple out of the superclass iterator: mean of 1 + distinct superclasses over the classes.  counted at the end of rdfs_load_schema (), 0 when an edge is added after */
+  float		ric_superproperty_fanout;		/*!< The same for properties and the superproperty iterator */
 } rdf_inf_ctx_t;
 
 

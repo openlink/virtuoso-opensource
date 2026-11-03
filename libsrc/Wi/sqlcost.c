@@ -4352,6 +4352,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     }
   total_cost += p_cost * arity_scale (total_arity);
   total_arity *= p_arity;
+  total_arity *= sqlo_rdf_inf_card (dfe); /* rows the trailing inference iterators add */
   if (dfe->_.table.ot->ot_is_outer)
     total_arity = MAX (1, total_arity);
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/

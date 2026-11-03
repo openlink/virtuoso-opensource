@@ -291,6 +291,14 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfinf_count
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf_count.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference, inferred solutions counted -- trdfinf_count.sql"
+    exit 1
+fi
+
 LOG + running sql script ttrans2
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans2.sql 
 if test $STATUS -ne 0

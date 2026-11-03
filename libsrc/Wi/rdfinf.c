@@ -1014,6 +1014,8 @@ bif_rdf_is_sub (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+static float ric_count_fanout (id_hash_t * ht, int mode);
+
 caddr_t
 bif_rdf_inf_dir (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1024,6 +1026,16 @@ bif_rdf_inf_dir (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int is_cl = bif_long_arg (qst, args, 3, "rdf_inf_dir");
   rdf_sub_t * super_rs, * sub_rs;
   int mode  = (is_cl & 1) ? RI_SUPERCLASS : RI_SUPERPROPERTY;
+  if (DV_DB_NULL == DV_TYPE_OF (super) && DV_DB_NULL == DV_TYPE_OF (sub))
+    {
+      /* rdfs_load_schema () ends the load with nulls: count the rows the trailing iterators make per stored triple */
+      ctx->ric_superclass_fanout = ric_count_fanout (ctx->ric_iri_to_subclass, RI_SUPERCLASS);
+      ctx->ric_superproperty_fanout = ric_count_fanout (ctx->ric_iri_to_subproperty, RI_SUPERPROPERTY);
+    }
+  else if (RI_SUPERCLASS == mode)
+    ctx->ric_superclass_fanout = 0;
+  else
+    ctx->ric_superproperty_fanout = 0;
   sub_rs = ric_iri_to_sub (ctx, sub, mode, 1);
   super_rs = ric_iri_to_sub (ctx, super, mode, 1);
   if ((2 & is_cl))
@@ -2488,6 +2500,125 @@ dfe_iri_const (df_elt_t * dfe)
   if (name)
     return key_name_to_iri_id (NULL, name, 0);
   return NULL;
+}
+
+
+static float
+ric_count_fanout (id_hash_t * ht, int mode)
+{
+  /* mean of 1 + distinct supers over the classes or properties of a rule set */
+  int64 n = 0, rows = 0;
+  id_hash_iterator_t hit;
+  caddr_t * iri_ptr;
+  rdf_sub_t ** rs_ptr;
+  id_hash_iterator (&hit, ht);
+  while (hit_next (&hit, (char **) &iri_ptr, (char **) &rs_ptr))
+    {
+      ri_iterator_t * rit;
+      if (DV_DB_NULL == DV_TYPE_OF (*iri_ptr))
+	continue; /* the end of load mark of rdf_inf_dir () */
+      rit = ri_iterator (*rs_ptr, mode, 1);
+      while (rit_next (rit))
+	rows++;
+      dk_free_box ((caddr_t) rit);
+      n++;
+    }
+  return n ? (float) rows / n : 1;
+}
+
+
+float
+ric_fanout (rdf_inf_ctx_t * ctx, int mode)
+{
+  /* rows per stored triple out of a trailing superclass or superproperty iterator, counted when the rule set is loaded */
+  float f = RI_SUPERCLASS == mode ? ctx->ric_superclass_fanout : ctx->ric_superproperty_fanout;
+  return f > 0 ? f : 1;
+}
+
+
+#define RI_TRAIL_P	1	/* a superproperty iterator follows the table */
+#define RI_TRAIL_O	2	/* a superclass iterator follows the table */
+#define RI_P_OPEN	4	/* P is not given */
+
+static int
+sqlo_rdf_inf_trailing (df_elt_t * tb_dfe, rdf_inf_ctx_t ** ctx_ret)
+{
+  /* which trailing iterators sqlg_rdf_inf_1 () puts after the table */
+  caddr_t p_const;
+  rdf_inf_ctx_t * ctx;
+  df_elt_t * p_dfe = NULL, * o_dfe = NULL;
+  int flags = 0;
+  if (DFE_TABLE != tb_dfe->dfe_type || tb_dfe->_.table.is_inf_col_given || !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+    return 0;
+  ctx = rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
+  if (!ctx)
+    return 0;
+  *ctx_ret = ctx;
+  DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
+    {
+      if (DFE_BOP_PRED != cp->dfe_type || sqlo_in_list (cp, NULL, NULL) || BOP_EQ != cp->_.bin.op
+	  || cp->_.bin.left == cp->_.bin.right || DFE_COLUMN != cp->_.bin.left->dfe_type)
+	continue;
+      switch (cp->_.bin.left->_.col.col->col_name[0])
+	{
+	case 'P': p_dfe = cp->_.bin.right; break;
+	case 'O': o_dfe = cp->_.bin.right; break;
+	}
+    }
+  END_DO_SET ();
+  if (!p_dfe)
+    flags |= RI_P_OPEN;
+  if (!p_dfe && ctx->ric_iri_to_subproperty->ht_count)
+    flags |= RI_TRAIL_P;
+  if (!o_dfe && ctx->ric_iri_to_subclass->ht_count)
+    {
+      p_const = dfe_iri_const (p_dfe);
+      if (!p_const || box_equal (rdfs_type, p_const))
+	flags |= RI_TRAIL_O;
+      dk_free_box (p_const);
+    }
+  return flags;
+}
+
+
+static void
+sqlo_rdf_inf_out_col (sqlo_t * so, df_elt_t * tb_dfe, char * name)
+{
+  df_elt_t * col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, tb_dfe->_.table.ot->ot_new_prefix, t_box_string (name)));
+  if (!dk_set_member (tb_dfe->_.table.out_cols, (void *) col_dfe))
+    sqlo_place_col (so, tb_dfe, col_dfe);
+}
+
+
+/* The trailing superclass and superproperty iterators run over the O and P
+   the table reads.  Read them also when nothing else does, else the
+   inferred rows are missing, e.g. from count (*). */
+void
+sqlo_rdf_inf_out_cols (sqlo_t * so, df_elt_t * tb_dfe)
+{
+  rdf_inf_ctx_t * ctx;
+  int flags = sqlo_rdf_inf_trailing (tb_dfe, &ctx);
+  if (RI_TRAIL_O & flags)
+    sqlo_rdf_inf_out_col (so, tb_dfe, "O");
+  if ((RI_TRAIL_P & flags) || ((RI_TRAIL_O & flags) && (RI_P_OPEN & flags)))
+    sqlo_rdf_inf_out_col (so, tb_dfe, "P"); /* with P open, only the O of rdf:type is expanded */
+}
+
+
+/* Rows per table row out of the trailing iterators.  With P open only its
+   rdf:type triples get superclasses, a share not known here, so that case
+   counts superproperties only. */
+float
+sqlo_rdf_inf_card (df_elt_t * tb_dfe)
+{
+  rdf_inf_ctx_t * ctx;
+  int flags = sqlo_rdf_inf_trailing (tb_dfe, &ctx);
+  float f = 1;
+  if (RI_TRAIL_P & flags)
+    f *= ric_fanout (ctx, RI_SUPERPROPERTY);
+  if ((RI_TRAIL_O & flags) && !(RI_P_OPEN & flags))
+    f *= ric_fanout (ctx, RI_SUPERCLASS);
+  return f;
 }
 
 
