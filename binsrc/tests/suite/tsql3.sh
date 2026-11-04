@@ -397,6 +397,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_group_literal
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_group_literal.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: SPARQL GROUP BY over stored and computed literals -- tsparql_group_literal.sql"
+    exit 1
+fi
+
 LOG + running sql script tsparql_value_in_o
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_value_in_o.sql
 if test $STATUS -ne 0

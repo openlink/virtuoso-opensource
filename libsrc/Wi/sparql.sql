@@ -1774,24 +1774,33 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any array
 create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
+  declare res any;
   t := __tag (v);
   if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
-        return DB.DBA.RDF_OBJ_ADD (257, v, 257);
-      if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
-        return DB.DBA.RDF_OBJ_ADD (sys_stat ('rb_type__xsd:duration'), serialize (v), 257);
-      return v;
+        res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+      else if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
+        res := DB.DBA.RDF_OBJ_ADD (sys_stat ('rb_type__xsd:duration'), serialize (v), 257);
+      else
+        res := v;
     }
-  if (__tag of UNAME = t)
-    return __i2id (v);
-  if (isstring (v) and bit_and (__box_flags (v), 1))
-    return __i2id (v);
-  if (__tag of nvarchar = t)
-    v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = __tag of long varchar handle)
-    v := cast (v as varchar);
-  return DB.DBA.RDF_OBJ_ADD (257, v, 257);
+  else
+    {
+      if (__tag of UNAME = t)
+        return __i2id (v);
+      if (isstring (v) and bit_and (__box_flags (v), 1))
+        return __i2id (v);
+      if (__tag of nvarchar = t)
+        v := charset_recode (v, '_WIDE_', 'UTF-8');
+      else if (t = __tag of long varchar handle)
+        v := cast (v as varchar);
+      res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+    }
+  -- a literal with an RDF_OBJ row is the id-only box O holds, so stored and computed values are one key
+  if (__tag of rdf_box = __tag (res) and rdf_box_ro_id (res) > 0 and rdf_box_type (res) >= 257)
+    return rdf_box_from_ro_id (rdf_box_ro_id (res));
+  return res;
 }
 ;
 
