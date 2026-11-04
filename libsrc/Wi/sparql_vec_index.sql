@@ -4379,6 +4379,12 @@ create function DB.DBA.VEC_INDEX_QUEUE_DRAIN (in max_items integer := 1000) retu
 --
 -- This runs as a server init statement, so it must not raise -- an error here
 -- would abort the rest of this file's initialisation.
+--
+-- It runs after roll forward (the call below is marked AFTER).  An operation commits
+-- its in-flight state when it starts, and unless a checkpoint followed that
+-- commit, the state is only in the transaction log: run before roll forward,
+-- this would find the checkpoint's 'active', and the replay would then put the
+-- index back in 'refreshing' for good.
 create procedure DB.DBA.VEC_INDEX_RECOVER_INTERRUPTED ()
 {
   declare stranded, names any;
@@ -4899,10 +4905,10 @@ create procedure DB.DBA.RDF_OBJ_VEC_INDEX_RECOVER_INTERRUPTED ()
 }
 ;
 
--- Server init: an index found mid-operation at startup was interrupted, since
--- nothing can be running one yet.
+--!AFTER
 DB.DBA.VEC_INDEX_RECOVER_INTERRUPTED ()
 ;
 
+--!AFTER
 DB.DBA.RDF_OBJ_VEC_INDEX_RECOVER_INTERRUPTED ()
 ;

@@ -145,6 +145,7 @@ tlongany \
 tplugin_load \
 tvvec \
 tvvec_crash_recovery \
+tvvec_recover_interrupted \
 tvvec_chunked_replay \
 tvvec_chunked_replay_crash \
 tvvec_rebuild_durable \
