@@ -43,12 +43,33 @@ bif:xpath_contains virtrdf:isSpecialPredicate bif:xpath_contains .
 bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
 
+# Value-producing core graph analytics predicates.
+bif:degree_centrality virtrdf:isSpecialPredicate bif:degree_centrality .
+bif:pagerank virtrdf:isSpecialPredicate bif:pagerank .
+bif:betweenness virtrdf:isSpecialPredicate bif:betweenness .
+bif:closeness virtrdf:isSpecialPredicate bif:closeness .
+bif:eigenvector virtrdf:isSpecialPredicate bif:eigenvector .
+bif:shortest_path virtrdf:isSpecialPredicate bif:shortest_path .
+bif:shortest_path_length virtrdf:isSpecialPredicate bif:shortest_path_length .
+bif:bfs virtrdf:isSpecialPredicate bif:bfs .
+bif:dfs virtrdf:isSpecialPredicate bif:dfs .
+bif:wcc virtrdf:isSpecialPredicate bif:wcc .
+bif:scc virtrdf:isSpecialPredicate bif:scc .
+bif:community_id virtrdf:isSpecialPredicate bif:community_id .
+bif:label_propagation virtrdf:isSpecialPredicate bif:label_propagation .
+bif:clustering_coefficient virtrdf:isSpecialPredicate bif:clustering_coefficient .
+bif:triangle_count virtrdf:isSpecialPredicate bif:triangle_count .
+bif:jaccard_similarity virtrdf:isSpecialPredicate bif:jaccard_similarity .
+bif:harmonic virtrdf:isSpecialPredicate bif:harmonic .
+bif:hits_hub virtrdf:isSpecialPredicate bif:hits_hub .
+bif:hits_authority virtrdf:isSpecialPredicate bif:hits_authority .
+
 virtrdf:QuadMapFormat virtrdf:isGcResistantType "2" .
 virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2022-02-17 0001v7' ;
+  virtrdf:version '2026-09-13 0001v7' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,

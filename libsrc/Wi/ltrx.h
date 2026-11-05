@@ -123,6 +123,90 @@ struct tp_dtrx_s;
 #endif
 typedef void (*trx_hook_t) (struct lock_trx_s *);
 
+/* Global post-commit notifier.  Optional modules (e.g. graph analytics)
+ * set this via graph_commit_notify_set() to receive a callback after every
+ * lt_commit.  NULL when no module is interested.
+ *
+ * What the notifier is told is which indices the transaction wrote, taken
+ * from the rollback entries it left behind: rb_entry_t carries the key id
+ * of the row it can put back, so the set of key ids in lt_rb_hash names
+ * every index a rollback would have to touch.  No write path is involved
+ * and no row is decoded.
+ *
+ * gck_complete is the whole safety of it.  0 means "this list is not the
+ * whole truth", and a consumer must then behave as if everything had been
+ * written.  It is 0 for an atomic-mode transaction and for one whose
+ * client is in row autocommit (neither makes rollback entries at all), for
+ * log replay and replication (rows but no entries), for a schema change
+ * (key ids are about to mean something else), for 2PC, and for a
+ * transaction with more distinct keys than fit here.  Only a positively
+ * identified, complete list may narrow anything: "I could not tell what
+ * was written" has to mean "assume the worst", because the failure it
+ * guards against is a stale answer rather than a slow one. */
+#define GRAPH_COMMIT_MAX_KEYS 32
+
+/* Why a list is not the whole truth.  Reported rather than merely acted
+ * on, because "how often can the engine not tell what was written?" is
+ * the number that decides whether narrowing the invalidation is worth
+ * anything, and it cannot be answered by reading the source. */
+#define GCK_COMPLETE		0
+#define GCK_NO_RB_ENTRIES	1	/* wrote rows, left no rollback set */
+#define GCK_TOO_MANY_RB		2	/* more entries than worth walking */
+#define GCK_ATOMIC		3	/* lt_is_excl: makes no entries */
+#define GCK_LOG_MERGE		4	/* replication or log replay */
+#define GCK_SCHEMA		5	/* key ids are about to change meaning */
+#define GCK_ROW_AUTOCOMMIT	6	/* inserts go non-txn, so no entries */
+#define GCK_2PC			7
+#define GCK_TRUNCATED		8	/* more distinct keys than fit */
+#define GCK_N_REASONS		9
+
+typedef struct graph_commit_keys_s
+  {
+    key_id_t	gck_keys[GRAPH_COMMIT_MAX_KEYS];	/* distinct, unordered */
+    int		gck_n_keys;
+    int		gck_complete;
+    int		gck_why;	/* GCK_*, when gck_complete is 0 */
+  } graph_commit_keys_t;
+
+typedef void (*graph_commit_notify_fn) (const graph_commit_keys_t *);
+extern graph_commit_notify_fn graph_commit_notify;
+void graph_commit_notify_set (graph_commit_notify_fn fn);
+
+/* Whether anything is cached that an invalidation could affect.
+ *
+ * The notifier above is installed unconditionally at server start-up and
+ * the graph module is built in by default, so without this every write
+ * transaction in the database would pay to have its written key set
+ * collected -- two mutexes and two hash walks in lt_commit() -- on servers
+ * that have never loaded a graph and never will.  This is the cheap test
+ * in front of that: one load, and the work is skipped when there is
+ * nothing for it to decide about.
+ *
+ * Zero must mean "there is provably nothing to invalidate", so it is
+ * raised when a cache slot is *reserved* -- before the loader reads its
+ * first row -- rather than when the entry is published.  A write that
+ * commits during a load must be seen, and setting the flag at publish
+ * time would let it be missed. */
+extern int graph_commit_notify_wanted;
+void graph_commit_notify_wanted_set (int wanted);
+
+/* Called when a client connection is torn down, so the graph module can
+ * drop anything scoped to that session.
+ *
+ * A graph built from edges handed in by the caller belongs to the session
+ * that made it -- there is no table behind it whose SELECT permission
+ * could be re-checked, so ownership is the only access question there is
+ * to ask, and it has to end when the session does.  Installed by
+ * bif_graph_init(); NULL when the graph module is not built. */
+/* At file scope, so the tag is the one sqlnode.h defines.  First
+ * mentioning it inside the parameter list below would give it prototype
+ * scope -- a distinct, incomplete type -- and the install call would then
+ * not type-check against it. */
+struct client_connection_s;
+typedef void (*graph_session_drop_fn) (struct client_connection_s *);
+extern graph_session_drop_fn graph_session_drop;
+void graph_session_drop_set (graph_session_drop_fn fn);
+
 /* #define CHECK_LT_THREADS */
 
 #ifdef CHECK_LT_THREADS
@@ -932,6 +1016,10 @@ extern resource_t * rb_page_rc;
 lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
 lock_trx_t * lt_main_lt (lock_trx_t * lt);
 int lt_has_delta (lock_trx_t * lt);
+/*! Nonzero when the transaction holds uncommitted changes, consulting both
+the rollback set and the transaction log (an RDF_QUAD insert can leave the
+former empty).  Used to tell read-only transactions apart from writers. */
+int lt_has_pending_changes (lock_trx_t * lt);
 int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
 void log_merge_commit (lock_trx_t * lt, dk_set_t merges);
 void lt_free_merge (dk_set_t merges);

@@ -1151,6 +1151,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <trees> spar_triple_geo_option
 %type <trees> spar_triple_vector_option
 %type <trees> spar_triple_transit_option
+%type <trees> spar_triple_graph_option
 %type <backstack> spar_triple_option_var_commalist
 %type <backstack> spar_triple_option_iriref_commalist
 %type <token_type> spar_same_as_option
@@ -3092,6 +3093,18 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
 	| spar_triple_transit_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_TRANSIT, "TRANSITIVE and related options");
 		$$ = $1; }
+	| spar_triple_graph_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "graph analytics option");
+		$$ = $1; }
+	;
+
+spar_triple_graph_option	/* [Virt]	GraphOption	 ::=  PLAIN_ID Expn | PLAIN_ID '(' Var ',' Var ( ',' Var )? ')' | 'GRAPH' ( Q_IRI_REF | QNAME | String )	*/
+	: SPARQL_PLAIN_ID spar_expn	{ $$ = sparp_make_graph_option (sparp_arg, $1, $2, NULL, NULL, NULL); }
+	| SPARQL_PLAIN_ID _LPAR spar_var _COMMA spar_var _RPAR	{ $$ = sparp_make_graph_option (sparp_arg, $1, NULL, $3, $5, NULL); }
+	| SPARQL_PLAIN_ID _LPAR spar_var _COMMA spar_var _COMMA spar_var _RPAR	{ $$ = sparp_make_graph_option (sparp_arg, $1, NULL, $3, $5, $7); }
+	| GRAPH_L Q_IRI_REF		{ $$ = (SPART **)t_list (2, (ptrlong)GRAPH_L, spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_q_iri_ref (sparp_arg, $2))); }
+	| GRAPH_L QNAME			{ $$ = (SPART **)t_list (2, (ptrlong)GRAPH_L, spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_qname_prefix (sparp_arg, $2))); }
+	| GRAPH_L SPARQL_STRING		{ $$ = (SPART **)t_list (2, (ptrlong)GRAPH_L, spartlist (sparp_arg, 2, SPAR_QNAME, $2)); }
 	;
 
 spar_triple_inference_option

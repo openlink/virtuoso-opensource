@@ -55,6 +55,42 @@ long lock_wait_msec = 0;
 long lock_enters = 0;
 long lock_leaves = 0;
 
+/* Global post-commit notifier — see ltrx.h. */
+graph_commit_notify_fn graph_commit_notify = NULL;
+graph_session_drop_fn graph_session_drop = NULL;
+/* Zero until the graph module has something cached.  See ltrx.h.
+ * Set by a loader before it reads and read by a commit after it has
+ * released its locks; that store-then-load pair needs full ordering on
+ * both sides or the commit can miss a loader that is already reading. */
+int graph_commit_notify_wanted = 0;
+
+#if defined (__GNUC__) || defined (__clang__)
+#define GRAPH_GATE_LOAD()	__atomic_load_n (&graph_commit_notify_wanted, __ATOMIC_SEQ_CST)
+#define GRAPH_GATE_STORE(v)	__atomic_store_n (&graph_commit_notify_wanted, (v), __ATOMIC_SEQ_CST)
+#else
+#define GRAPH_GATE_LOAD()	InterlockedCompareExchange ((volatile LONG *) &graph_commit_notify_wanted, 0, 0)
+#define GRAPH_GATE_STORE(v)	InterlockedExchange ((volatile LONG *) &graph_commit_notify_wanted, (v))
+#endif
+
+void
+graph_commit_notify_wanted_set (int wanted)
+{
+  GRAPH_GATE_STORE (wanted);
+}
+
+
+void
+graph_commit_notify_set (graph_commit_notify_fn fn)
+{
+  graph_commit_notify = fn;
+}
+
+void
+graph_session_drop_set (graph_session_drop_fn fn)
+{
+  graph_session_drop = fn;
+}
+
 dk_set_t all_trxs = NULL;
 
 uint32 lt_counter = 0; /* 32 bits exact, lower half of trx no 64 bit id, must wrap around */
@@ -655,11 +691,187 @@ dk_mutex_t * log_write_mtx;
 
 void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 
+/* Has this transaction written anything that is not committed yet?
+ *
+ * LT_HAS_DELTA() alone is not enough: an RDF_QUAD insert can leave the
+ * rollback set empty while the transaction log already holds the change,
+ * so both have to be consulted.  Callers use this to tell a read-only
+ * transaction (which sees exactly the committed data, and whose commit
+ * invalidates nothing) from one whose reads can see its own uncommitted
+ * rows. */
+int
+lt_has_pending_changes (lock_trx_t * lt)
+{
+  if (!lt)
+    return 0;
+  if (LT_HAS_DELTA (lt))
+    return 1;
+  /* log_enable (2) style loading: with the log off and inserts going
+   * non-transactionally there is no rollback entry, no lock and nothing in
+   * the log, so the absence of all three proves nothing.  Plain log off
+   * (log_enable (0)) still leaves the first two, so it is not included. */
+  if (REPL_NO_LOG == lt->lt_replicate && lt->lt_client
+      && (lt->lt_client->cli_row_autocommit || lt->lt_client->cli_non_txn_insert))
+    return 1;
+  if (lt->lt_log && (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent))
+    return 1;
+  return lt->lt_log_merge ? 1 : 0;
+}
+
+/* How many rollback entries or page locks are worth walking to find out
+ * which indices a transaction wrote.  Past this the walk costs more than
+ * the invalidation it could save, so the answer becomes "could not tell"
+ * -- which is the safe answer, and a transaction that large has almost
+ * certainly written something a cache cares about anyway. */
+#define LT_WRITTEN_KEYS_MAX_RB 4096
+
+/* Add one key id to the set, or say the set has overflowed. */
+static int
+lt_wk_add (graph_commit_keys_t * gck, key_id_t key_id)
+{
+  int inx;
+  if (gck->gck_n_keys && gck->gck_keys[gck->gck_n_keys - 1] == key_id)
+    return 1;
+  for (inx = 0; inx < gck->gck_n_keys; inx++)
+    if (gck->gck_keys[inx] == key_id)
+      return 1;
+  if (gck->gck_n_keys >= GRAPH_COMMIT_MAX_KEYS)
+    return 0;
+  gck->gck_keys[gck->gck_n_keys++] = key_id;
+  return 1;
+}
+
+/* Which indices this transaction wrote.  Must be called before
+ * lt_transact(), which frees the rollback entries and releases the locks
+ * both halves of the answer are read from.
+ *
+ * Two sources, because neither alone is the whole write set:
+ *
+ *   lt_rb_hash   rb_entry_t carries the key id of the row it can put
+ *                back, so a row-wise write names its index directly.  A
+ *                column-wise one does not appear here at all: a column
+ *                store's undo is a col_row_lock_t, not a rollback row,
+ *                and DB.DBA.RDF_QUAD is column-wise on every one of its
+ *                five keys.  Reading only this hash would therefore have
+ *                reported an RDF write as "wrote nothing", which is the
+ *                one failure this whole mechanism must not have.
+ *
+ *   lt_lock      the page locks the transaction holds, each naming its
+ *                index tree and so its key.  This is what covers the
+ *                column store.  Under read committed a reader takes no
+ *                page lock, so in practice this is the write set; under a
+ *                higher isolation it also names pages that were only
+ *                read, which over-invalidates and is safe.
+ *
+ * Sets gck_complete only when the union can be trusted to be the whole
+ * truth; see graph_commit_keys_t in ltrx.h for every case where it cannot
+ * be.  A transaction whose inserts go non-transactionally -- atomic mode,
+ * row autocommit, a cluster dpipe -- makes neither rollback entries nor
+ * locks, so those are refused outright rather than answered from an
+ * empty set. */
+static void
+lt_written_keys (lock_trx_t * lt, graph_commit_keys_t * gck)
+{
+  dk_hash_iterator_t hit;
+  void *k, *rbe_v;
+
+  gck->gck_n_keys = 0;
+  gck->gck_complete = 0;
+#define LT_WK_GIVE_UP(why) do { gck->gck_n_keys = 0; gck->gck_why = (why); return; } while (0)
+  if (lt->lt_is_excl)
+    LT_WK_GIVE_UP (GCK_ATOMIC);
+  if (lt->lt_log_merge)
+    LT_WK_GIVE_UP (GCK_LOG_MERGE);
+  if (lt->lt_pending_schema)
+    LT_WK_GIVE_UP (GCK_SCHEMA);
+  if (lt->lt_client
+      && (lt->lt_client->cli_row_autocommit || lt->lt_client->cli_non_txn_insert))
+    LT_WK_GIVE_UP (GCK_ROW_AUTOCOMMIT);
+#ifdef VIRTTP
+  if (lt->lt_2pc._2pc_info)
+    LT_WK_GIVE_UP (GCK_2PC);
+#endif
+  if ((lt->lt_rb_hash && lt->lt_rb_hash->ht_count > LT_WRITTEN_KEYS_MAX_RB)
+      || lt->lt_lock.ht_count > LT_WRITTEN_KEYS_MAX_RB)
+    LT_WK_GIVE_UP (GCK_TOO_MANY_RB);
+
+  /* Page locks first: they cover the column store, which is where RDF_QUAD
+   * is.  An RDF_QUAD write retires every RDF-backed graph whatever else was
+   * written, so the walk stops there with the list complete for that purpose. */
+  IN_LT_LOCKS (lt);
+  DO_HT (page_lock_t *, pl, void *, ignore, &lt->lt_lock)
+    {
+      /* A lock on a tree with no key -- a temp or hash tree -- cannot be
+       * attributed, and an unattributable write has to mean "assume the
+       * worst" like every other one. */
+      if (!pl->pl_it || !pl->pl_it->it_key)
+	{
+	  LEAVE_LT_LOCKS (lt);
+	  LT_WK_GIVE_UP (GCK_NO_RB_ENTRIES);
+	}
+      if (!lt_wk_add (gck, pl->pl_it->it_key->key_id))
+	{
+	  LEAVE_LT_LOCKS (lt);
+	  LT_WK_GIVE_UP (GCK_TRUNCATED);
+	}
+      if (tb_is_rdf_quad (pl->pl_it->it_key->key_table))
+	{
+	  LEAVE_LT_LOCKS (lt);
+	  gck->gck_complete = 1;
+	  gck->gck_why = GCK_COMPLETE;
+	  return;
+	}
+    }
+  END_DO_HT;
+  LEAVE_LT_LOCKS (lt);
+
+  if (lt->lt_rb_hash && lt->lt_rb_hash->ht_count)
+    {
+      mutex_enter (&lt->lt_rb_mtx);
+      dk_hash_iterator (&hit, lt->lt_rb_hash);
+      while (dk_hit_next (&hit, (void **) &k, (void **) &rbe_v))
+	{
+	  rb_entry_t *rbe = (rb_entry_t *) rbe_v;
+	  for (; rbe; rbe = rbe->rbe_next)
+	    if (!lt_wk_add (gck, rbe->rbe_key_id))
+	      {
+		mutex_leave (&lt->lt_rb_mtx);
+		LT_WK_GIVE_UP (GCK_TRUNCATED);
+	      }
+	}
+      mutex_leave (&lt->lt_rb_mtx);
+    }
+
+  /* Changed data, but named no index at all: something wrote through a
+   * path that leaves neither a rollback entry nor a lock. */
+  if (!gck->gck_n_keys)
+    LT_WK_GIVE_UP (GCK_NO_RB_ENTRIES);
+#undef LT_WK_GIVE_UP
+  gck->gck_complete = 1;
+  gck->gck_why = GCK_COMPLETE;
+}
+
 int
 lt_commit (lock_trx_t * lt, int free_trx)
 {
+  /* Whether this transaction actually changed anything.  Captured before
+   * lt_transact() clears the rollback set, and used below to decide if the
+   * post-commit notifier needs to run: a read-only commit changes no data,
+   * and telling a cache otherwise would invalidate it on every statement. */
+  int lt_changed_data;
+  /* And which indices it wrote, captured at the same point and for the
+   * same reason -- lt_transact() frees the rollback entries the key ids
+   * come from, so by the time the notifier fires there is nothing left to
+   * read.  Only filled in when there is a notifier to tell. */
+  graph_commit_keys_t lt_written;
   ASSERT_IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
+  lt_changed_data = lt_has_pending_changes (lt);
+  lt_written.gck_n_keys = 0;
+  lt_written.gck_complete = 0;
+  lt_written.gck_why = GCK_NO_RB_ENTRIES;
+  if (graph_commit_notify && lt_changed_data && GRAPH_GATE_LOAD ())
+    lt_written_keys (lt, &lt_written);
   if (lt->lt_status == LT_BLOWN_OFF_C
       || lt->lt_status == LT_DELTA_ROLLED_BACK
       || (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id))
@@ -709,6 +921,14 @@ lt_commit (lock_trx_t * lt, int free_trx)
     {
       lt->lt_commit_hook (lt);
     }
+  /* Global post-commit notifier used by optional modules (e.g. graph
+   * analytics cache invalidation).  Set via graph_commit_notify_set().
+   * NULL when the graph module is not built or not initialised.  Only
+   * transactions that wrote something can have invalidated anything; in
+   * autocommit every statement commits, so firing this unconditionally
+   * would make any generation-stamped cache useless. */
+  if (graph_commit_notify && lt_changed_data && GRAPH_GATE_LOAD ())
+    graph_commit_notify (&lt_written);
   DBG_PT_COMMIT_END (lt);
   if (TRX_FREE == free_trx)
     {

@@ -389,6 +389,14 @@ semaphore_try_enter (semaphore_t *sem)
 }
 
 
+/* The fiber scheduler has no timers, so this waits without a deadline. */
+int
+semaphore_enter_timed (semaphore_t *sem, long msec)
+{
+  return 0 == semaphore_enter (sem);
+}
+
+
 #ifdef SEM_DEBUG
 void
 semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)

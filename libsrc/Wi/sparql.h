@@ -438,6 +438,11 @@ typedef struct sparp_s {
   int sparp_syntax_exceptions;		/*!< Bitmask of syntax exceptions, 0 for default, can be nonzero for remote endpoints or for testing etc. */
   int sparp_inner_permitted_syntax;	/*!< The value of last define lang:dialect, it will be assigned to sparp_permitted_syntax for the subquery, -1 before set */
   int sparp_unictr;			/*!< Unique counter for objects */
+  /*! Pending OPTION (edges (?a, ?b)) rewrites: t_list (3, graph_var_name,
+      subj_var, obj_var).  NULL for every query that never wrote the option,
+      which is the O(1) test that keeps this off everyone else's path. */
+  dk_set_t sparp_edges_pending;
+  int sparp_has_graph_bif;	/*!< Nonzero once a graph analytics BIF has been seen in this parse, so the expression-position scope injection can skip the tree walk entirely for every query that has none. */
 /* Environment of yacc */
   sparp_env_t * sparp_env;
   int sparp_lexem_buf_len;
@@ -998,6 +1003,25 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
+
+/* Options of a graph analytics predicate, OPTION (damping 0.85, ...).  Option
+   names, not keywords: the grammar reads a plain name and
+   sparp_make_graph_option() maps it.  They key the option list next to tokens
+   such as SCORE_L, hence the values above every token number. */
+#define SPAR_GOPT_DAMPING		10001
+#define SPAR_GOPT_MAX_ITER		10002
+#define SPAR_GOPT_TOLERANCE		10003
+#define SPAR_GOPT_NORMALIZED		10004
+#define SPAR_GOPT_DIRECTED		10005
+#define SPAR_GOPT_RESOLUTION		10006
+#define SPAR_GOPT_DIRECTION		10007
+#define SPAR_GOPT_RETURN_TYPE		10008
+#define SPAR_GOPT_WEIGHT		10009
+#define SPAR_GOPT_MODE			10010
+#define SPAR_GOPT_EDGES			10011
+#define SPAR_GOPT_EDGE_PREDICATE	10012
+#define SPAR_GOPT_SOURCE_NODE		10013
+extern SPART **sparp_make_graph_option (sparp_t *sparp, caddr_t name, SPART *val, SPART *e_from, SPART *e_to, SPART *e_weight);
 
 extern caddr_t sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname);
 extern caddr_t sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid);

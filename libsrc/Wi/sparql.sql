@@ -15320,7 +15320,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2022-02-17 0001v7';
+  ver := '2026-09-13 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not (sparql define input:storage "" ask where {

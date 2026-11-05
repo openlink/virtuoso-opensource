@@ -463,6 +463,8 @@ libwi_la_SOURCES += \
 	bif_explain.c \
 	bif_file.c \
 	bif_geo.c \
+	bif_graph.c \
+	bif_graph_scope.c \
 	bif_phrasematch.c \
 	bif_smtp.c \
 	bif_soap.c \
@@ -548,6 +550,7 @@ libwi_base_la_cflags  += @ZLIB_INC@
 libwi_base_la_cflags  += -I$(srcdir)
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/langfunc
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/plugin
+libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/graph
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Tidy
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/Xml.new
 libwi_base_la_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include
@@ -570,6 +573,7 @@ libwi_la_SOURCES += \
 
 libwi_la_CFLAGS  = $(libwi_base_la_cflags)
 libwi_la_LDLAGS  = -static
+libwi_la_LIBADD = $(top_builddir)/libsrc/graph/libgraph.la
 
 #KUBL_UNIV_FILES_ODBC
 libwi_odbc_la_SOURCES += \
@@ -627,7 +631,8 @@ SQL_FILES		= \
 	$(srcdir)/useraggr.sql \
 	$(srcdir)/vt_text.sql \
 	$(srcdir)/phrasematch.sql \
-	$(srcdir)/hosting.sql
+	$(srcdir)/hosting.sql \
+	$(srcdir)/graph_schema.sql
 
 SQL_FILES_1		= \
 	$(srcdir)/oledb.sql \
@@ -814,7 +819,9 @@ scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
 scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
-$(top_srcdir)/binsrc/cached_resources/cached_resources.c:
+#  Always ask binsrc/cached_resources, which only replaces the file when its
+#  contents change, so an edited resource is picked up in the same build.
+$(top_srcdir)/binsrc/cached_resources/cached_resources.c:FORCE
 	@echo "* Generating cached_resources.c"
 	@cd $(top_srcdir)/binsrc/cached_resources && $(MAKE)
 

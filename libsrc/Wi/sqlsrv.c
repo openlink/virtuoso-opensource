@@ -658,6 +658,10 @@ client_connection_free (client_connection_t * cli)
   id_hash_free (cli->cli_statements);
   id_hash_free (cli->cli_cursors);
   cli_clear_globals (cli);
+  /* Anything the graph module scoped to this session goes with it.  See
+   * graph_session_drop_set() in ltrx.h. */
+  if (graph_session_drop)
+    graph_session_drop (cli);
   mutex_free (cli->cli_mtx);
 #ifdef PLDBG
   if (cli->cli_pldbg) /* if it's debugged session */

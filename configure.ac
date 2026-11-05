@@ -3466,6 +3466,7 @@ AC_CONFIG_FILES([
 	binsrc/Makefile
 	docsrc/Makefile
 	libsrc/Makefile
+	libsrc/graph/Makefile
 	binsrc/bpel/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile

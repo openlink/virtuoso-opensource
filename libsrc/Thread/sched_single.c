@@ -166,6 +166,13 @@ semaphore_try_enter (semaphore_t *sem)
 }
 
 
+int
+semaphore_enter_timed (semaphore_t *sem, long msec)
+{
+  return 1;
+}
+
+
 #ifdef SEM_DEBUG
 void
 semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)

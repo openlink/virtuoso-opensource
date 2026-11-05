@@ -3592,6 +3592,21 @@ ws_connection_vars_clear (client_connection_t * cli)
 {
   caddr_t *name, *val;
   id_hash_iterator_t it;
+  /* Anything the graph module scoped to this connection goes at the end of
+   * the request, not at the end of the connection.
+   *
+   * A transient graph is owned by the session that made it, which is the
+   * right boundary for a client that holds its own connection.  The HTTP
+   * server does not: it answers from a pool, and every unauthenticated
+   * request runs as the same SPARQL user, so (connection, user) is the
+   * same tuple for requests that have nothing to do with each other.
+   * Without this, one caller's graph is readable by the next caller who
+   * names the IRI -- and GRAPH_SHORTEST_PATH returns node IRIs, so that
+   * discloses the data and not just its shape.
+   *
+   * Before the early return below, which only concerns connection vars. */
+  if (graph_session_drop)
+    graph_session_drop (cli);
   if (!cli->cli_globals->ht_count) /* was if (!cli->cli_globals_dirty) ... but this is not quite correct */
     return;
   id_hash_iterator (&it, cli->cli_globals);
