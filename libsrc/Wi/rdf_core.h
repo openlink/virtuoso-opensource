@@ -179,9 +179,11 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ERROR_RECOVERY		0x0080	/*!< Try to recover from lexical errors as much as it is possible. */
 #define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
-#define TTLP_NO_NAMED_GRAPHS		0x0400	/*!< A named graph (a TriG graph block, an NQuads graph term) is an error: the text is loaded into one graph, as by SPARQL 1.2 LOAD ... INTO GRAPH */
+#define TTLP_STRICT_NTRIPLES		0x0400	/*!< Validate local .nt input as N-Triples, not Turtle. */
+#define TTLP_STRICT_LANGTAGS		0x0800	/*!< Reject language tags that are not structurally valid BCP 47. */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
 #define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
+#define TTLP_NO_NAMED_GRAPHS		0x4000	/*!< A named graph (a TriG graph block, an NQuads graph term) is an error: the text is loaded into one graph, as by SPARQL 1.2 LOAD ... INTO GRAPH */
 #define TTLP_SNIFFER_COMPLETE		0x8000	/*!< Sniffer mode has ended with an error at the end of text and must be stopped, no more retries. */
 
 #define TTLP_ALLOW_QNAME_A		0x01

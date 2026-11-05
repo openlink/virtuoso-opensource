@@ -2444,6 +2444,20 @@ end_of_val_print: ;
 create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (inout ses any, inout val any)
 {
   declare tt_lex varchar;
+  if (isarray (val) and not isstring (val))
+    {
+      if (3 = length (val))
+        {
+          http ('{ "type": "triple", "value": { "subject": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[0]);
+          http (', "predicate": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[1]);
+          http (', "object": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[2]);
+          http (' } }', ses);
+          return;
+        }
+    }
   tt_lex := null;
   if (isiri_id (val))
     tt_lex := id_to_iri (val);

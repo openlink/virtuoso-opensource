@@ -746,6 +746,27 @@ sparp_remove_varname_from_set (dk_set_t *set_ptr, const char *vname)
 }
 
 static int
+sparp_triple_term_field_binds_varname (SPART *field, caddr_t vname)
+{
+  if ((NULL == field) || (NULL == vname))
+    return 0;
+  switch (SPART_TYPE (field))
+    {
+    case SPAR_VARIABLE:
+    case SPAR_BLANK_NODE_LABEL:
+      return ((NULL != field->_.var.vname) && !strcmp (field->_.var.vname, vname));
+    case SPAR_TRIPLE_TERM:
+      if (sparp_triple_term_field_binds_varname (field->_.triple_term.subject, vname))
+        return 1;
+      if (sparp_triple_term_field_binds_varname (field->_.triple_term.predicate, vname))
+        return 1;
+      return sparp_triple_term_field_binds_varname (field->_.triple_term.object, vname);
+    default:
+      return 0;
+    }
+}
+
+static int
 sparp_gp_member_binds_varname_locally (SPART *memb, caddr_t vname)
 {
   int fld_ctr;
@@ -756,9 +777,7 @@ sparp_gp_member_binds_varname_locally (SPART *memb, caddr_t vname)
     case SPAR_TRIPLE:
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
-          SPART *fld = memb->_.triple.tr_fields[fld_ctr];
-          if ((NULL != fld) && SPAR_IS_BLANK_OR_VAR (fld) &&
-            (NULL != fld->_.var.vname) && !strcmp (fld->_.var.vname, vname))
+          if (sparp_triple_term_field_binds_varname (memb->_.triple.tr_fields[fld_ctr], vname))
             return 1;
         }
       return 0;
@@ -1131,6 +1150,9 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
     }
 }
 
+static void
+sparp_triple_term_field_cu (sparp_t *sparp, SPART *gp, SPART *field, SPART *triple, int field_idx);
+
 int
 sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -1177,22 +1199,40 @@ ignore_retval_name: ;
     }
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
-      SPART *fld = curr->_.triple.tr_fields[fctr];
-      sparp_equiv_t *eq;
-      switch (SPART_TYPE(fld))
-        {
-          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
-          default: continue;
-        }
       if (OPTIONAL_L == curr->_.triple.subtype)
         continue;
-      eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
-      fld->_.var.tabid = curr->_.triple.tabid;
-      sparp_equiv_tighten (sparp, eq, &(fld->_.var.rvr), ~0);
+      sparp_triple_term_field_cu (sparp, gp, curr->_.triple.tr_fields[fctr], curr, fctr);
     }
   if (NULL != curr->_.triple.options)
     sparp_gp_trav_cu_in_options (sparp, gp, curr, curr->_.triple.options, common_env);
   return SPAR_GPT_NODOWN;
+}
+
+static void
+sparp_triple_term_field_cu (sparp_t *sparp, SPART *gp, SPART *field, SPART *triple, int field_idx)
+{
+  sparp_equiv_t *eq;
+  if (NULL == field)
+    return;
+  switch (SPART_TYPE (field))
+    {
+    case SPAR_VARIABLE:
+    case SPAR_BLANK_NODE_LABEL:
+      eq = sparp_equiv_get (sparp, gp, field,
+        SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE |
+        ((SPART_VAR_OUTSIDE_TRIPLE == field_idx) ? SPARP_EQUIV_ADD_CONST_READ : SPARP_EQUIV_ADD_GSPO_USE));
+      field->_.var.tabid = (SPART_VAR_OUTSIDE_TRIPLE == field_idx) ? NULL : triple->_.triple.tabid;
+      field->_.var.tr_idx = field_idx;
+      sparp_equiv_tighten (sparp, eq, &(field->_.var.rvr), ~0);
+      return;
+    case SPAR_TRIPLE_TERM:
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.subject, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.predicate, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.object, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      return;
+    default:
+      return;
+    }
 }
 
 int

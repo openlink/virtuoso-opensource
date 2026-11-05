@@ -142,6 +142,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "NOT",			NOT_L			, 0
 "NOW",			SPARQL_BIF		, SPAR_BIF_NOW
 "NULL",			NULL_L			, 0
+"OBJECT",		OBJECT_L		, 0
 "OF",			OF_L			, 0
 "OFFBAND",		OFFBAND_L		, 0
 "OFFSET",		OFFSET_L		, 0
@@ -151,6 +152,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "OR",			_BAR_BAR		, 0
 "ORDER",		ORDER_L			, 0
 "PRECISION",		PRECISION_L		, 0
+"PREDICATE",		PREDICATE_L		, 0
 "PREFIX",		PREFIX_L		, 0
 "QUAD",			QUAD_L			, 0
 "RAND",			SPARQL_BIF		, SPAR_BIF_RAND
@@ -202,9 +204,10 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DIR",			SPARQL_BIF		, SPAR_BIF_DIR
 "ISTRIPLE",		SPARQL_BIF		, SPAR_BIF_ISTRIPLE
 "TRIPLE",		SPARQL_BIF		, SPAR_BIF_TRIPLE
-"SUBJECT",		SPARQL_BIF		, SPAR_BIF_TRIPLE_SUBJECT
+"SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
 "SUM",			SUM_L			, 0
+"SUBCLASS",		SUBCLASS_L		, 0
 "TABID",		TABID_L			, 0
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
@@ -254,9 +257,5 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "~",			TILDE_L		, 0
 "sameValue",		SPARQL_BIF		, SPAR_BIF_SAMEVALUE
 "isTRIPLE",		SPARQL_BIF		, SPAR_BIF_ISTRIPLE
-"TRIPLE",		SPARQL_BIF		, SPAR_BIF_TRIPLE
-"SUBJECT",		SPARQL_BIF		, SPAR_BIF_TRIPLE_SUBJECT
-"PREDICATE",		SPARQL_BIF		, SPAR_BIF_TRIPLE_PREDICATE
-"OBJECT",		SPARQL_BIF		, SPAR_BIF_TRIPLE_OBJECT
 "STRDIR",		SPARQL_BIF		, SPAR_BIF_STRDIR
 "DIR",			SPARQL_BIF		, SPAR_BIF_DIR

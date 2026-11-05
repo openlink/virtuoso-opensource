@@ -1007,6 +1007,7 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
+extern int spar_in_ctor_template_context (sparp_t *sparp);
 
 /* Options of a graph analytics predicate, OPTION (damping 0.85, ...).  Option
    names, not keywords: the grammar reads a plain name and

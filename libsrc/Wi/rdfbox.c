@@ -3341,6 +3341,18 @@ bif_rdf_lang_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+/* the language tag (with an RDF 1.2 direction) of a twobyte id or NULL, for PL code run by users without raw access to DB.DBA.RDF_LANGUAGE */
+caddr_t
+bif_rdf_lang_of_twobyte (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint twobyte = bif_long_arg (qst, args, 0, "__rdf_lang_of_twobyte");
+  caddr_t lang;
+  if (twobyte <= 0 || twobyte > 0xffff)
+    return NEW_DB_NULL;
+  lang = rdf_box_get_lang ((query_instance_t *) qst, (unsigned short) twobyte);
+  return lang ? lang : NEW_DB_NULL;
+}
+
 int32 rdf_geo_use_wkt = 1;
 
 static void
@@ -7338,6 +7350,8 @@ rdf_order_rank_of_box (caddr_t val)
     return unbox_iri_id (val) >= min_bnode_iri_id () ? 1 : 2;
   if (DV_UNAME == dtp || (DV_STRING == dtp && (BF_IRI & box_flags (val))))
     return rdf_order_rank_of_iri (val, box_length (val) - 1);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    return 4;
   return 3;
 }
 
@@ -7398,6 +7412,10 @@ bif_rdf_order_rank_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 	    case DV_UNAME:
 	      rank = rdf_order_rank_of_box (qst_get (qst, ssl));
 	      break;
+	    case DV_ARRAY_OF_POINTER:
+	    case DV_LIST_OF_POINTER:
+	      rank = 4;
+	      break;
 	    default:
 	      rank = 3;
 	    }
@@ -7445,6 +7463,7 @@ rdf_box_init (void)
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
   bif_define_ex ("rdf_box_lang", bif_rdf_box_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rdf_lang_impl", bif_rdf_lang_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__rdf_lang_of_twobyte", bif_rdf_lang_of_twobyte, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_box_type", bif_rdf_box_type, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);

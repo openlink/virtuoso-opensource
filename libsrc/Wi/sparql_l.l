@@ -401,6 +401,11 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
     return Q_IRI_REF;
   }
 
+<SPARQL>"<"([^<>"{}|^`\001-\040\\]|{SPAR_UCHAR})*">"	{
+    yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_QNAME);
+    return Q_IRI_REF;
+  }
+
 <SPARQL>({PN_PREFIX}?)":"{PN_LOCAL}	{ TOKBOX_Q_ESC(QNAME,"qualified URI"); }
 <SPARQL>({PN_PREFIX}?)":"		{ TOKBOX_Q_ESC(QNAME_NS,"namespace"); }
 <SPARQL>"_:"{PN_LOCAL}			{ TOKBOX_Q_ESC(BLANK_NODE_LABEL,"blank node label"); }

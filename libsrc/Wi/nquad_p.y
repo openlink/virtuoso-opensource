@@ -289,7 +289,8 @@ literal_subject
 	| TURTLE_DECIMAL
 	| TURTLE_DOUBLE
 	| TURTLE_STRING
-	| TURTLE_STRING LANGTAG
+	| TURTLE_STRING LANGTAG dir_opt
+	| TURTLE_STRING KEYWORD
 	| TURTLE_STRING _CARET_CARET q_complete	{
 			dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 			ttlp_arg->ttlp_last_complete_uri = NULL; }
@@ -352,6 +353,12 @@ object_with_ctx
 		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL, 0); }
 	| TURTLE_STRING LANGTAG dir_opt ctx_opt	{
 		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, $3);	}
+	| TURTLE_STRING KEYWORD ctx_opt	{
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
+		dk_free_tree (ttlp_arg->ttlp_obj_lang);
+		ttlp_arg->ttlp_obj_lang = $2;
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 0);	}
 	| TRIPLE_TERM_L nq_tt_subject q_complete_take nq_tt_object TRIPLE_TERM_R {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = ttlp_make_triple_term_iri ($2, $3, $4);
@@ -462,7 +469,8 @@ nq_tt_object
 		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 	| TURTLE_STRING		{ $$ = $1; }
-	| TURTLE_STRING LANGTAG	{ $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING LANGTAG dir_opt	{ $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING KEYWORD	{ $$ = $1; dk_free_tree ($2); }
 	| TURTLE_STRING _CARET_CARET q_complete_take { $$ = $1; dk_free_tree ($3); }
 	| TURTLE_INTEGER	{ $$ = $1; }
 	| TURTLE_DECIMAL	{ $$ = $1; }

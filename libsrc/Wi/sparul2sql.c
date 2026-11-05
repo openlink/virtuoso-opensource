@@ -233,6 +233,16 @@ typedef struct ctor_var_enumerator_s
 }
 ctor_var_enumerator_t;
 
+static int
+spar_bnode_is_ctor_internal (SPART *bnode)
+{
+  caddr_t vname = bnode->_.bnode.vname;
+  return !strncmp (vname, "_::", 3) ||
+    !strncmp (vname, "_:tt", 4) ||
+    !strncmp (vname, "_:ann", 5) ||
+    !strncmp (vname, "_:anon_reif", 11);
+}
+
 int
 spar_cve_find_or_add_variable (sparp_t *sparp, ctor_var_enumerator_t *haystack_cve, SPART *needle_var)
 {
@@ -258,6 +268,8 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
   ctor_var_enumerator_t *cve = (ctor_var_enumerator_t *)common_env;
   int curr_type = SPART_TYPE (curr);
   int var_ctr;
+  if ((SPAR_BLANK_NODE_LABEL == curr_type) && spar_bnode_is_ctor_internal (curr))
+    return SPAR_GPT_NODOWN;
   if (SPAR_BLANK_NODE_LABEL == curr_type)
     spar_error (sparp, "Blank nodes can not be used in backquoted expressions of constructor template, consider using variables instead");
   if (SPAR_VARIABLE != curr_type)

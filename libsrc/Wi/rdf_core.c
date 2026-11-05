@@ -892,11 +892,11 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
 		      }
 		    acc = acc * 16 + dgt;
 		  }
-		if (acc < 0)
-		  {
-		    err_msg = "The \\U escape sequence represents invalid Unicode char";
-		    goto err;
-		  }
+		    if ((acc > 0x10FFFF) || ((acc >= 0xD800) && (acc <= 0xDFFF)))
+		      {
+		        err_msg = "The \\U escape sequence represents invalid Unicode char";
+			goto err;
+		      }
 		tgt_tail = eh_encode_char__UTF8 (acc, tgt_tail, tgt_tail + MAX_UTF8_CHAR);
 	      }
 	    src_tail = nextchr;
@@ -1113,40 +1113,190 @@ ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri)
 }
 
 static int
+ttlp_langtag_segment_is_alpha (const char *segment, int segment_len)
+{
+  int ctr;
+  for (ctr = 0; ctr < segment_len; ctr++)
+    if (!((('a' <= segment[ctr]) && ('z' >= segment[ctr])) ||
+          (('A' <= segment[ctr]) && ('Z' >= segment[ctr]))))
+      return 0;
+  return 1;
+}
+
+static int
+ttlp_langtag_segment_is_digit (const char *segment, int segment_len)
+{
+  int ctr;
+  for (ctr = 0; ctr < segment_len; ctr++)
+    if (!(('0' <= segment[ctr]) && ('9' >= segment[ctr])))
+      return 0;
+  return 1;
+}
+
+/*
+ * Validate the structural part of BCP 47.  Registry membership is not
+ * checked here: an unregistered language, script, region, or variant is
+ * still syntactically valid and must remain representable in RDF.
+ */
+static int
 ttlp_langtag_is_valid (const char *lang)
 {
-  const unsigned char *p = (const unsigned char *) lang;
-  int seg_len = 0;
-  int seg_no = 0;
-  if ((NULL == p) || (0 == p[0]))
+  static const char *const grandfathered[] = {
+    "art-lojban", "cel-gaulish", "en-GB-oed", "i-ami", "i-bnn",
+    "i-default", "i-enochian", "i-hak", "i-klingon", "i-lux",
+    "i-mingo", "i-navajo", "i-pwn", "i-tao", "i-tay", "i-tsu",
+    "no-bok", "no-nyn", "sgn-BE-FR", "sgn-BE-NL", "sgn-CH-DE",
+    "zh-guoyu", "zh-hakka", "zh-min", "zh-min-nan", "zh-xiang", NULL
+  };
+  size_t lang_len;
+  const char *seg_start;
+  const char *p;
+  const char **segments;
+  unsigned char *segment_lens;
+  int segment_count = 0;
+  int segment_ctr;
+  int result = 0;
+
+  if ((NULL == lang) || (0 == lang[0]))
     return 0;
-  for (; p[0]; p++)
+  for (segment_ctr = 0; NULL != grandfathered[segment_ctr]; segment_ctr++)
+    if (0 == strcasecmp (lang, grandfathered[segment_ctr]))
+      return 1;
+
+  lang_len = strlen (lang);
+  segments = (const char **) dk_alloc ((lang_len + 1) * sizeof (segments[0]));
+  segment_lens = (unsigned char *) dk_alloc (lang_len + 1);
+  seg_start = lang;
+  for (p = lang; ; p++)
     {
-      unsigned char ch = p[0];
-      if ('-' == ch)
+      unsigned char ch = (unsigned char) p[0];
+      if (('-' == ch) || ('\0' == ch))
         {
-          if ((seg_len < 1) || (seg_len > 8))
-            return 0;
-          seg_no++;
-          seg_len = 0;
+          size_t segment_len = (size_t) (p - seg_start);
+          if ((0 == segment_len) || (segment_len > 8) || (segment_count >= (int) lang_len))
+            goto done;
+          segments[segment_count] = seg_start;
+          segment_lens[segment_count] = (unsigned char) segment_len;
+          segment_count++;
+          if ('\0' == ch)
+            break;
+          seg_start = p + 1;
           continue;
         }
-      if (!((('a' <= ch) && ('z' >= ch)) || (('A' <= ch) && ('Z' >= ch)) || (('0' <= ch) && ('9' >= ch))))
-        return 0;
-      if ((0 == seg_no) && !((('a' <= ch) && ('z' >= ch)) || (('A' <= ch) && ('Z' >= ch))))
-        return 0;
-      seg_len++;
-      if (seg_len > 8)
-        return 0;
+      if (!((('a' <= ch) && ('z' >= ch)) || (('A' <= ch) && ('Z' >= ch)) ||
+            (('0' <= ch) && ('9' >= ch))))
+        goto done;
     }
-  return ((seg_len >= 1) && (seg_len <= 8));
+
+  if (1 == segment_count)
+    {
+      /* A bare private-use tag requires at least one private subtag. */
+      result = (1 == segment_lens[0] &&
+        ('x' == segments[0][0] || 'X' == segments[0][0])) ? 0 :
+        ((segment_lens[0] >= 2) && (segment_lens[0] <= 8) &&
+         ttlp_langtag_segment_is_alpha (segments[0], segment_lens[0]));
+      goto done;
+    }
+
+  if (1 == segment_lens[0] && ('x' == segments[0][0] || 'X' == segments[0][0]))
+    {
+      result = 1;
+      for (segment_ctr = 1; segment_ctr < segment_count; segment_ctr++)
+        if ((segment_lens[segment_ctr] < 1) || (segment_lens[segment_ctr] > 8))
+          {
+            result = 0;
+            break;
+          }
+      goto done;
+    }
+
+  if (!ttlp_langtag_segment_is_alpha (segments[0], segment_lens[0]))
+    goto done;
+  if (!(((segment_lens[0] >= 2) && (segment_lens[0] <= 3)) ||
+        (segment_lens[0] >= 4 && segment_lens[0] <= 8)))
+    goto done;
+
+  segment_ctr = 1;
+  if (segment_lens[0] <= 3)
+    {
+      int extlang_count = 0;
+      while ((segment_ctr < segment_count) && (extlang_count < 3) &&
+             (3 == segment_lens[segment_ctr]) &&
+             ttlp_langtag_segment_is_alpha (segments[segment_ctr], segment_lens[segment_ctr]))
+        {
+          segment_ctr++;
+          extlang_count++;
+        }
+    }
+  if ((segment_ctr < segment_count) && (4 == segment_lens[segment_ctr]) &&
+      ttlp_langtag_segment_is_alpha (segments[segment_ctr], segment_lens[segment_ctr]))
+    segment_ctr++;
+  if ((segment_ctr < segment_count) &&
+      (((2 == segment_lens[segment_ctr]) && ttlp_langtag_segment_is_alpha (segments[segment_ctr], segment_lens[segment_ctr])) ||
+       ((3 == segment_lens[segment_ctr]) && ttlp_langtag_segment_is_digit (segments[segment_ctr], segment_lens[segment_ctr]))))
+    segment_ctr++;
+
+  while ((segment_ctr < segment_count) &&
+         (((segment_lens[segment_ctr] >= 5) && (segment_lens[segment_ctr] <= 8)) ||
+          ((4 == segment_lens[segment_ctr]) &&
+           (('0' <= segments[segment_ctr][0]) && ('9' >= segments[segment_ctr][0])))))
+    segment_ctr++;
+
+  while (segment_ctr < segment_count)
+    {
+      unsigned char singleton = (unsigned char) segments[segment_ctr][0];
+      if ((1 == segment_lens[segment_ctr]) && ('x' != singleton) && ('X' != singleton))
+        {
+          int extension_subtag_count = 0;
+          segment_ctr++;
+          while ((segment_ctr < segment_count) && (segment_lens[segment_ctr] >= 2))
+            {
+              segment_ctr++;
+              extension_subtag_count++;
+            }
+          if (0 == extension_subtag_count)
+            goto done;
+          continue;
+        }
+      if ((1 == segment_lens[segment_ctr]) && ('x' == singleton || 'X' == singleton))
+        {
+          segment_ctr++;
+          if (segment_ctr >= segment_count)
+            goto done;
+          while (segment_ctr < segment_count)
+            segment_ctr++;
+          result = 1;
+          goto done;
+        }
+      goto done;
+    }
+  result = 1;
+
+done:
+  dk_free (segments, (lang_len + 1) * sizeof (segments[0]));
+  dk_free (segment_lens, lang_len + 1);
+  return result;
+}
+
+static caddr_t
+bif_rdf_langtag_is_valid (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  caddr_t lang = bif_arg (qst, args, 0, "rdf_langtag_is_valid");
+  if ((NULL == lang) || (DV_DB_NULL == DV_TYPE_OF (lang)) || !IS_STRING_DTP (DV_TYPE_OF (lang)))
+    return box_num_nonull (0);
+  return box_num_nonull (ttlp_langtag_is_valid (lang));
 }
 
 void
 ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, char o_dir)
 {
   if ((NULL != o_lang) && (0 != o_lang[0]) && !ttlp_langtag_is_valid (o_lang))
-    ttlyyerror_impl (ttlp_arg, NULL, "Invalid language tag");
+    {
+      if ((TTLP_STRICT_LANGTAGS | TTLP_STRICT_NTRIPLES) & ttlp_arg->ttlp_flags)
+        ttlyyerror_impl (ttlp_arg, NULL, "Invalid language tag");
+      else
+        tf_report (ttlp_arg->ttlp_tf, 'W', NULL, NULL, "Non-standard language tag accepted in compatibility mode");
+    }
   if (NULL != o_dt)
     {
       if (!strcmp (o_dt, RDF_NS_URI "langString"))
@@ -1461,6 +1611,8 @@ bif_rdf_load_turtle_local_file (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       "The argument #4 of rdf_load_turtle() should be a vector of %d to %d names of stored procedures",
       COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   file_path_assert (str, NULL, 0);
+  if ((3 <= strlen (str)) && !strcmp (str + strlen (str) - 3, ".nt"))
+    flags |= TTLP_STRICT_NTRIPLES;
   res = rdf_load_turtle (str, 1, base_uri, graph_uri, flags,
     (ccaddr_t *) cbk_names, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
@@ -4581,6 +4733,7 @@ rdf_core_init (void)
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
+  bif_define ("rdf_langtag_is_valid", bif_rdf_langtag_is_valid);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
   bif_define_ex ("iri_to_id"			, bif_iri_to_id	, BMD_ALIAS, "__i2id"	, BMD_VECTOR_IMPL, bif_iri_to_id_vec, BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_define ("iri_ensure", bif_iri_ensure);

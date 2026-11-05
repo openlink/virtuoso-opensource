@@ -17979,6 +17979,71 @@ rdf_star_tt_component_to_iid (caddr_t *qst, caddr_t val, iri_id_t *iid_ret, int 
   return 0;
 }
 
+static int
+rdf_star_tt_is_triple_iri_id (caddr_t *qst, caddr_t val)
+{
+  caddr_t iri;
+  int is_tt;
+  dtp_t dtp = DV_TYPE_OF (val);
+  if ((DV_IRI_ID != dtp) && (DV_IRI_ID_8 != dtp))
+    return 0;
+  iri = key_id_to_iri ((query_instance_t *) qst, unbox_iri_id (val));
+  if (NULL == iri)
+    return 0;
+  is_tt = ((box_length (iri) > strlen (RDF_STAR_NS)) &&
+    (0 == memcmp (iri, RDF_STAR_NS, strlen (RDF_STAR_NS))));
+  dk_free_tree (iri);
+  return is_tt;
+}
+
+static int
+rdf_star_tt_is_triple_node_term (caddr_t val)
+{
+  dtp_t dtp;
+  if (NULL == val)
+    return 0;
+  dtp = DV_TYPE_OF (val);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    return 0;
+  if ((DV_STRING == dtp || DV_UNAME == dtp || DV_SHORT_STRING_SERIAL == dtp || DV_LONG_STRING == dtp) &&
+      box_length (val) > strlen (RDF_STAR_NS) &&
+      0 == memcmp (val, RDF_STAR_NS, strlen (RDF_STAR_NS)))
+    return 0;
+  if ((DV_IRI_ID == dtp) || (DV_IRI_ID_8 == dtp) || (DV_UNAME == dtp))
+    return 1;
+  if (DV_STRING == dtp)
+    {
+      if (!strncmp (val, "id:", 3))
+        return 1;
+      if (rdf_star_is_bnode_lex (val) || rdf_star_is_iri_lex (val))
+        return 1;
+    }
+  return 0;
+}
+
+static int
+rdf_star_tt_is_triple_predicate_term (caddr_t val)
+{
+  dtp_t dtp;
+  if (NULL == val)
+    return 0;
+  dtp = DV_TYPE_OF (val);
+  if ((DV_STRING == dtp || DV_UNAME == dtp || DV_SHORT_STRING_SERIAL == dtp || DV_LONG_STRING == dtp) &&
+      box_length (val) > strlen (RDF_STAR_NS) &&
+      0 == memcmp (val, RDF_STAR_NS, strlen (RDF_STAR_NS)))
+    return 0;
+  if ((DV_IRI_ID == dtp) || (DV_IRI_ID_8 == dtp) || (DV_UNAME == dtp))
+    return 1;
+  if (DV_STRING == dtp)
+    {
+      if (!strncmp (val, "id:", 3))
+        return 1;
+      if (rdf_star_is_iri_lex (val))
+        return 1;
+    }
+  return 0;
+}
+
 static caddr_t
 rdf_star_tt_iri_from_values_internal (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback)
 {
@@ -18060,7 +18125,18 @@ bif_rdf_triple_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t s = bif_arg (qst, args, 0, "triple");
   caddr_t p = bif_arg (qst, args, 1, "triple");
   caddr_t o = bif_arg (qst, args, 2, "triple");
-  caddr_t result = list (3);
+  iri_id_t s_iid = 0, p_iid = 0;
+  caddr_t result;
+  if ((DV_DB_NULL == DV_TYPE_OF (s)) || (DV_DB_NULL == DV_TYPE_OF (p)) || (DV_DB_NULL == DV_TYPE_OF (o)))
+    return NEW_DB_NULL;
+  if (rdf_star_tt_is_triple_iri_id (qst, s) || rdf_star_tt_is_triple_iri_id (qst, p))
+    return NEW_DB_NULL;
+  if (!rdf_star_tt_is_triple_node_term (s) || !rdf_star_tt_is_triple_predicate_term (p))
+    return NEW_DB_NULL;
+  if (!rdf_star_tt_component_to_iid (qst, s, &s_iid, 1) ||
+      !rdf_star_tt_component_to_iid (qst, p, &p_iid, 1))
+    return NEW_DB_NULL;
+  result = list (3);
   /* TRIPLE(...) can be nested; use deep copies so nested array components
      have independent ownership and cannot be double-freed on statement teardown. */
   ((caddr_t *)result)[0] = box_copy_tree (s);

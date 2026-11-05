@@ -1705,7 +1705,8 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any array, in dflt varch
   -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return dflt;
-  return coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), 
+  -- not a select from DB.DBA.RDF_LANGUAGE: compiled for a SPARQL user without SPARQL_SELECT_RAW that is refused
+  return coalesce (__rdf_lang_of_twobyte (twobyte),
      signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar))));
 }
 ;
@@ -2487,7 +2488,7 @@ create function DB.DBA.rdf_strlang_impl (in str any, in lang any)
 {
   declare t integer;
   lang := cast (lang as varchar);
-  if ((lang is null) or length(lang) = 0 or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
+  if ((lang is null) or length(lang) = 0 or not rdf_langtag_is_valid (lang))
     return null;
   if (is_rdf_box (str))
     str := rdf_box_data (str, 1);
@@ -2495,6 +2496,8 @@ create function DB.DBA.rdf_strlang_impl (in str any, in lang any)
   if (__tag of nvarchar = t)
     str := charset_recode (str, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> t)
+    return null;
+  if (isstring (str) and bit_and (__box_flags (str), 1))
     return null;
   return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), -1, 1);
 }
@@ -2584,8 +2587,8 @@ create function DB.DBA.rdf_strlangdir_impl (in str any, in lang any, in dir any)
   if (__tag (dir) not in (__tag of varchar, __tag of nvarchar, __tag of UNAME))
     return null;
   lang := cast (lang as varchar);
-  dir := lower (cast (dir as varchar));
-  if ((lang is null) or (length (lang) = 0) or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
+  dir := cast (dir as varchar);
+  if ((lang is null) or (length (lang) = 0) or not rdf_langtag_is_valid (lang))
     return null;
   if ((dir is null) or (not (dir in ('ltr', 'rtl'))))
     return null;
@@ -2611,6 +2614,8 @@ create function DB.DBA.rdf_strdir_impl (in str any, in dir any)
     }
   if (dir is null or length(dir) = 0)
     return str;
+  if (not (dir in ('ltr', 'rtl')))
+    return null;
   declare full_lang varchar;
   full_lang := concat(chr(45), chr(45), dir);
   return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), -1, 1);
@@ -3214,7 +3219,7 @@ create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in grap
   declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
-  return rdf_load_turtle (strg, base, graph, flags,
+  return rdf_load_turtle (strg, base, graph, bit_or (flags, 2048),
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
 }
@@ -3226,7 +3231,7 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
   declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
      strg := cast (strg as varchar);
-  return rdf_load_turtle_local_file (strg, base, graph, flags,
+  return rdf_load_turtle_local_file (strg, base, graph, bit_or (flags, 2048),
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
 }
@@ -16307,6 +16312,7 @@ create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
 -- SQL wrapper: compute triple-term IRI via C helper.
 create function DB.DBA.RDF_STAR_TT_IRI (in s_val any, in p_val any, in o_val any) returns varchar
 {
+  if (s_val is null or p_val is null or o_val is null) return null;
   return cast (rdf_triple_term_iri_impl (s_val, p_val, o_val) as varchar);
 }
 ;
@@ -16317,7 +16323,9 @@ create function DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (in v any) returns varchar
   if (isiri_id (v))
     return id_to_iri (v);
   s := cast (v as varchar);
-  if (s is null) return null;
+  if (s is null or s = '') return null;
+  if (left (s, 3) = 'id:')
+    return id_to_iri (iri_id_from_num (cast (subseq (s, 3) as bigint)));
   if (left (s, 3) = '#ib')
     return concat ('nodeID://', subseq (s, 2));
   return s;

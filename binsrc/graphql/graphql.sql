@@ -253,12 +253,12 @@ GQL_PARSE_REQUEST (in str any, inout variables any, inout g_iid any, inout tree 
    }
 
   -- array of names of all known existing directives w/o pre-processing built-ins
-  known_directives := (SELECT VECTOR_AGG ("dname", "locs") FROM (SPARQL define input:storage ""
-  SELECT str(?dname) as ?dname GROUP_CONCAT(?loc, ",") as ?locs
+  known_directives := (SELECT VECTOR_AGG ("dname_str", "locs") FROM (SPARQL define input:storage ""
+  SELECT str(?dname) as ?dname_str GROUP_CONCAT(?loc, ",") as ?locs
     {
       GRAPH <urn:graphql:schema> { gql:Map gql:dataGraph ?g }
       GRAPH ?g { gqi:__schema gqi:directives [ gqi:name ?dname ; gqi:locations ?loc ] FILTER (str(?dname) not in ("skip", "include"))
-    }} group by (?dname) ) dt );
+    }} group by ?dname ) dt );
   frag_dict := null;
   frag_exists := 1;
   nth := 0;

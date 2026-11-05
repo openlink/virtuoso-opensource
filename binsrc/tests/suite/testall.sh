@@ -183,7 +183,10 @@ tvvec_rdf_quad \
 tgql_rdf_equiv \
 tgql_unit \
 tgql_compat \
-tgraphalgo"
+tgraphalgo \
+trdf12tt \
+trdf12 \
+tsparql12"
 
 QUICKTEST=1
 TPCDMODE=local

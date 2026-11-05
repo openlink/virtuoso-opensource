@@ -4629,6 +4629,15 @@ expanded_sameterm_ready:
           }
         switch (sbd->sbd_subtype)
           {
+          case SPAR_BIF_TRIPLE:
+            ssg_puts (" rdf_triple_impl (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+            ssg_puts (", ");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_LONG, NULL_ASNAME);
+            ssg_puts (", ");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], SSG_VALMODE_LONG, NULL_ASNAME);
+            ssg_puts (")");
+            goto print_asname;
           case SPAR_BIF_TRIPLE_SUBJECT:
             ssg_puts (" DB.DBA.RDF_STAR_TT_GET_S (");
             ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -4827,6 +4836,17 @@ expanded_sameterm_ready:
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
                   ssg_puts (", 0) like '" RDF_STAR_NS "%' then 1 else 0 end");
                   goto cant_have_asname;
+                }
+              case SPAR_BIF_TRIPLE:
+                {
+                  ssg_puts (" rdf_triple_impl (");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_puts (")");
+                  goto print_asname;
                 }
               case SPAR_BIF_TRIPLE_SUBJECT:
                 {
