@@ -1114,7 +1114,7 @@ cfg_setup (void)
   if (0 != cfg_getsize (pconfig, section, "MaxQueryMem", &c_max_large_vec))
     c_max_large_vec = 0;
 
-  if (0 != cfg_getsize (pconfig, section, "HashJoinSpace", &size_t_helper))
+  if (0 != cfg_getsize (pconfig, section, "HashJoinSpace", &size_t_helper) || 0 == size_t_helper)
     chash_space_avail = MAX (1000000000, main_bufs * 1000);
   else
     chash_space_avail = ((MIN (size_t_helper, 10000000) >> 1) << 1);
@@ -2226,51 +2226,73 @@ new_db_read_cfg (dbe_storage_t * ignore, const char *mode)
 }
 
 /*
- * Parses string like "42K" which mean size of DB element (file, stripe etc).
- * On return sets `size', if stated, `modifier', if stated, and `n_pages', if stated.
+ * Parses a size like "42K" or "42KB" for a DB element (file, stripe etc.)
+ * or a memory limit.  K, M, G and T, each optionally followed by B, are
+ * powers of 1024; B alone is the count itself, which is bytes for `size'
+ * and pages for `n_pages'.  A number without a suffix is bytes.  A bare 0
+ * means unlimited; the callers that cannot use 0 refuse it themselves.
+ * On return sets `size', if stated, `modifier' (K, M, G, T, B or 0), if
+ * stated, and `n_pages', if stated.
  * returns 0 on success, nonzero on error.
  */
 int
 cfg_parse_size_with_modifier (const char *valstr, unsigned long *size, char *modifier, unsigned long *n_pages)
 {
-  unsigned long size_ = 0;
-  char modifier_ = 0;
+  unsigned long long size_, mult = 1;
   unsigned long n_pages_ = 0;
+  char modifier_ = 0;
+  char *end;
 
   if (!valstr)
     GPF_T;
 
-  size_ = (unsigned long) atol (valstr);
-  if (size_ == 0)
-    {
-      return -1;
-    }
+  if (!isdigit ((unsigned char) *valstr))
+    return -1;
+  errno = 0;
+  size_ = strtoull (valstr, &end, 10);
+  if (errno == ERANGE)
+    return -1;
 
-  modifier_ = toupper (valstr[strlen (valstr) - 1]);
+  modifier_ = toupper ((unsigned char) *end);
   switch (modifier_)
     {
-    case 'K':
-      n_pages_ = size_ / KILOS_PER_PAGE;
-      size_ *= 1024;
-      break;
-    case 'M':
-      n_pages_ = (1024 * size_) / KILOS_PER_PAGE;
-      size_ *= 1024 * 1024;
-      break;
+    case 'T':
+      mult *= 1024;
+      /* FALLTHROUGH */
     case 'G':
-      n_pages_ = (1024 * 1024 * size_) / KILOS_PER_PAGE;
-      size_ *= 1024 * 1024 * 1024;
+      mult *= 1024;
+      /* FALLTHROUGH */
+    case 'M':
+      mult *= 1024;
+      /* FALLTHROUGH */
+    case 'K':
+      mult *= 1024;
+      end++;
+      if (toupper ((unsigned char) *end) == 'B')
+	end++;
       break;
     case 'B':
-      n_pages_ = size_;
+      end++;
+      break;
+    case 0:
       break;
     default:
-      if (!isdigit (modifier_))
-	return -1;
+      return -1;
     }
+  if (*end)
+    return -1;
+  if (size_ == 0 && modifier_)
+    return -1;
+  if (size_ > ULONG_MAX / mult)
+    return -1;
+  if (modifier_ == 'B')
+    n_pages_ = (unsigned long) size_;
+  size_ *= mult;
+  if (modifier_ && modifier_ != 'B')
+    n_pages_ = (unsigned long) (size_ / (KILOS_PER_PAGE * 1024));
 
   if (size)
-    *size = size_;
+    *size = (unsigned long) size_;
   if (modifier)
     *modifier = modifier_;
   if (n_pages)
@@ -2299,8 +2321,9 @@ extern int64 get_total_sys_mem (void);
 static int
 cfg_get_number_of_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
 {
-  char *valstr;
-  int64 val;
+  char *valstr, *end;
+  unsigned long val;
+  int64 mult = 1;
   char suffix;
   int64 nbufs;
   int64 total_mem = get_total_sys_mem ();
@@ -2308,38 +2331,54 @@ cfg_get_number_of_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
   if (-1 == cfg_getstring (pc, sec, attr, &valstr))
     return -1;
 
-  val = (int64) atol (valstr);
-  if (val <= 0)
+  if (!isdigit ((unsigned char) *valstr))
+    return -1;
+  errno = 0;
+  val = strtoul (valstr, &end, 10);
+  if (errno == ERANGE || val == 0)
     return -1;
 
-  suffix = toupper (valstr[strlen (valstr) - 1]);
+  suffix = toupper ((unsigned char) *end);
   switch (suffix)
     {
-    case 'M':
-      val *= 1024 * 1024;
-      nbufs = val / PAGE_SZ;
-      nbufs -= nbufs % 1000;
-      break;
-
     case 'G':
-      val *= 1024 * 1024 * 1024;
-      nbufs = val / PAGE_SZ;
-      nbufs -= nbufs % 1000;
+      mult *= 1024;
+      /* FALLTHROUGH */
+    case 'M':
+      mult *= 1024 * 1024;
+      end++;
+      if (toupper ((unsigned char) *end) == 'B')
+	end++;
       break;
-
     case '%':
+      end++;
+      break;
+    case 0:
+      break;
+    default:
+      return -1;
+    }
+  if (*end)
+    return -1;
+
+  if (mult > 1)
+    {
+      if ((uint64) val > (uint64) (INT64_MAX / mult))
+	return -1;
+      nbufs = (int64) val * mult / PAGE_SZ;
+      nbufs -= nbufs % 1000;
+    }
+  else if (suffix == '%')
+    {
       if (val > 100)
 	return -1;
-      val = (int64) ((total_mem / 100) * val);
-      nbufs = val / PAGE_SZ;
+      nbufs = (int64) ((total_mem / 100) * val) / PAGE_SZ;
       nbufs -= nbufs % 1000;
-      break;
-
-    default:
-      if (!isdigit (suffix))
-	return -1;
-      nbufs = val;
     }
+  else if (val > INT64_MAX)
+    return -1;
+  else
+    nbufs = (int64) val;
 
 #ifndef NDEBUG
   log_debug ("NumberOfBuffers=%ld", nbufs);
@@ -2355,31 +2394,37 @@ cfg_get_number_of_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
 static int
 cfg_get_max_dirty_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
 {
-  char *valstr;
+  char *valstr, *end;
+  unsigned long uval;
   int32 val;
-  char suffix;
 
   if (-1 == cfg_getstring (pc, sec, attr, &valstr))
     return -1;
 
-  val = (int32) atol (valstr);
-  if (val <= 0)
+  if (!isdigit ((unsigned char) *valstr))
     return -1;
+  errno = 0;
+  uval = strtoul (valstr, &end, 10);
+  if (errno == ERANGE || uval == 0 || uval > INT32_MAX)
+    return -1;
+  val = (int32) uval;
 
-  suffix = toupper (valstr[strlen (valstr) - 1]);
-  switch (suffix)
+  switch (*end)
     {
     case '%':
+      if (end[1])
+	return -1;
       if (val > 100)
 	val = 50;
       val = (int32) ((c_number_of_buffers / 100) * val);
       val -= val % 1000;
       break;
 
-    default:
-      if (!isdigit (suffix))
-	return -1;
+    case 0:
       break;
+
+    default:
+      return -1;
     }
 
 #ifndef NDEBUG
@@ -2468,7 +2513,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, const char *ignore_file_name)
 	      exit (-1);
 	    }
 
-	  if (cfg_parse_size_with_modifier (keyname, &llen, NULL, NULL))
+	  if (cfg_parse_size_with_modifier (keyname, &llen, NULL, NULL) || 0 == llen)
 	    {
 	      log_error ("The values for log segment %d are invalid", nlog_segments);
 	      exit (-1);
@@ -2528,7 +2573,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, const char *ignore_file_name)
 	  n_stripes = cslnumentries (pconfig->value) - 1;
 	  segszstr = cslentry (pconfig->value, 1);
 
-	  if (cfg_parse_size_with_modifier (segszstr, &segszvalue, &modifier, &n_pages))
+	  if (cfg_parse_size_with_modifier (segszstr, &segszvalue, &modifier, &n_pages) || 0 == segszvalue)
 	    {
 	      log_error ("The size for strip segment %d is invalid", nsegs);
               csl_free (segszstr);
