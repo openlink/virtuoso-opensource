@@ -1,6 +1,6 @@
 # NEWS
 
-## November 03 2026, v7.2.18 unreleased (development branch)
+## November 05 2026, v7.2.18 unreleased (development branch)
 
 * Virtuoso Engine
   * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
@@ -46,6 +46,7 @@
   * Fixed a cached statement whose recompile failed after DDL running its stale plan without an error ([3adf9b1e7](https://github.com/openlink/virtuoso-opensource/commit/3adf9b1e729b761396ef75a07fe0f8805ba8db2a))
   * Fixed a long chain of query nodes, such as a SPARQL query with 80 `OPTIONAL`s, using up the thread stack; it now fails with SR178 ([bbd92c472](https://github.com/openlink/virtuoso-opensource/commit/bbd92c47235e96e4af1322ef98e5e936b28cce77))
   * Fixed `__xqf_str_parse_to_rdf_box()` failing on a NULL datatype ([f03d1e1a9](https://github.com/openlink/virtuoso-opensource/commit/f03d1e1a943c7279bcb0efb56b8d8f7edee65143))
+  * Fixed size values in `virtuoso.ini` being read from their last character only, so that `64MB` was 64 bytes; `NumberOfBuffers` and `MaxDirtyBuffers` now also refuse trailing text and overflow, and `NumberOfBuffers` accepts `MB` and `GB` ([1da137083](https://github.com/openlink/virtuoso-opensource/commit/1da137083337ee12ca76ae185a124a16a57dd1d6))
 
 * SPARQL
   * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
@@ -77,6 +78,12 @@
   * Added a server-wide GQL translation cache ([9a0fbde9d](https://github.com/openlink/virtuoso-opensource/commit/9a0fbde9d52cc44cf6f983233318927bc2d242b1))
   * Added gqlc hosting plugin for GQL Unicode normalization and percentiles, built when ICU is found; use `--disable-gqlc` to turn it off ([761d44290](https://github.com/openlink/virtuoso-opensource/commit/761d442907b4f9c72736cc301d2c6aeba13b4250))
 
+* Graph Analytics
+  * Added in-memory graph analytics with parallel PageRank, centrality, shortest path, traversal, connected component, community detection, triangle count and similarity algorithms, and a bounded cache of graph snapshots that is invalidated on commit ([45aa744ea](https://github.com/openlink/virtuoso-opensource/commit/45aa744ea305fc0d61f38da5c62f7a4f1d66bffb))
+  * Added SQL functions to run the algorithms on graphs from `RDF_QUAD`, from SQL tables a DBA has registered as a graph source, or from edges passed in by a query; reads follow the caller's SELECT and graph READ permissions on every use ([01dfb163e](https://github.com/openlink/virtuoso-opensource/commit/01dfb163e0b11645c47da099da3c9b5d3c4350b2), [08ab2fe38](https://github.com/openlink/virtuoso-opensource/commit/08ab2fe381ec880245c4de35ede5efb33077b377))
+  * Added the algorithms as SPARQL special predicates, such as `?node bif:pagerank ?rank`, with parameters in `OPTION (...)` ([24774fb57](https://github.com/openlink/virtuoso-opensource/commit/24774fb574e8ead5c587299648b7a8bc604dc0ad))
+  * Added a `[Graph]` section in `virtuoso.ini` to limit worker threads, snapshot cache lifetime, entries and memory, and the size of graph that may be loaded ([7808b4b7c](https://github.com/openlink/virtuoso-opensource/commit/7808b4b7c917ced849525d6b9df87edad88dc47a))
+
 * Text Search
   * Added fuzzy matching to SQL `contains()` with Levenshtein, Jaro-Winkler and n-gram cosine similarity, taking the algorithm, a similarity threshold and an n-gram size ([89c624c12](https://github.com/openlink/virtuoso-opensource/commit/89c624c125ba13d6a2acc5ab89f889964a667976), [4dad2062d](https://github.com/openlink/virtuoso-opensource/commit/4dad2062d118dde85ea3d93bcde7c455c0bbe791), [c35cb4b00](https://github.com/openlink/virtuoso-opensource/commit/c35cb4b00f07ec78a80fffd95bc4606e57043a36))
   * Added `FUZZY`, `FUZZY_THRESHOLD`, `FUZZY_N` and `FUZZY_PREFIX` options to SPARQL `bif:contains` ([eddf98550](https://github.com/openlink/virtuoso-opensource/commit/eddf98550bb8cc126eb3a4edd1e19d0ae3b9c900), [b5a912a49](https://github.com/openlink/virtuoso-opensource/commit/b5a912a493190b2ddbe33314c5c089c445611df4))
@@ -107,6 +114,7 @@
   * Fixed URI parsing in `rfc1808_parse_uri()` ([cbfad263b](https://github.com/openlink/virtuoso-opensource/commit/cbfad263b11e257066650d891a480e249749c6af))
   * Changed HTTPS client calls to verify the server certificate and host name when a CA list is passed in `ca_certs` or `insecure => 0` is given, and to report why verification failed; calls with neither remain unverified ([817ab3fc3](https://github.com/openlink/virtuoso-opensource/commit/817ab3fc31e0d68d4c83a5d9fffc6ef762315000), [ebdf7a33e](https://github.com/openlink/virtuoso-opensource/commit/ebdf7a33e8754f6e73eb9a691fbc49e1d9d12c05))
   * Fixed response headers being dropped so that non-HTML replies, such as `/sparql` JSON, were sent as `text/html` ([36f066dc3](https://github.com/openlink/virtuoso-opensource/commit/36f066dc3cc87a8ff1149b6c8fff7ecfd5e8b7ff))
+  * Fixed concurrent WebDAV `LOCK` requests on the same resource both succeeding and overwriting each other's updates ([d81a5c2ce](https://github.com/openlink/virtuoso-opensource/commit/d81a5c2ce4016d1fc106a8a8558006fc0a83c109))
 
 * Conductor
   * Fixed pre-formatted output in the DAV browser being HTML escaped ([78d52a81a](https://github.com/openlink/virtuoso-opensource/commit/78d52a81a2ce2e4b56836e229cf46036523b7a38))
@@ -126,6 +134,8 @@
   * Added vector index SQL files to the Windows build ([ee5ed34ad](https://github.com/openlink/virtuoso-opensource/commit/ee5ed34ad869ae871ecd053c0d82011514e9bf6a))
   * Added regression suites for vector indexes, embeddings, RDF 1.2 triple terms and graph-level security ([4e0c85c0f](https://github.com/openlink/virtuoso-opensource/commit/4e0c85c0ffaa43edf81925ef70477ef6a988ee0f), [4ee715c9e](https://github.com/openlink/virtuoso-opensource/commit/4ee715c9eb13843e4f1fea22dcd16b45e730e80a), [da454f0e3](https://github.com/openlink/virtuoso-opensource/commit/da454f0e3a542530654135c460ac87b4edc45f60))
   * Added GQL regression suites `tgql_unit`, `tgql_rdf_equiv` and `tgql_compat` ([271948f8e](https://github.com/openlink/virtuoso-opensource/commit/271948f8e864e2bd38abe5ce1c7324dc10e24f25), [65687b647](https://github.com/openlink/virtuoso-opensource/commit/65687b6472fa6f8b046f27ebfc0aaf4e115ea09a))
+  * Fixed edited cached resources, such as `virtrdf-data-formats.ttl`, needing a second `make` to reach the server binary ([4b91e1579](https://github.com/openlink/virtuoso-opensource/commit/4b91e157978aea700668b82fa6dc540c5ba88aa0))
+  * Added graph analytics regression suite `tgraphalgo` ([1965794fa](https://github.com/openlink/virtuoso-opensource/commit/1965794fa294c45c337453be9b8a4c63c9c9d0c5))
   * Added explicit installer download links and contributor guidelines ([a27a063c9](https://github.com/openlink/virtuoso-opensource/commit/a27a063c9ba6937558399f0156706f22d67ee8ed), [170a52bb3](https://github.com/openlink/virtuoso-opensource/commit/170a52bb3bbda1f5eb5e422fc27e250bea9e6744))
   * Marked BPEL, SyncML and SPARQL demo packages as deprecated ([300a9f631](https://github.com/openlink/virtuoso-opensource/commit/300a9f63175b6f84a3ddab32e24087f95eda236c))
   * Removed obsolete admin and installer files and reorganized shared admin and demo sources ([cac77a094](https://github.com/openlink/virtuoso-opensource/commit/cac77a09450314798dcaa8df7472e50941f03086), [4a44c5f71](https://github.com/openlink/virtuoso-opensource/commit/4a44c5f71907462dbb069bb721459465edae7017), [b4e6c71d6](https://github.com/openlink/virtuoso-opensource/commit/b4e6c71d634777ef1ba9fc605c254d5ad6fc07c8), [2babbeef5](https://github.com/openlink/virtuoso-opensource/commit/2babbeef55eee388bb59c4e5d2c9d685474a7e14), [74a66a18e](https://github.com/openlink/virtuoso-opensource/commit/74a66a18e0a2721b8fe22bd950e97ebec53158ab), [a427381fd](https://github.com/openlink/virtuoso-opensource/commit/a427381fd746b31ff640748cc153e852ff1662dc), [553cc6007](https://github.com/openlink/virtuoso-opensource/commit/553cc6007917e1e5e3092cf63ef4d92e32d087d3))
