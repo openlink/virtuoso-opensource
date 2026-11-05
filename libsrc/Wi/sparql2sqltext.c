@@ -3022,6 +3022,11 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
         }
       rv->_.retval.vname = saved_vname;
     }
+  else if ((NULL != qm) && (SPART_VARR_FIXED & SPARP_FIELD_CONST_RVR_OF_QM (qm, var->_.var.tr_idx)->rvrRestrictions))
+    { /* a constant of the quad map has no column in the triple's derived table */
+      SPART *fld_const = spar_make_qname_or_literal_from_rvr (ssg->ssg_sparp, SPARP_FIELD_CONST_RVR_OF_QM (qm, var->_.var.tr_idx), 0);
+      ssg_print_scalar_expn (ssg, fld_const, needed, asname);
+    }
   else
     ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
 }
