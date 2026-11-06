@@ -547,6 +547,84 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": H4 SPARQL FUZZY_PREFIX 1 = " $ROWCNT " rows (expected >0)\n";
 
 -- ============================================================
+-- Group M — Parallel candidate scan of a large prefix range
+-- ============================================================
+ECHO BOTH "\n--- Group M: Parallel candidate scan of a large prefix range ---\n";
+
+-- 250,000 six-letter words that all start with JO, so the default prefix
+-- makes every one a candidate for 'johnson'; their byte after the prefix is
+-- one of 26 letters.  Plus the bare prefix and a word with a digit after it.
+-- Every thread count must find what the single-threaded scan finds: the
+-- workers share the range by the words in it, and the scan's limits do not
+-- depend on how many there are.
+create table fuzzy_vocab (id integer not null primary key, w varchar);
+create procedure fuzzy_vocab_fill (in n integer)
+{
+  declare i integer;
+  for (i := 0; i < n; i := i + 1)
+    insert into fuzzy_vocab (id, w) values (i + 1, concat ('JO', chr (65 + mod (i / 17576, 26)), chr (65 + mod (i / 676, 26)), chr (65 + mod (i / 26, 26)), chr (65 + mod (i, 26))));
+  insert into fuzzy_vocab (id, w) values (n + 1, 'JO');
+  insert into fuzzy_vocab (id, w) values (n + 2, 'JO9ZZZ');
+}
+;
+fuzzy_vocab_fill (250000);
+create text index on fuzzy_vocab (w) with key id;
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M0 250002 words with a text index STATE=" $STATE "\n";
+
+create procedure fuzzy_vocab_count (in qp integer, in q varchar, in algo varchar, in threshold float)
+{
+  declare old_qp, n integer;
+  old_qp := __dbf_set ('enable_qp', qp);
+  declare exit handler for sqlstate '*' { __dbf_set ('enable_qp', old_qp); return __SQL_STATE || ' ' || __SQL_MESSAGE; };
+  select count (*) into n from fuzzy_vocab where contains (w, q, 'fuzzy', algo, 'fuzzy_threshold', threshold);
+  __dbf_set ('enable_qp', old_qp);
+  return n;
+}
+;
+
+SELECT fuzzy_vocab_count (1, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M1 single-threaded scan of 250002 candidates = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (2, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M2 enable_qp 2 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (4, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M3 enable_qp 4 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (8, 'johnson', 'jaro_winkler', 0.95);
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M4 enable_qp 8 = " $LAST[1] " (expected 4)\n";
+
+SELECT fuzzy_vocab_count (8, 'johnson', 'jaro_winkler', 0.9);
+ECHO BOTH $IF $EQU $LAST[1] 163  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M5 enable_qp 8, threshold 0.9 = " $LAST[1] " (expected 163, as single-threaded)\n";
+
+-- JO9ZZZ is the only word whose byte after the prefix is a digit
+SELECT fuzzy_vocab_count (4, 'jo9zzz', 'levenshtein', 0.8);
+ECHO BOTH $IF $EQU $LAST[1] 15  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M6 enable_qp 4, digit after the prefix = " $LAST[1] " (expected 15, as single-threaded)\n";
+
+SELECT fuzzy_vocab_count (8, 'jxyz', 'levenshtein', 0.8);
+ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": M7 enable_qp 8, empty prefix range = " $LAST[1] " (expected 0)\n";
+
+drop procedure fuzzy_vocab_count;
+drop procedure fuzzy_vocab_fill;
+drop table fuzzy_vocab;
+
+-- ============================================================
 -- Group I — SPARQL algorithm validation (P1-5)
 -- ============================================================
 ECHO BOTH "\n--- Group I: SPARQL algorithm validation ---\n";
@@ -609,6 +687,114 @@ SELECT id, name FROM fuzzy_test WHERE contains (name, 'Johnson OR Smith', 'fuzzy
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": J7 fuzzy + boolean OR STATE=" $STATE " rows=" $ROWCNT "\n";
+
+-- ============================================================
+-- Group N — Phrases and NEAR keep the fuzzy metrics
+-- ============================================================
+ECHO BOTH "\n--- Group N: Phrases and NEAR keep the fuzzy metrics ---\n";
+
+-- A phrase and NEAR match through fuzzy words as AND does.  Their rows must
+-- report the words' SIMILARITY and DISTANCE as AND's rows do - the best of
+-- the words, here the exact 'Pro' - and an exact phrase must outrank a
+-- misspelt one.  Columns: rows, least SIMILARITY, sum of DISTANCE.
+create table fuzzy_phrase (id integer not null primary key, name varchar);
+create text index on fuzzy_phrase (name) with key id;
+insert into fuzzy_phrase values (1, 'MacBook Pro 14');
+insert into fuzzy_phrase values (2, 'MacBook Air 13');
+insert into fuzzy_phrase values (3, 'MacBook Pro 16');
+
+create procedure fuzzy_phrase_score (in q varchar)
+{
+  declare s integer;
+  select max (SCORE) into s from fuzzy_phrase where contains (name, q, 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+  return s;
+}
+;
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, 'Macbok AND Pro', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N1 AND = " $LAST[1] " (expected 2 1.000 0)\n";
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, '"Macbok Pro"', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N2 phrase = " $LAST[1] " (expected 2 1.000 0, as AND)\n";
+
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, 'Macbok NEAR Pro', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 1.000 0"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N3 NEAR = " $LAST[1] " (expected 2 1.000 0, as AND)\n";
+
+-- both words misspelt: Macbok 0.857 (1 edit), Prro 0.75 (1 edit)
+SELECT sprintf ('%d %.3f %d', count (*), min (SIMILARITY), sum (DISTANCE)) FROM fuzzy_phrase WHERE contains (name, '"Macbok Prro"', 'fuzzy', 'levenshtein', 'fuzzy_threshold', 0.7);
+ECHO BOTH $IF $EQU $LAST[1] "2 0.857 2"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N4 phrase of two misspelt words = " $LAST[1] " (expected 2 0.857 2)\n";
+
+SELECT case when fuzzy_phrase_score ('"MacBook Pro"') > fuzzy_phrase_score ('"Macbok Pro"') then 'yes' else 'no' end;
+ECHO BOTH $IF $EQU $LAST[1] "yes"  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N5 exact phrase outranks the misspelt one: " $LAST[1] "\n";
+
+-- guards: the phrase score without fuzzy options, and NEAR's score, unchanged
+SELECT max (SCORE) FROM fuzzy_phrase WHERE contains (name, '"MacBook Pro"');
+ECHO BOTH $IF $EQU $LAST[1] 2823  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N6 phrase without fuzzy, SCORE = " $LAST[1] " (expected 2823)\n";
+
+SELECT fuzzy_phrase_score ('Macbok NEAR Pro');
+ECHO BOTH $IF $EQU $LAST[1] 1496  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N7 fuzzy NEAR, SCORE = " $LAST[1] " (expected 1496)\n";
+
+-- the same through SPARQL bif:contains: a fuzzy phrase takes the bonus of its least similar word,
+-- 100 for an exact word, 85 for Macbok (0.857) and 75 for Prro (0.75)
+SPARQL CLEAR GRAPH <http://example.com/phrase>;
+DB.DBA.TTLP ('
+<http://example.com/m1> <http://example.com/name> "MacBook Pro 14" .
+<http://example.com/m2> <http://example.com/name> "MacBook Air 13" .
+<http://example.com/m3> <http://example.com/name> "MacBook Pro 16" .
+', '', 'http://example.com/phrase', 0);
+DB.DBA.vt_batch_update ('DB.DBA.RDF_OBJ', 'OFF', 1);
+DB.DBA.vt_batch_update ('DB.DBA.RDF_OBJ', 'ON', 1);
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N8 loaded phrase data STATE=" $STATE "\n";
+
+SPARQL SELECT (max (?sc) as ?m) (count (*) as ?c) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"Macbok Pro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2908  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N9 SPARQL fuzzy phrase, SCORE = " $LAST[1] " (expected 2908)\n";
+ECHO BOTH $IF $EQU $LAST[2] 2  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N9 SPARQL fuzzy phrase, rows = " $LAST[2] " (expected 2)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"MacBook Pro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2923  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N10 SPARQL exact phrase with fuzzy, SCORE = " $LAST[1] " (expected 2923, above the misspelt one)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"Macbok Prro"' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2898  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N11 SPARQL phrase of two misspelt words, SCORE = " $LAST[1] " (expected 2898, the bonus of Prro)\n";
+
+-- guards: the phrase score without fuzzy options, and NEAR's score, unchanged
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains '"MacBook Pro"' OPTION (score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 2823  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N12 SPARQL phrase without fuzzy, SCORE = " $LAST[1] " (expected 2823)\n";
+
+SPARQL SELECT (max (?sc) as ?m) WHERE { GRAPH <http://example.com/phrase> { ?s <http://example.com/name> ?o . ?o bif:contains 'Macbok NEAR Pro' OPTION (fuzzy 'levenshtein', fuzzy_threshold 0.7, score ?sc) } };
+ECHO BOTH $IF $EQU $LAST[1] 1496  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": N13 SPARQL fuzzy NEAR, SCORE = " $LAST[1] " (expected 1496)\n";
+
+SPARQL CLEAR GRAPH <http://example.com/phrase>;
+
+drop procedure fuzzy_phrase_score;
+drop table fuzzy_phrase;
 
 -- ============================================================
 -- Group K — Candidate scan and option checks
@@ -706,6 +892,82 @@ ECHO BOTH ": K12 fuzzy contains and knnSimilar outputs in one query: " $LAST[1] 
 
 drop procedure fuzzy_parallel_count;
 drop procedure fuzzy_knn_outputs;
+
+-- ============================================================
+-- Group L — Fuzzy options passed as parameters
+-- ============================================================
+ECHO BOTH "\n--- Group L: Fuzzy options passed as parameters ---\n";
+
+-- A prepared statement passes the options as parameters.  With ORDER BY on
+-- the key the table drives the plan and contains () checks one row at a
+-- time, so each parameter must reach the text node for every row.
+create procedure fuzzy_exec_count (in stmt varchar, in params any)
+{
+  declare st, msg varchar;
+  declare md, rows any;
+  st := '00000';
+  exec (stmt, st, msg, params, 100, md, rows);
+  if (st <> '00000')
+    return st || ' ' || msg;
+  return length (rows);
+}
+;
+
+create procedure fuzzy_exec_sum (in stmt varchar, in params any)
+{
+  declare st, msg varchar;
+  declare md, rows any;
+  declare s, inx integer;
+  st := '00000';
+  exec (stmt, st, msg, params, 100, md, rows);
+  if (st <> '00000')
+    return st || ' ' || msg;
+  s := 0;
+  for (inx := 0; inx < length (rows); inx := inx + 1)
+    s := s + rows[inx][0];
+  return s;
+}
+;
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5)', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L1 parameter algorithm, contains drives = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', 0.5) order by id', vector ());
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L2 literal algorithm, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5) order by id', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L3 parameter algorithm, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', ?) order by id', vector (0.5));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L4 parameter threshold, order by id = " $LAST[1] " (expected 3)\n";
+
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''ngram_cosine'', ''fuzzy_threshold'', 0.5, ''fuzzy_n'', ?) order by id', vector (2));
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L5 parameter FUZZY_N, order by id = " $LAST[1] " (expected 3)\n";
+
+-- prefix 1 also reaches Janson
+SELECT fuzzy_exec_count ('select id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ''levenshtein'', ''fuzzy_threshold'', 0.5, ''fuzzy_prefix'', ?) order by id', vector (1));
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L6 parameter FUZZY_PREFIX, order by id = " $LAST[1] " (expected 4)\n";
+
+-- distances 0, 2 and 2: Johnson, Jonsson, Johansson
+SELECT fuzzy_exec_sum ('select DISTANCE, id from fuzzy_test where contains (name, ''Johnson'', ''fuzzy'', ?, ''fuzzy_threshold'', 0.5) order by id', vector ('levenshtein'));
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": L7 sum of DISTANCE, parameter algorithm, order by id = " $LAST[1] " (expected 4)\n";
+
+drop procedure fuzzy_exec_count;
+drop procedure fuzzy_exec_sum;
 
 -- ============================================================
 -- Cleanup
