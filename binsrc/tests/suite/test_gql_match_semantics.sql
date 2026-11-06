@@ -1341,6 +1341,66 @@ ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO ": SV6 outside SERVICE a lone node is translated as before (guard): " $LAST[1] "\n";
 
+-- SR1-SR6: a property read outside a SERVICE block, of a node only that
+-- block binds, belongs to the remote graph.  It was matched against the
+-- local store instead -- no rows, and no error -- unless the block happened
+-- to name the property itself.  The query sent must fetch it, and the
+-- local store must not be read.  GQL_MS_T_SVC_REMOTE is the text of the
+-- query sent, from the SQL text of the statement.
+create function DB.DBA.GQL_MS_T_SVC_REMOTE (in _gql varchar) returns varchar
+{
+  declare t varchar;
+  declare b, e integer;
+  t := DB.DBA.GQL_MS_T_SVC_SQL (_gql);
+  b := strstr (t, 'qtext_template =');
+  e := strstr (t, 'qtext_posmap =');
+  if (b is null or e is null or e < b)
+    return concat ('NO SERVICE CALL: ', left (t, 200));
+  return subseq (t, b, e);
+}
+;
+
+select 99;
+select case when r like '%<urn:gql:ms:sv:title>%' and DB.DBA.GQL_MS_T_SVC_SQL (q) not like '%RDF_QUAD%' then 1 else 0 end, left (r, 160)
+  from (select q, DB.DBA.GQL_MS_T_SVC_REMOTE (q) as r from (select 'PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (f:ex:Film)-[:ex:director]->(d) WHERE d = ex:a } RETURN f, f.ex:title AS t' as q) x0) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR1 a remote node's property read in RETURN is fetched by the SERVICE: " $LAST[2] "\n";
+
+select 99;
+select case when r like '%<urn:gql:ms:sv:title>%' and DB.DBA.GQL_MS_T_SVC_SQL (q) not like '%RDF_QUAD%' then 1 else 0 end, left (r, 160)
+  from (select q, DB.DBA.GQL_MS_T_SVC_REMOTE (q) as r from (select 'PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (f:ex:Film)-[:ex:director]->(d) WHERE d = ex:a RETURN f AS film } RETURN film, film.ex:title AS t' as q) x0) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR2 the same, of a node the SERVICE returns under an alias: " $LAST[2] "\n";
+
+select 99;
+select case when r like '%OPTIONAL%<urn:gql:ms:sv:name>%' and DB.DBA.GQL_MS_T_SVC_SQL (q) not like '%RDF_QUAD%' then 1 else 0 end, left (r, 160)
+  from (select q, DB.DBA.GQL_MS_T_SVC_REMOTE (q) as r from (select 'PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (f:ex:Film) OPTIONAL MATCH (f)-[:ex:composer]->(m) } RETURN f, m.ex:name AS mn' as q) x0) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR3 of a node only the SERVICE's OPTIONAL MATCH binds, fetched as optional: " $LAST[2] "\n";
+
+select 99;
+select case when r like '%<urn:gql:ms:sv:year>%' and DB.DBA.GQL_MS_T_SVC_SQL (q) not like '%RDF_QUAD%' then 1 else 0 end, left (r, 160)
+  from (select q, DB.DBA.GQL_MS_T_SVC_REMOTE (q) as r from (select 'PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (f:ex:Film)-[:ex:director]->(d) WHERE d = ex:a } RETURN f ORDER BY f.ex:year' as q) x0) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR4 a remote node's property read only in ORDER BY: " $LAST[2] "\n";
+
+select 99;
+select case when r not like '%<urn:gql:ms:sv:title>%' and DB.DBA.GQL_MS_T_SVC_SQL (q) like '%RDF_QUAD%' then 1 else 0 end, left (r, 160)
+  from (select q, DB.DBA.GQL_MS_T_SVC_REMOTE (q) as r from (select 'PREFIX ex: <urn:gql:ms:sv:> MATCH (f:ex:Film) SERVICE <http://example.com/sparql> { MATCH (f)-[:ex:director]->(d) } RETURN f.ex:title AS t' as q) x0) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR5 a node a local MATCH binds too keeps its property local (guard): " $LAST[2] "\n";
+
+select 99;
+select case when DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <urn:gql:ms:sv:> MATCH (f:ex:Film)-[:ex:director]->(d) RETURN f, f.ex:title AS t') like '%?gql_n_f <urn:gql:ms:sv:title> ?prop_1%' then 1 else 0 end;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": SR6 without SERVICE a property read is translated as before (guard): " $LAST[1] "\n";
+
 sparql clear graph <urn:gql:ms:d>;
 sparql clear graph <urn:gql:ms:l>;
 sparql clear graph <urn:gql:ms:lr>;
