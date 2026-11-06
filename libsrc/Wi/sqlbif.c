@@ -10288,8 +10288,6 @@ bif_string_type (state_slot_t ** args, long *dtp, long *prec, long *scale, colla
 
 bif_type_t bt_string = { (bif_type_func_t) bif_string_type, 0, 0, 0};
 
-caddr_t string_to_dt_box (char * data);
-caddr_t string_to_time_dt_box (char * data);
 
 #define NUMCK(rc) \
   if (rc != NUMERIC_STS_SUCCESS) \
@@ -10740,7 +10738,9 @@ do_datetime:
       switch (arg_dtp)
 	{
 	case DV_STRING:
-	  res = string_to_dt_box (data);
+	  res = string_to_dt_box_1 (data, &err);
+	  if (err)
+	    goto inner_error;
           break;
 	case DV_LONG_INT:
 	case DV_SHORT_INT:
@@ -10770,8 +10770,10 @@ do_datetime:
 	case DV_LONG_WIDE:
 	  {
 	    caddr_t narrow = box_wide_string_as_narrow (data, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
-	    res = string_to_dt_box (narrow);
+	    res = string_to_dt_box_1 (narrow, &err);
 	    dk_free_box (narrow);
+	    if (err)
+	      goto inner_error;
             break;
 	  }
 	default:
@@ -10795,7 +10797,9 @@ do_time:
       switch (arg_dtp)
 	{
 	  case DV_SHORT_STRING:
-	      res = string_to_time_dt_box (data);
+	      res = string_to_time_dt_box_1 (data, &err);
+	      if (err)
+		goto inner_error;
 	      return res;
 	  case DV_DATETIME:
 	  case DV_TIMESTAMP:
@@ -10810,8 +10814,10 @@ do_time:
 	  case DV_LONG_WIDE:
 		{
 		  caddr_t narrow = box_wide_string_as_narrow (data, NULL, 0, qst ? QST_CHARSET (qst) : NULL);
-		  res = string_to_time_dt_box (narrow);
+		  res = string_to_time_dt_box_1 (narrow, &err);
 		  dk_free_box (narrow);
+		  if (err)
+		    goto inner_error;
 		  return res;
 		}
 

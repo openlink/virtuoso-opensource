@@ -35,6 +35,7 @@
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in RDF replication */
 #include "geo.h"
+#include "sparql.h" /* For RDF_STAR_NS */
 
 int rb_type__rdf_HTML;
 int rb_type__rdf_JSON;
@@ -7238,6 +7239,104 @@ void bif_ro2ebv_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, sta
 void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 
+/* SPARQL ORDER BY kind of term: unbound, blank node, IRI, literal, triple term */
+
+#define RDF_ORDER_RANK_PREF(s,len,p) ((len) >= (int) sizeof (p) - 1 && !memcmp ((s), (p), sizeof (p) - 1))
+
+static int
+rdf_order_rank_of_iri (const char * s, int len)
+{
+  if (RDF_ORDER_RANK_PREF (s, len, RDF_STAR_NS))
+    return 4;
+  if (RDF_ORDER_RANK_PREF (s, len, "nodeID://") || RDF_ORDER_RANK_PREF (s, len, "_:"))
+    return 1;
+  return 2;
+}
+
+static int
+rdf_order_rank_of_box (caddr_t val)
+{
+  dtp_t dtp = DV_TYPE_OF (val);
+  if (NULL == val || DV_DB_NULL == dtp)
+    return 0;
+  if (IS_IRI_DTP (dtp))
+    return unbox_iri_id (val) >= min_bnode_iri_id () ? 1 : 2;
+  if (DV_UNAME == dtp || (DV_STRING == dtp && (BF_IRI & box_flags (val))))
+    return rdf_order_rank_of_iri (val, box_length (val) - 1);
+  return 3;
+}
+
+caddr_t
+bif_rdf_order_rank (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (rdf_order_rank_of_box (bif_arg (qst, args, 0, "__rdf_order_rank")));
+}
+
+void
+bif_rdf_order_rank_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  data_col_t * dc, * arg;
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  state_slot_t * ssl;
+  if (!ret || 1 != BOX_ELEMENTS (args) || (SSL_VEC != args[0]->ssl_type && SSL_REF != args[0]->ssl_type))
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  ssl = args[0];
+  arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);
+  dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  DC_CHECK_LEN (dc, n_sets - 1);
+  SET_LOOP
+    {
+      int row = set, rank;
+      if (SSL_REF == ssl->ssl_type)
+	row = sslr_set_no (qst, ssl, row);
+      if (arg->dc_nulls && DC_IS_NULL (arg, row))
+	rank = 0;
+      else if (DCT_BOXES & arg->dc_type)
+	rank = rdf_order_rank_of_box (((caddr_t *) arg->dc_values)[row]);
+      else if (DV_ANY == arg->dc_dtp)
+	{
+	  db_buf_t dv = ((db_buf_t *) arg->dc_values)[row];
+	  uint32 flags = 0;
+	  if (DV_BOX_FLAGS == *dv)
+	    {
+	      flags = LONG_REF_NA (dv + 1);
+	      dv += 5;
+	    }
+	  switch (*dv)
+	    {
+	    case DV_DB_NULL:
+	      rank = 0;
+	      break;
+	    case DV_SHORT_STRING_SERIAL:
+	      rank = (BF_IRI & flags) ? rdf_order_rank_of_iri ((char *) dv + 2, dv[1]) : 3;
+	      break;
+	    case DV_STRING:
+	      rank = (BF_IRI & flags) ? rdf_order_rank_of_iri ((char *) dv + 5, LONG_REF_NA (dv + 1)) : 3;
+	      break;
+	    case DV_IRI_ID:
+	    case DV_IRI_ID_8:
+	    case DV_UNAME:
+	      rank = rdf_order_rank_of_box (qst_get (qst, ssl));
+	      break;
+	    default:
+	      rank = 3;
+	    }
+	}
+      else if (DV_IRI_ID == arg->dc_dtp)
+	rank = ((iri_id_t *) arg->dc_values)[row] >= min_bnode_iri_id () ? 1 : 2;
+      else
+	rank = 3;
+      dc_set_long (dc, set, rank);
+    }
+  END_SET_LOOP;
+}
+
+
 void
 rdf_box_init (void)
 {
@@ -7363,4 +7462,6 @@ rdf_box_init (void)
   bif_define_ex ("iri_name_id", bif_iri_name_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("iri_set_name_id", bif_iri_set_name_id, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("__iri_name_id_64", bif_iri_name_id_64, BMD_VECTOR_IMPL, bif_iri_name_id_64_vec, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__rdf_order_rank", bif_rdf_order_rank, BMD_VECTOR_IMPL, bif_rdf_order_rank_vec, BMD_RET_TYPE, &bt_integer,
+      BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_DONE);
 }

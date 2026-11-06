@@ -10854,7 +10854,8 @@ retval_list_complete:
            save_where_l_text = ssg->ssg_where_l_text;
            ssg->ssg_where_l_printed = 0;
            ssg->ssg_where_l_text = " WHERE";
-           ssg_print_binv_table_exp (ssg, member, SSG_TABLE_PVIEW_PARAM_PASS);
+           /* the rows of VALUES are bound in its WHERE pass, it has no pview params */
+           ssg_print_binv_table_exp (ssg, member, SSG_TABLE_WHERE_PASS);
            ssg->ssg_where_l_printed = save_where_l_printed;
            ssg->ssg_where_l_text = save_where_l_text;
            goto end_of_where_list; /* see below */
@@ -10981,23 +10982,28 @@ void
 ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
 {
   ssg_valmode_t native = sparp_expn_native_valmode (ssg->ssg_sparp, oby_itm->_.oby.expn);
-  int use_rdf_star_order_key =
-    ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_SHORT_OR_LONG == native) ||
-      (IS_BOX_POINTER (native) &&
-        (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql)));
-  if (use_rdf_star_order_key)
+  const char *dir = (DESC_L == oby_itm->_.oby.direction) ? " DESC" : " ASC";
+  int use_order_rank = 0;
+  /* Only a query that builds triple terms needs the kind of term as a sort key. */
+  if (ssg->ssg_sparp->sparp_query_uses_triple_terms)
     {
-      ssg_puts (" DB.DBA.RDF_STAR_ORDER_KEY (");
+      rdf_val_range_t expn_rvr;
+      sparp_get_expn_rvr (ssg->ssg_sparp, oby_itm->_.oby.expn, &expn_rvr, 0);
+      use_order_rank = (0 != (expn_rvr.rvrRestrictions & SPART_VARR_IS_TRIPLE_TERM)) ||
+        (SSG_VALMODE_LONG == native) || (SSG_VALMODE_SHORT_OR_LONG == native) ||
+        (IS_BOX_POINTER (native) &&
+          (native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql));
+    }
+  if (use_order_rank)
+    {
+      ssg_puts (" __rdf_order_rank (");
       ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       ssg_puts (")");
+      ssg_puts (dir);
+      ssg_puts (",");
     }
-  else
-    ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
-  switch (oby_itm->_.oby.direction)
-    {
-    case 0: case ASC_L: ssg_puts (" ASC"); break;
-    case DESC_L: ssg_puts (" DESC"); break;
-    }
+  ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+  ssg_puts (dir);
 }
 
 void

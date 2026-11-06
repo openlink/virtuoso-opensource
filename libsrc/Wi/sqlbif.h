@@ -284,6 +284,10 @@ caddr_t md5_ses (dk_session_t *ses);
 /* RDF 1.2 triple-term IRI builder with self-describing S/P/O encoding.
    The allow_legacy_fallback parameter is retained for ABI compatibility and is ignored. */
 extern caddr_t rdf_star_tt_iri_from_values_qst (caddr_t *qst, caddr_t s_val, caddr_t p_val, caddr_t o_val, int allow_legacy_fallback);
+caddr_t string_to_dt_box_1 (char * str, caddr_t * err_ret);
+caddr_t string_to_time_dt_box_1 (char * str, caddr_t * err_ret);
+#define string_to_dt_box(str) string_to_dt_box_1 ((str), NULL)
+#define string_to_time_dt_box(str) string_to_time_dt_box_1 ((str), NULL)
 #ifdef _SSL
 caddr_t box_sha1 (caddr_t str);
 caddr_t box_hmac (caddr_t box, caddr_t key, int alg);

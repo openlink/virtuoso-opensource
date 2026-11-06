@@ -460,6 +460,7 @@ typedef struct sparp_s {
   int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.rset_varnames lists */
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
+  int sparp_query_uses_triple_terms;	/*!< Nonzero if the source query builds a triple term, by <<( )>> or TRIPLE(); ORDER BY then sorts by kind of term first */
   dk_set_t sparp_bare_tt_nodes;		/*!< Set of SPAR_TRIPLE_TERM nodes built from <<(s p o)>> syntax; used by parser-only validation rules. */
   dk_set_t sparp_trans_starts;		/*!< Start point subqueries made for transitive triples with both ends unbound, attached after parsing if the ends are really unbound. */
 /* Environment of lex */
@@ -1072,6 +1073,8 @@ extern caddr_t spar_filter_is_freetext_or_rtree (sparp_t *sparp, SPART *filt, SP
 #define SPAR_TRIPLE_FOR_FT_SHOULD_EXIST		0x04
 extern SPART *sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *filt, int make_ft_type_check);
 extern void sparp_distinct_varnames_of_tree (sparp_t *sparp, SPART *tree, dk_set_t *acc);
+/*! Adds the variables of a VALUES group to \c acc; sparp_distinct_varnames_of_tree() does not see them. */
+extern void sparp_values_varnames_of_gp (SPART *memb, dk_set_t *acc);
 extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
