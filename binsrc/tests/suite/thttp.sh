@@ -1074,6 +1074,14 @@ fi
       exit 1
    fi
 fi
+
+LOG + running sql script tsec_rdf_load_graphs
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsec_rdf_load_graphs.sql
+if test $STATUS -ne 0
+then
+   LOG "***ABORTED: graph-level security of loaded TriG and N-Quads documents -- tsec_rdf_load_graphs.sql"
+   exit 1
+fi
 ### end of main tests
 if [ -f $HOME/vad/cartridges_dav.vad ]
 then  

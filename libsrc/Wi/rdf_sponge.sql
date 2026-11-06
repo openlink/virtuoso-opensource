@@ -1685,6 +1685,65 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
 }
 ;
 
+-- Parser callbacks that only list the named graphs of a TriG or N-Quads text
+-- and load nothing: app_env is vector (graph of the text, dict of graph IRIs)
+create procedure DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_NEW_GRAPH (inout g varchar, inout g_iid IRI_ID, inout app_env any)
+{
+  if (cast (g as varchar) <> app_env[0])
+    dict_put (app_env[1], cast (g as varchar), 1);
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_TRIPLE (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  return;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_TRIPLE_L (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  return;
+}
+;
+
+--! A TriG or N-Quads text names graphs of its own, and the loader, which runs as
+--! dba, writes them besides the graph that sponging or SPARQL LOAD checked for
+--! the user.  The user must have sponge permission on each of them, as
+--! RDF_SPONGE_UP_1 requires on that graph.  The text is parsed once without
+--! loading, so that nothing is loaded if a graph is refused.
+create procedure DB.DBA.RDF_LOAD_ASSERT_NAMED_GRAPH_PERMS (inout strg any, in base varchar, in graph varchar, in flags integer, in uid integer)
+{
+  declare app_env, graphs any;
+  declare ctr integer;
+  if (__tag of long varchar handle = __tag (strg))
+    strg := cast (strg as varchar);
+  app_env := vector (cast (graph as varchar), dict_new ());
+  {
+    -- A syntax error is reported by the load itself, after this check
+    declare exit handler for sqlstate '37000' { goto parsed; };
+    rdf_load_turtle (strg, base, graph, flags,
+      vector (
+        'DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_NEW_GRAPH',
+        'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+        'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+        'DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_TRIPLE',
+        'DB.DBA.RDF_LOAD_NAMED_GRAPHS_EV_TRIPLE_L',
+        '',
+        'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+      app_env);
+  }
+parsed:
+  graphs := dict_list_keys (app_env[1], 1);
+  for (ctr := 0; ctr < length (graphs); ctr := ctr + 1)
+    __rgs_assert_cbk (graphs[ctr], uid, 4, 'Loading RDF');
+}
+;
 
 --! Load the document in triple store. returns 1 if the document is an RDF, otherwise if it has links etc. it returns 0
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
@@ -1779,6 +1838,11 @@ retry_after_deadlock:
   -- SPARQL 1.2 LOAD ... INTO GRAPH: a named graph in the document is an error (TTLP_NO_NAMED_GRAPHS)
   if (ttl_mode is not null and get_keyword ('get:no-named-graphs', options) is not null)
     ttl_mode := bit_or (ttl_mode, 1024);
+  -- Sponging or SPARQL LOAD for a user who is not dba (see RDF_SPONGE_UP_1):
+  -- before the exit handler below, so that a refused graph is not taken for a
+  -- text in another format
+  if (ttl_mode is not null and bit_and (ttl_mode, 256+512) and get_keyword ('__rdf_load_uid', options) is not null)
+    DB.DBA.RDF_LOAD_ASSERT_NAMED_GRAPH_PERMS (ret_body, base, coalesce (dest, graph_iri), ttl_mode, get_keyword ('__rdf_load_uid', options));
   if (ttl_mode is not null)
     {
       declare exit handler for sqlstate '*'
@@ -2180,6 +2244,10 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
     }
   -- dbg_obj_princ ('will sponge...');
+  -- The loader runs as dba: it checks the other graphs that a TriG or N-Quads
+  -- text names with this uid.  Put first, so no option given by the user wins.
+  if (0 <> uid)
+    options := vector_concat (vector ('__rdf_load_uid', case (uid) when -1 then http_nobody_uid() else uid end), coalesce (options, vector ()));
   set_user_id ('dba', 1);
   if (lower (graph_iri) like 'file:%')
     {
