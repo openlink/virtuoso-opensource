@@ -1,6 +1,6 @@
 # NEWS
 
-## November 05 2026, v7.2.18 unreleased (development branch)
+## November 06 2026, v7.2.18 unreleased (development branch)
 
 * Virtuoso Engine
   * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
@@ -47,6 +47,7 @@
   * Fixed a long chain of query nodes, such as a SPARQL query with 80 `OPTIONAL`s, using up the thread stack; it now fails with SR178 ([bbd92c472](https://github.com/openlink/virtuoso-opensource/commit/bbd92c47235e96e4af1322ef98e5e936b28cce77))
   * Fixed `__xqf_str_parse_to_rdf_box()` failing on a NULL datatype ([f03d1e1a9](https://github.com/openlink/virtuoso-opensource/commit/f03d1e1a943c7279bcb0efb56b8d8f7edee65143))
   * Fixed size values in `virtuoso.ini` being read from their last character only, so that `64MB` was 64 bytes; `NumberOfBuffers` and `MaxDirtyBuffers` now also refuse trailing text and overflow, and `NumberOfBuffers` accepts `MB` and `GB` ([1da137083](https://github.com/openlink/virtuoso-opensource/commit/1da137083337ee12ca76ae185a124a16a57dd1d6))
+  * Fixed `QUIETCAST` not applying to datetime and time parse errors, so that one invalid value aborted the whole query instead of becoming NULL ([39c8470ce](https://github.com/openlink/virtuoso-opensource/commit/39c8470cebd49fdd82d7ba0df9c9808188581ebc))
 
 * SPARQL
   * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
@@ -68,6 +69,8 @@
   * Fixed non-deterministic functions such as `STRUUID()`, `RAND()` and `BNODE()` being evaluated once per branch when a join with a `UNION` is rewritten, so that an update minted one resource per branch ([64286b78a](https://github.com/openlink/virtuoso-opensource/commit/64286b78afb55a2cdcd6b415896c371e13a0cb69))
   * Fixed `SUBJECT()`, `PREDICATE()` and `OBJECT()` of triple terms, and RDF 1.2 triple terms with a number or boolean component failing to compile ([d330756d9](https://github.com/openlink/virtuoso-opensource/commit/d330756d9e1be59ee4aa66a4457531d8ea9271c4), [fefbbeeb6](https://github.com/openlink/virtuoso-opensource/commit/fefbbeeb654e9f250f049e07e0d184179cfcfffc))
   * Fixed the JSON-LD loader failing with SR130 on large documents, and SQL in its triple callbacks running in the parser's memory pool ([7facfa6c7](https://github.com/openlink/virtuoso-opensource/commit/7facfa6c71c5f969c9dc4da8a12b19f4c2893c44), [b7c33307e](https://github.com/openlink/virtuoso-opensource/commit/b7c33307e4d90fb926e28d25b9d2ae5df941e3e4))
+  * Fixed `ORDER BY` sorting numbers and dates as strings, and RDF 1.2 triple terms not sorting after literals; a query that builds triple terms now sorts by kind of term first and by value second ([175e2288c](https://github.com/openlink/virtuoso-opensource/commit/175e2288cb8efbdb94b8b71396ba9685a1a5cc7a))
+  * Fixed the rows of a `VALUES` block that is a `UNION` member being lost ([7592faf24](https://github.com/openlink/virtuoso-opensource/commit/7592faf24fe8e461a4ff7baae1563a1643ac1e02))
 
 * GQL
   * Added GQL (ISO/IEC 39075) property graph queries, translated to SPARQL and run on the SPARQL engine ([4259cca1a](https://github.com/openlink/virtuoso-opensource/commit/4259cca1ade9cdbf0e61edf96081a2024ef9cf2c), [8fbfc5582](https://github.com/openlink/virtuoso-opensource/commit/8fbfc5582d6770a7822822c07690175828ddb1e7), [40180369b](https://github.com/openlink/virtuoso-opensource/commit/40180369b908326e3fa0eb0e00c20ce72e693f57))
@@ -90,6 +93,9 @@
   * Added `SIMILARITY` and `DISTANCE` output columns to fuzzy `contains()` and `bif:contains` ([d7e867a07](https://github.com/openlink/virtuoso-opensource/commit/d7e867a07ab9939c5357362d7ebc8f306084d18c), [c778eb95f](https://github.com/openlink/virtuoso-opensource/commit/c778eb95f3ca17f6a438e1b959420f1f328e4348))
   * Added parallel scanning of fuzzy candidate words when parallel execution is enabled ([01c2d96f5](https://github.com/openlink/virtuoso-opensource/commit/01c2d96f5e2bc12a2c6beac6f07f04921a18fe23))
   * Fixed the fuzzy candidate scan to fail with an error instead of returning partial results, bounded its work, rejected out-of-range fuzzy options and fixed freed bounds kept by the wildcard range cursor ([6ad66ebe9](https://github.com/openlink/virtuoso-opensource/commit/6ad66ebe9723b0eec2a1f88b26c8329a24e3e369), [e2295021b](https://github.com/openlink/virtuoso-opensource/commit/e2295021b850245508b37eb5ab84b3fe82d308b6), [5b744ffba](https://github.com/openlink/virtuoso-opensource/commit/5b744ffba8221682ae1cb5c2313fc1464974cd49), [b6910306e](https://github.com/openlink/virtuoso-opensource/commit/b6910306e7035acc5bd46c341ae100b12c260293))
+  * Fixed fuzzy options passed as `?` parameters to `contains()` failing with FT380, FT381, FT383 or FT384 depending on the query plan; a parameter now behaves like a literal ([e69ff1d50](https://github.com/openlink/virtuoso-opensource/commit/e69ff1d508f999838c3df09ece5b28d566a6955e))
+  * Fixed parallel fuzzy scans failing with FT043 when one worker got most of the words; the work limit now applies to the whole scan ([87451671a](https://github.com/openlink/virtuoso-opensource/commit/87451671ae81cc788ed8e9c331a6277e67667fb5))
+  * Fixed fuzzy phrases and `NEAR` reporting `SIMILARITY` 0 and `DISTANCE` -1, and fuzzy phrases getting no fuzzy score bonus; a phrase with a fuzzy word now scores by its least similar word, so its score can be higher than before ([6b248672e](https://github.com/openlink/virtuoso-opensource/commit/6b248672ec798d436af932d2c048134dd4d4935c), [64ae3821f](https://github.com/openlink/virtuoso-opensource/commit/64ae3821fab9b991e7b07c493f821bd7bdea41a8))
 
 * ONNX Embeddings
   * Added ONNX hosting plugin for computing text embeddings, with inference available in a separate helper process ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
@@ -140,6 +146,7 @@
   * Marked BPEL, SyncML and SPARQL demo packages as deprecated ([300a9f631](https://github.com/openlink/virtuoso-opensource/commit/300a9f63175b6f84a3ddab32e24087f95eda236c))
   * Removed obsolete admin and installer files and reorganized shared admin and demo sources ([cac77a094](https://github.com/openlink/virtuoso-opensource/commit/cac77a09450314798dcaa8df7472e50941f03086), [4a44c5f71](https://github.com/openlink/virtuoso-opensource/commit/4a44c5f71907462dbb069bb721459465edae7017), [b4e6c71d6](https://github.com/openlink/virtuoso-opensource/commit/b4e6c71d634777ef1ba9fc605c254d5ad6fc07c8), [2babbeef5](https://github.com/openlink/virtuoso-opensource/commit/2babbeef55eee388bb59c4e5d2c9d685474a7e14), [74a66a18e](https://github.com/openlink/virtuoso-opensource/commit/74a66a18e0a2721b8fe22bd950e97ebec53158ab), [a427381fd](https://github.com/openlink/virtuoso-opensource/commit/a427381fd746b31ff640748cc153e852ff1662dc), [553cc6007](https://github.com/openlink/virtuoso-opensource/commit/553cc6007917e1e5e3092cf63ef4d92e32d087d3))
   * Fixed source distribution packaging ([79f9d810d](https://github.com/openlink/virtuoso-opensource/commit/79f9d810dc7c263b6195a2b3ff9553bf47275276), [147ebfa8c](https://github.com/openlink/virtuoso-opensource/commit/147ebfa8c97cb70c5905893c00191140380c385a), [71f95aee6](https://github.com/openlink/virtuoso-opensource/commit/71f95aee68653e187c95f7e94821dd30867e3014), [615a66c12](https://github.com/openlink/virtuoso-opensource/commit/615a66c12ac4614a4e01754b9b9ca3e8e6626fed))
+  * Removed the unused byteorder test and the test suite's wget requirement ([95c8fcd77](https://github.com/openlink/virtuoso-opensource/commit/95c8fcd77be89f553dd1ba5b9579e970fcc7b270))
 
 
 ## May 07 2026, v7.2.17
