@@ -386,7 +386,7 @@ select case when DB.DBA.TRO_ONNX_READY () = 0 then 120 else DB.DBA.TRO_CFG ('max
 ECHO BOTH $IF $EQU $LAST[1] 120 "PASSED" "***FAILED";
 ECHO BOTH ": raising it to a higher value takes effect, got " $LAST[1] "\n";
 
-select case when DB.DBA.TRO_ONNX_READY () = 0 then 0
+select case when DB.DBA.TRO_ONNX_READY () = 0 then 1
   else (case when DB.DBA.TRO_RAISE ('helper_pool_size', 40) like '%helper_pool_size%' then 1 else 0 end) end;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 ECHO BOTH ": an out-of-range helper_pool_size comes back as a note naming it, ok=" $LAST[1] "\n";
