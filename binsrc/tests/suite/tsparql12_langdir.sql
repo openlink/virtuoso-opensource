@@ -1,7 +1,7 @@
 --
 --  tsparql12_langdir.sql
 --
---  SPARQL 1.2 base-direction accessors (LANGDIR, hasLANG, hasLANGDIR) must be
+--  SPARQL 1.2 base-direction accessors (LANGDIR, hasLANG, hasLANGDIR, DIR) must be
 --  callable by the SPARQL endpoint user, not only by dba.
 --
 --  The SQL these builtins compile to calls DB.DBA.rdf_langdir_impl /
@@ -77,6 +77,16 @@ echo both ": 2c hasLANGDIR is true for a dir-tagged literal\n";
 SPARQL SELECT (STR(STRLANGDIR("x", "ar", "rtl")) AS ?v) WHERE {};
 echo both $if $equ $LAST[1] "x" "PASSED" "***FAILED";
 echo both ": 2d STRLANGDIR still resolves under the SPARQL qualifier\n";
+
+SPARQL SELECT (DIR(STRLANGDIR("x", "ar", "rtl")) AS ?d) WHERE {};
+echo both $if $equ $state "OK" "PASSED" "***FAILED";
+echo both ": 2e DIR resolves under the SPARQL qualifier\n";
+echo both $if $equ $LAST[1] "rtl" "PASSED" "***FAILED";
+echo both ": 2e DIR returns rtl under the SPARQL qualifier\n";
+
+SPARQL SELECT ?d WHERE { BIND (DIR(STRLANGDIR("x", "ar", "ltr")) AS ?d) };
+echo both $if $equ $LAST[1] "ltr" "PASSED" "***FAILED";
+echo both ": 2f DIR with BIND ... AS\n";
 
 set_qualifier ('DB.DBA');
 

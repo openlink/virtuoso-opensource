@@ -7187,7 +7187,6 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "struuid"		, SPAR_BIF_STRUUID		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "strlangdir"	, SPAR_BIF_STRLANGDIR		, 'S'	, SSG_SD_SPARQL12		, 3	, 3	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL}	, SPART_VARR_IS_LIT	},
   { "strdir"		, SPAR_BIF_STRDIR		, 'S'	, SSG_SD_SPARQL12		, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}		, SPART_VARR_IS_LIT	},
-  { "dir"		, SPAR_BIF_DIR			, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
   /* '-' (special code generation), not 'B': the hand-written cases in
      ssg_print_builtin_expn() emit DB.DBA.-qualified rdf_*_impl() calls with the
      right boolean wrapping.  The generic 'B' path emits the name UNqualified, so
@@ -7197,6 +7196,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "haslang"		, SPAR_BIF_HASLANG		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
   { "haslangdir"	, SPAR_BIF_HASLANGDIR		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
   { "langdir"		, SPAR_BIF_LANGDIR		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "dir"		, SPAR_BIF_DIR			, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "istriple"		, SPAR_BIF_ISTRIPLE		, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_NOT_NULL	},
   { "triple"		, SPAR_BIF_TRIPLE		, 'S'	, SSG_SD_SPARQL12		, 3	, 3	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, SSG_VALMODE_LONG}	, SPART_VARR_IS_IRI | SPART_VARR_IS_LIT	},
   { "substr"		, SPAR_BIF_SUBSTR		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 3	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, SSG_VALMODE_NUM, SSG_VALMODE_NUM}			, SPART_VARR_IS_LIT	},

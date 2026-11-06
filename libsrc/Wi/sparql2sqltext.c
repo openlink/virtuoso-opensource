@@ -4819,7 +4819,7 @@ expanded_sameterm_ready:
                   ssg_puts (" DB.DBA.rdf_dir_impl (");
                   ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_LONG, NULL_ASNAME);
                   ssg_puts (")");
-                  goto cant_have_asname;
+                  goto print_asname;
                 }
               case SPAR_BIF_ISTRIPLE:
                 {
