@@ -1401,6 +1401,46 @@ ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO ": SR6 without SERVICE a property read is translated as before (guard): " $LAST[1] "\n";
 
+-- LN1-LN5: a node with no label inside SERVICE is the remote graph's node
+-- set, a nested SELECT DISTINCT; an equality between it and an IRI in the
+-- block's WHERE was a FILTER beside that SELECT, which the SPARQL compiler
+-- does not send: the endpoint was asked for every node it has (DBpedia
+-- stops at 10000), and each row came back as the constant.  The equality
+-- must be in the query sent.
+select 99;
+select case when r like '%urn:gql:ms:sv:a%' then 1 else 0 end, left (r, 160)
+  from (select DB.DBA.GQL_MS_T_SVC_REMOTE ('PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (n) WHERE n = ex:a } RETURN n') as r) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": LN1 a node with no label equal to an IRI inside SERVICE, the IRI is sent: " $LAST[2] "\n";
+
+select 99;
+select case when r like '%urn:gql:ms:sv:a%' then 1 else 0 end, left (r, 160)
+  from (select DB.DBA.GQL_MS_T_SVC_REMOTE ('PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (n) WHERE ex:a = n } RETURN n') as r) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": LN2 the same, the IRI on the left: " $LAST[2] "\n";
+
+select 99;
+select case when r like '%urn:gql:ms:sv:a%' then 1 else 0 end, left (r, 160)
+  from (select DB.DBA.GQL_MS_T_SVC_REMOTE ('SERVICE <http://example.com/sparql> { MATCH (n) WHERE iri(''urn:gql:ms:sv:a'') = n } RETURN n') as r) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": LN3 an iri () call is an expression, and was sent (guard): " $LAST[2] "\n";
+
+select 99;
+select case when r like '%urn:gql:ms:sv:a%' then 1 else 0 end, left (r, 160)
+  from (select DB.DBA.GQL_MS_T_SVC_REMOTE ('PREFIX ex: <urn:gql:ms:sv:> SERVICE <http://example.com/sparql> { MATCH (n) WHERE n = ex:a RETURN n AS m } RETURN m') as r) x;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": LN4 a block with its own RETURN sends the equality in its SELECT (guard): " $LAST[2] "\n";
+
+select 99;
+select case when DB.DBA.GQL_TO_SPARQL ('PREFIX ex: <urn:gql:ms:sv:> MATCH (n) WHERE n = ex:a RETURN n') like '%} } .%FILTER%(?gql_n_n = <urn:gql:ms:sv:a>)%' then 1 else 0 end;
+ECHO $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO ": LN5 outside SERVICE the equality stays a FILTER beside the node set (guard): " $LAST[1] "\n";
+
 sparql clear graph <urn:gql:ms:d>;
 sparql clear graph <urn:gql:ms:l>;
 sparql clear graph <urn:gql:ms:lr>;
