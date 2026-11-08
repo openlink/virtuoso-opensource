@@ -116,7 +116,7 @@
           -- Initialize variables
           declare aSessInfo any;
 
-          aSessInfo := ODRIVE.WA.session_restore (params);
+          aSessInfo := ODRIVE.WA.session_restore (params, lines);
           self.domain_id := cast (get_keyword ('domain_id', aSessInfo, '-1') as integer);
           self.owner_id := ODRIVE.WA.domain_owner_id (self.domain_id);
           self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);

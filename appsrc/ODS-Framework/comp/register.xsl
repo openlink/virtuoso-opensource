@@ -84,7 +84,9 @@
             http_header (sprintf ('Location: %s%ssid=%s&realm=wa\r\n', self.ret_page, delim, self.sid));
           }
           if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
-            http_header (http_header_get () || sprintf ('Set-Cookie: sid=%s; path=/\r\n', self.sid));
+                http_header (http_header_get () || 
+                          sprintf ('Set-Cookie: sid=%s; path=/\r\n', self.sid) ||
+                          sprintf ('Set-Cookie: realm=%s; %s path=/\r\n', self.realm, expire));
 
           http_flush ();
         }

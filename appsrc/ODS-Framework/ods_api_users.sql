@@ -174,8 +174,8 @@ create procedure ODS_USER_LOGIN (
   if (not isnull (pUser)) {
     sid := vspx_sid_generate ();
     realm := 'wa';
-    insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-      values (realm, sid, pUser, serialize ( vector ('vspx_user', pUser)), now());
+    insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+      values (realm, sid, pUser, serialize ( vector ('vspx_user', pUser)), now(), http_client_ip());
     DB.DBA.ODS_ERROR_XML (sStream, 'OK', 'OK');
     DB.DBA.ODS_SESSION_XML (sStream, sid, realm);
     if (pDetail) {
