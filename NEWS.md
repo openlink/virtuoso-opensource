@@ -1,6 +1,6 @@
 # NEWS
 
-## November 06 2026, v7.2.18 unreleased (development branch)
+## November 08 2026, v7.2.18 unreleased (development branch)
 
 * Virtuoso Engine
   * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
@@ -56,6 +56,7 @@
   * Added distinct-subquery optimization for eligible `COUNT(DISTINCT ...)` queries over RDF quads; set `[Flags] enable_sparql_count_distinct_dt = 0` to disable it ([0c97ae020](https://github.com/openlink/virtuoso-opensource/commit/0c97ae02074cc865252b42abf47206186da14989))
   * Added `[Flags] sparql_all_bif_unsafe` option to disable BIF extensions ([925adc56f](https://github.com/openlink/virtuoso-opensource/commit/925adc56f0218db0726157f8b4e98ec754f61b3d))
   * Added DBA-configurable information box on the `/sparql` form using the `sparql-ui-info-box` registry setting ([4c0323e88](https://github.com/openlink/virtuoso-opensource/commit/4c0323e887d81d81f1a22ddfde58b718fbbf0464))
+  * Added SPARQL 1.2 `LOAD` handling of TriG: a document served as `application/trig` is now read as TriG, and `LOAD ... INTO GRAPH` fails on a document with named graphs ([acafcf82c](https://github.com/openlink/virtuoso-opensource/commit/acafcf82c6ead2347052c8bfd107f9609215a34c))
   * Changed `SAMPLE()` to use the built-in MIN aggregate; set `[Flags] enable_sparql_sample_min = 0` to restore the previous implementation ([f4b6fbda1](https://github.com/openlink/virtuoso-opensource/commit/f4b6fbda1bbac058867258c51d31f3fa804a2514))
   * Removed per-row PL calls from `LANG()`, boolean-to-number casts and string constants ([ffd95c4db](https://github.com/openlink/virtuoso-opensource/commit/ffd95c4dbee8d10acd7788c6ef230c1a6a4c3dd4))
   * Fixed repeated node expansion, duplicate results and unbound starts in transitive paths ([933a404b7](https://github.com/openlink/virtuoso-opensource/commit/933a404b75423e638b418e5fb20ca3aecb45d21f))
@@ -71,6 +72,20 @@
   * Fixed the JSON-LD loader failing with SR130 on large documents, and SQL in its triple callbacks running in the parser's memory pool ([7facfa6c7](https://github.com/openlink/virtuoso-opensource/commit/7facfa6c71c5f969c9dc4da8a12b19f4c2893c44), [b7c33307e](https://github.com/openlink/virtuoso-opensource/commit/b7c33307e4d90fb926e28d25b9d2ae5df941e3e4))
   * Fixed `ORDER BY` sorting numbers and dates as strings, and RDF 1.2 triple terms not sorting after literals; a query that builds triple terms now sorts by kind of term first and by value second ([175e2288c](https://github.com/openlink/virtuoso-opensource/commit/175e2288cb8efbdb94b8b71396ba9685a1a5cc7a))
   * Fixed the rows of a `VALUES` block that is a `UNION` member being lost ([7592faf24](https://github.com/openlink/virtuoso-opensource/commit/7592faf24fe8e461a4ff7baae1563a1643ac1e02))
+  * Fixed nested RDF 1.2 triple terms in `INSERT DATA` and `DELETE DATA` failing with SP031 ([415916e34](https://github.com/openlink/virtuoso-opensource/commit/415916e346412214775fbf0dd98b90e7e5d3fe74))
+  * Fixed blank nodes inside RDF 1.2 triple terms in `INSERT DATA` and templates being rejected, or naming a node that was never inserted ([e39727c65](https://github.com/openlink/virtuoso-opensource/commit/e39727c65438166e5c1c983afa0c17d42d77dcc0))
+  * Fixed numbers bound from RDF 1.2 triple-term patterns becoming strings, so that arithmetic and comparisons on them failed ([1f9975e59](https://github.com/openlink/virtuoso-opensource/commit/1f9975e59875c71d798baf1790a3ce51a5c5e4ea))
+  * Fixed SPARQL 1.2 Update `DELETE` and `INSERT` templates and `<< s p o ~ id >>` patterns over triple terms, and `DELETE WHERE` and `CONSTRUCT WHERE` returning blank nodes instead of triple terms ([4119d749c](https://github.com/openlink/virtuoso-opensource/commit/4119d749cd69c1dee02d36e40007f4d31aea4f91))
+  * Fixed unnamed RDF 1.2 reifiers written by SPARQL becoming one IRI shared by all annotations of a triple; reifiers already stored in that form are still read ([2aaadedd8](https://github.com/openlink/virtuoso-opensource/commit/2aaadedd8b830c1ccb3670a75c7d3c2450a00753))
+  * Fixed RDF 1.2 annotation blocks after `~` storing an extra empty reifier, and only the last of several blocks becoming a reifier ([a937b2d17](https://github.com/openlink/virtuoso-opensource/commit/a937b2d170ef34c75b970b0626f7d863a598ec80))
+  * Fixed decimals and doubles in RDF 1.2 triple terms written by SPARQL getting another term than the loaders make; such triple terms stored by an earlier development build no longer match and need to be inserted again ([617a6429c](https://github.com/openlink/virtuoso-opensource/commit/617a6429c036618940f694745dec61821c8f4f50))
+  * Fixed annotated triple-term objects in `INSERT` and `CONSTRUCT` templates being written as a blank node instead of the triple term ([90a0c635b](https://github.com/openlink/virtuoso-opensource/commit/90a0c635b951a9b37c312ba84c89bcc91ba618da))
+  * Fixed RDF 1.2 annotations on triple-term objects never matching in `WHERE` ([78053210b](https://github.com/openlink/virtuoso-opensource/commit/78053210b098137e77d52b57dfd10aaa679e43cd))
+  * Fixed RDF 1.2 triple terms in Turtle, TriG and N-Triples output: they are now written as `<<( s p o )>>`, a blank node inside keeps its label, and nice Turtle no longer writes their internal IRIs ([d166fbf5a](https://github.com/openlink/virtuoso-opensource/commit/d166fbf5a88d35c4ad287dcdcf99d1c9b372e6c2), [807544aa1](https://github.com/openlink/virtuoso-opensource/commit/807544aa10da9dae058cccdae9fde960269c142f), [5fe8abc02](https://github.com/openlink/virtuoso-opensource/commit/5fe8abc0257960806e93679ea89f0d74e3888fea))
+  * Fixed TSV results writing triple terms as their internal IRIs and IRI-like strings as IRIs ([603ca3250](https://github.com/openlink/virtuoso-opensource/commit/603ca325028fb9fe43fcd917a014af3db4e7d8dd))
+  * Fixed HTML and XHTML result pages failing with HT069 when written outside an HTTP request, as for `output:format "HTML"` and DAV RDF resources ([e5062d40f](https://github.com/openlink/virtuoso-opensource/commit/e5062d40fe4d75b3e62b8d9237ba3aa6d9364f7a))
+  * Fixed `LANGDIR`, `hasLANG`, `hasLANGDIR` and `DIR` failing with SR185 for the anonymous `/sparql` user, `DIR` returning an empty string, and `LANGDIR` with `AS` failing with SP031 ([e62b4b501](https://github.com/openlink/virtuoso-opensource/commit/e62b4b5018872a2fc00a3ad006dd28c094d61e64), [ca61bc056](https://github.com/openlink/virtuoso-opensource/commit/ca61bc05698556f1ad08abf690bb49e476c7f835))
+  * Fixed graph permissions of named graphs in TriG and N-Quads documents loaded by `LOAD` or sponging ([1226ca85c](https://github.com/openlink/virtuoso-opensource/commit/1226ca85ce665e17da86580362dfaff01b289f49))
 
 * GQL
   * Added GQL (ISO/IEC 39075) property graph queries, translated to SPARQL and run on the SPARQL engine ([4259cca1a](https://github.com/openlink/virtuoso-opensource/commit/4259cca1ade9cdbf0e61edf96081a2024ef9cf2c), [8fbfc5582](https://github.com/openlink/virtuoso-opensource/commit/8fbfc5582d6770a7822822c07690175828ddb1e7), [40180369b](https://github.com/openlink/virtuoso-opensource/commit/40180369b908326e3fa0eb0e00c20ce72e693f57))
