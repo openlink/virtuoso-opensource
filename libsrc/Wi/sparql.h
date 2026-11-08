@@ -462,6 +462,7 @@ typedef struct sparp_s {
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
   int sparp_query_uses_triple_terms;	/*!< Nonzero if the source query builds a triple term, by <<( )>> or TRIPLE(); ORDER BY then sorts by kind of term first */
   dk_set_t sparp_bare_tt_nodes;		/*!< Set of SPAR_TRIPLE_TERM nodes built from <<(s p o)>> syntax; used by parser-only validation rules. */
+  dk_set_t sparp_tt_helper_patterns;	/*!< Names of generated blank nodes that stand for matched triple terms in WHERE patterns, each followed by its SPAR_TRIPLE_TERM pattern; DELETE WHERE and CONSTRUCT WHERE put the pattern back into the template. */
   dk_set_t sparp_trans_starts;		/*!< Start point subqueries made for transitive triples with both ends unbound, attached after parsing if the ends are really unbound. */
 /* Environment of lex */
   size_t sparp_text_ofs;
@@ -505,6 +506,8 @@ typedef struct sparp_s {
   int sparp_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
   int sparp_global_num_offset;		/*!< If \c sparp_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from \c sparp_global_num_offset up, some number of first params are system-specific. */
   dk_set_t sparp_ann_reifier_suffixes;	/*!< Accumulated reifier nodes from ~ annotation suffixes, consumed by spar_object_with_ann */
+  dk_set_t sparp_ann_block_subjects;	/*!< Subjects of the {| |} blocks of the current object that follow no reifier, each made a reifier by spar_object_with_ann */
+  SPART *sparp_ann_pending_reifier;	/*!< Reifier of the ~ suffix just parsed: a {| |} block right after it is about that reifier */
 } sparp_t;
 
 

@@ -103,12 +103,12 @@ spart_safe_strval (SPART *node, char *buf, size_t bufsz)
               { snprintf (buf, bufsz, "%s^^%s", v, (const char *)dt); return buf; }
             return v;
           }
-        /* Preserve lexical form when parser provides one (e.g., true/false). */
-        if (orig && (DV_STRING == DV_TYPE_OF (orig) || DV_UNAME == DV_TYPE_OF (orig)) && orig[0])
-          return orig;
         /* Boolean literals are internally numeric in some parse paths; keep RDF lexical form. */
         if ((dt == uname_xmlschema_ns_uri_hash_boolean) && (DV_LONG_INT == dtp))
           return unbox (val) ? "true" : "false";
+        /* A number is encoded with its type, as rdf_star_tt_val_to_cstr () encodes
+           it for the Turtle loader and at run time, so all three mint one IRI for
+           one term; its original lexical form ("2.50", "1.5e0") would mint another. */
         if (DV_LONG_INT == dtp)
           { snprintf (buf, bufsz, "i:%ld", (long) unbox (val)); return buf; }
         if (DV_NUMERIC == dtp)
@@ -138,6 +138,9 @@ spart_safe_strval (SPART *node, char *buf, size_t bufsz)
             snprintf (buf, bufsz, "d:%s", dbuf);
             return buf;
           }
+        /* Preserve lexical form when parser provides one. */
+        if (orig && (DV_STRING == DV_TYPE_OF (orig) || DV_UNAME == DV_TYPE_OF (orig)) && orig[0])
+          return orig;
         if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
           { snprintf (buf, bufsz, "id:%llu", (unsigned long long) unbox_iri_id (val)); return buf; }
         if (DV_DATETIME == dtp || DV_DATE == dtp || DV_TIME == dtp)
@@ -259,7 +262,9 @@ spar_is_bare_triple_term_node (sparp_t *sparp, SPART *tt)
   return 0;
 }
 
-static int
+/* Not static: the constructor composer (sparul2sql.c) uses it to find triple
+   terms that can only be minted at run time (declared in sparql2sql.h). */
+int
 spar_triple_term_has_blank_node_component (SPART *node)
 {
   if (NULL == node)
@@ -393,6 +398,13 @@ spar_tt_decompose_node (sparp_t *sparp, SPART *node_expr, SPART *tt_pat, dk_set_
   SPART *s_chk, *p_chk, *o_chk;
   if ((NULL == node_expr) || (NULL == tt_pat) || (SPAR_TRIPLE_TERM != SPART_TYPE (tt_pat)))
     return;
+  if ((SPAR_BLANK_NODE_LABEL == SPART_TYPE (node_expr)) && (1 == node_expr->_.bnode.bracketed))
+    {
+      /* A generated blank node standing for a matched triple term: remember the
+         pattern for a template made from this WHERE (DELETE WHERE, CONSTRUCT WHERE). */
+      t_set_push (&(sparp->sparp_tt_helper_patterns), tt_pat);
+      t_set_push (&(sparp->sparp_tt_helper_patterns), node_expr->_.var.vname);
+    }
   if (SPAR_IS_BLANK_OR_VAR (node_expr) && (NULL != spar_find_bound_tt_var (sparp, node_expr->_.var.vname)))
     tt_is_bound_bare = 1;
   tt_check_fname = (spar_is_bare_triple_term_node (sparp, tt_pat) || tt_is_bound_bare) ?
@@ -729,6 +741,44 @@ spar_replace_ann_subject_in_current_acc_triples (sparp_t *sparp, SPART *from_sub
         }
       acc_triples = acc_triples->next;
     }
+}
+
+/* True if subj is one of the listed annotation block subjects, or a copy of one. */
+static int
+spar_ann_subject_is_listed (dk_set_t ann_subjs, SPART *subj)
+{
+  if ((NULL == subj) || !SPAR_IS_BLANK_OR_VAR (subj))
+    return 0;
+  DO_SET (SPART *, ann_subj, &ann_subjs)
+    {
+      if (!strcmp (ann_subj->_.var.vname, subj->_.var.vname))
+        return 1;
+    }
+  END_DO_SET ()
+  return 0;
+}
+
+/* The annotation suffix state of the object being parsed is set aside while
+   the content of one of its {| |} blocks is parsed, so an object inside the
+   block neither sees nor consumes the reifiers and blocks of the outer one. */
+static dk_set_t
+spar_ann_suffix_state_save (sparp_t *sparp)
+{
+  dk_set_t saved = NULL;
+  t_set_push (&saved, sparp->sparp_ann_block_subjects);
+  t_set_push (&saved, sparp->sparp_ann_reifier_suffixes);
+  sparp->sparp_ann_reifier_suffixes = NULL;
+  sparp->sparp_ann_block_subjects = NULL;
+  sparp->sparp_ann_pending_reifier = NULL;
+  return saved;
+}
+
+static void
+spar_ann_suffix_state_restore (sparp_t *sparp, dk_set_t saved)
+{
+  sparp->sparp_ann_reifier_suffixes = (dk_set_t)(saved->data);
+  sparp->sparp_ann_block_subjects = (dk_set_t)(saved->next->data);
+  sparp->sparp_ann_pending_reifier = NULL; /* a block, not a reifier, precedes the next suffix */
 }
 
 static int
@@ -2544,36 +2594,44 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 	: spar_var_or_term spar_ann_suffixes {
 		if (spar_current_predicate_is_path (sparp_arg))
 		  sparyyerror (sparp_arg, "Annotation syntax does not allow property paths");
-		/* Replace temporary annotation dummy subjects with a real reifier node
-		   and constrain it to match the current (s, p, o) triple term. */
+		/* Each {| |} block that follows no reifier has a subject of its own, made
+		   when the block was parsed: make every one a reifier of the current
+		   (s, p, o).  A block right after a ~ is about that reifier, and is
+		   covered by the reifier suffixes below. */
 		  SPART *main_s = NULL, *main_p = NULL, *main_o = $1;
-		  SPART *ann_subj = NULL;
+		  SPART *tt_obj_node = NULL;
 		  SPART *ann_graph = NULL;
 		  int ann_graph_pushed_for_main = 0;
 		  ccaddr_t s_str = NULL, p_str = NULL, o_str = NULL;
+		  dk_set_t ann_subjs = sparp_arg->sparp_ann_block_subjects;
 		  dk_set_t acc_triples;
+		  dk_set_t obj_gp_st = sparp_env()->spare_context_gp_subtypes;
+		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)) &&
+		    !(obj_gp_st && (CONSTRUCT_L == (ptrlong)(obj_gp_st->data))) )
+		    {
+		      /* In WHERE a triple-term object is matched through a generated blank
+		         node, bound by the triple below.  The annotation and reifier
+		         constraints use that node, not the term's own variables, which its
+		         decomposition binds only after them. */
+		      tt_obj_node = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+		      main_o = tt_obj_node;
+		    }
+		  sparp_arg->sparp_ann_block_subjects = NULL;
+		  sparp_arg->sparp_ann_pending_reifier = NULL;
 		  acc_triples = (dk_set_t)(sparp_env()->spare_acc_triples->data);
-		  while (NULL != acc_triples)
+		  while ((NULL != ann_subjs) && (NULL != acc_triples))
 		    {
 		      SPART *ann_tr = (SPART *)(acc_triples->data);
-		      if ((NULL != ann_tr) && (SPAR_TRIPLE == SPART_TYPE (ann_tr)))
+		      if ((NULL != ann_tr) && (SPAR_TRIPLE == SPART_TYPE (ann_tr)) &&
+		          (NULL != ann_tr->_.triple.tr_graph) &&
+		          spar_ann_subject_is_listed (ann_subjs, ann_tr->_.triple.tr_subject))
 		        {
-		          SPART *ann_subj_cur = ann_tr->_.triple.tr_subject;
-		          if ((NULL != ann_subj_cur) && SPAR_IS_BLANK_OR_VAR (ann_subj_cur))
-		            {
-		              if ((!strncmp (ann_subj_cur->_.var.vname, "ann_reif", 8)) ||
-		                  (!strncmp (ann_subj_cur->_.var.vname, "_:ann", 5)))
-		                {
-		                  ann_subj = ann_subj_cur;
-		                  if (NULL != ann_tr->_.triple.tr_graph)
-		                    ann_graph = (SPART *) t_box_copy_tree ((caddr_t) ann_tr->_.triple.tr_graph);
-		                  break;
-		                }
-		            }
+		          ann_graph = (SPART *) t_box_copy_tree ((caddr_t) ann_tr->_.triple.tr_graph);
+		          break;
 		        }
 		      acc_triples = acc_triples->next;
 		    }
-		  if (NULL != ann_subj)
+		  if (NULL != ann_subjs)
 		    {
 		      if (NULL == ann_graph)
 		        ann_graph = spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ann_g"));
@@ -2583,14 +2641,10 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		      while (NULL != acc_triples)
 		        {
 		          SPART *ann_tr = (SPART *)(acc_triples->data);
-		          if ((NULL != ann_tr) && (SPAR_TRIPLE == SPART_TYPE (ann_tr)))
-		            {
-		              SPART *ann_subj_cur = ann_tr->_.triple.tr_subject;
-		              if ((NULL != ann_subj_cur) && SPAR_IS_BLANK_OR_VAR (ann_subj_cur) &&
-		                  !strcmp (ann_subj_cur->_.var.vname, ann_subj->_.var.vname) &&
-		                  (NULL == ann_tr->_.triple.tr_graph))
-		                ann_tr->_.triple.tr_graph = (SPART *) t_box_copy_tree ((caddr_t) ann_graph);
-		            }
+		          if ((NULL != ann_tr) && (SPAR_TRIPLE == SPART_TYPE (ann_tr)) &&
+		              (NULL == ann_tr->_.triple.tr_graph) &&
+		              spar_ann_subject_is_listed (ann_subjs, ann_tr->_.triple.tr_subject))
+		            ann_tr->_.triple.tr_graph = (SPART *) t_box_copy_tree ((caddr_t) ann_graph);
 		          acc_triples = acc_triples->next;
 		        }
 		      dk_set_t tt_gp_st = sparp_env()->spare_context_gp_subtypes;
@@ -2605,71 +2659,72 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		        p_str = SPAR_LIT_OR_QNAME_VAL (main_p);
 		      if (main_o && SPAR_IS_LIT_OR_QNAME (main_o))
 		        o_str = SPAR_LIT_OR_QNAME_VAL (main_o);
-		      if ((NULL != s_str) && (NULL != p_str) && (NULL != o_str))
+		      DO_SET (SPART *, ann_subj, &ann_subjs)
 		        {
-		          SPART *tt_iri = spart_make_triple_term_qname (sparp_arg, main_s, main_p, main_o, NULL);
-		          SPART *reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
-		            t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
-		          SPART *reifies_subj = ann_subj;
-		          SPART *reifies_obj = tt_iri;
-		          if (tt_in_ctor)
+		          if ((NULL != s_str) && (NULL != p_str) && (NULL != o_str))
 		            {
-		              SPART *tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_iri);
-		              spar_replace_ann_subject_in_current_acc_triples (sparp_arg, ann_subj, tt_reifier_node);
-		              reifies_subj = tt_reifier_node;
-		              reifies_obj = spart_make_triple_term_reified_object_node (sparp_arg, tt_iri, tt_reifier_node);
-		            }
-		          spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
-		            (SPART *) t_box_copy_tree ((caddr_t) reifies_subj),
-		            reifies_pred, reifies_obj, NULL, NULL, 0x0);
-		        }
-		      else
-		        {
-		          /* Variable components: keep a SPAR_TRIPLE_TERM node so SQL generation
-		             can emit runtime RDF_STAR_TT_IRI() safely. */
-		          if ((NULL != main_s) && (NULL != main_p) && (NULL != main_o))
-		            {
+		              SPART *tt_iri = spart_make_triple_term_qname (sparp_arg, main_s, main_p, main_o, NULL);
 		              SPART *reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
 		                t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
+		              SPART *reifies_subj = ann_subj;
+		              SPART *reifies_obj = tt_iri;
 		              if (tt_in_ctor)
 		                {
-		                  SPART *tt_iri;
-		                  SPART *tt_reifier_node;
-		                  if (spar_triple_term_has_blank_node_component (main_s) ||
-		                      spar_triple_term_has_blank_node_component (main_p) ||
-		                      spar_triple_term_has_blank_node_component (main_o))
-		                    tt_iri = spart_make_triple_term_qname (sparp_arg, main_s, main_p, main_o, NULL);
-		                  else
-		                    tt_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM,
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_s),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_p),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_o));
-		                  tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_iri);
+		                  SPART *tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_iri);
 		                  spar_replace_ann_subject_in_current_acc_triples (sparp_arg, ann_subj, tt_reifier_node);
-		                  spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
-		                    (SPART *) t_box_copy_tree ((caddr_t) tt_reifier_node),
-		                    reifies_pred,
-		                    spart_make_triple_term_reified_object_node (sparp_arg, tt_iri, tt_reifier_node),
-		                    NULL, NULL, 0x0);
+		                  reifies_subj = tt_reifier_node;
+		                  reifies_obj = spart_make_triple_term_reified_object_node (sparp_arg, tt_iri, tt_reifier_node);
 		                }
-		              else
+		              spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
+		                (SPART *) t_box_copy_tree ((caddr_t) reifies_subj),
+		                reifies_pred, reifies_obj, NULL, NULL, 0x0);
+		            }
+		          else
+		            {
+		              /* Variable components: keep a SPAR_TRIPLE_TERM node so SQL generation
+		                 can emit runtime RDF_STAR_TT_IRI() safely. */
+		              if ((NULL != main_s) && (NULL != main_p) && (NULL != main_o))
 		                {
-		                  SPART *tt_iri_var = spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ann_tt_iri"));
-		                  SPART *tt_iri_calc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_IRI",
-		                    (SPART **) t_list (3,
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_s),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_p),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_o)));
-		                  SPART *tt_iri_eq;
-		                  spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
-		                    (SPART *) t_box_copy_tree ((caddr_t) ann_subj),
-		                    reifies_pred, (SPART *) t_box_copy_tree ((caddr_t) tt_iri_var), NULL, NULL, 0x0);
-		                  SPAR_BIN_OP (tt_iri_eq, BOP_EQ,
-		                    (SPART *) t_box_copy_tree ((caddr_t) tt_iri_var), tt_iri_calc);
-		                  spar_gp_add_filter (sparp_arg, tt_iri_eq, 0);
+		                  SPART *reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
+		                    t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
+		                  if (tt_in_ctor)
+		                    {
+		                      SPART *tt_iri;
+		                      SPART *tt_reifier_node;
+		                      /* Minted per solution: from the values of variables, and
+		                         after a blank node inside is (CTOR_OPCODE_TRIPLE_TERM). */
+		                      tt_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM,
+		                        (SPART *) t_box_copy_tree ((caddr_t) main_s),
+		                        (SPART *) t_box_copy_tree ((caddr_t) main_p),
+		                        (SPART *) t_box_copy_tree ((caddr_t) main_o));
+		                      tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_iri);
+		                      spar_replace_ann_subject_in_current_acc_triples (sparp_arg, ann_subj, tt_reifier_node);
+		                      spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
+		                        (SPART *) t_box_copy_tree ((caddr_t) tt_reifier_node),
+		                        reifies_pred,
+		                        spart_make_triple_term_reified_object_node (sparp_arg, tt_iri, tt_reifier_node),
+		                        NULL, NULL, 0x0);
+		                    }
+		                  else
+		                    {
+		                      SPART *tt_iri_var = spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ann_tt_iri"));
+		                      SPART *tt_iri_calc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_IRI",
+		                        (SPART **) t_list (3,
+		                          (SPART *) t_box_copy_tree ((caddr_t) main_s),
+		                          (SPART *) t_box_copy_tree ((caddr_t) main_p),
+		                          (SPART *) t_box_copy_tree ((caddr_t) main_o)));
+		                      SPART *tt_iri_eq;
+		                      spar_gp_add_triplelike (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) ann_graph),
+		                        (SPART *) t_box_copy_tree ((caddr_t) ann_subj),
+		                        reifies_pred, (SPART *) t_box_copy_tree ((caddr_t) tt_iri_var), NULL, NULL, 0x0);
+		                      SPAR_BIN_OP (tt_iri_eq, BOP_EQ,
+		                        (SPART *) t_box_copy_tree ((caddr_t) tt_iri_var), tt_iri_calc);
+		                      spar_gp_add_filter (sparp_arg, tt_iri_eq, 0);
+		                    }
 		                }
 		            }
 		        }
+		      END_DO_SET ()
 		    }
 		/* Emit rdf:reifies triples for accumulated reifier suffixes from ~ syntax.
 		   In CONSTRUCT/INSERT context, each explicit or anonymous reifier gets a
@@ -2682,7 +2737,7 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		        dk_set_t tt_gp_st_r = sparp_env()->spare_context_gp_subtypes;
 		        int tt_in_ctor_r = (tt_gp_st_r && (CONSTRUCT_L == (ptrlong)(tt_gp_st_r->data)));
 		        {
-		          SPART *main_s_r = NULL, *main_p_r = NULL, *main_o_r = $1;
+		          SPART *main_s_r = NULL, *main_p_r = NULL, *main_o_r = ((NULL != tt_obj_node) ? tt_obj_node : $1);
 		          ccaddr_t s_str_r = NULL, p_str_r = NULL, o_str_r = NULL;
 		          if (NULL != sparp_env()->spare_context_subjects)
 		            main_s_r = (SPART *)(sparp_env()->spare_context_subjects->data);
@@ -2715,20 +2770,16 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		                }
 		              else if ((NULL != main_s_r) && (NULL != main_p_r) && (NULL != main_o_r))
 		                {
-		                  /* Variable triple components: use SPAR_TRIPLE_TERM for runtime IRI */
+		                  /* Variable or blank-node triple components: use SPAR_TRIPLE_TERM for
+		                     the run-time IRI (a blank node inside: CTOR_OPCODE_TRIPLE_TERM) */
 		                  SPART *tt_iri_r;
 		                  SPART *reifies_pred_r;
 		                  SPART *tt_reifies_obj_r;
 		                  dk_set_t iter;
-		                  if (spar_triple_term_has_blank_node_component (main_s_r) ||
-		                      spar_triple_term_has_blank_node_component (main_p_r) ||
-		                      spar_triple_term_has_blank_node_component (main_o_r))
-		                    tt_iri_r = spart_make_triple_term_qname (sparp_arg, main_s_r, main_p_r, main_o_r, NULL);
-		                  else
-		                    tt_iri_r = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM,
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_s_r),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_p_r),
-		                      (SPART *) t_box_copy_tree ((caddr_t) main_o_r));
+		                  tt_iri_r = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM,
+		                    (SPART *) t_box_copy_tree ((caddr_t) main_s_r),
+		                    (SPART *) t_box_copy_tree ((caddr_t) main_p_r),
+		                    (SPART *) t_box_copy_tree ((caddr_t) main_o_r));
 		                  tt_reifies_obj_r = spart_make_triple_term_reified_object_node (sparp_arg, tt_iri_r, NULL);
 		                  reifies_pred_r = spartlist (sparp_arg, 2, SPAR_QNAME,
 		                    t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
@@ -2804,7 +2855,16 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		/* Add the main triple, annotation triples already added by spar_props */
 		{
 		  SPART *bound_tt_pat = spar_bound_tt_pattern_of_node (sparp_arg, $1);
-		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)))
+		  dk_set_t main_gp_st = sparp_env()->spare_context_gp_subtypes;
+		  if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)) &&
+		    main_gp_st && (CONSTRUCT_L == (ptrlong)(main_gp_st->data)) )
+		    {
+		      /* In a template the triple term is the object itself, as in
+		         spar_ograph_node; matching it through a blank node is for WHERE. */
+		      spar_gp_add_triplelike (sparp_arg, NULL, NULL, NULL, $1, NULL, NULL, 0x0);
+		      $$ = $1;
+		    }
+		  else if ((NULL != $1) && (SPAR_TRIPLE_TERM == SPART_TYPE ($1)))
 		  {
 		    SPART *tt_subj = $1->_.triple_term.subject;
 		    SPART *tt_pred = $1->_.triple_term.predicate;
@@ -2815,7 +2875,8 @@ spar_object_with_ann	/* RDF 1.2 Object with annotation block {| ... |} or reifie
 		        int has_known_o = (tt_obj && SPAR_IS_LIT_OR_QNAME (tt_obj));
 		        SPART *tt_bnode;
 		        dk_set_t bind_revlist = NULL;
-		        tt_bnode = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+		        tt_bnode = ((NULL != tt_obj_node) ? tt_obj_node :
+		          spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1) );
 		        spar_gp_add_triplelike (sparp_arg, NULL, NULL, NULL, tt_bnode, NULL, NULL, 0x0);
 		        if (has_known_p)
 		          {
@@ -2960,27 +3021,22 @@ spar_ann_suffixes	/* One or more annotation suffixes ({| |} or ~ reifier) */
 
 spar_ann_suffix		/* Single annotation block or reifier */
 	: _LBRA _BAR {
-		/* Push temporary annotation subject for property list */
-		dk_set_t ann_gp_st = sparp_env()->spare_context_gp_subtypes;
-		int ann_in_ctor = (ann_gp_st && (CONSTRUCT_L == (ptrlong)(ann_gp_st->data)));
-		SPART *ann_s = ann_in_ctor
-		  ? spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:ann"), 1)
-		  : spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ann_reif"));
-		sparp_arg->sparp_in_annotation_block++;
-		t_set_push (&(sparp_env()->spare_context_subjects), ann_s);
-		}
-	    spar_props _BAR _RBRA {
-		t_set_pop (&(sparp_env()->spare_context_subjects));
-		if (sparp_arg->sparp_in_annotation_block > 0)
-		  sparp_arg->sparp_in_annotation_block--;
-		}
-	| TILDE_L spar_var_or_term _LBRA _BAR {
-		/* Reifier + annotation block: ~reifier {| props |} */
+		/* The subject of the block's properties: the reifier of a ~ right before
+		   it (s p o ~ {| ... |}), otherwise a subject of its own, which
+		   spar_object_with_ann makes a reifier of the triple. */
 		dk_set_t ann_gp_st = sparp_env()->spare_context_gp_subtypes;
 		int ann_in_ctor = (ann_gp_st && (CONSTRUCT_L == (ptrlong)(ann_gp_st->data)));
 		SPART *ann_s;
-		t_set_push (&(sparp_arg->sparp_ann_reifier_suffixes), $2);
-		ann_s = (SPART *) t_box_copy_tree ((caddr_t) $2);
+		if (NULL != sparp_arg->sparp_ann_pending_reifier)
+		  ann_s = (SPART *) t_box_copy_tree ((caddr_t) sparp_arg->sparp_ann_pending_reifier);
+		else
+		  {
+		    ann_s = ann_in_ctor
+		      ? spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:ann"), 1)
+		      : spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ann_reif"));
+		    t_set_push (&(sparp_arg->sparp_ann_block_subjects), ann_s);
+		  }
+		$<list>$ = spar_ann_suffix_state_save (sparp_arg);
 		sparp_arg->sparp_in_annotation_block++;
 		t_set_push (&(sparp_env()->spare_context_subjects), ann_s);
 		}
@@ -2988,19 +3044,39 @@ spar_ann_suffix		/* Single annotation block or reifier */
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		if (sparp_arg->sparp_in_annotation_block > 0)
 		  sparp_arg->sparp_in_annotation_block--;
+		spar_ann_suffix_state_restore (sparp_arg, $<list>3);
+		}
+	| TILDE_L spar_var_or_term _LBRA _BAR {
+		/* Reifier + annotation block: ~reifier {| props |} */
+		SPART *ann_s;
+		t_set_push (&(sparp_arg->sparp_ann_reifier_suffixes), $2);
+		ann_s = (SPART *) t_box_copy_tree ((caddr_t) $2);
+		$<list>$ = spar_ann_suffix_state_save (sparp_arg);
+		sparp_arg->sparp_in_annotation_block++;
+		t_set_push (&(sparp_env()->spare_context_subjects), ann_s);
+		}
+	    spar_props _BAR _RBRA {
+		t_set_pop (&(sparp_env()->spare_context_subjects));
+		if (sparp_arg->sparp_in_annotation_block > 0)
+		  sparp_arg->sparp_in_annotation_block--;
+		spar_ann_suffix_state_restore (sparp_arg, $<list>5);
 		}
 	| TILDE_L spar_var_or_term	{
-		/* Bare reifier suffix: record for rdf:reifies emission in spar_object_with_ann */
+		/* Bare reifier suffix: record for rdf:reifies emission in spar_object_with_ann;
+		   a block right after it is about it. */
 		t_set_push (&(sparp_arg->sparp_ann_reifier_suffixes), $2);
+		sparp_arg->sparp_ann_pending_reifier = $2;
 		}
 	| TILDE_L			{
-		/* Anonymous reifier suffix: generate blank node for rdf:reifies emission */
+		/* Anonymous reifier suffix: generate blank node for rdf:reifies emission;
+		   a block right after it is about it. */
 		dk_set_t ann_gp_st = sparp_env()->spare_context_gp_subtypes;
 		int ann_in_ctor = (ann_gp_st && (CONSTRUCT_L == (ptrlong)(ann_gp_st->data)));
 		SPART *anon_reif = ann_in_ctor
 		  ? spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:anon_reif"), 1)
 		  : spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "anon_reif"));
 		t_set_push (&(sparp_arg->sparp_ann_reifier_suffixes), anon_reif);
+		sparp_arg->sparp_ann_pending_reifier = anon_reif;
 		}
 	;
 
@@ -3513,22 +3589,18 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						  /* RDF 1.2 triple term <<(s p o)>> */
 						  spar_validate_tt_predicate_not_blank (sparp_arg, $4);
 						  int tt_has_var = (SPAR_IS_BLANK_OR_VAR ($3) || SPAR_IS_BLANK_OR_VAR ($4) || SPAR_IS_BLANK_OR_VAR ($5));
+						  int tt_has_bnode = (spar_triple_term_has_blank_node_component ($3) || spar_triple_term_has_blank_node_component ($5));
 						  dk_set_t tt_gp_st = sparp_env()->spare_context_gp_subtypes;
 						  int tt_in_ctor = (tt_gp_st && (CONSTRUCT_L == (ptrlong)(tt_gp_st->data)));
-						  if (tt_in_ctor && tt_has_var)
+						  if (tt_in_ctor && (tt_has_var || tt_has_bnode))
 						    {
-						      /* Keep legacy variable-template coercion path for now.
-						         Variable <<(s p o)>> in ctor/update annotation templates
-						         currently relies on reifier-node lowering. */
-						      SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $3, $4, $5);
-						      SPART *tt_reifier_node = spart_make_triple_term_reifier_node (sparp_arg, tt_hash_iri);
-						      SPART *tt_reifies_obj = spart_make_triple_term_reified_object_node (sparp_arg, tt_hash_iri, tt_reifier_node);
-						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
-						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
-						      spar_gp_add_triplelike (sparp_arg, NULL,
-						        (SPART *) t_box_copy_tree ((caddr_t) tt_reifier_node),
-						        tt_reifies_pred, tt_reifies_obj, NULL, NULL, 0x0);
-						      $$ = tt_reifier_node;
+						      /* A template mints the term itself, per solution: from the values
+						         of its variables, and after a blank node inside is made
+						         (CTOR_OPCODE_TRIPLE_TERM).  A triple term is not a reifier;
+						         only << >>, ~ and {| |} introduce one. */
+						      SPART *tt_node = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $3, $4, $5);
+						      spar_mark_bare_triple_term_node (sparp_arg, tt_node);
+						      $$ = tt_node;
 						    }
 						  else if (tt_has_var)
 						    {
@@ -3593,8 +3665,12 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						  int tt_in_ctor = (tt_gp_st && (CONSTRUCT_L == (ptrlong)(tt_gp_st->data)));
 						  if (tt_in_ctor)
 						    {
-						      /* CONSTRUCT/INSERT: generate explicit reifier + rdf:reifies triple */
-						      SPART *tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
+						      /* CONSTRUCT/INSERT: generate explicit reifier + rdf:reifies triple.
+						         A term that is not ground is minted per solution: from the values of
+						         its variables, and after a blank node inside is made. */
+						      SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						      if (spar_tt_is_ground (tt_hash_iri))
+						        tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
 						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
 						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						      spar_gp_add_triplelike (sparp_arg, NULL,
@@ -3604,93 +3680,20 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						    }
 						  else
 						    {
-						      int has_known_s = ($2 && SPAR_IS_LIT_OR_QNAME ($2));
-						      int has_known_p = ($3 && SPAR_IS_LIT_OR_QNAME ($3));
-						      int has_known_o = ($4 && SPAR_IS_LIT_OR_QNAME ($4));
-						      ccaddr_t s_str = has_known_s ? SPAR_LIT_OR_QNAME_VAL ($2) : NULL;
-						      ccaddr_t p_str = has_known_p ? SPAR_LIT_OR_QNAME_VAL ($3) : NULL;
-						      ccaddr_t o_str = has_known_o ? SPAR_LIT_OR_QNAME_VAL ($4) : NULL;
-						      SPART *s_arg = s_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
-						      SPART *p_arg = p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
-						      SPART *o_arg = o_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL);
+						      /* WHERE: id rdf:reifies <<( s p o )>>, matched as that long form is, so
+						         the reifier is bound before s, p and o are read from its triple term
+						         and before the rest of the pattern uses it.  Binding them from id
+						         first, before id was bound, emptied the pattern. */
+						      SPART *tt_pat = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						      SPART *tt_bnode = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:tt"), 1);
+						      SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
+						        t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						      dk_set_t bind_revlist = NULL;
-						      spar_gp_add_filter (sparp_arg,
-						        spartlist (sparp_arg, 3, BOP_EQ,
-						          spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_CHECK",
-						            (SPART **) t_list (4,
-						              (SPART *) t_box_copy_tree ((caddr_t) $6),
-						              sparp_tree_full_copy (sparp_arg, s_arg, NULL),
-						              sparp_tree_full_copy (sparp_arg, p_arg, NULL),
-						              sparp_tree_full_copy (sparp_arg, o_arg, NULL))),
-						          spartlist (sparp_arg, 5, SPAR_LIT, t_box_num_nonull (1), NULL, NULL, NULL)),
-						        0);
-						      if (has_known_p)
-						        {
-						          SPART *p_lit = spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL);
-						          if (SPAR_IS_BLANK_OR_VAR ($2))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_S",
-						                (SPART **) t_list (2, (SPART *) t_box_copy_tree ((caddr_t) $6), sparp_tree_full_copy (sparp_arg, p_lit, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $2->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($4))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_O",
-						                (SPART **) t_list (2, (SPART *) t_box_copy_tree ((caddr_t) $6), sparp_tree_full_copy (sparp_arg, p_lit, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $4->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
-						      else if (has_known_s && has_known_o)
-						        {
-						          if (SPAR_IS_BLANK_OR_VAR ($3))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_P",
-						                (SPART **) t_list (3, (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL),
-						                  spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $3->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
-						      else
-						        {
-						          if (SPAR_IS_BLANK_OR_VAR ($2))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_S",
-						                (SPART **) t_list (2,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $2->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($3))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_P",
-						                (SPART **) t_list (3,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  s_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) s_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL),
-						                  o_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) o_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $3->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						          if (SPAR_IS_BLANK_OR_VAR ($4))
-						            {
-						              SPART *fc = spar_make_funcall (sparp_arg, 0, "sql:RDF_STAR_TT_GET_O",
-						                (SPART **) t_list (2,
-						                  (SPART *) t_box_copy_tree ((caddr_t) $6),
-						                  p_str ? spartlist (sparp_arg, 5, SPAR_LIT, t_box_copy ((caddr_t) p_str), NULL, NULL, NULL) : spartlist (sparp_arg, 5, SPAR_LIT, NULL, NULL, NULL, NULL)));
-						              SPART *alias = spartlist (sparp_arg, 6, SPAR_ALIAS, fc, $4->_.var.vname, SSG_VALMODE_LONG, (ptrlong)0, (ptrlong)0);
-						              alias->_.alias.reruns_may_vary = 0;
-						              t_set_push (&bind_revlist, alias);
-						            }
-						        }
+						      spar_mark_bare_triple_term_node (sparp_arg, tt_pat);
+						      spar_gp_add_triplelike (sparp_arg, NULL,
+						        (SPART *) t_box_copy_tree ((caddr_t) $6),
+						        tt_reifies_pred, tt_bnode, NULL, NULL, 0x0);
+						      spar_tt_decompose_node (sparp_arg, (SPART *) t_box_copy_tree ((caddr_t) tt_bnode), tt_pat, &bind_revlist);
 						      if (NULL != bind_revlist)
 						        spar_gp_finalize_binds (sparp_arg, bind_revlist);
 						      $$ = $6;
@@ -3763,7 +3766,12 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 						{
 						  /* RDF 1.2 asserted triple term with explicit reifier <<{ s p o ~id }>> */
 						  spar_validate_tt_predicate_not_blank (sparp_arg, $3);
-						  SPART *tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
+						  dk_set_t tt_gp_st = sparp_env()->spare_context_gp_subtypes;
+						  int tt_in_ctor = (tt_gp_st && (CONSTRUCT_L == (ptrlong)(tt_gp_st->data)));
+						  /* In a template, a term that is not ground is minted per solution. */
+						  SPART *tt_hash_iri = spartlist (sparp_arg, 4, SPAR_TRIPLE_TERM, $2, $3, $4);
+						  if (!tt_in_ctor || spar_tt_is_ground (tt_hash_iri))
+						    tt_hash_iri = spart_make_triple_term_qname (sparp_arg, $2, $3, $4, NULL);
 						  SPART *tt_reifies_pred = spartlist (sparp_arg, 2, SPAR_QNAME,
 						    t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"));
 						  /* Assert the triple (s, p, o) */

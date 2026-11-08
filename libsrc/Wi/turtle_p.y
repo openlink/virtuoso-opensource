@@ -338,6 +338,8 @@ trig_block_or_predicate_object_list
 	| opt_eq_lbra {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
+		if (TTLP_NO_NAMED_GRAPHS & ttlp_arg->ttlp_flags)
+		  ttlyyerror_action ("The text has a named graph but is loaded into a single graph, as by SPARQL LOAD ... INTO GRAPH");
 		ttlp_enter_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_subj_uri); }
 	    base_or_prefix_or_inner_triple_clauses _RBRA dot_opt {

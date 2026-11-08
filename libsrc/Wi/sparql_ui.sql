@@ -1709,7 +1709,7 @@ create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout
     http ('<div class="container-fluid">\n', ses);
     http ('<nav class="navbar navbar-expand-md sticky-top navbar-light bg-light">', ses);
     http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
-    http_value (title);
+    http_value (title, 0, ses);
     http ('</a></nav>\n', ses);
 
     declare gql_panel any;
@@ -1764,7 +1764,7 @@ create procedure WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN (in title varchar, inout
     http ('</title>\n', ses);
 
     http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/', 'bootstrap.min.css',
-            'sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=='));
+            'sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=='), ses);
     http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/', 'bootstrap-icons.min.css',
             'sha512-YFENbnqHbCRmJt5d+9lHimyEMt8LKSNTMLSaHjvsclnZGICeY/0KYEeiHwD1Ux4Tcao0h60tdcMv+0GljvWyHg=='), ses);
 
@@ -1773,7 +1773,7 @@ create procedure WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN (in title varchar, inout
     http ('<div class="container-fluid">\n', ses);
     http ('<div class="navbar navbar-expand-md sticky-top navbar-light bg-light">', ses);
     http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
-    http_value (title);
+    http_value (title, 0, ses);
     http ('</a></div>\n', ses);
 }
 ;

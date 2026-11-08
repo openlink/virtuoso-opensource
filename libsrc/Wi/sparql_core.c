@@ -4718,6 +4718,65 @@ spar_gp_check_graph_options (sparp_t *sparp, const char *pname, SPART **options)
     }
 }
 
+/* RDF 1.2: true if every component is an IRI, a literal or a ground triple term */
+int
+spar_tt_is_ground (SPART *tt)
+{
+  SPART *comps[3];
+  int ctr;
+  comps[0] = tt->_.triple_term.subject;
+  comps[1] = tt->_.triple_term.predicate;
+  comps[2] = tt->_.triple_term.object;
+  for (ctr = 0; ctr < 3; ctr++)
+    {
+      SPART *comp = comps[ctr];
+      if (NULL == comp)
+        return 0;
+      if (SPAR_TRIPLE_TERM == SPART_TYPE (comp))
+        {
+          if (!spar_tt_is_ground (comp))
+            return 0;
+        }
+      else if (!SPAR_IS_LIT_OR_QNAME (comp))
+        return 0;
+    }
+  return 1;
+}
+
+/* RDF 1.2: the IRI of a triple term, nested triple terms included; value boxes go as is, a literal may be an unboxed int */
+static caddr_t
+spar_tt_iri_from_components (sparp_t *sparp, caddr_t *tt_qst, SPART *tt)
+{
+  SPART *comps[3];
+  caddr_t vals[3], nested[3];
+  caddr_t res;
+  int ctr;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &ctr, 8000))
+    spar_error (sparp, "Stack overflow");
+  comps[0] = tt->_.triple_term.subject;
+  comps[1] = tt->_.triple_term.predicate;
+  comps[2] = tt->_.triple_term.object;
+  for (ctr = 0; ctr < 3; ctr++)
+    {
+      SPART *comp = comps[ctr];
+      nested[ctr] = NULL;
+      if (NULL == comp)
+        vals[ctr] = NULL;
+      else if (SPAR_TRIPLE_TERM == SPART_TYPE (comp))
+        vals[ctr] = nested[ctr] = spar_tt_iri_from_components (sparp, tt_qst, comp);
+      else if (SPAR_IS_LIT_OR_QNAME (comp))
+        vals[ctr] = SPAR_LIT_OR_QNAME_VAL (comp);
+      else if ((SPAR_VARIABLE == SPART_TYPE (comp)) || (SPAR_BLANK_NODE_LABEL == SPART_TYPE (comp)))
+        vals[ctr] = comp->_.var.vname;
+      else
+        vals[ctr] = NULL;
+    }
+  res = rdf_star_tt_iri_from_values_qst (tt_qst, vals[0], vals[1], vals[2], 0);
+  for (ctr = 0; ctr < 3; ctr++)
+    dk_free_tree (nested[ctr]);
+  return res;
+}
+
 SPART *
 spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
@@ -5512,40 +5571,27 @@ mcall_not_found: ;
 plain_triple_in_ctor:
   /* RDF 1.2: Fallback conversion of SPAR_TRIPLE_TERM to SPAR_QNAME IRI for any
      positions not already handled by grammar-level decomposition (e.g. collections). */
-  /* Pass value boxes as is: a literal may be an unboxed int, not a string */
-#define SPAR_TT_COMP_VAL(node) \
-  ((NULL == (node)) ? NULL : \
-   (SPAR_IS_LIT_OR_QNAME(node) ? SPAR_LIT_OR_QNAME_VAL(node) : \
-    ((SPAR_VARIABLE == SPART_TYPE(node) || SPAR_BLANK_NODE_LABEL == SPART_TYPE(node)) ? (node)->_.var.vname : NULL)))
+  /* In a constructor template only a ground triple term is converted, one with a variable or blank node is left for the run time */
   if ((NULL != subject) && (SPAR_TRIPLE_TERM == SPART_TYPE (subject)))
     {
-      SPART *tts = subject->_.triple_term.subject;
-      SPART *ttp = subject->_.triple_term.predicate;
-      SPART *tto = subject->_.triple_term.object;
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
-      if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
+      if (spar_tt_is_ground (subject) || !tt_keep_runtime)
         {
-          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
-              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
+          caddr_t tt_iri = spar_tt_iri_from_components (sparp, tt_qst, subject);
           if (NULL != tt_iri)
             subject = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
   if ((NULL != object) && (SPAR_TRIPLE_TERM == SPART_TYPE (object)))
     {
-      SPART *tts = object->_.triple_term.subject;
-      SPART *ttp = object->_.triple_term.predicate;
-      SPART *tto = object->_.triple_term.object;
       int tt_keep_runtime = (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE (sparp));
-      if ((SPAR_IS_LIT_OR_QNAME (tts) && SPAR_IS_LIT_OR_QNAME (ttp) && SPAR_IS_LIT_OR_QNAME (tto)) || !tt_keep_runtime)
+      if (spar_tt_is_ground (object) || !tt_keep_runtime)
         {
-          caddr_t tt_iri = rdf_star_tt_iri_from_values_qst (tt_qst,
-              SPAR_TT_COMP_VAL (tts), SPAR_TT_COMP_VAL (ttp), SPAR_TT_COMP_VAL (tto), 0);
+          caddr_t tt_iri = spar_tt_iri_from_components (sparp, tt_qst, object);
           if (NULL != tt_iri)
             object = spartlist (sparp, 2, SPAR_QNAME, tt_iri);
         }
     }
-#undef SPAR_TT_COMP_VAL
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
@@ -7141,10 +7187,16 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "struuid"		, SPAR_BIF_STRUUID		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "strlangdir"	, SPAR_BIF_STRLANGDIR		, 'S'	, SSG_SD_SPARQL12		, 3	, 3	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL}	, SPART_VARR_IS_LIT	},
   { "strdir"		, SPAR_BIF_STRDIR		, 'S'	, SSG_SD_SPARQL12		, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}		, SPART_VARR_IS_LIT	},
-  { "dir"		, SPAR_BIF_DIR			, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
-  { "haslang"		, SPAR_BIF_HASLANG		, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
-  { "haslangdir"	, SPAR_BIF_HASLANGDIR		, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
-  { "langdir"		, SPAR_BIF_LANGDIR		, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  /* '-' (special code generation), not 'B': the hand-written cases in
+     ssg_print_builtin_expn() emit DB.DBA.-qualified rdf_*_impl() calls with the
+     right boolean wrapping.  The generic 'B' path emits the name UNqualified, so
+     under a connection whose default qualifier is not DB.DBA -- the anonymous
+     SPARQL endpoint user -- resolution failed with SR185.  STRLANGDIR/STRDIR use
+     'S', which already qualifies with DB.DBA. */
+  { "haslang"		, SPAR_BIF_HASLANG		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
+  { "haslangdir"	, SPAR_BIF_HASLANGDIR		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_IS_BOOL	},
+  { "langdir"		, SPAR_BIF_LANGDIR		, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "dir"		, SPAR_BIF_DIR			, '-'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "istriple"		, SPAR_BIF_ISTRIPLE		, 'B'	, SSG_SD_SPARQL12		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_NOT_NULL	},
   { "triple"		, SPAR_BIF_TRIPLE		, 'S'	, SSG_SD_SPARQL12		, 3	, 3	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, SSG_VALMODE_LONG}	, SPART_VARR_IS_IRI | SPART_VARR_IS_LIT	},
   { "substr"		, SPAR_BIF_SUBSTR		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 3	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, SSG_VALMODE_NUM, SSG_VALMODE_NUM}			, SPART_VARR_IS_LIT	},
@@ -7280,7 +7332,13 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   if (LOAD_L == subtype)
     {
       dk_set_t *opts_ptr = &(sparp->sparp_env->spare_src.ssrc_common_sponge_options);
-      options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (opts_ptr[0])));
+      dk_set_t load_opts = opts_ptr[0];
+      if (!strcmp (opname, "LOAD") && (graph_precode != aux_op))
+        { /* LOAD ... INTO GRAPH, the graph is not the source: SPARQL 1.2 makes a named graph in the document an error. Pushed on a local head, the common options stay as they are. */
+          t_set_push (&load_opts, t_box_dv_short_string ("1"));
+          t_set_push (&load_opts, t_box_dv_uname_string ("get:no-named-graphs"));
+        }
+      options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (load_opts)));
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:destination"))
         spar_error (sparp, "DEFINE get:destination ... is not applicable for SPARUL LOAD statement; use LOAD ... INTO ... form instead");
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:uri"))

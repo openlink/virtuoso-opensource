@@ -27,6 +27,7 @@
 #include "arith.h"
 #include "xmltree.h"
 #include "rdf_core.h"
+#include "sparql.h" /* For RDF_STAR_NS */
 #include "http.h" /* For DKS_ESC_XXX constants */
 #include "date.h" /* For DT_TYPE_DATE and the like */
 #include "security.h" /* For sec_check_dba() */
@@ -4499,6 +4500,11 @@ fail:
   return (caddr_t)((ptrlong)(0));
 }
 
+/*! Flag of http_nt_object(): an RDF 1.2 triple term, an IRI of one or a
+TRIPLE() vector, is not written and 2 is returned, for the caller to write it
+as <<( s p o )>> */
+#define HTTP_NT_OBJECT_NO_TRIPLE_TERM 0x100
+
 caddr_t
 bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -4514,6 +4520,8 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (&tii,0, sizeof (ttl_iriref_items_t));
   env.ne_out_ses = ses;
   obj_dtp = DV_TYPE_OF (obj);
+  if ((flags & HTTP_NT_OBJECT_NO_TRIPLE_TERM) && (DV_ARRAY_OF_POINTER == obj_dtp))
+    return (caddr_t)(ptrlong)(2);
   switch (obj_dtp)
     {
     case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
@@ -4524,6 +4532,12 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
         goto fail; /* see below */
+      if ((flags & HTTP_NT_OBJECT_NO_TRIPLE_TERM) && !tii.o.is_bnode && (NULL != tii.o.uri)
+        && !strncmp (tii.o.uri, RDF_STAR_NS, sizeof (RDF_STAR_NS) - 1))
+        {
+          status = 2;
+          goto fail; /* see below */
+        }
     }
   else
     {
@@ -4532,7 +4546,7 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (obj_is_iri)
     http_nt_write_ref (ses, &env, &(tii.o), obj);
   else
-    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ, flags);
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ, flags & ~HTTP_NT_OBJECT_NO_TRIPLE_TERM);
 fail:
   dk_free_box (tii.o.uri);
   dk_free_box (tii.dt.uri);

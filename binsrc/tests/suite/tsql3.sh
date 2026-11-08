@@ -260,6 +260,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_html
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_html.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: SPARQL result pages -- tsparql_html.sql"
+    exit 1
+fi
+
 
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfapi.sql
