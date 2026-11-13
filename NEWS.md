@@ -1,6 +1,6 @@
 # NEWS
 
-## November 08 2026, v7.2.18 unreleased (development branch)
+## November 13 2026, v7.2.18 unreleased (development branch)
 
 * Virtuoso Engine
   * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
@@ -48,6 +48,25 @@
   * Fixed `__xqf_str_parse_to_rdf_box()` failing on a NULL datatype ([f03d1e1a9](https://github.com/openlink/virtuoso-opensource/commit/f03d1e1a943c7279bcb0efb56b8d8f7edee65143))
   * Fixed size values in `virtuoso.ini` being read from their last character only, so that `64MB` was 64 bytes; `NumberOfBuffers` and `MaxDirtyBuffers` now also refuse trailing text and overflow, and `NumberOfBuffers` accepts `MB` and `GB` ([1da137083](https://github.com/openlink/virtuoso-opensource/commit/1da137083337ee12ca76ae185a124a16a57dd1d6))
   * Fixed `QUIETCAST` not applying to datetime and time parse errors, so that one invalid value aborted the whole query instead of becoming NULL ([39c8470ce](https://github.com/openlink/virtuoso-opensource/commit/39c8470cebd49fdd82d7ba0df9c9808188581ebc))
+  * Fixed crashes in row-by-row `GROUP BY`, `DISTINCT` and `TOP` without a sort ([993851c93](https://github.com/openlink/virtuoso-opensource/commit/993851c934fa7bd9f1e31c7fba95e530849abfbf))
+  * Fixed loops and handlers in vectored code crashing or running once ([08d4e316d](https://github.com/openlink/virtuoso-opensource/commit/08d4e316d74e219240da6cdf3cf12c9c78b3efb2))
+  * Fixed a crash on `EXISTS` in a `SELECT` without `FROM` ([d4c15cf59](https://github.com/openlink/virtuoso-opensource/commit/d4c15cf5920f5156d9840290f202738f90f452fa))
+  * Fixed a `WHERE` condition over a derived table without `FROM` being ignored ([8cb50ccfd](https://github.com/openlink/virtuoso-opensource/commit/8cb50ccfde85611549e1bdbaeaf25338968393e8))
+  * Fixed `BETWEEN` with a correlated subquery on its left side ([dfc08fb73](https://github.com/openlink/virtuoso-opensource/commit/dfc08fb73220efda9c10bec1d940ecf0eb199823))
+  * Fixed sibling subqueries sharing the state slot of a call ([4485bb20a](https://github.com/openlink/virtuoso-opensource/commit/4485bb20a97b3ac751ba30ae0aef7a732ea49e5a))
+  * Fixed an `OR` term emitted twice reading unset values ([7499d9c8e](https://github.com/openlink/virtuoso-opensource/commit/7499d9c8e16e1b2b93ba0b727b1f1922e440fe91))
+  * Fixed vectored comparisons of floats and doubles not using an epsilon ([952a02bae](https://github.com/openlink/virtuoso-opensource/commit/952a02baef06aa55516de1676a8e8f26d4d65969))
+  * Fixed long literals cut short or read as 0 when SQL sorts or groups them ([9f432ceb5](https://github.com/openlink/virtuoso-opensource/commit/9f432ceb5646e5d271dfa2bb64426568193b1a9e))
+  * Fixed a stored literal and its computed copy grouping as two values, and such a computed literal not finding the stored one in the O column ([6632e06f9](https://github.com/openlink/virtuoso-opensource/commit/6632e06f93c94a9c6a4b4a1458102746f518331b), [c20d9e07b](https://github.com/openlink/virtuoso-opensource/commit/c20d9e07bbf30ae8ca7d2c99756228c6bfe88d4f))
+  * Fixed NULL date and number `GROUP BY` keys not being marked as NULL ([939d6e39b](https://github.com/openlink/virtuoso-opensource/commit/939d6e39bee49144ece3d2e9cd7a66ff2e86e4cf))
+  * Fixed transitive searches with the end bound, an outer column choosing the direction of a transitive table, and transitive derived tables losing rows when both ends are bound ([8fc6f8a7d](https://github.com/openlink/virtuoso-opensource/commit/8fc6f8a7dd837bddbe0d98dbb51d4485c4b9e5f4), [26f08d4c3](https://github.com/openlink/virtuoso-opensource/commit/26f08d4c3178e606a26c71d369327f7c310e6736), [1d9d75e8c](https://github.com/openlink/virtuoso-opensource/commit/1d9d75e8cc1645e2cabc4c2288b166939913c77d))
+  * Fixed `DATE` and `TIME` columns keeping extra parts of a stored datetime ([8a0ef649a](https://github.com/openlink/virtuoso-opensource/commit/8a0ef649adf2c3ccade2192beb946bea5f1d22b6))
+  * Fixed string conversion of RDF date and time literals ([e48ec0087](https://github.com/openlink/virtuoso-opensource/commit/e48ec00871cf206d723a1520605c55ff849c393c))
+  * Fixed RDF output of decimals and doubles reading back as other types ([980f82bba](https://github.com/openlink/virtuoso-opensource/commit/980f82bba36dd10be2493947bbe7dd47a51e1980))
+  * Fixed JSON-LD native numbers loading with the wrong datatype ([b830b3d5b](https://github.com/openlink/virtuoso-opensource/commit/b830b3d5b10d46480eb7f941e81facee896c098a))
+  * Fixed TSV output of strings with tabs, newlines and quotes ([7a26f5ea2](https://github.com/openlink/virtuoso-opensource/commit/7a26f5ea2499a8a8ad799a818954b7d753156709))
+  * Fixed a plugin listed twice in `[Plugins]` crashing the server at startup ([1580a653d](https://github.com/openlink/virtuoso-opensource/commit/1580a653d35aa3cf6281976486daf01edbdd1956))
+  * Fixed a failed vector index statement reloading built-in RDF metadata ([5dd64b6c2](https://github.com/openlink/virtuoso-opensource/commit/5dd64b6c29f44baebc9654048ff5579a5c2f8afa))
 
 * SPARQL
   * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
@@ -86,6 +105,25 @@
   * Fixed HTML and XHTML result pages failing with HT069 when written outside an HTTP request, as for `output:format "HTML"` and DAV RDF resources ([e5062d40f](https://github.com/openlink/virtuoso-opensource/commit/e5062d40fe4d75b3e62b8d9237ba3aa6d9364f7a))
   * Fixed `LANGDIR`, `hasLANG`, `hasLANGDIR` and `DIR` failing with SR185 for the anonymous `/sparql` user, `DIR` returning an empty string, and `LANGDIR` with `AS` failing with SP031 ([e62b4b501](https://github.com/openlink/virtuoso-opensource/commit/e62b4b5018872a2fc00a3ad006dd28c094d61e64), [ca61bc056](https://github.com/openlink/virtuoso-opensource/commit/ca61bc05698556f1ad08abf690bb49e476c7f835))
   * Fixed graph permissions of named graphs in TriG and N-Quads documents loaded by `LOAD` or sponging ([1226ca85c](https://github.com/openlink/virtuoso-opensource/commit/1226ca85ce665e17da86580362dfaff01b289f49))
+  * Ported the v8 RDF 1.2 and SPARQL 1.2 implementation fixes and tests ([eaf44c54a](https://github.com/openlink/virtuoso-opensource/commit/eaf44c54a7cc4a5ca4f05a935a9867d3a0b27a13))
+  * Fixed SPARQL parsing of RDF 1.2 annotation blocks ([2ec0003ef](https://github.com/openlink/virtuoso-opensource/commit/2ec0003ef9d12e45615738c9a6731f3d8f980bfb))
+  * Fixed the SPARQL EBV of a language-tagged literal being a type error ([5ba24c50e](https://github.com/openlink/virtuoso-opensource/commit/5ba24c50ed037d02953133f6ff26a087504fe914))
+  * Fixed a crash in the vectored SPARQL EBV of an unbound value ([699bd439f](https://github.com/openlink/virtuoso-opensource/commit/699bd439f641a08e6155a249a565823f09f80301))
+  * Fixed wrong `DISTINCT` results with two `BIND`s of the same `COALESCE` ([eac7f809a](https://github.com/openlink/virtuoso-opensource/commit/eac7f809a3dbdf3e5a3cf4e99452bdda0c68c384))
+  * Fixed a `FILTER` in `OPTIONAL` losing a variable bound in a sibling group ([4ec2b8559](https://github.com/openlink/virtuoso-opensource/commit/4ec2b85595f601d347d45d7a94a0f46a6db6ff3f))
+  * Fixed SPARQL over a parameter in an `OPTIONAL` dropping `UNION` branches ([84efcee51](https://github.com/openlink/virtuoso-opensource/commit/84efcee5197dddaa4c90b3a312b53c3ee5b07e01))
+  * Fixed a SPARQL `VALUES` column of only `UNDEF` binding its variable ([7f0171104](https://github.com/openlink/virtuoso-opensource/commit/7f017110420def0bbcb0d27c365e122be1248a2a))
+  * Fixed a SPARQL group joined with an empty `VALUES` not being empty ([231f5512b](https://github.com/openlink/virtuoso-opensource/commit/231f5512b9bd0bdd892d170b91033a76f4a6f0af))
+  * Fixed SPARQL `VALUES` on a `TRANSITIVE` start or end becoming an `IN` filter ([02acbb09f](https://github.com/openlink/virtuoso-opensource/commit/02acbb09f2751786c3b6bf88a9ba4621436607de))
+  * Fixed SPARQL groups that no quad map can match reading as one solution ([019bc9210](https://github.com/openlink/virtuoso-opensource/commit/019bc9210a3a3e6fc0c4bf492bca3bcf6de910e8))
+  * Fixed SPARQL with a variable graph failing with SQ033 for non-DBA users ([4169dddd4](https://github.com/openlink/virtuoso-opensource/commit/4169dddd4d93dde4dc5b483656b1669d0422e3ed))
+  * Fixed `bif:vector_search` with a variable graph ([abeb3a6cd](https://github.com/openlink/virtuoso-opensource/commit/abeb3a6cd9a9cd4e1a099b19f3e2a29b866696e8))
+  * Fixed `FILTER` on an inferred class or property testing the stored value ([ee13c816f](https://github.com/openlink/virtuoso-opensource/commit/ee13c816f312b907fbe02e68f23f15cb92648210))
+  * Fixed inferred solutions missing when the inferred variable is not read ([2db429f77](https://github.com/openlink/virtuoso-opensource/commit/2db429f77c581d9dbecb314a2b9a24577ce6ec3d))
+  * Fixed SPARQL over an RDF view printing a quad map constant as a column ([6cbc4cfe1](https://github.com/openlink/virtuoso-opensource/commit/6cbc4cfe1feee0f5cbbc9c6b0d8134ccc26ab3d5))
+  * Fixed a streamed `/sparql` result cut at its row limit not saying so ([7ea2a7561](https://github.com/openlink/virtuoso-opensource/commit/7ea2a7561c2fa5485e7942f2c198f8c894bf7b7a))
+  * Fixed SPARQL losing the `xsd:duration` type on the way to the store, `INSERT DATA` and `DELETE DATA` of parsed duration literals, and `DELETE DATA` not finding a stored year-month duration ([961cd0b04](https://github.com/openlink/virtuoso-opensource/commit/961cd0b044b54a461a75306ed7f94cc6f2b37ba0), [7c2ec6982](https://github.com/openlink/virtuoso-opensource/commit/7c2ec6982503d6f149caf168647bc08fa5ea04a0), [e81787f77](https://github.com/openlink/virtuoso-opensource/commit/e81787f77a08e42c9a0a158b840619cb471b35aa))
+  * Fixed `xsd:duration` values being printed as plain numbers and an unparsed duration literal being read back as `PT0S` ([06626834c](https://github.com/openlink/virtuoso-opensource/commit/06626834c87751681d6d06bcd888a642174b52c1), [06a45fdc6](https://github.com/openlink/virtuoso-opensource/commit/06a45fdc661b778f1ebe79ab96aa21ad3bd292d4))
 
 * GQL
   * Added GQL (ISO/IEC 39075) property graph queries, translated to SPARQL and run on the SPARQL engine ([4259cca1a](https://github.com/openlink/virtuoso-opensource/commit/4259cca1ade9cdbf0e61edf96081a2024ef9cf2c), [8fbfc5582](https://github.com/openlink/virtuoso-opensource/commit/8fbfc5582d6770a7822822c07690175828ddb1e7), [40180369b](https://github.com/openlink/virtuoso-opensource/commit/40180369b908326e3fa0eb0e00c20ce72e693f57))
@@ -111,6 +149,8 @@
   * Fixed fuzzy options passed as `?` parameters to `contains()` failing with FT380, FT381, FT383 or FT384 depending on the query plan; a parameter now behaves like a literal ([e69ff1d50](https://github.com/openlink/virtuoso-opensource/commit/e69ff1d508f999838c3df09ece5b28d566a6955e))
   * Fixed parallel fuzzy scans failing with FT043 when one worker got most of the words; the work limit now applies to the whole scan ([87451671a](https://github.com/openlink/virtuoso-opensource/commit/87451671ae81cc788ed8e9c331a6277e67667fb5))
   * Fixed fuzzy phrases and `NEAR` reporting `SIMILARITY` 0 and `DISTANCE` -1, and fuzzy phrases getting no fuzzy score bonus; a phrase with a fuzzy word now scores by its least similar word, so its score can be higher than before ([6b248672e](https://github.com/openlink/virtuoso-opensource/commit/6b248672ec798d436af932d2c048134dd4d4935c), [64ae3821f](https://github.com/openlink/virtuoso-opensource/commit/64ae3821fab9b991e7b07c493f821bd7bdea41a8))
+  * Fixed a free-text phrase inside `NEAR` matching nothing ([a3a3ba5ae](https://github.com/openlink/virtuoso-opensource/commit/a3a3ba5ae5e0c5325505ba86b9cca8dfb20991a1))
+  * Fixed a free-text check being taken into the outer join after it ([5e1f36ffb](https://github.com/openlink/virtuoso-opensource/commit/5e1f36ffbbfa90b61efc429a16a30ea4b863a843))
 
 * ONNX Embeddings
   * Added ONNX hosting plugin for computing text embeddings, with inference available in a separate helper process ([a3666bb55](https://github.com/openlink/virtuoso-opensource/commit/a3666bb55b3fd7fc2b7f75821a10521771074d94))
@@ -119,6 +159,7 @@
   * Added `--enable-onnxruntime` build option and ONNX plugin settings in the installed `virtuoso.ini` ([696fd3d09](https://github.com/openlink/virtuoso-opensource/commit/696fd3d09e23ddb0efad14ec616a1248ab2c9796), [d230f2478](https://github.com/openlink/virtuoso-opensource/commit/d230f24783acdad1173bfc597bd6b467375bd0a9))
   * Restricted embedding-provider API keys in the registry to DBA ([01d31ad52](https://github.com/openlink/virtuoso-opensource/commit/01d31ad52727a3f434dfcde4a761f7b43e91a18f))
   * Fixed locating the onnxruntime library, parsing `SHA256SUMS` on Alpine and other systems, and install and uninstall of the onnx-models data ([a49d5274d](https://github.com/openlink/virtuoso-opensource/commit/a49d5274d1ce46de8eda1a548afe0f899449339a), [6ec6e80a9](https://github.com/openlink/virtuoso-opensource/commit/6ec6e80a91f181fd374f8a9a990c93d52ec900ac), [4820b09b6](https://github.com/openlink/virtuoso-opensource/commit/4820b09b675ba0b5d6244411a77260087dea922c))
+  * Fixed `ONNX_EMBED_TEXT` errors naming a function `onnx_embed` ([c42e86c28](https://github.com/openlink/virtuoso-opensource/commit/c42e86c287511a6640d1825db6cb33656d692cfd))
 
 * VVec Vector Index Console
   * Added VAD package for creating, inspecting, searching, refreshing and dropping SQL and SPARQL vector indexes ([100a2a9e4](https://github.com/openlink/virtuoso-opensource/commit/100a2a9e402bb43a9e0fc2194fd6b1fcca1e6f7c))
@@ -143,6 +184,8 @@
 * R2RML
   * Fixed date/time handling in single-argument IRI classes and argument naming ([b815e16ad](https://github.com/openlink/virtuoso-opensource/commit/b815e16ad70effd423313ef6b292e89fb64efb8a), [0f77fe761](https://github.com/openlink/virtuoso-opensource/commit/0f77fe7616039866d167b2a6ee5af295e0b90bfa))
   * Fixed RML floating-point and date/time type mappings ([6b55cd69d](https://github.com/openlink/virtuoso-opensource/commit/6b55cd69dd12649aee6579a8e915d7ae23edf59c))
+  * Fixed an R2RML object template without `rr:termType` breaking the mapping ([644b129fd](https://github.com/openlink/virtuoso-opensource/commit/644b129fd2be6f5bd5ca62f519d7b57214481c68))
+  * Fixed R2RML `rr:datatype` on a column being written as a plain string ([aaa8a914a](https://github.com/openlink/virtuoso-opensource/commit/aaa8a914a3323d8853e12ee43f53eb1e07b40017))
 
 * Delta Sharing
   * Added initial Delta Sharing plugin and HTTP service for sharing SQL tables ([93bccede8](https://github.com/openlink/virtuoso-opensource/commit/93bccede8b05e9a7d3c38187726a3322525a706a))
