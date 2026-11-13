@@ -809,6 +809,64 @@ END_HTTP1
 esac
 }
 
+#
+#  ONNX_LOCATE
+#
+#  Find the vonnx plugin, the ONNX helper and the bundled models for the
+#  drivers that need them, where the build makes them: vonnx.so in
+#  binsrc/hosting/onnx/.libs, onnx_helper in binsrc/hosting/onnx.  The models
+#  are source files in binsrc/hosting/onnx/onnx-models, so a build outside the
+#  source tree finds them only in the source tree.
+#
+#  Sets ONNX_PLUGIN_DIR (the LoadPath that holds vonnx.so), ONNX_HELPER and
+#  ONNX_MODEL_ROOT.  Returns 0 when the plugin was found, 1 when it was not
+#  built; ONNX_HELPER and ONNX_MODEL_ROOT are set either way, when found.
+#
+ONNX_LOCATE()
+{
+  _onnx_d="$VIRTUOSO_BUILD/binsrc/hosting/onnx"
+  ONNX_PLUGIN_DIR=""
+  ONNX_HELPER=""
+  ONNX_MODEL_ROOT=""
+  if [ -f "$_onnx_d/.libs/vonnx.so" ]
+  then
+    ONNX_PLUGIN_DIR="$_onnx_d/.libs"
+  fi
+  if [ -f "$_onnx_d/onnx_helper" -a -x "$_onnx_d/onnx_helper" ]
+  then
+    ONNX_HELPER="$_onnx_d/onnx_helper"
+  fi
+  if [ -d "$_onnx_d/onnx-models" ]
+  then
+    ONNX_MODEL_ROOT="$_onnx_d/onnx-models"
+  elif [ -d "$VIRTUOSO_TEST/../../hosting/onnx/onnx-models" ]
+  then
+    ONNX_MODEL_ROOT="$VIRTUOSO_TEST/../../hosting/onnx/onnx-models"
+  fi
+  export ONNX_PLUGIN_DIR ONNX_HELPER ONNX_MODEL_ROOT
+  if [ -z "$ONNX_PLUGIN_DIR" ]
+  then
+    return 1
+  fi
+  LOG "+ vonnx plugin $ONNX_PLUGIN_DIR/vonnx.so, helper $ONNX_HELPER, models $ONNX_MODEL_ROOT"
+  return 0
+}
+
+#
+#  ONNX_CONFIGURE [cfgfile]
+#
+#  After ONNX_LOCATE: point the server's plugin LoadPath at the directory that
+#  holds vonnx.so (the suite template loads it as Load8 = plain, vonnx) and
+#  give it an [ONNX] section with the model root and the helper.
+#
+ONNX_CONFIGURE()
+{
+  _onnx_cfg=${1-$CFGFILE}
+  sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $ONNX_PLUGIN_DIR#" "$_onnx_cfg" > "$_onnx_cfg.pre_onnx"
+  mv -f "$_onnx_cfg.pre_onnx" "$_onnx_cfg"
+  printf '\n[ONNX]\nModelRoot  = %s\nHelperPath = %s\n' "$ONNX_MODEL_ROOT" "$ONNX_HELPER" >> "$_onnx_cfg"
+}
+
 CHECK_IF_SERVER_STARTABLE()
 {
   #  Make sure the database is not running

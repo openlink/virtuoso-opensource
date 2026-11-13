@@ -529,6 +529,18 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
 	return dt_compare (box1, box2, 1);
     }
 
+  if (IS_GENERIC_DURATION (box1) && IS_GENERIC_DURATION (box2))
+    {
+      /* xsd:duration is partially ordered, e.g. P1M vs P30D has no order */
+      int ym_cmp = cmp_double (GENERIC_DURATION_GET_YM (box1), GENERIC_DURATION_GET_YM (box2), DBL_EPSILON);
+      int dt_cmp = cmp_double (GENERIC_DURATION_GET_DT (box1), GENERIC_DURATION_GET_DT (box2), DBL_EPSILON);
+      if (DVC_MATCH == ym_cmp)
+	return dt_cmp;
+      if (DVC_MATCH == dt_cmp || ym_cmp == dt_cmp)
+	return ym_cmp;
+      return DVC_NOORDER;
+    }
+
   switch (dtp1)
     {
     case DV_STRING:
@@ -1950,17 +1962,46 @@ typedef void (*vec_cmp_t)  (int64 * l, int64 * r, int n_sets, dtp_t * set_mask, 
 #define CMPOP(op) (l[set] op r[set])
 
 
+/* floats compare with the epsilon of cmp_double, as the row-wise compare does */
+#define CMP_VEC_FLT(name, dtp, op) \
+  void name  (dtp * l, dtp * r, int n_sets, dtp_t * set_mask, dtp_t * res_bits, char * mix_ret) \
+{ \
+  int set; \
+  char mix = *mix_ret; \
+  if (!set_mask) \
+    { \
+      for (set = 0; set < n_sets; set++) \
+	{ \
+	  if (op) \
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1; \
+	} \
+    } \
+  else \
+    { \
+      SET_LOOP_FAST  (set, n_sets, set_mask) \
+	{ \
+	  if (op) \
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1; \
+	} \
+      END_SET_LOOP_FAST; \
+    } \
+  *mix_ret = mix; \
+}
+
+
 CMP_VEC (cmp_vec_int_eq, int64, ==)
 CMP_VEC (cmp_vec_int_lt, int64, <)
 CMP_VEC (cmp_vec_int_lte, int64, <=)
 
-CMP_VEC (cmp_vec_sf_eq, float, ==)
-CMP_VEC (cmp_vec_sf_lt, float, <)
-CMP_VEC (cmp_vec_sf_lte, float, <=)
+CMP_VEC_FLT (cmp_vec_sf_eq, float, (DVC_MATCH == cmp_double (l[set], r[set], FLT_EPSILON)))
+CMP_VEC_FLT (cmp_vec_sf_lt, float, (DVC_LESS == cmp_double (l[set], r[set], FLT_EPSILON)))
+CMP_VEC_FLT (cmp_vec_sf_lte, float, ((DVC_MATCH | DVC_LESS) & cmp_double (l[set], r[set], FLT_EPSILON)))
 
-CMP_VEC (cmp_vec_dbl_eq, double, ==)
-CMP_VEC (cmp_vec_dbl_lt, double, <)
-CMP_VEC (cmp_vec_dbl_lte, double, <=)
+CMP_VEC_FLT (cmp_vec_dbl_eq, double, (DVC_MATCH == cmp_double (l[set], r[set], DBL_EPSILON)))
+CMP_VEC_FLT (cmp_vec_dbl_lt, double, (DVC_LESS == cmp_double (l[set], r[set], DBL_EPSILON)))
+CMP_VEC_FLT (cmp_vec_dbl_lte, double, ((DVC_MATCH | DVC_LESS) & cmp_double (l[set], r[set], DBL_EPSILON)))
 
 
 

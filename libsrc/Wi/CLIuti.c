@@ -2267,6 +2267,19 @@ dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 
 #include "../langfunc/encoding_basic.c"
 
+static int
+rb_is_seconds_duration (cli_stmt_t * stmt, rdf_box_t * rb)
+{
+  /* a duration of seconds only is a plain double, only the datatype tells it is a duration */
+  caddr_t dt;
+  if (DV_DOUBLE_FLOAT != DV_TYPE_OF (rb->rb_box) || RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+    return 0;
+  dt = get_rdf_literal_prop (stmt->stmt_connection, SQL_DESC_COL_LITERAL_TYPE, rb->rb_type);
+  return dt && (!strcmp (dt, "http://www.w3.org/2001/XMLSchema#dayTimeDuration")
+    || !strcmp (dt, "http://www.w3.org/2001/XMLSchema#duration") || !strcmp (dt, "http://www.w3.org/2001/XMLSchema#yearMonthDuration"));
+}
+
+
 SQLLEN
 dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t * stmt, int nth_col,
@@ -2536,6 +2549,9 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	      snprintf (temp, sizeof (temp), "%ld", (long) ((ptrlong) (rb->rb_box)));
 	      break;
 	    }
+	  else if ((IS_GENERIC_DURATION (rb->rb_box) || rb_is_seconds_duration (stmt, rb))
+	      && 0 <= snprintf_generic_duration (temp, sizeof (temp), rb->rb_box))
+	    break;
 	  else
 	    return dv_to_str_place (rb->rb_box, DV_TYPE_OF (rb->rb_box), max, place,
 		len_ret, str_from_pos, stmt, nth_col, box_length (rb->rb_box), c_type, sql_type, out_chars);

@@ -167,11 +167,27 @@ then
     exit 1
 fi
 
+LOG + running sql script tsparql_values_conflict
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_values_conflict.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: SPARQL VALUES contradicted by FILTER -- tsparql_values_conflict.sql"
+    exit 1
+fi
+
 LOG + running sql script tcheck
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcheck.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: CHECK constraint tests -- tcheck.sql"
+    exit 1
+fi
+
+LOG + running sql script tdt_no_from_where
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdt_no_from_where.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: WHERE over a derived table without FROM -- tdt_no_from_where.sql"
     exit 1
 fi
 
@@ -183,11 +199,27 @@ then
     exit 1
 fi
 
+LOG + running sql script tftnear
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tftnear.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: free-text phrase inside NEAR -- tftnear.sql"
+    exit 1
+fi
+
 LOG + running sql script test_fuzzy
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/test_fuzzy.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: fuzzy search tests -- test_fuzzy.sql"
+    exit 1
+fi
+
+LOG + running sql script ttext_outer
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttext_outer.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: free-text check before an outer join -- ttext_outer.sql"
     exit 1
 fi
 
@@ -226,6 +258,14 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfnumwrite
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfnumwrite.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: numeric literals in RDF serializations -- trdfnumwrite.sql"
+    exit 1
+fi
+
 LOG + running sql script trdfinf
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf.sql 
 if test $STATUS -ne 0
@@ -243,11 +283,67 @@ then
     exit 1
 fi
 
+LOG + running sql script trdfdur
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfdur.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: xsd:duration -- trdfdur.sql"
+    exit 1
+fi
+
+LOG + running sql script trdfinf_filter
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf_filter.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: FILTER on an inferred class or property -- trdfinf_filter.sql"
+    exit 1
+fi
+
+LOG + running sql script trdfinf_count
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf_count.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rdf inference, inferred solutions counted -- trdfinf_count.sql"
+    exit 1
+fi
+
 LOG + running sql script ttrans2
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans2.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_target
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_target.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table with both ends bound -- ttrans_target.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_bidir
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_bidir.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table searched from both ends -- ttrans_bidir.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_min_depth
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_min_depth.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive derived table, T_MIN with the end bound -- ttrans_min_depth.sql"
+    exit 1
+fi
+
+LOG + running sql script ttrans_bidir_paths
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans_bidir_paths.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: transitive paths searched from both ends -- ttrans_bidir_paths.sql"
     exit 1
 fi
 
@@ -298,6 +394,46 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdforder.s
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: SPARQL ORDER BY rank -- trdforder.sql"
+    exit 1
+fi
+
+LOG + running sql script tsparql_dt_long
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_dt_long.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: long literals sorted and grouped in SQL -- tsparql_dt_long.sql"
+    exit 1
+fi
+
+LOG + running sql script tsparql_group_literal
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_group_literal.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: SPARQL GROUP BY over stored and computed literals -- tsparql_group_literal.sql"
+    exit 1
+fi
+
+LOG + running sql script tsparql_value_in_o
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_value_in_o.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: a computed value looked up in the O column -- tsparql_value_in_o.sql"
+    exit 1
+fi
+
+LOG + running sql script tsparql_strlang_eq
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsparql_strlang_eq.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: STRLANG () / STRDT () literal and the stored literal -- tsparql_strlang_eq.sql"
+    exit 1
+fi
+
+LOG + running sql script trdfview_nomatch
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfview_nomatch.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: patterns no quad map can produce -- trdfview_nomatch.sql"
     exit 1
 fi
 

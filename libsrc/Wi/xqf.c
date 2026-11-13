@@ -30,6 +30,7 @@
 #include "sqlbif.h"
 #include "xml.h"
 #include "date.h"
+#include "rdf_core.h"
 #include "xpathp_impl.h"
 #include "xml_ecm.h"
 #include "bif_text.h"
@@ -3447,6 +3448,23 @@ int xqf_str_parser_desc_count = sizeof (xqf_str_parser_descs)/sizeof (xqf_str_pa
 		  DT_SET_DT_TYPE (res, DT_TYPE_DATE); \
 		  DT_SET_TZL (res, tzl)
 
+static caddr_t
+xqf_str_parse_duration_box (xqf_str_parser_desc_t *desc, caddr_t res)
+{
+  rdf_box_t *rb;
+  if (__duration_from_string != desc->p_proc || DV_DB_NULL == DV_TYPE_OF (res) || DV_RDF == DV_TYPE_OF (res))
+    return res;
+  /* a plain double or vector would lose which duration it is */
+  rb = rb_allocate ();
+  rb->rb_box = res;
+  rb->rb_is_complete = 1;
+  rb->rb_type = (XQ_DURATION_MODE_DT == desc->p_opcode ? rb_type__xsd_dayTimeDuration
+    : (XQ_DURATION_MODE_YM == desc->p_opcode ? rb_type__xsd_yearMonthDuration : rb_type__xsd_duration));
+  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  return (caddr_t) rb;
+}
+
+
 caddr_t
 bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -3518,7 +3536,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 }
             }
           if (NULL == desc->p_rcheck)
-            return res;
+            return xqf_str_parse_duration_box (desc, res);
           if (desc->p_rcheck (&res, desc->p_opcode))
             return res;
           if (flags & 1)
@@ -3549,7 +3567,27 @@ cvt_error:
     }
   else
     desc->p_proc (&res, arg, desc->p_opcode);
-  return res;
+  return xqf_str_parse_duration_box (desc, res);
+}
+
+
+/* a duration given already parsed, if it is a value of the duration type of desc */
+static caddr_t
+xqf_parsed_duration (xqf_str_parser_desc_t *desc, caddr_t arg, dtp_t arg_dtp)
+{
+  if (__duration_from_string != desc->p_proc)
+    return NULL;
+  if (IS_GENERIC_DURATION (arg))
+    {
+      if (XQ_DURATION_MODE_DT == desc->p_opcode
+          || (XQ_DURATION_MODE_YM == desc->p_opcode && 0 != GENERIC_DURATION_GET_DT (arg)))
+        return NULL;
+      return box_copy (arg);
+    }
+  if (XQ_DURATION_MODE_YM != desc->p_opcode
+      && (DV_DOUBLE_FLOAT == arg_dtp || DV_SINGLE_FLOAT == arg_dtp || DV_LONG_INT == arg_dtp || DV_NUMERIC == arg_dtp))
+    return box_double (box_to_double (arg, arg_dtp));
+  return NULL;
 }
 
 
@@ -3565,6 +3603,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   caddr_t res = NULL;
   long desc_idx;
   xqf_str_parser_desc_t *desc;
+  char dur_lex[100];
   {
     if (IS_WIDE_STRING_DTP (type_iri_dtp))
       {
@@ -3653,6 +3692,16 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           res = box_copy_tree (arg);
           goto res_ready;
         }
+      res = xqf_parsed_duration (desc, arg, arg_dtp);
+      if (NULL != res)
+        goto res_ready;
+      if (__duration_from_string == desc->p_proc && IS_GENERIC_DURATION (arg))
+        {
+          /* not of this duration type, so the parser checks its lexical form */
+          snprintf_generic_duration (dur_lex, sizeof (dur_lex), arg);
+          arg = dur_lex;
+          goto parse;
+        }
       if (!strcmp (type_iri, uname_xmlschema_ns_uri_hash_dayTimeDuration))
         {
           caddr_t res1 = box_cast_to (qst, arg, arg_dtp, DV_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
@@ -3674,6 +3723,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
         "Literal of type xsd:%s can not be created from SQL value of type %s (%d): %.1000s",
         p_name, dv_type_title (arg_dtp), arg_dtp, ERR_MESSAGE (err) );
     }
+parse:
   QR_RESET_CTX
     {
       desc->p_proc (&res, arg, desc->p_opcode);

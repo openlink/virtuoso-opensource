@@ -39,13 +39,21 @@
 -- there.  Same reason the vector-index SPARQL_SELECT grants had to move into
 -- sparql.sql rather than stay beside the procedures they name.
 --
--- SECURITY.  The view carries no grants of its own: it reads
--- DB.DBA.SPARQL_VEC_INDEX, and an RDF view enforces the base table's SQL
--- privileges, so a reader with no grant gets SQ033 naming the column and a
--- reader with `grant select (SVI_IRI, SVI_LABEL)` sees rdfs:label and is
--- refused rdfs:comment.  A fresh install grants nothing, which is the right
+-- SECURITY.  What a reader sees is decided by its grants on the label and
+-- comment columns of DB.DBA.SPARQL_VEC_INDEX: a reader with no grant sees no
+-- triple, and a reader with `grant select (SVI_IRI, SVI_LABEL)` sees rdfs:label
+-- and no rdfs:comment.  A fresh install grants nothing, which is the right
 -- default: index names and descriptions say what data exists and what it is
 -- for, and that is a deployment decision.
+--
+-- The maps do not read the table itself.  They are in the default quad
+-- storage, so every query over a variable graph reaches them, and refusing a
+-- reader the table's columns failed every such query of that reader with SQ033
+-- -- for the anonymous /sparql account, on every database, whatever graphs the
+-- query was about.  They read DB.DBA.SPARQL_VEC_INDEX_LABELS and
+-- DB.DBA.SPARQL_VEC_INDEX_COMMENTS (sparql_vec_index.sql), which SPARQL_SELECT
+-- may read and which hold, for each reader, only the rows its grants on the
+-- table allow.
 --
 -- Note that table grants are not the whole control.  An endpoint configured
 -- with HP_RUN_VSP_AS = dba and no auth function -- the default /sparql on many
@@ -58,7 +66,7 @@
 -- not match re-installs the view at startup and stores the new one.
 create function DB.DBA.VEC_INDEX_META_VIEW_VERSION () returns varchar
 {
-  return '1';
+  return '2';
 }
 ;
 
@@ -172,7 +180,7 @@ create procedure DB.DBA.VEC_INDEX_META_VIEW_CREATE () returns varchar
     'sparql prefix vvec: <http://www.openlinksw.com/schemas/vvec#> ' ||
     'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
     'alter quad storage virtrdf:DefaultQuadStorage ' ||
-    '  from DB.DBA.SPARQL_VEC_INDEX as svil ' ||
+    '  from DB.DBA.SPARQL_VEC_INDEX_LABELS as svil ' ||
     '  where (^{svil.}^.SVI_LABEL is not null) ' ||
     '  { create vvec:indexLabelMap as graph <urn:vvec:indexes> ' ||
     '      { vvec:indexIri (svil.SVI_IRI) rdfs:label svil.SVI_LABEL . } } .');
@@ -183,7 +191,7 @@ create procedure DB.DBA.VEC_INDEX_META_VIEW_CREATE () returns varchar
     'sparql prefix vvec: <http://www.openlinksw.com/schemas/vvec#> ' ||
     'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
     'alter quad storage virtrdf:DefaultQuadStorage ' ||
-    '  from DB.DBA.SPARQL_VEC_INDEX as svic ' ||
+    '  from DB.DBA.SPARQL_VEC_INDEX_COMMENTS as svic ' ||
     '  where (^{svic.}^.SVI_COMMENT is not null) ' ||
     '  { create vvec:indexCommentMap as graph <urn:vvec:indexes> ' ||
     '      { vvec:indexIri (svic.SVI_IRI) rdfs:comment svic.SVI_COMMENT . } } .');

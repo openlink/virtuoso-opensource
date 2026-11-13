@@ -215,10 +215,10 @@ rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
   if (uname_xmlschema_ns_uri_hash_gYear			== dt_uname) return rb_type__xsd_gYear			;
   if (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname) return rb_type__xsd_gYearMonth		;
   if (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) return rb_type__xsd_yearMonthDuration	;
+  if (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname) return rb_type__xsd_dayTimeDuration	;
   if (uname_rdf_ns_uri_HTML				== dt_uname) return rb_type__rdf_HTML			;
   if (uname_rdf_ns_uri_JSON				== dt_uname) return rb_type__rdf_JSON			;
 
-  /* (uname_xmlschema_ns_uri_hash_dayTimeDuration       == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTime              == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTimeStamp         == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_hexBinary             == dt_uname) */
@@ -424,7 +424,7 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
         sqlr_new_error ("22023", "SR579", "RDF integrity issue: the type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
-      if (RDF_BOX_GEO == rb->rb_type || RB_IS_DURATION (rb->rb_type))
+      if (RDF_BOX_GEO == rb->rb_type || RB_DURATION_RO_VAL_SERIALIZED (rb->rb_type, val))
 	rb->rb_box = box_deserialize_string (val, box_length (val) - 1, 0);
       else
 	rb->rb_box = box_copy_tree (val);
@@ -459,16 +459,20 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
 caddr_t
 bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  /* data, type, lamg, ro_id, is_complete */
+  /* data, type, lamg, ro_id, is_complete.  ro_id -1 is the id of the same literal in RDF_OBJ, if it is stored */
   rdf_box_t * rb;
   caddr_t box, bcopy, chksum = NULL;
   dtp_t box_dtp;
   long type, lang, ro_id, is_complete;
+  int find_stored;
   box = bif_arg (qst, args, 0, "rdf_box");
   type = bif_long_arg (qst, args, 1, "rdf_box");
   lang = bif_long_arg (qst, args, 2, "rdf_box");
   ro_id = bif_long_arg (qst, args, 3, "rdf_box");
   is_complete = bif_long_arg (qst, args, 4, "rdf_box");
+  find_stored = (-1 == ro_id);
+  if (find_stored)
+    ro_id = 0;
   if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff) || (RDF_BOX_ILL_TYPE == type))
     sqlr_new_error ("22023", "SR547", "Invalid datatype id %ld as argument 2 of rdf_box()", type);
   if ((RDF_BOX_DEFAULT_LANG > lang) || (lang & ~0xffff) || (RDF_BOX_ILL_LANG == lang))
@@ -562,6 +566,15 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     rb->rb_is_outlined = 1;
   rb->rb_is_complete = is_complete;
   rb->rb_serialize_id_only = is_complete >> 1;
+  if (find_stored && is_complete && (DV_STRING == DV_TYPE_OF (bcopy))
+      && ((RDF_BOX_DEFAULT_TYPE != type) || (RDF_BOX_DEFAULT_LANG != lang)))
+    {
+      /* a literal made at run time is the same term as the stored one only with its id: =, DISTINCT and GROUP BY
+         go by the id of a box that has one, and the stored O is the id alone */
+      key_find_rdf_obj (((query_instance_t *) qst)->qi_trx, rb);
+      if (rb->rb_ro_id)
+        rb->rb_is_outlined = 1;
+    }
   rdf_box_audit(rb);
   return (caddr_t) rb;
 }
@@ -1227,6 +1240,11 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   int repl = (DKS_REPLICATION & ses->dks_cluster_flags);
   rdf_box_t * rb = (rdf_box_t *) x;
   rdf_box_audit (rb);
+  if (rb->rb_is_complete && (DKS_RB_COMPLETE & ses->dks_cluster_flags))
+    {
+      rb_serialize_complete (x, ses);
+      return;
+    }
   if ((RDF_BOX_DEFAULT_TYPE < rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
   if  ((rdf_no_string_inline || rb->rb_serialize_id_only)
@@ -2155,7 +2173,7 @@ bif_rdf_box_to_ro_id_search_fields (caddr_t * qst, caddr_t * err_ret, state_slot
           ro_val = box_copy_tree (rbb->rbb_chksum);
           goto res; /* see below */
         }
-      if (DV_GEO == cdtp)
+      if (DV_GEO == cdtp || IS_GENERIC_DURATION (content))
         {
           caddr_t err = NULL;
           caddr_t serial = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
@@ -2311,6 +2329,8 @@ rdf_ebv_int_of_plain_box (caddr_t val)
     }
 }
 
+int32 sparql_strict_langstring_ebv = 0;
+
 caddr_t
 bif_sparql_ebv_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname, int is_pure)
 {
@@ -2345,8 +2365,8 @@ bif_sparql_ebv_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, con
               return rb_new_bool (0);
             return NEW_DB_NULL;
           }
-        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
-        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        /* SPARQL 1.2 makes EBV of rdf:langString / rdf:dirLangString a type error, opt-in only */
+        if (sparql_strict_langstring_ebv && RDF_BOX_DEFAULT_LANG != rb->rb_lang)
           return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rb_ebv_of_plain_box (rb->rb_box);
@@ -2408,8 +2428,8 @@ bif_sparql_ebv_int_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
               return (caddr_t)((ptrlong)(0));
             return NEW_DB_NULL;
           }
-        /* SPARQL EBV treats rdf:langString / rdf:dirLangString as type errors. */
-        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+        /* SPARQL 1.2 makes EBV of rdf:langString / rdf:dirLangString a type error, opt-in only */
+        if (sparql_strict_langstring_ebv && RDF_BOX_DEFAULT_LANG != rb->rb_lang)
           return NEW_DB_NULL;
         if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
           return rdf_ebv_int_of_plain_box (rb->rb_box);
@@ -2450,6 +2470,50 @@ bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define DT_MODE_MASK(v) ~((DT_TYPE_DATE == DT_DT_TYPE((v))) ? DT_PRINT_MODE_HMS : ((DT_TYPE_TIME == DT_DT_TYPE((v))) ? DT_PRINT_MODE_YMD : 0))
 
 caddr_t
+bif_rdf_duration_twobyte (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_duration_twobyte");
+  if (!IS_GENERIC_DURATION (val))
+    sqlr_new_error ("22023", "SR659", "Function __rdf_duration_twobyte needs a duration as its argument");
+  return box_num (RB_DURATION_TWOBYTE (val));
+}
+
+/* print_object () of a DV_ARRAY_OF_DOUBLE of 2: its tag, then the count as a DV_SHORT_INT */
+const unsigned char rb_duration_ser_head[3] = { DV_ARRAY_OF_DOUBLE, DV_SHORT_INT, 2 };
+
+int
+rb_duration_snprintf (char *buf, size_t buf_size, int rb_type, ccaddr_t val)
+{
+  if (!RB_TYPE_IS_DURATION (rb_type))
+    return -1;
+  if (IS_GENERIC_DURATION (val))
+    return snprintf_generic_duration (buf, buf_size, val);
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT:
+      /* integer year-month or generic duration is a count of months, as stored before generic durations */
+      if (rb_type__xsd_dayTimeDuration != rb_type)
+        return snprintf_duration (buf, buf_size, unbox (val), 0);
+    case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC:
+      return snprintf_duration (buf, buf_size, 0, box_to_double ((caddr_t) val, DV_TYPE_OF (val)));
+    }
+  return -1;
+}
+
+caddr_t
+rb_duration_auto_string (rdf_box_t * rb, int64 * area, size_t area_size)
+{
+  char tmp[100];
+  db_buf_t ptr = ((db_buf_t) area) + 4;
+  int len = rb_duration_snprintf (tmp, sizeof (tmp), rb->rb_type, rb->rb_box);
+  if (len < 0 || (size_t) len + 1 + BOX_AUTO_OVERHEAD > area_size)
+    return NULL;
+  WRITE_BOX_HEADER (ptr, len + 1, DV_STRING);
+  memcpy (ptr, tmp, len + 1);
+  return (caddr_t) ptr;
+}
+
+caddr_t
 bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res, val = bif_arg (qst, args, 0, "__rdf_strsqlval");
@@ -2470,11 +2534,11 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (DV_LONG_INT == DV_TYPE_OF (val))
             val = unbox (val) ? uname_true : uname_false;
         }
-      else if (rb_type__xsd_duration == rb_type)
+      else if (RB_IS_DURATION (rb))
         {
           char temp[255];
-          snprintf_generic_duration (temp, sizeof (temp), val);
-	  return box_dv_short_string (temp);
+          if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb_type, val))
+	    return box_dv_short_string (temp);
         }
     }
   switch (val_dtp)
@@ -3321,6 +3385,18 @@ bif_rdf_lang_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+/* the language tag (with an RDF 1.2 direction) of a twobyte id or NULL, for PL code run by users without raw access to DB.DBA.RDF_LANGUAGE */
+caddr_t
+bif_rdf_lang_of_twobyte (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint twobyte = bif_long_arg (qst, args, 0, "__rdf_lang_of_twobyte");
+  caddr_t lang;
+  if (twobyte <= 0 || twobyte > 0xffff)
+    return NEW_DB_NULL;
+  lang = rdf_box_get_lang ((query_instance_t *) qst, (unsigned short) twobyte);
+  return lang ? lang : NEW_DB_NULL;
+}
+
 int32 rdf_geo_use_wkt = 1;
 
 static void
@@ -3420,40 +3496,19 @@ http_json_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *xe)
   session_buffered_write_char ('"', ses);
 }
 
-static void
-http_ttl_write_duration (dk_session_t * ses, double boxdbl, char * intl)
+/* What Turtle needs after the text of a native xsd:decimal or xsd:double to read it back with that datatype:
+   it reads 12000 as an xsd:integer and 1500.0 as an xsd:decimal.  NULL if the text has it already, or is NaN or INF. */
+static const char *
+http_ttl_number_suffix (caddr_t txt, dtp_t dtp)
 {
-  char tmpbuf[50];
-  int buffill;
-  TIMESTAMP_STRUCT ts;
-  memset (&ts, 0, sizeof (TIMESTAMP_STRUCT));
-  ts.year = 1970;
-  ts.month = 1;
-  ts.day = 1;
-  ts_add (&ts, boxdbl, intl);
-  strcpy (tmpbuf, "P"); buffill = 1;
-  if (ts.year > 1970)
-    buffill += sprintf (tmpbuf + buffill, "%dY", ts.year - 1970);
-  if (ts.month > 1)
-    buffill += sprintf (tmpbuf + buffill, "%dM", ts.month - 1);
-  if (ts.day > 1)
-    buffill += sprintf (tmpbuf + buffill, "%dD", ts.day - 1);
-
-  if (ts.hour > 0 || ts.minute > 0 || ts.second > 0)
-    {
-      strcat (tmpbuf, "T");
-      buffill ++;
-    }
-  if (ts.hour> 0)
-    buffill += sprintf (tmpbuf + buffill, "%dH", ts.hour);
-  if (ts.minute > 0)
-    buffill += sprintf (tmpbuf + buffill, "%dM", ts.minute);
-  if (ts.second > 0)
-    buffill += sprintf (tmpbuf + buffill, "%dS", ts.second);
-
-  session_buffered_write_char ('"', ses);
-  session_buffered_write (ses, tmpbuf, buffill);
-  session_buffered_write_char ('"', ses);
+  size_t len = box_length (txt) - 1;
+  if (!len || !isdigit ((unsigned char) txt[len - 1]))
+    return NULL;
+  if (DV_NUMERIC == dtp)
+    return memchr (txt, '.', len) ? NULL : ".0";
+  if (DV_DOUBLE_FLOAT == dtp && !memchr (txt, 'e', len) && !memchr (txt, 'E', len))
+    return memchr (txt, '.', len) ? "e0" : ".0e0";
+  return NULL;
 }
 
 static void
@@ -3461,6 +3516,8 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   int html_ttl = (TTL_ENV_HTML_OUTPUT & env->te_flags);
   if (DV_RDF == obj_dtp)
     {
@@ -3468,6 +3525,11 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -3544,14 +3606,8 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         char tmpbuf[50];
         int buffill;
         double boxdbl = unbox_double (obj_box_value);
-        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_MIN_TYPE);
-	if (RB_IS_DURATION (rb_type))
-	  {
-	    http_ttl_write_duration (ses, boxdbl, "second");
-	    break;
-	  }
         buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
-        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        if ((NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
           {
             if (isalpha(tmpbuf[1]))
               {
@@ -3564,7 +3620,13 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
               }
             else
               {
-                strcpy (tmpbuf+buffill, ".0");
+                /* without an exponent Turtle reads it as an xsd:decimal */
+                if (NULL == strchr (tmpbuf, '.'))
+                  {
+                    strcpy (tmpbuf+buffill, ".0");
+                    buffill += 2;
+                  }
+                strcpy (tmpbuf+buffill, "e0");
                 buffill += 2;
               }
           }
@@ -3582,12 +3644,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     default:
       {
 	caddr_t tmp_utf8_box;
-        int need_quotes, rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_MIN_TYPE);
-	if (RB_IS_DURATION (rb_type) && DV_LONG_INT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
-	    break;
-	  }
+        int need_quotes;
         if (IS_GENERIC_DURATION (obj_box_value))
           {
             char buf[100];
@@ -3605,6 +3662,12 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         if (need_quotes)
           session_buffered_write_char ('"', ses);
+        else if (DV_NUMERIC == obj_box_value_dtp)
+          {
+            const char *sfx = http_ttl_number_suffix (tmp_utf8_box, DV_NUMERIC);
+            if (sfx)
+              session_buffered_write (ses, sfx, strlen (sfx));
+          }
         dk_free_box (tmp_utf8_box);
         break;
       }
@@ -3977,12 +4040,19 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       obj_box_value = ((rdf_box_t *)obj)->rb_box;
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -4230,12 +4300,19 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       obj_box_value = ((rdf_box_t *)obj)->rb_box;
       obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
       if ((rb_type__xsd_boolean == ((rdf_box_t *)obj)->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string ((rdf_box_t *)obj, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -4298,7 +4375,10 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         if (abbreviated_numbers)
           {
             caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
+            const char *sfx = http_ttl_number_suffix (tmp_utf8_box, obj_box_value_dtp);
             session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            if (sfx)
+              session_buffered_write (ses, sfx, strlen (sfx));
             dk_free_box (tmp_utf8_box);
             return;
           }
@@ -4306,17 +4386,6 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
         caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
-        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
-	if (RB_IS_DURATION (rb_type) && DV_LONG_INT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
-	    goto print_dt_iri;
-	  }
-	if (RB_IS_DURATION (rb_type) && DV_DOUBLE_FLOAT == obj_box_value_dtp)
-	  {
-	    http_ttl_write_duration (ses, unbox_double (obj_box_value), "second");
-	    goto print_dt_iri;
-	  }
         if (IS_GENERIC_DURATION (obj_box_value))
           {
             char buf[100];
@@ -4500,7 +4569,7 @@ fail:
   return (caddr_t)((ptrlong)(0));
 }
 
-/*! Flag of http_nt_object(): an RDF 1.2 triple term, an IRI of one or a
+/*! Flag of http_nt_object() and http_rdf_object(): an RDF 1.2 triple term, an IRI of one or a
 TRIPLE() vector, is not written and 2 is returned, for the caller to write it
 as <<( s p o )>> */
 #define HTTP_NT_OBJECT_NO_TRIPLE_TERM 0x100
@@ -4661,6 +4730,7 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t obj = bif_arg (qst, args, 0, "http_rdf_object");
   dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_rdf_object");
   int esc_mode = BOX_ELEMENTS (args) > 2 ? bif_long_arg (qst, args, 2, "http_rdf_object") : DKS_ESC_PTEXT;
+  long flags = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "http_rdf_object") : 0;
   int status = 0;
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
@@ -4668,6 +4738,8 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (&tii,0, sizeof (ttl_iriref_items_t));
   env.ne_out_ses = ses;
   obj_dtp = DV_TYPE_OF (obj);
+  if ((flags & HTTP_NT_OBJECT_NO_TRIPLE_TERM) && (DV_ARRAY_OF_POINTER == obj_dtp))
+    return (caddr_t)(ptrlong)(2);
   switch (obj_dtp)
     {
     case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
@@ -4678,6 +4750,12 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
         goto fail; /* see below */
+      if ((flags & HTTP_NT_OBJECT_NO_TRIPLE_TERM) && !tii.o.is_bnode && (NULL != tii.o.uri)
+        && !strncmp (tii.o.uri, RDF_STAR_NS, sizeof (RDF_STAR_NS) - 1))
+        {
+          status = 2;
+          goto fail; /* see below */
+        }
     }
   else
     {
@@ -4686,7 +4764,7 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (obj_is_iri)
     http_nt_write_ref (ses, &env, &(tii.o), obj);
   else
-    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, esc_mode, 0);
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, esc_mode, flags & ~HTTP_NT_OBJECT_NO_TRIPLE_TERM);
 fail:
   dk_free_box (tii.o.uri);
   dk_free_box (tii.dt.uri);
@@ -4774,6 +4852,8 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
+  int64 dur_area[16];
+  caddr_t dur_str;
   caddr_t type_uri = NULL;
   if (DV_RDF == obj_dtp)
     {
@@ -4787,6 +4867,11 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
       if ((rb_type__xsd_boolean == rb->rb_type) && (DV_LONG_INT == obj_box_value_dtp))
         obj_box_value = unbox (obj_box_value) ? uname_true : uname_false;
+      else if (NULL != (dur_str = rb_duration_auto_string (rb, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -4995,7 +5080,7 @@ http_ld_json_obj_can_be_simplified (query_instance_t *qi, caddr_t obj)
           return 1;
         return 0;
       }
-    case DV_LONG_INT: case DV_DOUBLE_FLOAT: case DV_WIDE:
+    case DV_LONG_INT: case DV_WIDE:
       return 1;
     case DV_STRING:
       if (BF_IRI & box_flags (obj))
@@ -5012,6 +5097,8 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
   caddr_t type_uri = NULL;
+  int64 dur_area[16];
+  caddr_t dur_str;
   if (DV_RDF == obj_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
@@ -5022,6 +5109,11 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       rb_dt_lang_check(rb);
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+      if (NULL != (dur_str = rb_duration_auto_string (rb, dur_area, sizeof (dur_area))))
+        {
+          obj_box_value = dur_str;
+          obj_box_value_dtp = DV_STRING;
+        }
     }
   else
     {
@@ -5029,13 +5121,14 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       obj_box_value_dtp = obj_dtp;
       switch (obj_box_value_dtp)
         {
+        /* JSON-LD reads a JSON number as an xsd:integer or an xsd:double, so an xsd:decimal or xsd:double is a
+           value object with its @type, below */
         case DV_LONG_INT:
         case DV_SINGLE_FLOAT:
-        case DV_DOUBLE_FLOAT:
-        case DV_NUMERIC:
           {
             caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
             session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            dk_free_box (tmp_utf8_box);
             return;
           }
         }
@@ -5121,10 +5214,11 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     default:
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
+        int quoted = (DV_RDF == obj_dtp || DV_GEO == obj_dtp || DV_NUMERIC == obj_dtp || DV_DOUBLE_FLOAT == obj_dtp);
+        if (quoted)
           session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
+        if (quoted)
           session_buffered_write_char ('\"', ses);
         dk_free_box (tmp_utf8_box);
         if (NULL == type_uri)
@@ -5890,6 +5984,8 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
         case DV_RDF:
           {
             rdf_box_t *rb = (rdf_box_t *)val;
+            char dur_buf[100];
+            int dur_len;
             rb_dt_lang_check(rb);
             if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
               {
@@ -5940,6 +6036,9 @@ literal_elt_printed:
                 else
                   SES_PRINT (ses, "false");
               }
+            else if (RB_IS_DURATION (rb) && 0 <= (dur_len = rb_duration_snprintf (dur_buf, sizeof (dur_buf), rb->rb_type, rb->rb_box)))
+              session_buffered_write (ses, dur_buf, dur_len);
+            else
               dks_sqlval_esc_write ((caddr_t *)qi, ses, rb->rb_box, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
             SES_PRINT (ses, "</literal>");
             break;
@@ -7277,6 +7376,8 @@ rdf_order_rank_of_box (caddr_t val)
     return unbox_iri_id (val) >= min_bnode_iri_id () ? 1 : 2;
   if (DV_UNAME == dtp || (DV_STRING == dtp && (BF_IRI & box_flags (val))))
     return rdf_order_rank_of_iri (val, box_length (val) - 1);
+  if (DV_ARRAY_OF_POINTER == dtp)
+    return 4;
   return 3;
 }
 
@@ -7337,6 +7438,10 @@ bif_rdf_order_rank_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 	    case DV_UNAME:
 	      rank = rdf_order_rank_of_box (qst_get (qst, ssl));
 	      break;
+	    case DV_ARRAY_OF_POINTER:
+	    case DV_LIST_OF_POINTER:
+	      rank = 4;
+	      break;
 	    default:
 	      rank = 3;
 	    }
@@ -7372,7 +7477,7 @@ rdf_box_init (void)
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
   bif_define_ex ("__rdf_set_bnode_t_threshold", bif_rdf_set_bnode_t_threshold, BMD_ALIAS, "__rdf_set_bnode_t_treshold", BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rdf_set_bnode_t_threshold);
-  bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id, BMD_IS_PURE, BMD_DONE);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_ex ("is_rdf_box", bif_is_rdf_box, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -7384,6 +7489,7 @@ rdf_box_init (void)
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
   bif_define_ex ("rdf_box_lang", bif_rdf_box_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rdf_lang_impl", bif_rdf_lang_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__rdf_lang_of_twobyte", bif_rdf_lang_of_twobyte, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_box_type", bif_rdf_box_type, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);
@@ -7396,6 +7502,7 @@ rdf_box_init (void)
   bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define ("__rdf_duration_twobyte", bif_rdf_duration_twobyte);
   bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE, &bt_any, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);

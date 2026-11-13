@@ -1837,7 +1837,7 @@ retry_after_deadlock:
     ttl_mode := 512+255;
   -- SPARQL 1.2 LOAD ... INTO GRAPH: a named graph in the document is an error (TTLP_NO_NAMED_GRAPHS)
   if (ttl_mode is not null and get_keyword ('get:no-named-graphs', options) is not null)
-    ttl_mode := bit_or (ttl_mode, 1024);
+    ttl_mode := bit_or (ttl_mode, 16384);
   -- Sponging or SPARQL LOAD for a user who is not dba (see RDF_SPONGE_UP_1):
   -- before the exit handler below, so that a refused graph is not taken for a
   -- text in another format

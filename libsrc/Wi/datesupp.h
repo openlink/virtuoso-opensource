@@ -75,6 +75,7 @@ void dt_to_time_struct (char *dt, TIME_STRUCT *ots);
 void time_struct_to_dt (TIME_STRUCT *ts, char *dt);
 int dt_local_tzmin_for_parts (int year, int month, int day, int hour, int minute, int second);
 void dt_date_round (char *dt);
+void dt_to_col_dtp (char *dt, dtp_t col_dtp);
 void dt_init (void);
 int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (const char *dt, char *str, int len);
@@ -83,6 +84,7 @@ void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
+int snprintf_duration (char *buf, size_t buf_size, long ym, double dt);
 int snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration);
 
 #define DTFLAG_YY	0x1

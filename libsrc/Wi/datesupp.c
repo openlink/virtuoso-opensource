@@ -830,25 +830,13 @@ dt_date_round (char *dt)
 
 
 int
-snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
+snprintf_duration (char *buf, size_t buf_size, long ym, double dt)
 {
   int inx = 0;
-  long ym = 0;
-  double dt = 0;
   int is_neg;
   long years, months;
   long days, hours, minutes;
   double seconds;
-
-  if (IS_GENERIC_DURATION (duration))
-    {
-      ym = GENERIC_DURATION_GET_YM (duration);
-      dt = GENERIC_DURATION_GET_DT (duration);
-    }
-  else
-    {
-      dt = unbox (duration);
-    }
 
   is_neg = (ym < 0 || dt < 0);
   ym = labs (ym);
@@ -866,6 +854,9 @@ snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
   seconds = dt - (60 * minutes) - (3600 * hours) - (86400 * days);
 
   inx += snprintf (buf, buf_size, "%sP", is_neg ? "-" : "");
+
+  if (!ym && !dt)
+    return inx + snprintf (buf + inx, buf_size - inx, "T0S");
 
   if (ym)
     {
@@ -889,13 +880,54 @@ snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
       if (seconds)
 	{
 	  if (seconds - (long) seconds > 0)
-	    inx += snprintf (buf + inx, buf_size - inx, "%.9lfS", seconds);
+	    {
+	      inx += snprintf (buf + inx, buf_size - inx, "%.9lf", seconds);
+	      while ('0' == buf[inx - 1])
+		inx--;
+	      if ('.' == buf[inx - 1])
+		inx--;
+	      inx += snprintf (buf + inx, buf_size - inx, "S");
+	    }
 	  else
 	    inx += snprintf (buf + inx, buf_size - inx, "%ldS", (long) seconds);
 	}
     }
 
   return inx;
+}
+
+
+int
+snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
+{
+  double dt = 0;
+  if (IS_GENERIC_DURATION (duration))
+    return snprintf_duration (buf, buf_size, GENERIC_DURATION_GET_YM (duration), GENERIC_DURATION_GET_DT (duration));
+  switch (DV_TYPE_OF (duration))
+    {
+    case DV_LONG_INT: dt = (double) unbox (duration); break;
+    case DV_SINGLE_FLOAT: dt = (double) unbox_float (duration); break;
+    case DV_DOUBLE_FLOAT: dt = unbox_double (duration); break;
+    case DV_NUMERIC: numeric_to_double ((numeric_t) duration, &dt); break;
+    }
+  return snprintf_duration (buf, buf_size, 0, dt);
+}
+
+
+/* A datetime value stored into a DATE or TIME column becomes what
+   cast (x as date) or cast (x as time) makes of it.  Other columns keep it. */
+void
+dt_to_col_dtp (char *dt, dtp_t col_dtp)
+{
+  switch (col_dtp)
+    {
+    case DV_DATE:
+      dt_date_round (dt);
+      break;
+    case DV_TIME:
+      dt_make_day_zero (dt);
+      break;
+    }
 }
 
 

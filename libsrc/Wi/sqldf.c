@@ -48,6 +48,7 @@
 #include "sqloinv.h"
 #include "wifn.h"
 #include "mhash.h"
+#include "rdfinf.h"
 
 
 
@@ -1817,7 +1818,15 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  dt_dfe->_.sub.dt_out[inx] = exp;
 	  /* GK: done because the dts are already unplaced, but may be in the deps part of the exp */
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 1);
-	  sqlo_place_exp (so, dt_dfe, exp);
+	  if (exp && sqlo_is_oby_key_completion (dt_dfe->_.sub.ot, exp))
+	    {
+	      int old_mode = so->so_place_code_forr_cond;
+	      so->so_place_code_forr_cond = 1;
+	      sqlo_place_exp (so, dt_dfe, exp);
+	      so->so_place_code_forr_cond = old_mode;
+	    }
+	  else
+	    sqlo_place_exp (so, dt_dfe, exp);
 	  sqlo_dfe_set_dt_exps_is_placed (so, dt_dfe->_.sub.ot, 0);
 	  if (exp)
 	    {
@@ -3578,20 +3587,73 @@ sqlo_trans_dt_2_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
 }
 
 
+static int
+sqlo_trans_start_is_outer (df_elt_t * dfe, df_elt_t * pred, dk_set_t trans_cols)
+{
+  /* returns true if eq pred is from outer scope, such should not drive trans direction via __all_eq */
+  op_table_t * trans_parent = dfe->_.sub.ot->ot_super;
+  df_elt_t * trans_start = NULL;
+  if (!trans_parent)
+    return 0;
+  if (!pred || (DFE_BOP_PRED != pred->dfe_type && DFE_BOP != pred->dfe_type))
+    return 0;
+  if (BOP_EQ != pred->_.bin.op)
+    return 0;
+  DO_SET (ST *, col, &trans_cols)
+    {
+      if (!DFE_SHORTCUT (pred->_.bin.left) && box_equal ((cbox_t)col, (cbox_t)pred->_.bin.left->dfe_tree))
+        {
+          trans_start = pred->_.bin.right;
+          break;
+        }
+      if (!DFE_SHORTCUT (pred->_.bin.right) && box_equal ((cbox_t)col, (cbox_t)pred->_.bin.right->dfe_tree))
+        {
+          trans_start = pred->_.bin.left; 
+          break;
+        }
+    }
+  END_DO_SET ();
+  if (DFE_SHORTCUT (trans_start) || !trans_start->dfe_tables)
+    return 0;
+  DO_SET (op_table_t *, ot, &trans_start->dfe_tables)
+    {
+      if (ot->ot_super != trans_parent)
+        return 1;
+    }
+  END_DO_SET ();
+  return 0;
+}
+
 void
 sqlo_place_trans_dt (sqlo_t * so, df_elt_t * dfe, dk_set_t preds)
 {
   /* see whether in given, out given or both.  Make importable pred lists for both.  Fill in trans_layout */
   dk_set_t in_cols, out_cols;
-  dk_set_t in = NULL;
+  dk_set_t in = NULL, all_trans_cols, test_in;
   ST * trans, * save;
   trans = dfe->_.sub.ot->ot_trans;
   in_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.in);
   out_cols = sqlo_cols_by_pos (so, dfe, trans->_.trans.out);
+  all_trans_cols = dk_set_conc (t_set_copy (in_cols), t_set_copy (out_cols));
+  /* first look at local input cols, only if they do we defer from outer scope, we never empty in/out,
+   * so if can't find local trans start we fail in old behaviour */ 
+  test_in = t_set_copy (in_cols);
   DO_SET (df_elt_t *, join, &preds)
     {
-      sqlo_rm_if_eq (&in_cols, join);
-      sqlo_rm_if_eq (&out_cols, join);
+      if (!sqlo_trans_start_is_outer (dfe, join, all_trans_cols))
+        sqlo_rm_if_eq (&test_in, join);
+    }
+  END_DO_SET ();
+  DO_SET (df_elt_t *, join, &preds)
+    {
+      /* if local start exists we defer from outer scope */
+      if (!test_in && sqlo_trans_start_is_outer (dfe, join, all_trans_cols))
+        ; /* defer to after_join */
+      else
+        {
+          sqlo_rm_if_eq (&in_cols, join);
+          sqlo_rm_if_eq (&out_cols, join);
+        }
     }
   END_DO_SET();
   if (!in_cols && !out_cols)
@@ -4619,7 +4681,7 @@ sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * co
 int
 st_is_call (ST * tree, char * f, int n_args)
 {
-  if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name) && 0 == stricmp (f, tree->_.call.name)
+  if (ST_P (tree, CALL_STMT) && DV_STRING_TYPE (tree->_.call.name) && 0 == stricmp (f, tree->_.call.name)
       && BOX_ELEMENTS (tree->_.call.params) == n_args)
     return 1;
   return 0;
@@ -4714,6 +4776,81 @@ sqlo_in_place_in_pred (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t *col_preds, dk_s
       END_DO_SET ();
       t_set_push (&to_move, (void*) pred);
 next_pred:;
+    }
+  END_DO_SET ();
+  DO_SET (df_elt_t *, pred, &to_move)
+    {
+      t_set_push (after_preds, (void*) pred);
+      t_set_delete (col_preds, (void*) pred);
+    }
+  END_DO_SET ();
+}
+
+
+static int
+dfe_is_non_iri_const (df_elt_t * dfe)
+{
+  dtp_t dtp;
+  if (DFE_CONST != dfe->dfe_type)
+    return 0;
+  dtp = DV_TYPE_OF (dfe->dfe_tree);
+  if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
+    return 0;
+  return !(IS_STRING_DTP (dtp) && (BF_IRI & box_flags (dfe->dfe_tree)));
+}
+
+
+static int
+sqlo_cp_is_iri_cmp (df_elt_t * cp)
+{
+  /* a comparison that a superclass or superproperty can satisfy differently than the stored value: not with literals only */
+  df_elt_t ** in_list = sqlo_in_list (cp, NULL, NULL);
+  uint32 inx;
+  if (!in_list)
+    return !dfe_is_non_iri_const (cp->_.bin.right);
+  for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+    if (!dfe_is_non_iri_const (in_list[inx]))
+      return 1;
+  return 0;
+}
+
+
+static void
+sqlo_rdf_inf_after_preds (df_elt_t * tb_dfe, dk_set_t * col_preds, dk_set_t * after_preds)
+{
+  /* With inference, an O of rdf:type that is not given ranges over the stored class and its superclasses and a P that
+     is not given over the stored property and its superproperties: sqlg_rdf_inf_1 adds a trailing iterator for them.
+     A condition on such a column must see the inferred values, so it goes to the join test, which the iterator takes
+     behind itself.  Given means as in sqlg_rdf_inf_1: a single equality. */
+  extern caddr_t rdfs_type;
+  df_elt_t * p_dfe = NULL;
+  int o_given = 0, o_iterated, p_iterated;
+  caddr_t p_const;
+  dk_set_t to_move = NULL;
+  if (tb_dfe->_.table.is_inf_col_given || !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table)
+      || !rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE)))
+    return;
+  DO_SET (df_elt_t *, cp, col_preds)
+    {
+      dbe_column_t * col = cp_left_col (cp);
+      if (BOP_EQ != cp->_.bin.op || cp->_.bin.left == cp->_.bin.right || sqlo_in_list (cp, NULL, NULL))
+	continue;
+      if ('P' == col->col_name[0])
+	p_dfe = cp->_.bin.right;
+      else if ('O' == col->col_name[0])
+	o_given = 1;
+    }
+  END_DO_SET ();
+  p_const = dfe_iri_const (p_dfe);
+  o_iterated = !o_given && (!p_const || box_equal (rdfs_type, p_const));
+  p_iterated = !p_dfe;
+  dk_free_box (p_const);
+  DO_SET (df_elt_t *, cp, col_preds)
+    {
+      dbe_column_t * col = cp_left_col (cp);
+      if ((('O' == col->col_name[0] && o_iterated) || ('P' == col->col_name[0] && p_iterated))
+	  && sqlo_cp_is_iri_cmp (cp))
+	t_set_push (&to_move, (void*) cp);
     }
   END_DO_SET ();
   DO_SET (df_elt_t *, pred, &to_move)
@@ -4825,6 +4962,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       pred->dfe_is_placed = DFE_PLACED;
     }
   END_DO_SET();
+  sqlo_rdf_inf_after_preds (tb_dfe, &col_preds, &after_preds);
   sqlo_table_locus (so, tb_dfe, col_preds, &after_preds, nj_preds, &vdb_preds);
 
   tb_dfe->_.table.col_preds = col_preds;
@@ -4894,6 +5032,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
       so->so_context_dt = old_ctx;
     }
   END_DO_SET ();
+  sqlo_rdf_inf_out_cols (so, tb_dfe);
   sqlo_choose_index (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_in_place_in_pred (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_tb_order (so, tb_dfe, merged_col_preds);
@@ -6280,6 +6419,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     }
   dfe->dfe_remote_locus_refs = hash_pred_locus_refs;/* Bug 1500 */
   dfe->_.table.join_test = sqlo_and_list_body (so, LOC_LOCAL, dfe, post_preds);
+  sqlo_rdf_inf_out_cols (so, dfe);
   dfe->dfe_unit = 0;
   *score_ret = sqlo_score (super_ot->ot_work_dfe, super_ot->ot_work_dfe->_.sub.in_arity);
   if (!dfe->_.table.is_unique)
@@ -6792,10 +6932,27 @@ sqlo_dt_imp_pred_list_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *dfe)
 #endif
 
 
+int enable_ro2sq_late_complete = 1;
+
+int
+sqlo_is_oby_key_completion (op_table_t * ot, df_elt_t * sel_dfe)
+{
+  /* __ro2sq () selected out of a group or sort is read after it, so it completes what the group or sort kept */
+  if (!enable_ro2sq_late_complete || !st_is_call (sel_dfe->dfe_tree, "__ro2sq", 1))
+    return 0;
+  return (ot->ot_group_dfe && ot->ot_group_dfe->dfe_is_placed) || (ot->ot_oby_dfe && ot->ot_oby_dfe->dfe_is_placed);
+}
+
+
 void
 sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top_exp)
 {
   so->so_place_code_forr_cond = 0;
+  if (sqlo_is_oby_key_completion (ot, sel_dfe))
+    {
+      so->so_place_code_forr_cond = 1;
+      return;
+    }
   if (IS_BOX_POINTER (top_exp) && top_exp->_.top.skip_exp)
     {
       if (ot->ot_group_dfe || ot->ot_fun_refs)
@@ -7712,6 +7869,16 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
       /* all tables in sequence, now groups and top select and what else */
       if (ST_P (ot->ot_dt, SELECT_STMT))
 	{
+	  if (!ot->ot_from_dfes && ot->ot_preds)
+	    {
+	      /* A select without FROM, as (select 1 as x) s in ... where s.x = 2, has no table to place the preds
+	         imported into it with: place them as a filter in front of the selection.  All of ot_preds go in,
+	         nothing else can have placed them. */
+	      df_elt_t * filter = sqlo_new_dfe (so, DFE_FILTER, NULL);
+	      filter->_.filter.body = sqlo_and_list_body (so, LOC_LOCAL, so->so_gen_pt, ot->ot_preds);
+	      filter->_.filter.preds = t_set_copy (ot->ot_preds);
+	      sqlo_place_dfe_after (so, LOC_LOCAL, so->so_gen_pt, filter);
+	    }
 	  sqlo_fun_ref_epilogue (so, ot);
 	  if (is_top || SEL_IS_DISTINCT (ot->ot_dt) || sel_n_breakup (ot->ot_dt))
 	    {

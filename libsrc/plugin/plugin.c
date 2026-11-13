@@ -39,6 +39,9 @@ typedef struct plugin_type_s plugin_type_t;
 
 static plugin_type_t all_plugin_types[MAX_PLUGIN_TYPES];
 
+/* files of the plugins connected: connecting one again would register its BIFs again, which is a GPF */
+static dk_set_t connected_plugin_files;
+
 int plugin_add_type(const char *plugin_type_name, plugin_load_callback *loader_for_type, plugin_connect_callback *connector)
 {
   int ctr;
@@ -100,8 +103,18 @@ int plugin_load (
 	    info_logger ("  %s", buf);
 	  if ((NULL != result->uv_comments) && ('\0' != result->uv_comments[0]))
 	    info_logger ("  %s", result->uv_comments);
+	  if (!error && result->uv_filename
+	      && -1 != dk_set_position_of_string (connected_plugin_files, result->uv_filename))
+	    {
+	      info_logger ("  SKIPPED plugin %d: %s is already loaded }", loadctr, result->uv_filename);
+	      return 0;
+	    }
 	  if (!error)
-	    item->pt_connector (result);
+	    {
+	      item->pt_connector (result);
+	      if (result->uv_filename)
+		dk_set_push (&connected_plugin_files, box_dv_short_string (result->uv_filename));
+	    }
 	  if (error)
 	    error_logger ("  FAILED  plugin %d: %s }", loadctr, result->uv_load_error);
 	  else

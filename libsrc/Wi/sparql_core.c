@@ -667,6 +667,18 @@ sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref)
     return ref;
 }
 
+int
+spar_in_ctor_template_context (sparp_t *sparp)
+{
+  dk_set_t gp_st;
+  if (NULL == sparp)
+    return 0;
+  gp_st = sparp->sparp_env->spare_context_gp_subtypes;
+  if (gp_st && (CONSTRUCT_L == (ptrlong)(gp_st->data)))
+    return 1;
+  return (0 != (sparp->sparp_in_precode_expn & SPARP_PRECODE_CTOR_DATA_ONLY));
+}
+
 caddr_t
 sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_ptr, caddr_t *err_ret, int argctr, ccaddr_t arg1)
 {
@@ -883,7 +895,8 @@ next_u:
                       }
                     acc = acc * 16 + dgt;
                   }
-                if (acc < 0)
+                if ((acc < 0) || (acc > 0x10FFFF) ||
+                    ((SPAR_STRLITERAL_JSON_STRING != mode) && (acc >= 0xD800) && (acc <= 0xDFFF)))
                   {
                     err_msg = "The \\U escape sequence represents invalid Unicode char";
                     goto err;
@@ -1851,7 +1864,51 @@ SPART *
 spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows)
 {
   SPART *gp = spar_gp_finalize (sparp, NULL);
-  SPART *binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
+  SPART *binv;
+  int varcount = BOX_ELEMENTS (vars), rowcount = BOX_ELEMENTS (rows), varctr, rowctr, keepcount = 0;
+  char *keep = t_alloc (varcount + 1);
+  for (varctr = 0; varctr < varcount; varctr++)
+    {
+      keep[varctr] = 0;
+      for (rowctr = 0; rowctr < rowcount; rowctr++)
+        if (NULL != rows[rowctr][varctr])
+          {
+            keep[varctr] = 1;
+            keepcount++;
+            break;
+          }
+    }
+  /* a column that is UNDEF in every row binds nothing, so it is dropped; otherwise the variable would look bound here and an outer value would not reach a FILTER of an enclosing OPTIONAL */
+  if ((0 < rowcount) && (keepcount < varcount))
+    {
+      if (0 == keepcount)
+        {
+          if (1 == rowcount)
+            {
+              gp->_.gp.subtype = 0;
+              return gp;
+            }
+        }
+      else
+        {
+          SPART **new_vars = (SPART **)t_alloc_list (keepcount);
+          int new_ctr = 0;
+          for (varctr = 0; varctr < varcount; varctr++)
+            if (keep[varctr])
+              new_vars[new_ctr++] = vars[varctr];
+          for (rowctr = 0; rowctr < rowcount; rowctr++)
+            {
+              SPART **new_row = (SPART **)t_alloc_list (keepcount);
+              new_ctr = 0;
+              for (varctr = 0; varctr < varcount; varctr++)
+                if (keep[varctr])
+                  new_row[new_ctr++] = rows[rowctr][varctr];
+              rows[rowctr] = new_row;
+            }
+          vars = new_vars;
+        }
+    }
+  binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
   gp->_.gp.subquery = binv;
   return gp;
 }
@@ -3491,6 +3548,35 @@ vgraph_inject_scope_in_expn (sparp_t *sparp, SPART *expn)
     }
 }
 
+static void
+spar_validate_select_aliases_against_groupings (sparp_t *sparp, SPART **retvals, SPART **groupings)
+{
+  int ret_ctr, gby_ctr;
+  if (!IS_BOX_POINTER (retvals) || (NULL == groupings))
+    return;
+  DO_BOX_FAST (SPART *, ret, ret_ctr, retvals)
+    {
+      ccaddr_t ret_alias;
+      if ((NULL == ret) || (SPAR_ALIAS != SPART_TYPE (ret)))
+        continue;
+      ret_alias = ret->_.alias.aname;
+      DO_BOX_FAST (SPART *, gby, gby_ctr, groupings)
+        {
+          ccaddr_t gby_name = NULL;
+          if (NULL == gby)
+            continue;
+          if (SPAR_ALIAS == SPART_TYPE (gby))
+            gby_name = gby->_.alias.aname;
+          else if (SPAR_VARIABLE == SPART_TYPE (gby))
+            gby_name = gby->_.var.vname;
+          if ((NULL != gby_name) && spar_name_same (ret_alias, gby_name))
+            spar_error (sparp, "Variable ?%.200s can not be reused as both a SELECT alias and a GROUP BY binding", ret_alias);
+        }
+      END_DO_BOX_FAST;
+    }
+  END_DO_BOX_FAST;
+}
+
 SPART *
 spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv)
@@ -3533,6 +3619,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       vgraph_inject_scope_in_expn (sparp, pattern);
     }
   sources = spar_make_sources_like_top (sparp, subtype);
+  spar_validate_select_aliases_against_groupings (sparp, retvals, groupings);
   if ((NULL != env->spare_parent_env) || (sparp->sparp_env->spare_disable_output_formatting))
     final_output_format_name = NULL;
   else

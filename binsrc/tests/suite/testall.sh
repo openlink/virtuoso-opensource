@@ -123,6 +123,7 @@ timsg \
 tpcd \
 tproxy \
 trecov_schema \
+tr2rml \
 trepl \
 tsec \
 tsqlo \
@@ -141,6 +142,7 @@ tsoap12 \
 tvspxex \
 tgraphql \
 tlongany \
+tplugin_load \
 tvvec \
 tvvec_crash_recovery \
 tvvec_chunked_replay \
@@ -181,7 +183,10 @@ tvvec_rdf_quad \
 tgql_rdf_equiv \
 tgql_unit \
 tgql_compat \
-tgraphalgo"
+tgraphalgo \
+trdf12tt \
+trdf12 \
+tsparql12"
 
 QUICKTEST=1
 TPCDMODE=local

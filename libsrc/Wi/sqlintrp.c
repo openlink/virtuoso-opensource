@@ -3602,12 +3602,12 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	  nesting_level--;
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.compound_start)));
 	  break;
-	case INS_HANDLER:
 	case IN_AGG:
 	  ins_vec_agg (ins, qst);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.agg)));
 	  break;
 
+	case INS_HANDLER:
 	case INS_HANDLER_END:
 	  sqlr_new_error ("42000", "VEC12", "Error handler not allowed in vectored code");
 	  break;

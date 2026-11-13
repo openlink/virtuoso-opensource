@@ -1704,6 +1704,8 @@ ssl_needs_ins_cast (state_slot_t * ssl, dbe_column_t * col)
 {
   if (ssl->ssl_is_callret || ssl->ssl_vary)
     return 1;
+  if (DV_DATE == col->col_sqt.sqt_dtp || DV_TIME == col->col_sqt.sqt_dtp)
+    return 1; /* the cast makes a date or a time of a datetime, also from a slot declared as one */
   if (DV_WIDE == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
     return 0;
   if (DV_STRING == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_STRING == ssl->ssl_sqt.sqt_dtp))
@@ -3336,6 +3338,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	      sethash ((void *) (ptrlong) org_shadowed, sc->sc_vec_ssl_shadow, (void *) sh);
 	  }
 	  END_DO_BOX;
+	  /* the target is read with the input, once per set of this node, so it is referenced the same way */
+	  ref_ssls (res, tn->tn_target);
 
 	  t_set_push (&sc->sc_vec_pred, (void *) tn);
 	  qn->src_sets = 0;	/* the sqs is transparent for the sets for the inner query */

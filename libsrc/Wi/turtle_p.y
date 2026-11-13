@@ -52,6 +52,16 @@
       tf_report (ttlp_arg->ttlp_tf, 'W', NULL, NULL, (strg)); \
   } while (0)
 
+#define TTLP_REJECT_STRICT_NTRIPLES(strg) do { \
+    if (TTLP_STRICT_NTRIPLES & ttlp_arg->ttlp_flags) \
+      ttlyyerror_action(strg); \
+  } while (0)
+
+#define TTLP_CHECK_STRICT_NTRIPLES_IRI(iri) do { \
+    if ((TTLP_STRICT_NTRIPLES & ttlp_arg->ttlp_flags) && ('/' == (iri)[0]) && ('/' == (iri)[1])) \
+      ttlyyerror_action("Scheme-relative IRI is not valid N-Triples syntax"); \
+  } while (0)
+
 #define YY_FATAL_ERROR(err) ttlyyerror_action(err)
 
 extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
@@ -189,10 +199,12 @@ clause
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 		trig_block_or_predicate_object_list
 	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
-		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
-		ttlyyerror_action ("Bare triple term <<(...)>> can not be used as subject"); }
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		trig_block_or_predicate_object_list
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -203,6 +215,7 @@ clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		trig_block_or_predicate_object_list
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		dk_free_tree (ttlp_arg->ttlp_subj_uri);
@@ -213,6 +226,7 @@ clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		trig_block_or_predicate_object_list
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, $6);
@@ -223,6 +237,7 @@ clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		trig_block_or_predicate_object_list
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -401,10 +416,12 @@ inner_triple_clause
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	    inner_predicate_object_list
 	| TRIPLE_TERM_L tt_subject_take q_complete_take tt_object_take TRIPLE_TERM_R {
-		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
-		ttlyyerror_action ("Bare triple term <<(...)>> can not be used as subject"); }
+		dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		ttlp_arg->ttlp_subj_uri = ttlp_make_triple_term_iri ($2, $3, $4);
+		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		predicate_object_list_or_garbage_opt
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -415,6 +432,7 @@ inner_triple_clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		predicate_object_list_or_garbage_opt
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		dk_free_tree (ttlp_arg->ttlp_subj_uri);
@@ -425,6 +443,7 @@ inner_triple_clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		predicate_object_list_or_garbage_opt
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, $6);
@@ -435,6 +454,7 @@ inner_triple_clause
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 		predicate_object_list_or_garbage_opt
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -630,6 +650,7 @@ annotation_list_opt
 		  tf_triple (tf, bnode, uname_rdf_ns_uri_reifies, triple_iri);
 		  dk_free_box (triple_iri); dk_free_tree (bnode); dk_free_tree (obj_copy); } }
 	| annotation_list_opt ANNOTATION_L {
+		TTLP_REJECT_STRICT_NTRIPLES ("Annotation syntax is not valid N-Triples syntax");
 		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
 		ttlp_triple_process_prepared (ttlp_arg);
 		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
@@ -650,6 +671,7 @@ annotation_list_opt
 		dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
 	| annotation_list_opt TILDE q_complete ANNOTATION_L {
+		TTLP_REJECT_STRICT_NTRIPLES ("Annotation syntax is not valid N-Triples syntax");
 		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
 		ttlp_triple_process_prepared (ttlp_arg);
 		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
@@ -672,6 +694,7 @@ annotation_list_opt
 		dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
 	| annotation_list_opt TILDE blank_node_label ANNOTATION_L {
+		TTLP_REJECT_STRICT_NTRIPLES ("Annotation syntax is not valid N-Triples syntax");
 		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
 		ttlp_triple_process_prepared (ttlp_arg);
 		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
@@ -693,6 +716,7 @@ annotation_list_opt
 		dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		ttlp_arg->ttlp_pred_uri = (caddr_t) dk_set_pop (&ttlp_arg->ttlp_saved_uris); }
 	| annotation_list_opt TILDE ANNOTATION_L {
+		TTLP_REJECT_STRICT_NTRIPLES ("Annotation syntax is not valid N-Triples syntax");
 		caddr_t obj_copy = box_copy (ttlp_arg->ttlp_obj);
 		ttlp_triple_process_prepared (ttlp_arg);
 		{ triple_feed_t *tf = ttlp_arg->ttlp_tf;
@@ -788,6 +812,9 @@ literal_subject
 	| TURTLE_DOUBLE		{ dk_free_tree ($1); }
 	| TURTLE_STRING		{ dk_free_tree ($1); }
 	| TURTLE_STRING LANGTAG	{ dk_free_tree ($1); dk_free_tree ($2); }
+	| TURTLE_STRING LANGTAG DIR_LTR	{ dk_free_tree ($1); dk_free_tree ($2); }
+	| TURTLE_STRING LANGTAG DIR_RTL	{ dk_free_tree ($1); dk_free_tree ($2); }
+	| TURTLE_STRING KEYWORD	{ dk_free_tree ($1); dk_free_tree ($2); }
 	| TURTLE_STRING _CARET_CARET q_complete	{
 			dk_free_tree ($1);
 			dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
@@ -839,6 +866,8 @@ object
 		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 'l');	}
 	| TURTLE_STRING LANGTAG DIR_RTL	{
 		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 'r');	}
+	| TURTLE_STRING KEYWORD	{
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2, 0);	}
 	| TURTLE_STRING _CARET_CARET q_complete {
 		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, ttlp_arg->ttlp_last_complete_uri, NULL, 0);
 		ttlp_arg->ttlp_last_complete_uri = NULL;		}
@@ -847,6 +876,7 @@ object
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		ttlp_triple_and_inf_prepare (ttlp_arg, triple_iri); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -854,6 +884,7 @@ object
 		dk_free_box (triple_iri);
 		ttlp_triple_and_inf_prepare (ttlp_arg, bnode); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t reifier_id = ttlp_arg->ttlp_last_complete_uri;
@@ -862,6 +893,7 @@ object
 		dk_free_box (triple_iri);
 		ttlp_triple_and_inf_prepare (ttlp_arg, reifier_id); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, $6);
@@ -869,6 +901,7 @@ object
 		dk_free_box (triple_iri);
 		ttlp_triple_and_inf_prepare (ttlp_arg, bnode); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -1074,6 +1107,7 @@ tt_subject_take
 		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -1082,6 +1116,7 @@ tt_subject_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = bnode; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
@@ -1091,6 +1126,7 @@ tt_subject_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = reifier; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, $6);
@@ -1099,6 +1135,7 @@ tt_subject_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = bnode; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -1116,6 +1153,7 @@ tt_object_take
 		$$ = ttlp_make_triple_term_iri ($2, $3, $4);
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4); }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -1124,6 +1162,7 @@ tt_object_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = bnode; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE q_complete REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t reifier = ttlp_arg->ttlp_last_complete_uri;
@@ -1133,6 +1172,7 @@ tt_object_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = reifier; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE blank_node_label REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, $6);
@@ -1141,6 +1181,7 @@ tt_object_take
 		dk_free_tree ($2); dk_free_tree ($3); dk_free_tree ($4);
 		$$ = bnode; }
 	| REIFIED_TRIPLE_L tt_subject_take q_complete_take tt_object_take TILDE REIFIED_TRIPLE_R {
+		TTLP_REJECT_STRICT_NTRIPLES ("Reified triple syntax is not valid N-Triples syntax");
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		caddr_t triple_iri = ttlp_make_triple_term_iri ($2, $3, $4);
 		caddr_t bnode = tf_bnode_iid (tf, NULL);
@@ -1150,6 +1191,9 @@ tt_object_take
 		$$ = bnode; }
 	| TURTLE_STRING { $$ = $1; }
 	| TURTLE_STRING LANGTAG { $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING LANGTAG DIR_LTR { $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING LANGTAG DIR_RTL { $$ = $1; dk_free_tree ($2); }
+	| TURTLE_STRING KEYWORD { $$ = $1; dk_free_tree ($2); }
 	| TURTLE_STRING _CARET_CARET q_complete_take { $$ = $1; dk_free_tree ($3); }
 	| TURTLE_INTEGER { $$ = $1; }
 	| TURTLE_DECIMAL { $$ = $1; }
@@ -1163,6 +1207,7 @@ q_complete
 		{
 		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
 		    ttlyyerror_action ("Internal error: proven memory leak");
+		  TTLP_CHECK_STRICT_NTRIPLES_IRI($1);
 		  ttlp_arg->ttlp_last_complete_uri = $1;
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		 }
@@ -1199,4 +1244,3 @@ semis
 	: _SEMI /* empty */
 	| semis _SEMI /* empty */
 	;
-

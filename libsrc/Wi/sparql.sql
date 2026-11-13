@@ -1535,6 +1535,13 @@ retry_unrdf:
           v := rdf_box_data (v);
           goto retry_unrdf;
         }
+      -- a parsed duration is stored as ttlp stores it, by its declared type
+      if (dt_iid is not null and lang is null)
+        {
+          dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
+          if (dt_twobyte in (sys_stat ('rb_type__xsd:duration'), sys_stat ('rb_type__xsd:dayTimeDuration'), sys_stat ('rb_type__xsd:yearMonthDuration')))
+            return DB.DBA.RDF_OBJ_OF_SQLVAL (rdf_box (v, dt_twobyte, 257, 0, 1));
+        }
       -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() should accept only string representations of typed values, real arguments are ', v, dt_iid, lang);
       return v;
     }
@@ -1705,7 +1712,8 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any array, in dflt varch
   -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return dflt;
-  return coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), 
+  -- not a select from DB.DBA.RDF_LANGUAGE: compiled for a SPARQL user without SPARQL_SELECT_RAW that is refused
+  return coalesce (__rdf_lang_of_twobyte (twobyte),
      signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar))));
 }
 ;
@@ -1742,7 +1750,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 }
 ;
 
-create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
+create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any array
 {
   declare t int;
   t := __tag (longobj);
@@ -1774,24 +1782,39 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
+  declare res any;
   t := __tag (v);
   if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
-        return DB.DBA.RDF_OBJ_ADD (257, v, 257);
-      if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
-        return DB.DBA.RDF_OBJ_ADD (sys_stat ('rb_type__xsd:duration'), serialize (v), 257);
-      return v;
+        {
+          -- a typed duration goes to the same RDF_OBJ row as ttlp makes of it
+          if (__tag (rdf_box_data (v)) = 195 and length (rdf_box_data (v)) = 2)
+            res := DB.DBA.RDF_OBJ_ADD (case rdf_box_type (v) when 257 then __rdf_duration_twobyte (rdf_box_data (v)) else rdf_box_type (v) end, serialize (rdf_box_data (v)), 257);
+          else
+            res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+        }
+      else if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
+        res := DB.DBA.RDF_OBJ_ADD (__rdf_duration_twobyte (v), serialize (v), 257);
+      else
+        res := v;
     }
-  if (__tag of UNAME = t)
-    return __i2id (v);
-  if (isstring (v) and bit_and (__box_flags (v), 1))
-    return __i2id (v);
-  if (__tag of nvarchar = t)
-    v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = __tag of long varchar handle)
-    v := cast (v as varchar);
-  return DB.DBA.RDF_OBJ_ADD (257, v, 257);
+  else
+    {
+      if (__tag of UNAME = t)
+        return __i2id (v);
+      if (isstring (v) and bit_and (__box_flags (v), 1))
+        return __i2id (v);
+      if (__tag of nvarchar = t)
+        v := charset_recode (v, '_WIDE_', 'UTF-8');
+      else if (t = __tag of long varchar handle)
+        v := cast (v as varchar);
+      res := DB.DBA.RDF_OBJ_ADD (257, v, 257);
+    }
+  -- a literal with an RDF_OBJ row is the id-only box O holds, so stored and computed values are one key
+  if (__tag of rdf_box = __tag (res) and rdf_box_ro_id (res) > 0 and rdf_box_type (res) >= 257)
+    return rdf_box_from_ro_id (rdf_box_ro_id (res));
+  return res;
 }
 ;
 
@@ -1839,7 +1862,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_LITERAL (in v any) returns any
 ;
 
 
-create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar) returns any
+create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, in lang varchar, in find_stored integer := 0) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
@@ -1892,7 +1915,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
     lang_twobyte := DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang);
   else
     lang_twobyte := 257;
-  res := rdf_box (v, dt_twobyte, lang_twobyte, 0, 1);
+  res := rdf_box (v, dt_twobyte, lang_twobyte, case when find_stored then -1 else 0 end, 1);
   return res;
 }
 ;
@@ -2462,11 +2485,15 @@ create function DB.DBA.rdf_strdt_impl (in str varchar, in dt_iri any)
   if (parsed is not null)
     {
       if (__tag of rdf_box = __tag (parsed))
-        rdf_box_set_type (parsed,
-          DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid));
+        {
+          if (__tag of varchar = __tag (rdf_box_data (parsed)))
+            return rdf_box (rdf_box_data (parsed), DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid), 257, -1, 1);
+          rdf_box_set_type (parsed,
+            DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid));
+        }
       return parsed;
     }
-  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, dt_iid, null);
+  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, dt_iid, null, 1);
 }
 ;
 
@@ -2474,7 +2501,7 @@ create function DB.DBA.rdf_strlang_impl (in str any, in lang any)
 {
   declare t integer;
   lang := cast (lang as varchar);
-  if ((lang is null) or length(lang) = 0 or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
+  if ((lang is null) or length(lang) = 0 or not rdf_langtag_is_valid (lang))
     return null;
   if (is_rdf_box (str))
     str := rdf_box_data (str, 1);
@@ -2483,7 +2510,9 @@ create function DB.DBA.rdf_strlang_impl (in str any, in lang any)
     str := charset_recode (str, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> t)
     return null;
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), 0, 1);
+  if (isstring (str) and bit_and (__box_flags (str), 1))
+    return null;
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), -1, 1);
 }
 ;
 
@@ -2571,13 +2600,13 @@ create function DB.DBA.rdf_strlangdir_impl (in str any, in lang any, in dir any)
   if (__tag (dir) not in (__tag of varchar, __tag of nvarchar, __tag of UNAME))
     return null;
   lang := cast (lang as varchar);
-  dir := lower (cast (dir as varchar));
-  if ((lang is null) or (length (lang) = 0) or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
+  dir := cast (dir as varchar);
+  if ((lang is null) or (length (lang) = 0) or not rdf_langtag_is_valid (lang))
     return null;
   if ((dir is null) or (not (dir in ('ltr', 'rtl'))))
     return null;
   full_lang := concat (lang, '--', dir);
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), 0, 1);
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), -1, 1);
 }
 ;
 
@@ -2598,9 +2627,11 @@ create function DB.DBA.rdf_strdir_impl (in str any, in dir any)
     }
   if (dir is null or length(dir) = 0)
     return str;
+  if (not (dir in ('ltr', 'rtl')))
+    return null;
   declare full_lang varchar;
   full_lang := concat(chr(45), chr(45), dir);
-  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), 0, 1);
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (full_lang), -1, 1);
 }
 ;
 
@@ -3201,7 +3232,7 @@ create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in grap
   declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
-  return rdf_load_turtle (strg, base, graph, flags,
+  return rdf_load_turtle (strg, base, graph, bit_or (flags, 2048),
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
 }
@@ -3213,7 +3244,7 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
   declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
      strg := cast (strg as varchar);
-  return rdf_load_turtle_local_file (strg, base, graph, flags,
+  return rdf_load_turtle_local_file (strg, base, graph, bit_or (flags, 2048),
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
 }
@@ -5061,7 +5092,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
       http ('\t', ses);
       http_nt_object(triples[tctr][1], ses);
       http ('\t', ses);
-      http_nt_object(triples[tctr][2], ses, 1);
+      http_rdf_object(triples[tctr][2], ses, 21, 1);
       http ('\n', ses);
     }
 }
@@ -7090,7 +7121,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
       -- As in DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW
       if (val is not null)
         {
-          if (2 = http_nt_object (val, _env, 257))
+          if (2 = http_rdf_object (val, _env, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (_env, val);
         }
     }
@@ -15449,7 +15480,19 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.VEC_INDEX_EXPAND_SEARCH_INDEXES to SPARQL_SELECT',
     'grant execute on DB.DBA.VEC_INDEX_HIT_BETTER to SPARQL_SELECT',
     'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI to SPARQL_SELECT',
-    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS to SPARQL_SELECT' );
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_ROWS to SPARQL_SELECT',
+    -- The quad maps of the <urn:vvec:indexes> RDF view read these two views,
+    -- and every query over a variable graph reaches those maps, so a SPARQL
+    -- reader without SELECT on them had every such query fail with SQ033.
+    -- They show each reader only what its own grants on the label and comment
+    -- columns of DB.DBA.SPARQL_VEC_INDEX allow (sparql_vec_index.sql).
+    'grant select on DB.DBA.SPARQL_VEC_INDEX_LABELS to SPARQL_SELECT',
+    'grant select on DB.DBA.SPARQL_VEC_INDEX_COMMENTS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_LIST to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_MERGE to SPARQL_SELECT',
+    'grant execute on DB.DBA.VEC_INDEX_SEARCH_GRAPH_ROWS to SPARQL_SELECT' );
 
   foreach (varchar cmd in cmds) do
     {
@@ -16282,6 +16325,7 @@ create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
 -- SQL wrapper: compute triple-term IRI via C helper.
 create function DB.DBA.RDF_STAR_TT_IRI (in s_val any, in p_val any, in o_val any) returns varchar
 {
+  if (s_val is null or p_val is null or o_val is null) return null;
   return cast (rdf_triple_term_iri_impl (s_val, p_val, o_val) as varchar);
 }
 ;
@@ -16292,7 +16336,9 @@ create function DB.DBA.RDF_STAR_TT_CANON_NODE_TEXT (in v any) returns varchar
   if (isiri_id (v))
     return id_to_iri (v);
   s := cast (v as varchar);
-  if (s is null) return null;
+  if (s is null or s = '') return null;
+  if (left (s, 3) = 'id:')
+    return id_to_iri (iri_id_from_num (cast (subseq (s, 3) as bigint)));
   if (left (s, 3) = '#ib')
     return concat ('nodeID://', subseq (s, 2));
   return s;

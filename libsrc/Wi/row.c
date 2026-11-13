@@ -2029,7 +2029,7 @@ convert_dt:
 	  if (ins_itc)
 	    {
 	      caddr_t dt_box = box_copy (data);
-	      dt_date_round ((char *) dt_box);
+	      dt_to_col_dtp ((char *) dt_box, DV_DATE);
 	      ITC_SEARCH_PARAM (ins_itc, dt_box);
 	      ITC_OWNS_PARAM (ins_itc, dt_box);
 	    }
@@ -2042,10 +2042,7 @@ convert_dt:
       if (ins_itc)
 	{
 	  caddr_t dt_box = box_copy (data);
-	        /*DT_SET_FRACTION (dt_box, 0);*/
-	  if (DV_TIME == cl->cl_sqt.sqt_dtp)
-	    DT_SET_DAY (dt_box, DAY_ZERO);
-          SET_DT_TYPE_BY_DTP (dt_box, cl->cl_sqt.sqt_col_dtp);
+	  dt_to_col_dtp ((char *) dt_box, cl->cl_sqt.sqt_col_dtp);
           ITC_SEARCH_PARAM (ins_itc, dt_box);
 	  ITC_OWNS_PARAM (ins_itc, dt_box);
 	}

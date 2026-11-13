@@ -969,6 +969,7 @@ void time_t_to_dt (time_t tim, long fraction, char *dt);
 int file_mtime_to_dt (const char * name, char *dt);
 #endif
 void dt_date_round (char *dt);
+void dt_to_col_dtp (char *dt, dtp_t col_dtp);
 void dt_to_tv (char *dt, char *tv);
 
 /* sqltrig.c */
@@ -1271,6 +1272,8 @@ caddr_t mp_box_to_any_1 (caddr_t data, caddr_t * err_ret, mem_pool_t *ap, int se
 #define DKS_TO_HA_DISK_ROW 4 /*!< flag to indicate that the destination is a temp table with no sorting and box_to_any_1 serialization in a column */
 #define DKS_TO_DC 8
 #define DKS_REPLICATION 16
+#define DKS_RB_COMPLETE 64	/*!< query private state: a complete rdf box keeps its content, not just the id */
+void rb_serialize_complete (caddr_t x, dk_session_t * ses);
 
 caddr_t box_to_shorten_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);

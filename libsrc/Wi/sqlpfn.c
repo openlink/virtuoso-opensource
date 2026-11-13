@@ -2411,6 +2411,24 @@ not_a_constant_pure: ;
 }
 
 
+void
+sqlp_new_serials (ST * tree)
+{
+  /* a copy with the same serials is box_equal, so a subquery in it would be merged with the original's placed dfes */
+  int inx;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  if (BIN_EXP_P (tree) && !IS_ARITM_BOP (tree->type) && !ST_P (tree, BOP_AS)
+      && sizeof (sql_tree_t) == box_length (tree)) /* made by BIN_OP, not a list starting with a literal */
+    tree->_.bin_exp.serial = t_box_num (sqlp_bin_op_serial++);
+  DO_BOX (ST *, elt, inx, (ST **) tree)
+    {
+      sqlp_new_serials (elt);
+    }
+  END_DO_BOX;
+}
+
+
 extern caddr_t uname_one_of_these;
 
 ST *

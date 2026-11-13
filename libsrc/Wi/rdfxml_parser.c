@@ -761,11 +761,6 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotation' conflicts with 'rdf:annotationNodeID'");
                   return;
                 }
-              if (NULL != inner->xrl_reification_id)
-                {
-                  xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:annotation' conflicts with 'rdf:ID' on property element");
-                  return;
-                }
               inner->xrl_annotation_iri = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
               inner->xrl_annotation_is_bnode = 0;
             }

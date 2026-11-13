@@ -784,6 +784,8 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
   dbe_col_loc_t *cl = ins->ins_vec_cast_cl[nth_col];
   int64 prec_lower, prec_upper;
   int inx, is_prec = 0;
+  dtp_t col_dtp = cl->cl_sqt.sqt_col_dtp;
+  int is_dt = DV_DATE == col_dtp || DV_TIME == col_dtp;
   data_col_t *from_dc = QST_BOX (data_col_t *, inst, source->sslr_index);
   data_col_t *target_dc = QST_BOX (data_col_t *, inst, res->ssl_index);
   int elt_sz = 0;
@@ -826,7 +828,10 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	      dtp = DV_TYPE_OF (value);
 	      if (res->ssl_sqt.sqt_dtp != dtp)
 		goto general;
-	      ((caddr_t*)target_dc->dc_values)[target_dc->dc_n_values++] = box_copy_tree (value);
+	      value = box_copy_tree (value);
+	      if (is_dt && DV_DATETIME == dtp)
+		dt_to_col_dtp (value, col_dtp);
+	      ((caddr_t*)target_dc->dc_values)[target_dc->dc_n_values++] = value;
 	    }
 	  else if (8 == elt_sz)
 	    {
@@ -843,8 +848,11 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	    ((int32 *) target_dc->dc_values)[target_dc->dc_n_values++] = ((int32 *) from_dc->dc_values)[row];
 	  else
 	    {
-	      memcpy_16 (target_dc->dc_values + elt_sz * target_dc->dc_n_values, from_dc->dc_values + row * elt_sz, elt_sz);
+	      db_buf_t to = target_dc->dc_values + elt_sz * target_dc->dc_n_values;
+	      memcpy_16 (to, from_dc->dc_values + row * elt_sz, elt_sz);
 		target_dc->dc_n_values++;
+	      if (is_dt && DT_LENGTH == elt_sz && !DC_IS_NULL (from_dc, row))
+		dt_to_col_dtp ((char *) to, col_dtp);
 	      }
 	  if (from_dc->dc_any_null)
 	    {
@@ -885,9 +893,20 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		    return;
 		  dc_append_box (target_dc, value);
 		  break;
+		case DV_DATETIME:
+		  if (is_dt)
+		    {
+		      caddr_t dt_auto, dt_area[(DT_LENGTH + BOX_AUTO_OVERHEAD) / sizeof (caddr_t) + 1];
+		      BOX_AUTO_TYPED (caddr_t, dt_auto, dt_area, DT_LENGTH, DV_DATETIME);
+		      memcpy (dt_auto, value, DT_LENGTH);
+		      dt_to_col_dtp (dt_auto, col_dtp);
+		      dc_append_box (target_dc, dt_auto);
+		    }
+		  else
+		    dc_append_box (target_dc, value);
+		  break;
 		case DV_SINGLE_FLOAT:
 		case DV_DOUBLE_FLOAT:
-		case DV_DATETIME:
 		case DV_IRI_ID:
 		  dc_append_box (target_dc, value);
 		  break;

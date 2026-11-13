@@ -230,10 +230,11 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 	ha->ha_non_null[inx] = ha->ha_slots[inx]->ssl_sqt.sqt_non_null;
       END_DO_BOX;
     }
-  if ((HA_GROUP == op && sqlg_is_vector && !setp->setp_any_user_aggregate_gos
+  if (((HA_GROUP == op && sqlg_is_vector && !setp->setp_any_user_aggregate_gos
       && !setp->setp_any_distinct_gos
       && ha->ha_n_keys <= CHASH_GB_MAX_KEYS)
       || setp->setp_distinct)
+      && enable_vec)
     {
       int n_slots = BOX_ELEMENTS (ha->ha_slots);
       ha->ha_ch_len = sizeof (int64) * (1 + n_slots);

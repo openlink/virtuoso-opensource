@@ -44,15 +44,9 @@ BANNER "STARTED vector index redo-after-create test (tvvec_redo_after_create.sh)
 
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
-    LOG "+ vonnx plugin found in $HOSTING"
+    ONNX_CONFIGURE $CFGFILE
 else
     LOG "+ vonnx not built; the max_seq_len assertion passes vacuously"
 fi

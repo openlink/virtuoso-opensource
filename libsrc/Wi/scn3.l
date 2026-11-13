@@ -330,6 +330,24 @@ scn3_set_file_line (char *file, int file_nchars, int line_no)
   TOK_SKIP; \
   } while (0)
 
+#define TOK_SPARQL_UPDATE_SEMI_SKIP do { \
+  int inx, nlines = 0; \
+  for (inx = 0; inx < yyleng; inx++) \
+    { \
+      if ('\r' == yytext[inx]) \
+        { \
+          nlines++; \
+          if ((inx + 1 < yyleng) && ('\n' == yytext[inx + 1])) \
+            inx++; \
+        } \
+      else if ('\n' == yytext[inx]) \
+        nlines++; \
+    } \
+  global_scs->scs_scn3c.lineno += nlines * global_scs->scs_scn3c.lineno_increment; \
+  global_scs->scs_scn3c.plineno += nlines * global_scs->scs_scn3c.lineno_increment; \
+  TOK_SKIP; \
+  } while (0)
+
 #define SUBTOK(code, name) do { SV; yylval->subtok = code; RETURN_CODE (name); } while (0)
 
 #define TOKBOX(n,name) \
@@ -1035,6 +1053,9 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
         TOKCLOSE_SKIP (')',')');
       }
   }
+
+<SPARQL_SKIP>";"[ \t\r\n]*INSERT[ \t\r\n]+DATA	TOK_SPARQL_UPDATE_SEMI_SKIP;
+<SPARQL_SKIP>";"[ \t\r\n]*DELETE[ \t\r\n]+DATA	TOK_SPARQL_UPDATE_SEMI_SKIP;
 
 <SPARQL_SKIP>";"	{
     scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;

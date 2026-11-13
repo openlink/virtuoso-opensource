@@ -89,6 +89,32 @@ alter table DB.DBA.SPARQL_VEC_INDEX add SVI_LABEL varchar if not exists
 alter table DB.DBA.SPARQL_VEC_INDEX add SVI_COMMENT varchar if not exists
 ;
 
+-- What the <urn:vvec:indexes> RDF view (sparql_vec_index_view.sql) reads: an
+-- index's IRI with its label, and with its comment, in the rows the CALLER may
+-- read -- decided, row by row, by the caller's own grants on those columns of
+-- DB.DBA.SPARQL_VEC_INDEX.  No grant, no rows.
+--
+-- The quad maps read these views rather than the table because they are in the
+-- default quad storage, so every SPARQL query over a variable graph reaches
+-- them.  Reading the table, they failed every such query of a reader without
+-- the column grants -- the anonymous /sparql account on every database --
+-- with SQ033, whatever graphs the query was about.  SELECT on the views goes
+-- to SPARQL_SELECT (DB.DBA.RDF_CREATE_SPARQL_ROLES); they show nothing a
+-- grant on the table does not.
+create view DB.DBA.SPARQL_VEC_INDEX_LABELS as
+  select SVI_IRI, SVI_LABEL from DB.DBA.SPARQL_VEC_INDEX
+   where SVI_LABEL is not null
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_IRI') <> 0
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_LABEL') <> 0
+;
+
+create view DB.DBA.SPARQL_VEC_INDEX_COMMENTS as
+  select SVI_IRI, SVI_COMMENT from DB.DBA.SPARQL_VEC_INDEX
+   where SVI_COMMENT is not null
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_IRI') <> 0
+     and __any_grants ('DB.DBA.SPARQL_VEC_INDEX', 1, 'SVI_COMMENT') <> 0
+;
+
 -- Trigger catalog for general-selector async maintenance.
 -- One row per (index, graph, predicate) dependency pair extracted from the
 -- WHERE pattern at parse time.  SVT_PRED_IRI = '' means graph-only fallback
@@ -3215,20 +3241,209 @@ not_readable:;
 }
 ;
 
--- One index's hits, as a vector of vector (rid, distance, score) in the index's
--- own best-first order, after the graph-permission and score/distance filters.
+create function DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET (in graphs any) returns any
+{
+  -- The graphs a search may return hits from: NULL for any graph, else the
+  -- given graphs the caller may read, as IRI_IDs, each once.  An empty vector
+  -- means none.  Checked once per search, not once per hit.
+  declare res any;
+  declare i integer;
+  declare g any;
+  if (graphs is null)
+    return null;
+  if (not isvector (graphs))
+    graphs := vector (graphs);
+  res := vector ();
+  for (i := 0; i < length (graphs); i := i + 1)
+    {
+      g := graphs[i];
+      if (g is null)
+        goto next_g;
+      if (not isiri_id (g))
+        g := iri_to_id (cast (g as varchar), 0);
+      if (g is null or position (g, res) > 0)
+        goto next_g;
+      if (not user_is_dba (user) and not DB.DBA.VEC_INDEX_GRAPH_READABLE (id_to_iri (g)))
+        goto next_g;
+      res := vector_concat (res, vector (g));
+    next_g:;
+    }
+  return res;
+}
+;
+
+-- One index's hits, best first, after the graph-permission and score/distance
+-- filters, as a vector of vector (rid, distance, score, graph).
 --
--- Extracted from VEC_INDEX_SEARCH_ROWS rather than copied, so the single-index
--- path and the multi-index one cannot drift apart: everything that makes a hit
--- visible or not -- the required-graph match, the per-hit readability check
--- that re-runs the selector, the score and distance thresholds -- is decided
--- here, once.
+-- graph_set is what VEC_INDEX_SEARCH_GRAPH_SET returns: NULL for any graph,
+-- else the only graphs a hit may be in.  The graphs are decided here, inside
+-- the search, so that `limit` counts hits in those graphs and not hits that a
+-- graph filter would drop afterwards.
+--
+-- graph_mode says what the fourth column is:
+--   0  nothing (NULL): the caller does not read the graph
+--   1  one row per graph the hit is in: GRAPH ?g
+--   2  one row per hit, with one of its graphs: a default graph of several
+--      FROM graphs, which is their merge, so a subject is one solution
+--
+-- A shorthand index covers one graph, so its hits are in that graph.  A general
+-- selector does not record which graph a row came from; its hit is in each
+-- graph of the set that has a triple with it as the subject, or, with no set,
+-- in each readable graph that has one.
+--
+-- When the filters leave fewer than `limit` subjects of a full page, the index
+-- is searched again with twice as many, up to a cap.
 --
 -- The caller has already validated the index through
 -- VEC_INDEX_VALIDATE_SEARCH_OPTIONS; this re-reads the catalogue row it needs
--- and returns an EMPTY vector, not an error, for the two "you may not see this"
+-- and returns an EMPTY vector, not an error, for the "you may not see this"
 -- cases, which is what makes an unreadable index contribute nothing rather than
 -- fail the whole query.
+create function DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS (
+  in idx_iri varchar,
+  in query_text varchar,
+  in limit_count integer,
+  in ef_search integer,
+  in score_limit double precision,
+  in distance_limit double precision,
+  in graph_set any,
+  in graph_mode integer ) returns any
+{
+  declare hits, out_hits, hit_graphs, g_ok any;
+  declare i, j, len, k, cap, n_subj integer;
+  declare rid bigint;
+  declare dist, score double precision;
+  declare internal_name, metric, cat_state, sel_type, graph_iri, pred_iri varchar;
+  declare sel_g, sel_p, g any;
+  declare query_embed any;
+
+  out_hits := vector ();
+
+  select SVI_INTERNAL_NAME, SVI_DISTANCE, SVI_STATE, SVI_SELECTOR_TYPE, SVI_SELECTOR_GRAPH, SVI_SELECTOR_PRED
+    into internal_name, metric, cat_state, sel_type, graph_iri, pred_iri
+    from DB.DBA.SPARQL_VEC_INDEX
+    where SVI_IRI = idx_iri;
+
+  if (cat_state <> 'active')
+    signal ('VEC50', sprintf ('Vector index <%s> is not active (state: %s)', idx_iri, cat_state));
+  if (graph_set is not null and length (graph_set) = 0)
+    return out_hits;
+  if ('shorthand' = sel_type)
+    {
+      if (graph_iri is null or pred_iri is null)
+        return out_hits;
+      if (not user_is_dba (user) and not DB.DBA.VEC_INDEX_GRAPH_READABLE (graph_iri))
+        return out_hits;
+      sel_g := iri_to_id (graph_iri, 0);
+      sel_p := iri_to_id (pred_iri, 0);
+      if (sel_g is null or sel_p is null)
+        return out_hits;
+      if (graph_set is not null and position (sel_g, graph_set) = 0)
+        return out_hits;
+    }
+
+  query_embed := __VEC_INDEX_QUERY_TEXT_VECTOR (internal_name, query_text);
+  if (query_embed is null)
+    signal ('VEC52', sprintf ('Failed to embed query text for vector index <%s>', idx_iri));
+
+  g_ok := dict_new (31);	-- readable or not, per graph, when there is no set
+  k := limit_count;
+  cap := limit_count * 16;
+  if (cap < 256)
+    cap := 256;
+  if (cap > 10000)
+    cap := 10000;
+  if (cap < limit_count)
+    cap := limit_count;
+
+again:
+  hits := __VEC_INDEX_SEARCH (internal_name, query_embed, k, case when k > ef_search then k else ef_search end);
+  out_hits := vector ();
+  n_subj := 0;
+  len := length (hits);
+  for (i := 0; i < len and n_subj < limit_count; i := i + 1)
+    {
+      rid := cast (hits[i][0] as bigint);
+      dist := cast (hits[i][1] as double precision);
+      score := DB.DBA.VEC_INDEX_DISTANCE_TO_SCORE (metric, dist);
+      if (score_limit is not null and score < score_limit)
+        goto next_hit;
+      if (distance_limit is not null and dist > distance_limit)
+        goto next_hit;
+      if ('shorthand' = sel_type)
+        {
+          if (not exists (select 1 from DB.DBA.RDF_QUAD
+                where G = sel_g and P = sel_p and S = iri_id_from_num (rid)))
+            goto next_hit;
+          hit_graphs := vector (sel_g);
+        }
+      else
+        {
+          if (not DB.DBA.VEC_INDEX_HIT_READABLE (idx_iri, rid, null))
+            goto next_hit;
+          hit_graphs := vector ();
+          if (graph_set is not null)
+            {
+              for (j := 0; j < length (graph_set); j := j + 1)
+                {
+                  if (exists (select 1 from DB.DBA.RDF_QUAD
+                        where G = graph_set[j] and S = iri_id_from_num (rid)))
+                    {
+                      hit_graphs := vector_concat (hit_graphs, vector (graph_set[j]));
+                      if (graph_mode <> 1)
+                        goto graphs_done;
+                    }
+                }
+            }
+          else if (graph_mode <> 0)
+            {
+              for (select distinct G as _g from DB.DBA.RDF_QUAD where S = iri_id_from_num (rid)) do
+                {
+                  g := dict_get (g_ok, _g, null);
+                  if (g is null)
+                    {
+                      g := case when user_is_dba (user) or DB.DBA.VEC_INDEX_GRAPH_READABLE (id_to_iri (_g)) then 1 else 0 end;
+                      dict_put (g_ok, _g, g);
+                    }
+                  if (g = 1)
+                    {
+                      hit_graphs := vector_concat (hit_graphs, vector (_g));
+                      if (graph_mode <> 1)
+                        goto graphs_done;
+                    }
+                }
+            }
+          else
+            hit_graphs := vector (null);
+        graphs_done:
+          if (length (hit_graphs) = 0)
+            goto next_hit;
+        }
+      if (graph_mode = 0)
+        out_hits := vector_concat (out_hits, vector (vector (rid, dist, score, null)));
+      else if (graph_mode = 1)
+        {
+          for (j := 0; j < length (hit_graphs); j := j + 1)
+            out_hits := vector_concat (out_hits, vector (vector (rid, dist, score, hit_graphs[j])));
+        }
+      else
+        out_hits := vector_concat (out_hits, vector (vector (rid, dist, score, hit_graphs[0])));
+      n_subj := n_subj + 1;
+    next_hit:;
+    }
+  if (n_subj < limit_count and len >= k and k < cap)
+    {
+      k := k * 2;
+      if (k > cap)
+        k := cap;
+      goto again;
+    }
+  return out_hits;
+}
+;
+
+-- One index's hits as vector (rid, distance, score, NULL), only in
+-- required_graph_iri when one is given.
 create function DB.DBA.VEC_INDEX_SEARCH_HITS (
   in idx_iri varchar,
   in query_text varchar,
@@ -3238,50 +3453,11 @@ create function DB.DBA.VEC_INDEX_SEARCH_HITS (
   in distance_limit double precision := null,
   in required_graph_iri varchar := null ) returns any
 {
-  declare hits, out_hits any;
-  declare i, len integer;
-  declare row any;
-  declare rid bigint;
-  declare dist, score double precision;
-  declare internal_name, metric, cat_state, sel_type, graph_iri varchar;
-  declare query_embed any;
-
-  out_hits := vector ();
-
-  select SVI_INTERNAL_NAME, SVI_DISTANCE, SVI_STATE, SVI_SELECTOR_TYPE, SVI_SELECTOR_GRAPH
-    into internal_name, metric, cat_state, sel_type, graph_iri
-    from DB.DBA.SPARQL_VEC_INDEX
-    where SVI_IRI = idx_iri;
-
-  if (cat_state <> 'active')
-    signal ('VEC50', sprintf ('Vector index <%s> is not active (state: %s)', idx_iri, cat_state));
-  if (required_graph_iri is not null and required_graph_iri <> '' and 'shorthand' = sel_type and required_graph_iri <> graph_iri)
-    return out_hits;
-  if (not user_is_dba (user) and 'shorthand' = sel_type and not DB.DBA.VEC_INDEX_GRAPH_READABLE (graph_iri))
-    return out_hits;
-
-  query_embed := __VEC_INDEX_QUERY_TEXT_VECTOR (internal_name, query_text);
-  if (query_embed is null)
-    signal ('VEC52', sprintf ('Failed to embed query text for vector index <%s>', idx_iri));
-
-  hits := __VEC_INDEX_SEARCH (internal_name, query_embed, limit_count, ef_search);
-  len := length (hits);
-  for (i := 0; i < len; i := i + 1)
-    {
-      row := hits[i];
-      rid := cast (row[0] as bigint);
-      dist := cast (row[1] as double precision);
-      if (not DB.DBA.VEC_INDEX_HIT_READABLE (idx_iri, rid, required_graph_iri))
-        goto next_hit;
-      score := DB.DBA.VEC_INDEX_DISTANCE_TO_SCORE (metric, dist);
-      if (score_limit is not null and score < score_limit)
-        goto next_hit;
-      if (distance_limit is not null and dist > distance_limit)
-        goto next_hit;
-      out_hits := vector_concat (out_hits, vector (vector (rid, dist, score)));
-next_hit:;
-    }
-  return out_hits;
+  return DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS (idx_iri, query_text, limit_count, ef_search,
+    score_limit, distance_limit,
+    case when required_graph_iri is null or required_graph_iri = '' then null
+      else DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET (vector (required_graph_iri)) end,
+    0);
 }
 ;
 
@@ -3394,42 +3570,20 @@ create function DB.DBA.VEC_INDEX_HIT_BETTER (in a any, in b any, in ranking_mode
 }
 ;
 
--- bif:vector_search over several indexes at once:
---
---   option (index (<a>, <b>))            the union of the named indexes
---   option (index *)                     every active index the caller can read
---   option (index (<a>, <b>), ranking raw | relevance)
---
--- `limit` means N results IN TOTAL, not N per index -- which is what a caller
--- writing `limit 10` expects and what it already means for one index.  It costs
--- no accuracy: the top N of the union of each index's top N is exactly the top
--- N of the union of everything.
---
--- A subject that sits in two indexes comes back ONCE, as its best occurrence
--- under the active ordering, with that row's score and distance.  This binds a
--- subject variable: the same subject twice would make `limit 10` return ten
--- rows covering fewer than ten things, and multiply every downstream join.
--- (The VVec console shows one row per index-hit instead, because its job is to
--- show which index a hit came from.  Deliberate difference, not an oversight.)
-create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
+create function DB.DBA.VEC_INDEX_SEARCH_LIST (
   in idx_list any,
   in ranking_mode varchar,
-  in query_text varchar,
-  in limit_count integer := 10,
-  in ef_search integer := 100,
-  in score_limit double precision := null,
-  in distance_limit double precision := null,
-  in required_graph_iri varchar := null )
+  in limit_count integer,
+  in ef_search integer,
+  in score_limit double precision,
+  in distance_limit double precision ) returns any
 {
-  declare iris, keys, hits, merged, best_of any;
-  declare i, j, n, len, kept integer;
+  -- The indexes of an index list or `*`, validated and checked to be comparable
+  -- under the ranking: a vector of index IRIs, empty when there is none to search.
+  declare iris any;
+  declare i, j, n integer;
   declare iri, ref_model, ref_metric varchar;
   declare model_name, metric varchar;
-  declare rid bigint;
-  declare hit, cur any;
-  declare result_entity_iid any;
-  declare result_distance, result_score double precision;
-  result_names (result_entity_iid, result_distance, result_score);
 
   ranking_mode := lower (trim (coalesce (ranking_mode, 'raw')));
   if (ranking_mode not in ('raw', 'relevance'))
@@ -3459,7 +3613,7 @@ create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
   -- difference between them is readable from the error.
   n := length (iris);
   if (n = 0)
-    return;
+    return iris;
 
   -- Per index, exactly the validation the single-index path applies -- so an
   -- index that does not exist, or is not active, fails with the same error
@@ -3496,29 +3650,67 @@ create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
         }
     }
 
-  -- Search each index, tagging every hit with its position within that index.
+  return iris;
+}
+;
+
+-- The hits of several indexes merged, best first under the ranking, each as
+-- vector (rid, distance, score, rank, idx_iri, graph), for at most limit_count
+-- subjects.  graph_set and graph_mode as for VEC_INDEX_SEARCH_GRAPH_HITS.
+--
+-- `limit` means N subjects IN TOTAL, not N per index; the top N of the union of
+-- each index's top N is the top N of the union of everything.
+--
+-- A subject in two indexes comes back once per graph, as its best occurrence
+-- there: once per subject when graph_mode is not 1, else once per subject and
+-- graph -- so that GRAPH ?g keeps the graph of every index the subject was
+-- found in, as GRAPH <g> finds it in each.
+create function DB.DBA.VEC_INDEX_SEARCH_MERGE (
+  in iris any,
+  in ranking_mode varchar,
+  in query_text varchar,
+  in limit_count integer,
+  in ef_search integer,
+  in score_limit double precision,
+  in distance_limit double precision,
+  in graph_set any,
+  in graph_mode integer ) returns any
+{
+  declare hits, merged, best_of, keys, subjs, out_hits any;
+  declare i, j, n, len, rank, bestn integer;
+  declare rid, prev_rid bigint;
+  declare hit, cur, hkey any;
+
   merged := vector ();
-  for (i := 0; i < n; i := i + 1)
+  for (i := 0; i < length (iris); i := i + 1)
     {
-      hits := DB.DBA.VEC_INDEX_SEARCH_HITS (iris[i], query_text, limit_count, ef_search,
-        score_limit, distance_limit, required_graph_iri);
+      hits := DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS (iris[i], query_text, limit_count, ef_search,
+        score_limit, distance_limit, graph_set, graph_mode);
       len := length (hits);
+      rank := 0;
+      prev_rid := -1;
       for (j := 0; j < len; j := j + 1)
-        merged := vector_concat (merged, vector (
-          vector (hits[j][0], hits[j][1], hits[j][2], j + 1, iris[i])));
+        {
+          rid := cast (hits[j][0] as bigint);
+          if (rid <> prev_rid)
+            rank := rank + 1;	-- the rows of one hit in several graphs share its rank
+          prev_rid := rid;
+          merged := vector_concat (merged, vector (
+            vector (hits[j][0], hits[j][1], hits[j][2], rank, iris[i], hits[j][3])));
+        }
     }
 
-  -- One row per subject: the best occurrence wins, and carries its own score
-  -- and distance so the row stays internally consistent.
+  -- The best occurrence per subject, or per subject and graph, wins and carries
+  -- its own score and distance so the row stays internally consistent.
   best_of := dict_new (71);
   len := length (merged);
   for (i := 0; i < len; i := i + 1)
     {
       hit := merged[i];
-      rid := cast (hit[0] as bigint);
-      cur := dict_get (best_of, rid, null);
+      hkey := case when graph_mode = 1 then vector (cast (hit[0] as bigint), hit[5]) else cast (hit[0] as bigint) end;
+      cur := dict_get (best_of, hkey, null);
       if (cur is null or DB.DBA.VEC_INDEX_HIT_BETTER (hit, cur, ranking_mode))
-        dict_put (best_of, rid, hit);
+        dict_put (best_of, hkey, hit);
     }
   -- dict_list_keys returns the KEYS -- its second argument is "destructive",
   -- not a mode -- so the surviving hits are fetched back one by one.
@@ -3527,15 +3719,13 @@ create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
   for (i := 0; i < length (keys); i := i + 1)
     merged := vector_concat (merged, vector (dict_get (best_of, keys[i], null)));
 
-  -- Partial selection sort: limit_count passes over the merged set rather than
-  -- a full sort of it, since only the top limit_count is ever emitted.
+  -- Selection sort, stopping at limit_count subjects; the rows of a subject
+  -- already in keep coming after it in their own order.
+  out_hits := vector ();
+  subjs := dict_new (31);
   n := length (merged);
-  kept := limit_count;
-  if (kept > n)
-    kept := n;
-  for (i := 0; i < kept; i := i + 1)
+  for (i := 0; i < n; i := i + 1)
     {
-      declare bestn integer;
       bestn := i;
       for (j := i + 1; j < n; j := j + 1)
         if (DB.DBA.VEC_INDEX_HIT_BETTER (merged[j], merged[bestn], ranking_mode))
@@ -3547,10 +3737,119 @@ create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
           aset (merged, bestn, hit);
         }
       hit := merged[i];
-      result (iri_id_from_num (cast (hit[0] as bigint)),
-        cast (hit[1] as double precision),
-        cast (hit[2] as double precision));
+      rid := cast (hit[0] as bigint);
+      if (dict_get (subjs, rid, 0) = 0)
+        {
+          if (dict_size (subjs) >= limit_count)
+            goto next_row;
+          dict_put (subjs, rid, 1);
+        }
+      out_hits := vector_concat (out_hits, vector (hit));
+    next_row:;
     }
+  return out_hits;
+}
+;
+
+-- bif:vector_search over several indexes at once:
+--
+--   option (index (<a>, <b>))            the union of the named indexes
+--   option (index *)                     every active index the caller can read
+--   option (index (<a>, <b>), ranking raw | relevance)
+--
+-- `limit` means N results IN TOTAL, not N per index -- which is what a caller
+-- writing `limit 10` expects and what it already means for one index.  It costs
+-- no accuracy: the top N of the union of each index's top N is exactly the top
+-- N of the union of everything.
+--
+-- A subject that sits in two indexes comes back ONCE, as its best occurrence
+-- under the active ordering, with that row's score and distance.  This binds a
+-- subject variable: the same subject twice would make `limit 10` return ten
+-- rows covering fewer than ten things, and multiply every downstream join.
+-- (The VVec console shows one row per index-hit instead, because its job is to
+-- show which index a hit came from.  Deliberate difference, not an oversight.)
+create procedure DB.DBA.VEC_INDEX_SEARCH_ROWS_MULTI (
+  in idx_list any,
+  in ranking_mode varchar,
+  in query_text varchar,
+  in limit_count integer := 10,
+  in ef_search integer := 100,
+  in score_limit double precision := null,
+  in distance_limit double precision := null,
+  in required_graph_iri varchar := null )
+{
+  declare iris, hits any;
+  declare i integer;
+  declare result_entity_iid any;
+  declare result_distance, result_score double precision;
+  result_names (result_entity_iid, result_distance, result_score);
+
+  ranking_mode := lower (trim (coalesce (ranking_mode, 'raw')));
+  iris := DB.DBA.VEC_INDEX_SEARCH_LIST (idx_list, ranking_mode, limit_count, ef_search, score_limit, distance_limit);
+  if (length (iris) = 0)
+    return;
+  hits := DB.DBA.VEC_INDEX_SEARCH_MERGE (iris, ranking_mode, query_text, limit_count, ef_search,
+    score_limit, distance_limit,
+    case when required_graph_iri is null or required_graph_iri = '' then null
+      else DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET (vector (required_graph_iri)) end,
+    0);
+  for (i := 0; i < length (hits); i := i + 1)
+    result (iri_id_from_num (cast (hits[i][0] as bigint)),
+      cast (hits[i][1] as double precision),
+      cast (hits[i][2] as double precision));
+}
+;
+
+-- bif:vector_search when the query reads the graph of a hit: inside GRAPH ?g,
+-- or over a default graph of several FROM graphs.  The hits of one index, an
+-- index list or `*`, as VEC_INDEX_SEARCH_ROWS and VEC_INDEX_SEARCH_ROWS_MULTI
+-- give them, with the graph as a fourth column.
+--
+-- graphs is the only graphs to search -- the FROM NAMED graphs, the FROM graphs,
+-- or the value of a graph variable bound from outside -- or NULL for any graph.
+-- graph_mode is 1 for one row per graph a hit is in, 2 for one row per hit
+-- (VEC_INDEX_SEARCH_GRAPH_HITS).  `limit` counts subjects.
+create procedure DB.DBA.VEC_INDEX_SEARCH_GRAPH_ROWS (
+  in idx_spec any,
+  in ranking_mode varchar,
+  in query_text varchar,
+  in limit_count integer := 10,
+  in ef_search integer := 100,
+  in score_limit double precision := null,
+  in distance_limit double precision := null,
+  in graphs any := null,
+  in graph_mode integer := 1 )
+{
+  declare iris, hits, graph_set any;
+  declare i, gcol integer;
+  declare resolved_iri varchar;
+  declare result_entity_iid, result_graph_iid any;
+  declare result_distance, result_score double precision;
+  result_names (result_entity_iid, result_distance, result_score, result_graph_iid);
+
+  graph_set := DB.DBA.VEC_INDEX_SEARCH_GRAPH_SET (graphs);
+  if (isvector (idx_spec) or (isstring (idx_spec) and '*' = idx_spec))
+    {
+      ranking_mode := lower (trim (coalesce (ranking_mode, 'raw')));
+      iris := DB.DBA.VEC_INDEX_SEARCH_LIST (idx_spec, ranking_mode, limit_count, ef_search, score_limit, distance_limit);
+      if (length (iris) = 0)
+        return;
+      hits := DB.DBA.VEC_INDEX_SEARCH_MERGE (iris, ranking_mode, query_text, limit_count, ef_search,
+        score_limit, distance_limit, graph_set, graph_mode);
+      gcol := 5;
+    }
+  else
+    {
+      resolved_iri := DB.DBA.VEC_INDEX_VALIDATE_SEARCH_OPTIONS (idx_spec, score_limit, distance_limit, limit_count, ef_search);
+      hits := DB.DBA.VEC_INDEX_SEARCH_GRAPH_HITS (resolved_iri, query_text, limit_count, ef_search,
+        score_limit, distance_limit, graph_set, graph_mode);
+      gcol := 3;
+    }
+  for (i := 0; i < length (hits); i := i + 1)
+    result (iri_id_from_num (cast (hits[i][0] as bigint)),
+      cast (hits[i][1] as double precision),
+      cast (hits[i][2] as double precision),
+      hits[i][gcol]);
 }
 ;
 

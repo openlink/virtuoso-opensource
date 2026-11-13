@@ -23,6 +23,10 @@
 --      can then never be re-created under the same name.  That does not fail
 --      the first time, so the view is installed, dropped and re-installed
 --      TWICE below.
+--    * the view's reach.  It is in the default quad storage, so every query
+--      over a variable graph reaches it.  A reader without a grant on the
+--      catalogue -- the anonymous /sparql account among them -- must still
+--      run such queries, and see none of the catalogue in them.
 --
 --  Self-contained: the in-core deterministic 'test_embedding' model, so this
 --  needs neither ONNX nor the VVEC_BEGIN_* fixtures and runs unconditionally.
@@ -359,27 +363,106 @@ ECHO BOTH ": re-install 2 works -- the IRI class was not burned, n=" $LAST[1] "\
 -- ===========================================================================
 -- 7. Reading the view is gated by the base table's SQL privileges
 -- ===========================================================================
-select DB.DBA.TMETA_AS ('vecmeta_other',
-  'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx> <http://www.w3.org/2000/01/rdf-schema#label> ?o }');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-ECHO BOTH ": no grant, the mapped graph is refused (SQ033)=" $LAST[1] "\n";
+--  The view sits in the default quad storage, so every query whose graph is a
+--  variable reaches it, whatever graphs the query is really about.  A reader
+--  without a grant on the catalogue -- the anonymous /sparql account SPARQL
+--  is one on every database -- must still be able to run such a query, and
+--  must see none of the catalogue's rows in it.  It used to be refused the
+--  columns, which failed the whole query with SQ033.
+--
+--  The answers are compared whole: TMETA_ROWS_AS returns the row count and
+--  every row, or 'refused' and the error code.
 
+--  Run a statement as another account and return what it answered:
+--  '<n>:' followed by each row's columns joined by ',' and ended by ';', or
+--  'refused:<code>' when it raised.
+create function DB.DBA.TMETA_ROWS_AS (in _user varchar, in _stmt varchar) returns varchar
+{
+  declare _st, _msg varchar;
+  declare _md, _rows any;
+  declare _out varchar;
+  declare _i, _j integer;
+  _st := '00000';
+  __set_user_id (_user);
+  exec (_stmt, _st, _msg, vector (), 1000, _md, _rows);
+  __pop_user_id ();
+  if (_st <> '00000' and _st <> 0)
+    return 'refused:' || "LEFT" (coalesce (_msg, cast (_st as varchar)), 5);
+  if (not isvector (_rows))
+    return '0:';
+  _out := sprintf ('%d:', length (_rows));
+  for (_i := 0; _i < length (_rows); _i := _i + 1)
+    {
+      for (_j := 0; _j < length (_rows[_i]); _j := _j + 1)
+        _out := _out || case when _j > 0 then ',' else '' end || cast (_rows[_i][_j] as varchar);
+      _out := _out || ';';
+    }
+  return _out;
+};
+
+DB.DBA.TTLP ('<urn:meta:f14:a> <urn:meta:f14:p> "a" . <urn:meta:f14:b> <urn:meta:f14:p> "b" .', '', 'urn:meta:f14:g1');
+DB.DBA.TTLP ('<urn:meta:f14:c> <urn:meta:f14:p> "c" .', '', 'urn:meta:f14:g2');
+
+--  7a-7c: the shape the report gave, then an ASK, as the anonymous account.
+select DB.DBA.TMETA_ROWS_AS ('SPARQL',
+  'sparql select ?g (count (*) as ?n) where { graph ?g { ?s ?p ?o } filter (strstarts (str (?g), "urn:meta:f14:")) } group by ?g order by ?g');
+ECHO BOTH $IF $EQU $LAST[1] "2:urn:meta:f14:g1,2;urn:meta:f14:g2,1;" "PASSED" "***FAILED";
+ECHO BOTH ": 7a. SPARQL counts per graph with GRAPH ?g: " $LAST[1] "\n";
+
+select DB.DBA.TMETA_ROWS_AS ('vecmeta_other',
+  'sparql select ?g (count (*) as ?n) where { graph ?g { ?s ?p ?o } filter (strstarts (str (?g), "urn:meta:f14:")) } group by ?g order by ?g');
+ECHO BOTH $IF $EQU $LAST[1] "2:urn:meta:f14:g1,2;urn:meta:f14:g2,1;" "PASSED" "***FAILED";
+ECHO BOTH ": 7b. a reader with no catalogue grant does too: " $LAST[1] "\n";
+
+select DB.DBA.TMETA_ROWS_AS ('SPARQL', 'sparql ask where { graph ?g { <urn:meta:f14:a> ?p ?o } }');
+ECHO BOTH $IF $EQU $LAST[1] "1:1;" "PASSED" "***FAILED";
+ECHO BOTH ": 7c. SPARQL asks about a subject in any graph: " $LAST[1] "\n";
+
+--  7d-7f: and the catalogue's own rows stay private to it.
+select DB.DBA.TMETA_ROWS_AS ('SPARQL',
+  'sparql select count (*) where { graph ?g { <urn:meta:idx> ?p ?o } }');
+ECHO BOTH $IF $EQU $LAST[1] "1:0;" "PASSED" "***FAILED";
+ECHO BOTH ": 7d. ...but sees nothing of an index through GRAPH ?g: " $LAST[1] "\n";
+
+select DB.DBA.TMETA_ROWS_AS ('vecmeta_other',
+  'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx> <http://www.w3.org/2000/01/rdf-schema#label> ?o }');
+ECHO BOTH $IF $EQU $LAST[1] "0:" "PASSED" "***FAILED";
+ECHO BOTH ": 7e. no grant, the mapped graph answers nothing: " $LAST[1] "\n";
+
+--  A guard, on both sides of the change: an entitled reader sees the index
+--  through GRAPH ?g exactly as through the graph's name.
+select case when DB.DBA.TMETA_ROWS_AS ('dba',
+    'sparql select ?o where { graph ?g { <urn:meta:idx> <http://www.w3.org/2000/01/rdf-schema#label> ?o } }')
+  = '1:' || (select SVI_LABEL from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = 'urn:meta:idx') || ';' then 1 else 0 end;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": 7f. dba reads the label through GRAPH ?g, same=" $LAST[1] "\n";
+
+--  <urn:meta:idx2> gets a comment of its own, so that 7h and 7i compare
+--  against one.
+select DB.DBA.VEC_INDEX_SET_METADATA ('urn:meta:idx2', null, 'The second index, described');
 grant select (SVI_IRI, SVI_LABEL) on DB.DBA.SPARQL_VEC_INDEX to "vecmeta_other";
 commit work;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": column-level grant on (SVI_IRI, SVI_LABEL) STATE=" $STATE "\n";
 
-select DB.DBA.TMETA_AS ('vecmeta_other',
-  'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx> <http://www.w3.org/2000/01/rdf-schema#label> ?o }');
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": with the column grant, rdfs:label reads, refused=" $LAST[1] "\n";
+select case when DB.DBA.TMETA_ROWS_AS ('vecmeta_other',
+    'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx> <http://www.w3.org/2000/01/rdf-schema#label> ?o }')
+  = '1:' || (select SVI_LABEL from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = 'urn:meta:idx') || ';' then 1 else 0 end;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": 7g. with the column grant, rdfs:label reads, same=" $LAST[1] "\n";
 
 --  Per-predicate access, which graph-level security cannot express: the same
---  reader is refused the column it was not granted.
-select DB.DBA.TMETA_AS ('vecmeta_other',
+--  reader gets no rdfs:comment, the column it was not granted.
+select DB.DBA.TMETA_ROWS_AS ('vecmeta_other',
   'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx2> <http://www.w3.org/2000/01/rdf-schema#comment> ?o }');
+ECHO BOTH $IF $EQU $LAST[1] "0:" "PASSED" "***FAILED";
+ECHO BOTH ": 7h. ...and no rdfs:comment: " $LAST[1] "\n";
+
+select case when DB.DBA.TMETA_ROWS_AS ('dba',
+    'sparql select ?o from <urn:vvec:indexes> where { <urn:meta:idx2> <http://www.w3.org/2000/01/rdf-schema#comment> ?o }')
+  = '1:' || (select SVI_COMMENT from DB.DBA.SPARQL_VEC_INDEX where SVI_IRI = 'urn:meta:idx2') || ';' then 1 else 0 end;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-ECHO BOTH ": ...and rdfs:comment is still refused (SQ033)=" $LAST[1] "\n";
+ECHO BOTH ": 7i. which is there for dba, same=" $LAST[1] "\n";
 
 -- ===========================================================================
 -- Cleanup
@@ -393,6 +476,9 @@ sparql define input:storage "" clear graph <urn:meta:graph>;
 delete from DB.DBA.ONNX_MODELS where model_name = 'vvec-meta-8';
 DB.DBA.USER_DROP ('vecmeta_owner', 0);
 DB.DBA.USER_DROP ('vecmeta_other', 0);
+sparql define input:storage "" clear graph <urn:meta:f14:g1>;
+sparql define input:storage "" clear graph <urn:meta:f14:g2>;
+drop function DB.DBA.TMETA_ROWS_AS;
 drop procedure DB.DBA.TMETA_LONG_LABEL;
 drop function DB.DBA.TMETA_AS;
 drop procedure DB.DBA.TMETA_USER;

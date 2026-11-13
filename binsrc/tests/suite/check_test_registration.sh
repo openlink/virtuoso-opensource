@@ -40,7 +40,7 @@
 
 #  Harness machinery shipped through check_SCRIPTS but not tests in their own
 #  right -- they are sourced or invoked by the harness.
-NOT_A_TEST="check_test_registration clean epilog go_functions lowerall prepare_t1 prolog release
+NOT_A_TEST="check_test_registration clean epilog generate-rdf12-tests go_functions lowerall prepare_t1 prolog release
             summary testall testlib test_server wtf"
 
 #  Real drivers deliberately not part of a default run: external dependencies

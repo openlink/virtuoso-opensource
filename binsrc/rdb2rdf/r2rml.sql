@@ -379,6 +379,45 @@ create method R2RML_GET_COL_DESC (in triplesmap_iid IRI_ID, in col_name varchar)
 }
 ;
 
+--! The datatype of the natural RDF literal of a column of the given type (R2RML 10.2), as the quad map formats give it, or NULL
+create function DB.DBA.R2RML_NATURAL_DATATYPE (in col_dtp integer) returns varchar
+{
+  if (col_dtp = __tag of date)
+    return 'http://www.w3.org/2001/XMLSchema#date';
+  if (col_dtp = __tag of time)
+    return 'http://www.w3.org/2001/XMLSchema#time';
+  if (col_dtp in (__tag of datetime, __tag of timestamp))
+    return 'http://www.w3.org/2001/XMLSchema#dateTime';
+  if (col_dtp in (__tag of integer, __tag of smallint, __tag of bigint))
+    return 'http://www.w3.org/2001/XMLSchema#integer';
+  if (col_dtp = __tag of double precision)
+    return 'http://www.w3.org/2001/XMLSchema#double';
+  if (col_dtp = __tag of numeric)
+    return 'http://www.w3.org/2001/XMLSchema#decimal';
+  if (col_dtp in (__tag of varchar, __tag of nvarchar, __tag of long varchar, __tag of long nvarchar))
+    return 'http://www.w3.org/2001/XMLSchema#string';
+  return null;
+}
+;
+
+--! Nonzero if rr:datatype dt of a column-valued literal map is the natural datatype of the column (col_desc as R2RML_GET_COL_DESC returns it):
+--! the map is then the natural literal, and is written as the plain column, not as a literal class
+create function DB.DBA.R2RML_DT_IS_NATURAL (in col_desc any, in dt any) returns integer
+{
+  declare nat varchar;
+  if (dt is null)
+    return 0;
+  nat := DB.DBA.R2RML_NATURAL_DATATYPE (col_desc[2][1]);
+  if (nat is null)
+    return 0;
+  if (isiri_id (dt))
+    dt := id_to_iri (dt);
+  if (cast (dt as varchar) = nat)
+    return 1;
+  return 0;
+}
+;
+
 create function DB.DBA.R2RML_SPLIT_TEMPLATE (in strg varchar) returns any
 {
   declare splitlbra, parts any;
@@ -633,6 +672,12 @@ create_iol_class:
     }
   return iri_to_id (class_iri);
 print_field:
+  -- The class name is a digest of the term type, format, argument types, datatype and language, so a
+  -- field written with other parameters than R2RML_MAKE_QM_IMPL_IOL_CLASSES used would name a class
+  -- the script never creates, and the script would leave a half-built view behind.
+  if (dict_get (self.declared_jsos, class_iri, null) is null)
+    signal ('R2RML', sprintf ('Internal error: the quad map would use the %s class <%s> for "%s" of <%s>, but the script does not create it',
+        subseq (termtype, length ('http://www.w3.org/ns/r2rml#')), class_iri, src_template, id_to_iri (triplesmap_iid)));
   http ('<' || class_iri || '> (', self.codegen_ses);
   for (argctr := 0; argctr < argcount; argctr := argctr + 1)
     {
@@ -658,6 +703,9 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
     self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (fld_idx, 2, triplesmap_iid, src_template, termtype, dt, lang);
   else if (col is not null)
     {
+      if ((dt is not null) and (termtype = 'http://www.w3.org/ns/r2rml#Literal') and (lang is null)
+        and DB.DBA.R2RML_DT_IS_NATURAL (self.R2RML_GET_COL_DESC (triplesmap_iid, col), dt))
+        dt := null; -- the natural literal, see R2RML_MAKE_QM_IMPL_IOL_CLASSES
       if ((termtype <> 'http://www.w3.org/ns/r2rml#Literal') or (dt is not null) or (lang is not null))
         self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (fld_idx, 2, triplesmap_iid, '{' || col || '}', termtype, dt, lang);
       else
@@ -739,8 +787,15 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:datatype ?dt . }
             optional { ?fldmap rr:language ?lang . } } } ) do
     {
-      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
-        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), "dt", __ro2sq ("lang"));
+      declare obj_dt any;
+      obj_dt := "dt";
+      -- rr:datatype naming the column's natural datatype gives the natural literal (R2RML 11): no class,
+      -- R2RML_GEN_FLD writes the plain column, whose quad map format has that datatype
+      if ((obj_dt is not null) and (("termtype" is null) or (__id2i ("termtype") = 'http://www.w3.org/ns/r2rml#Literal')) and ("lang" is null)
+        and DB.DBA.R2RML_DT_IS_NATURAL (self.R2RML_GET_COL_DESC ("triplesmap", DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col"))), obj_dt))
+        obj_dt := null;
+      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or (obj_dt is not null) or ("lang" is not null))
+        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), obj_dt, __ro2sq ("lang"));
     }
 }
 ;
@@ -881,7 +936,10 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
       term_type := __rdf_strsqlval ("ott");
       if (term_type is null)
         {
-          if ("ocol" is null and "odatatype" is null and "olang" is null and (isiri_id ("consto") or
+          -- R2RML 7.4: without rr:termType an object map is a Literal if it is column-valued or has
+          -- rr:datatype or rr:language, an IRI otherwise; a template, as R2RML_MAKE_QM_IMPL_IOL_CLASSES
+          -- has already created its class.  A constant is what the constant is.
+          if ("ocol" is null and "odatatype" is null and "olang" is null and ("otmpl" is not null or isiri_id ("consto") or
                 ((isstring ("consto") or isuname("consto")) and bit_and (__box_flags ("consto"), 1)) ))
             term_type := 'http://www.w3.org/ns/r2rml#IRI';
           else

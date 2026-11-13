@@ -28,6 +28,7 @@ check_SCRIPTS = \
 	check_test_registration.sh \
 	clean.sh \
 	epilog.sh \
+	generate-rdf12-tests.sh \
 	go_functions.sh \
 	gtkbench.sh \
 	inprocess.sh \
@@ -73,8 +74,12 @@ check_SCRIPTS = \
 	toptitpcd.sh \
 	tp.sh \
 	tpcd.sh \
+	tplugin_load.sh \
 	tproviders.sh \
 	tproxy.sh \
+	tr2rml.sh \
+	trdf12.sh \
+	trdf12tt.sh \
 	trdfstar.sh \
 	trecov.sh \
 	trecov_schema.sh \
@@ -83,6 +88,7 @@ check_SCRIPTS = \
 	treplh.sh \
 	tsec.sh \
 	tsoap12.sh \
+	tsparql12.sh \
 	tsparql12_langdir.sh \
 	tsql.sh \
 	tsql2.sh \

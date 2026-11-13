@@ -586,6 +586,14 @@ sqlc_close_stmt (sql_comp_t * sc, ST * stmt)
 }
 
 
+/* the vectored interpreter runs a loop body once and has no handlers */
+#define SQLC_VEC_NOT_ALLOWED(sc, what) \
+  do { \
+    if ((sc)->sc_cc->cc_query->qr_proc_vectored) \
+      sqlc_new_error ((sc)->sc_cc, "37000", "VEC36", "%s is not allowed in vectored code; put it in a not vectored { } block", what); \
+  } while (0)
+
+
 void
 sqlc_handler_decl (sql_comp_t * sc, ST * stmt)
 {
@@ -593,6 +601,7 @@ sqlc_handler_decl (sql_comp_t * sc, ST * stmt)
   char throw_loc_name[20], nest_name[20];
   state_slot_t *loc, *nest;
 
+  SQLC_VEC_NOT_ALLOWED (sc, "An exception handler (a FOR loop over a query declares one)");
   snprintf (throw_loc_name, sizeof (throw_loc_name), "throw_%ld", end_label);
   snprintf (nest_name, sizeof (nest_name), "nest_%ld", end_label);
   loc = sqlc_new_temp (sc, throw_loc_name, DV_LONG_INT);
@@ -685,6 +694,8 @@ void
 sqlc_goto_stmt (sql_comp_t * sc, ST * stmt)
 {
   jmp_label_t label = sc_name_to_label (sc, stmt->_.op.arg_1);
+  if (id_hash_get (sc->sc_decl_name_to_label, (caddr_t) & stmt->_.op.arg_1))
+    SQLC_VEC_NOT_ALLOWED (sc, "A backward GOTO"); /* the label is placed already */
   cv_jump (&sc->sc_routine_code, label);
 }
 
@@ -721,6 +732,7 @@ sqlc_while_stmt (sql_comp_t * sc, ST * stmt)
   jmp_label_t loop = sqlc_new_label (sc);
   jmp_label_t end_label = sqlc_new_label (sc);
   jmp_label_t next_l = sqlc_new_label (sc);
+  SQLC_VEC_NOT_ALLOWED (sc, "A loop (WHILE, FOR or FOREACH)");
 
   cv_label (&sc->sc_routine_code, loop);
   sqlc_mark_pred_deps (sc, NULL, stmt->_.while_stmt.cond);

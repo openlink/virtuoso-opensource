@@ -746,6 +746,27 @@ sparp_remove_varname_from_set (dk_set_t *set_ptr, const char *vname)
 }
 
 static int
+sparp_triple_term_field_binds_varname (SPART *field, caddr_t vname)
+{
+  if ((NULL == field) || (NULL == vname))
+    return 0;
+  switch (SPART_TYPE (field))
+    {
+    case SPAR_VARIABLE:
+    case SPAR_BLANK_NODE_LABEL:
+      return ((NULL != field->_.var.vname) && !strcmp (field->_.var.vname, vname));
+    case SPAR_TRIPLE_TERM:
+      if (sparp_triple_term_field_binds_varname (field->_.triple_term.subject, vname))
+        return 1;
+      if (sparp_triple_term_field_binds_varname (field->_.triple_term.predicate, vname))
+        return 1;
+      return sparp_triple_term_field_binds_varname (field->_.triple_term.object, vname);
+    default:
+      return 0;
+    }
+}
+
+static int
 sparp_gp_member_binds_varname_locally (SPART *memb, caddr_t vname)
 {
   int fld_ctr;
@@ -756,9 +777,7 @@ sparp_gp_member_binds_varname_locally (SPART *memb, caddr_t vname)
     case SPAR_TRIPLE:
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
-          SPART *fld = memb->_.triple.tr_fields[fld_ctr];
-          if ((NULL != fld) && SPAR_IS_BLANK_OR_VAR (fld) &&
-            (NULL != fld->_.var.vname) && !strcmp (fld->_.var.vname, vname))
+          if (sparp_triple_term_field_binds_varname (memb->_.triple.tr_fields[fld_ctr], vname))
             return 1;
         }
       return 0;
@@ -1131,6 +1150,9 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
     }
 }
 
+static void
+sparp_triple_term_field_cu (sparp_t *sparp, SPART *gp, SPART *field, SPART *triple, int field_idx);
+
 int
 sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -1177,22 +1199,40 @@ ignore_retval_name: ;
     }
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
-      SPART *fld = curr->_.triple.tr_fields[fctr];
-      sparp_equiv_t *eq;
-      switch (SPART_TYPE(fld))
-        {
-          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
-          default: continue;
-        }
       if (OPTIONAL_L == curr->_.triple.subtype)
         continue;
-      eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
-      fld->_.var.tabid = curr->_.triple.tabid;
-      sparp_equiv_tighten (sparp, eq, &(fld->_.var.rvr), ~0);
+      sparp_triple_term_field_cu (sparp, gp, curr->_.triple.tr_fields[fctr], curr, fctr);
     }
   if (NULL != curr->_.triple.options)
     sparp_gp_trav_cu_in_options (sparp, gp, curr, curr->_.triple.options, common_env);
   return SPAR_GPT_NODOWN;
+}
+
+static void
+sparp_triple_term_field_cu (sparp_t *sparp, SPART *gp, SPART *field, SPART *triple, int field_idx)
+{
+  sparp_equiv_t *eq;
+  if (NULL == field)
+    return;
+  switch (SPART_TYPE (field))
+    {
+    case SPAR_VARIABLE:
+    case SPAR_BLANK_NODE_LABEL:
+      eq = sparp_equiv_get (sparp, gp, field,
+        SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE |
+        ((SPART_VAR_OUTSIDE_TRIPLE == field_idx) ? SPARP_EQUIV_ADD_CONST_READ : SPARP_EQUIV_ADD_GSPO_USE));
+      field->_.var.tabid = (SPART_VAR_OUTSIDE_TRIPLE == field_idx) ? NULL : triple->_.triple.tabid;
+      field->_.var.tr_idx = field_idx;
+      sparp_equiv_tighten (sparp, eq, &(field->_.var.rvr), ~0);
+      return;
+    case SPAR_TRIPLE_TERM:
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.subject, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.predicate, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      sparp_triple_term_field_cu (sparp, gp, field->_.triple_term.object, triple, SPART_VAR_OUTSIDE_TRIPLE);
+      return;
+    default:
+      return;
+    }
 }
 
 int
@@ -1956,7 +1996,7 @@ int
 sparp_equiv_contains_t_io (sparp_t *sparp, sparp_equiv_t *eq)
 {
   int sub_ctr;
-  if ((0 != eq->e_pos1_t_in) || (0 != eq->e_pos1_t_in))
+  if ((0 != eq->e_pos1_t_in) || (0 != eq->e_pos1_t_out))
     return 1;
   DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
     {
@@ -2625,6 +2665,19 @@ sparp_gp_trav_make_aliases_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_st
   return 0;
 }
 
+static int
+sparp_equiv_is_global (sparp_equiv_t *eq)
+{
+  int varname_ctr;
+  DO_BOX_FAST (caddr_t, vname, varname_ctr, eq->e_varnames)
+    {
+      if (SPART_VARNAME_IS_GLOB (vname))
+        return 1;
+    }
+  END_DO_BOX_FAST;
+  return 0;
+}
+
 int
 sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -2650,6 +2703,19 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
         (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) ||
         eq->e_replaces_filter )
 	continue; /* Do not remove if in use */
+      /* an OPTIONAL that only reads the variable in its FILTER gets it from here, see sparp_dig_and_glue_loj_filter_for_eq ();
+         not a global (?:param), which every group reads as it is */
+      if (!sparp_equiv_is_global (eq))
+        {
+          for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
+            {
+              sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
+              if ((OPTIONAL_L == sub_eq->e_gp->_.gp.subtype) && (0 != sub_eq->e_const_reads) && !SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
+                break;
+            }
+          if (0 <= sub_ctr)
+            continue;
+        }
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
@@ -3997,6 +4063,8 @@ sparp_cast_fv_dt_to_bool4way (ccaddr_t fv, ccaddr_t dt)
   return '?';
 }
 
+extern int32 sparql_strict_langstring_ebv;
+
 sparp_bool4way_t
 sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr)
 {
@@ -4006,12 +4074,12 @@ sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr)
     return '?';
   if (rvr->rvrRestrictions & SPART_VARR_IS_REF)
     return 'F'; /* proper EBV would be type error */
-  if (NULL != rvr->rvrLanguage)
-    return 'F'; /* proper EBV would be type error */
+  if ((NULL != rvr->rvrLanguage) && sparql_strict_langstring_ebv)
+    return 'U'; /* SPARQL 1.2 EBV of rdf:langString is type error */
   if (rvr->rvrRestrictions & SPART_VARR_FIXED)
     {
       ccaddr_t fv = SPAR_LIT_OR_QNAME_VAL ((SPART *)(rvr->rvrFixedValue));
-      ccaddr_t dt = rvr->rvrDatatype;
+      ccaddr_t dt = (NULL != rvr->rvrLanguage) ? NULL : rvr->rvrDatatype;
       return sparp_cast_fv_dt_to_bool4way (fv, dt);
     }
   return '?';
@@ -4030,7 +4098,11 @@ sparp_cast_var_or_lit_to_bool4way (sparp_t *sparp, SPART *tree)
       return 'F'; /* proper EBV would be type error */
     case SPAR_LIT:
       if (NULL != tree->_.lit.language)
-        return 'F'; /* proper EBV would be type error */
+        {
+          if (sparql_strict_langstring_ebv)
+            return 'U'; /* SPARQL 1.2 EBV of rdf:langString is type error */
+          return sparp_cast_fv_dt_to_bool4way (tree->_.lit.val, NULL);
+        }
       return sparp_cast_fv_dt_to_bool4way (tree->_.lit.val, tree->_.lit.datatype);
     }
   return '?';
@@ -4731,6 +4803,9 @@ spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *mem
   if (NULL == eq)
     return 0;
   if ((UNION_L == parent_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == parent_gp->_.gp.subtype))
+    return 0;
+  /* a transitive subquery takes its T_IN / T_OUT values only from equalities, not from an IN filter */
+  if (sparp_equiv_contains_t_io (sparp, eq))
     return 0;
   {
     int memb_idx;
@@ -5690,8 +5765,12 @@ sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp)
           continue;
         case UNION_L: case SPAR_UNION_WO_ALL:
           if (0 == BOX_ELEMENTS_0 (memb->_.gp.members))
-            goto do_detach_memb; /* see below */
+            goto do_detach_or_zap; /* see below: a union without branches has no solutions, it is not {} */
           continue;
+        case VALUES_L:
+          if (0 == memb->_.gp.subquery->_.binv.rows_in_use)
+            goto do_detach_or_zap; /* see below: VALUES without rows has no solutions, but its variables are not NOT_NULL as they may be UNDEF */
+          /* no break */
         default:
           SPARP_FOREACH_GP_EQUIV (sparp, memb, eq_ctr, eq)
             {
@@ -6197,6 +6276,9 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
       if (SPAR_GP == memb->type)
         sparp_gp_deprecate (sparp, memb, 1);
     }
+/* Without members the group would read as {}, that has one solution. The conflicts above say otherwise only while
+some variable of the group is used outside it, so with ASK, COUNT(*), EXISTS or MINUS nothing would say so. */
+  sparp_gp_attach_filter (sparp, curr, SPAR_MAKE_EBV_LITERAL (sparp, 0), 0, NULL);
 }
 
 int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)

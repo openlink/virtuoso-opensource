@@ -387,6 +387,8 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 
 <SPARQL>"("				TOKPAR_OPEN (_LPAR,')', GET_CURRENT_BEGIN)
 <SPARQL>")"				TOKPAR_CLOSE (_RPAR,')')
+<SPARQL>"{|"				TOKPAR_OPEN (ANN_OPEN_L,'}', GET_CURRENT_BEGIN)
+<SPARQL>"|}"				TOKPAR_CLOSE (ANN_CLOSE_L,'}')
 <SPARQL>"{"				TOKPAR_OPEN (_LBRA,'}', GET_CURRENT_BEGIN)
 <SPARQL>"}"				TOKPAR_CLOSE (_RBRA,'}')
 <SPARQL>"["				TOKPAR_OPEN (_LSQBRA,']', GET_CURRENT_BEGIN)
@@ -396,6 +398,11 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 
 <SPARQL>"<"([^<>"{}|^`\001-\040\\])*">"	{
     yylval->box = t_box_dv_uname_nchars (yytext + 1, yyleng - 2);
+    return Q_IRI_REF;
+  }
+
+<SPARQL>"<"([^<>"{}|^`\001-\040\\]|{SPAR_UCHAR})*">"	{
+    yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_QNAME);
     return Q_IRI_REF;
   }
 

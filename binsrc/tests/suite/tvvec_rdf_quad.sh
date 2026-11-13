@@ -44,15 +44,9 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 sed -e "s/^CaseMode[ 	]*=.*/CaseMode = 2/" $CFGFILE > tmp.ini
 mv -f tmp.ini $CFGFILE
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
-    LOG "+ vonnx plugin found in $HOSTING"
+    ONNX_CONFIGURE $CFGFILE
 else
     LOG "+ vonnx not built; the test uses the in-core test_embedding model only"
 fi
@@ -122,6 +116,17 @@ RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_search_score_var.sql VERBOSE=OFF PRO
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvvec_search_score_var.sql"
+    exit 3
+fi
+
+#  bif:vector_search inside GRAPH ?g and over several FROM graphs.  Here for
+#  the same reason: under CaseMode 2 a score variable ?G meets the graph's
+#  column.  Its own graphs, model and indexes.
+LOG "+ run tvvec_search_graph_var.sql"
+RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/tvvec_search_graph_var.sql VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tvvec_search_graph_var.sql"
     exit 3
 fi
 

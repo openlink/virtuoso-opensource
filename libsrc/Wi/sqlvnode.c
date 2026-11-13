@@ -120,6 +120,12 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
   if (SEL_VEC_EXISTS == sel->sel_vec_role)
     {
       int row2;
+      if (!sel->sel_set_no)
+	{
+	  if (n_rows)
+	    bits[0] |= 1;
+	  return;
+	}
       for (row2 = 0; row2 + 8 <= n_rows; row2 += 8)
 	{
 	  int refs[8];

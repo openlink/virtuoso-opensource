@@ -854,6 +854,9 @@ int64 dbe_key_count (dbe_key_t * key);
 int sqlo_is_seq_in_oby_order (sqlo_t * so, df_elt_t * dfe, df_elt_t * last_tb);
 void sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fref, sql_type_t *res_sqt);
 void sqlg_rdf_inf ( df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head);
+void sqlo_rdf_inf_out_cols (sqlo_t * so, df_elt_t * tb_dfe);
+float sqlo_rdf_inf_card (df_elt_t * tb_dfe);
+df_elt_t * sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe);
 void sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** head);
 data_source_t * qn_next (data_source_t * qn);
 caddr_t sqlo_iri_constant_name (ST* tree);
@@ -986,6 +989,8 @@ int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_r
 int sqlo_virtual_cols_refd (op_table_t * dt_ot, op_table_t * ot);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
+int sqlo_is_oby_key_completion (op_table_t * ot, df_elt_t * sel_dfe);
+extern int enable_ro2sq_late_complete;
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
 float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols, float * size_ret);

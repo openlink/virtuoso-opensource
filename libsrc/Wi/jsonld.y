@@ -40,6 +40,17 @@ void bing () {}
 #define JNAME jsonp_arg->curr_name ? jsonp_arg->curr_name : "n/a"
 
 #define jsonld_error(str) jsonyyerror_impl(jsonp_arg, str)
+/* The current type is the one a native number or boolean just read implies, not
+   one a context or a value object gave: the next value of an array types itself */
+#define JLD_TYPE_FROM_NATIVE    (1<<24)
+#define JLD_SET_NATIVE_BOOLEAN \
+  do { \
+      if (!JLD_CURRENT(type) || JF_IS(TYPE_FROM_NATIVE)) \
+        JF_SET(TYPE_FROM_NATIVE); \
+      else \
+        JF_CLR(TYPE_FROM_NATIVE); \
+      JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_boolean); \
+  } while (0)
 extern int jsonyylex (void *yylval_param, jsonp_t *jsonp_arg, yyscan_t yyscanner);
 
 %}
@@ -993,6 +1004,11 @@ value_list
                      item.lang = JLD_CURRENT(lang);
                      if (!DV_STRINGP(item.value)) /* even there is a type ref in the container def, the native values are as-is  */
                        item.lang = NULL;
+                     if ((DV_LONG_INT == dtp || DV_DOUBLE_FLOAT == dtp || DV_NUMERIC == dtp) && JF_IS(TYPE_FROM_NATIVE))
+                       {
+                         JLD_SET_CURRENT(type, NULL);
+                         JF_CLR(TYPE_FROM_NATIVE);
+                       }
                      break;
                    default:
                      jsonld_error ("Must have scalar or object as element in JSON array");
@@ -1056,6 +1072,11 @@ value_list
                      item.lang = JLD_CURRENT(lang);
                      if (!DV_STRINGP(item.value))
                        item.lang = NULL;
+                     if ((DV_LONG_INT == dtp || DV_DOUBLE_FLOAT == dtp || DV_NUMERIC == dtp) && JF_IS(TYPE_FROM_NATIVE))
+                       {
+                         JLD_SET_CURRENT(type, NULL);
+                         JF_CLR(TYPE_FROM_NATIVE);
+                       }
                      break;
                    default:
                      jsonld_error ("Must have scalar or object as element in JSON arraya");
@@ -1096,27 +1117,45 @@ value_list
 	| value_list COMMA error { jsonld_error ("array member is expected after ','"); }
 	;
 
-boolean : TRUE_L  { $$ = t_box_num_and_zero (1); if (JSON_LD_DATA) JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_boolean); }
-	| FALSE_L { $$ = t_box_num_and_zero (0); if (JSON_LD_DATA) JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_boolean); }
+boolean : TRUE_L  { $$ = t_box_num_and_zero (1); if (JSON_LD_DATA) JLD_SET_NATIVE_BOOLEAN; }
+	| FALSE_L { $$ = t_box_num_and_zero (0); if (JSON_LD_DATA) JLD_SET_NATIVE_BOOLEAN; }
         ;
 
 scalar	: STRING  { $$ = $1; }
         | NUMBER  {
                 $$ = $1;
-                if (JSON_LD_DATA && !JLD_CURRENT(type))
+                if (JSON_LD_DATA && JLD_CURRENT(type))
+                  JF_CLR(TYPE_FROM_NATIVE);
+                else if (JSON_LD_DATA)
                   {
+                    JF_SET(TYPE_FROM_NATIVE);
+                    /* JSON-LD 1.1, toRdf: a number with a non-zero fractional part, or of
+                       10^21 or more, is an xsd:double and any other number an xsd:integer;
+                       JSON has no decimals.  An integer too big for 64 bits is a double. */
                     dtp_t dtp = DV_TYPE_OF ($1);
+                    double d = 0;
                     switch (dtp)
                       {
                         case DV_LONG_INT:
                             JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_integer);
                             break;
                         case DV_DOUBLE_FLOAT:
-                            break;
-                            JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_double);
-                            break;
                         case DV_NUMERIC:
-                            JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_decimal);
+                            if (DV_NUMERIC == dtp)
+                              numeric_to_double ((numeric_t) $1, &d);
+                            else
+                              d = unbox_double ($1);
+                            if (isfinite (d) && (d == floor (d)) && (fabs (d) < 9.0e18))
+                              {
+                                $$ = t_box_num_and_zero ((boxint) d);
+                                JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_integer);
+                              }
+                            else
+                              {
+                                if (DV_NUMERIC == dtp)
+                                  $$ = t_box_double (d);
+                                JLD_SET_CURRENT(type, uname_xmlschema_ns_uri_hash_double);
+                              }
                             break;
                         default:
                             break;

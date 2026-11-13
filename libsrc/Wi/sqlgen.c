@@ -2297,7 +2297,8 @@ sqlg_inline_sqs (sql_comp_t * sc, df_elt_t * dfe, subq_source_t * sqs, data_sour
   query_t *sqr = sqs->sqs_query;
   data_source_t *qn;
   if (!IS_QN (sqs, subq_node_input) || !sqs->sqs_query ||
-      !enable_inline_sqs || sqr->qr_select_node->sel_top || dfe->_.sub.ot->ot_is_outer)
+      !enable_inline_sqs || sqr->qr_select_node->sel_top || dfe->_.sub.ot->ot_is_outer
+      || !enable_vec) /* inlined subq set ctr is vectored only */
     return (data_source_t *) sqs;
   for (qn = sqr->qr_head_node; qn; qn = qn_next (qn))
     {
@@ -2995,12 +2996,13 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx != n_terms - 1)
 	    {
 	      jmp_label_t temp_fail = sqlc_new_label (sc);
-	      jmp_label_t term_unkn = sqlc_new_label (sc);
+	      jmp_label_t term_unkn = fail == unk ? temp_fail : sqlc_new_label (sc); /* a re-emitted term reads slots its path never set */
 	      if (inx == 2)
 		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, term_unkn);
 	      cv_label (code, temp_fail);
-	      t_set_push (&unkn_labels, (void *)(ptrlong) term_unkn);
+	      if (term_unkn != temp_fail)
+		t_set_push (&unkn_labels, (void *)(ptrlong) term_unkn);
 	    }
 	  else
 	    {
@@ -5798,6 +5800,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 {
   end_node_t * inv_cond = NULL;
   dk_set_t generated_loci = NULL;
+  dk_set_t local_calls = NULL;
   data_source_t * qn = NULL, *last_qn = NULL;
   dk_set_t pre_code = NULL;
   df_elt_t * group_dfe = NULL, * order_dfe = NULL, * dfe;
@@ -5903,6 +5906,8 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 			df_elt_t *defd_dfe = sqlo_df_elt (so, dfe->dfe_tree);
 			if (defd_dfe && (DFE_CALL != defd_dfe->dfe_type || !defd_dfe->dfe_tables || dfe_defines(dt_dfe, defd_dfe)))
 			  defd_dfe->dfe_ssl = NULL;
+			else if (defd_dfe && !defd_dfe->dfe_ssl)
+			  t_set_push (&local_calls, (void*) defd_dfe);
 		      }
 		    dfe->dfe_ssl = NULL;
 		    sqlg_dfe_code (so, dfe, &pre_code, 0, 0, 0);
@@ -6056,6 +6061,12 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
   if (!ext_query)
     qr_set_local_code_and_funref_flag (qr);
   qr_skip_node (so, qr);
+  /* a call computed in this subquery has its ssl valid only here, siblings must compute their own */
+  DO_SET (df_elt_t *, call_dfe, &local_calls)
+    {
+      call_dfe->dfe_ssl = NULL;
+    }
+  END_DO_SET ();
   sc->sc_cc->cc_query = old_qr;
   return qr;
 }

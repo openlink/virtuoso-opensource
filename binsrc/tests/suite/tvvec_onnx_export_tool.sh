@@ -301,20 +301,15 @@ CHECK "it keeps the two inputs and the pooled output (got '$v')" \
     `echo "$v" | grep -q '|input_ids,attention_mask|pooled_output$' && echo 1 || echo 0`
 
 #  ---- and it must actually work in the server ------------------------------
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
-if [ ! -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
+    ONNX_CONFIGURE $CFGFILE
+else
     LOG "+ vonnx not built; skipping the in-server assertions"
     DONE_EARLY "partial: vonnx not built"
 fi
-
-cp "$CFGFILE" "$CFGFILE.pre_onnx"
-sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-rm -f "$CFGFILE.pre_onnx"
-printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-    "$HOSTING" "$HOSTING" >> "$CFGFILE"
 
 START_SERVER $PORT 1000
 
@@ -335,7 +330,7 @@ fi
 #  The exported model is outside ModelRoot, so make it reachable the documented
 #  way rather than by weakening the path policy.  The helper reads merges.txt
 #  from beside vocab.json, so the three files keep a directory of their own.
-EXPORTED="$HOSTING/onnx-models/exported"
+EXPORTED="$ONNX_MODEL_ROOT/exported"
 rm -rf "$EXPORTED"; mkdir -p "$EXPORTED"
 cp "$OUT/model.onnx" "$OUT/vocab.json" "$OUT/merges.txt" "$EXPORTED/"
 
@@ -399,7 +394,7 @@ done
 
 #  The bf16 export carries Casts that ONNX Runtime folds into the same fp32
 #  weights at load, so its vectors must equal the fp32 export's exactly.
-EXPORTED16="$HOSTING/onnx-models/exported_bf16"
+EXPORTED16="$ONNX_MODEL_ROOT/exported_bf16"
 rm -rf "$EXPORTED16"; mkdir -p "$EXPORTED16"
 cp "$OUT16/model.onnx" "$OUT16/vocab.json" "$OUT16/merges.txt" "$EXPORTED16/" 2>/dev/null
 h16=`PROBE "select ONNX_LOAD_MODEL ('$EXPORTED16/model.onnx', 'input=input_ids;input2=attention_mask;output=pooled_output;vocab=$EXPORTED16/vocab.json;max_seq_len=512');"`

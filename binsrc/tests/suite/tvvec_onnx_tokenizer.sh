@@ -63,7 +63,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
 VOCAB="$VIRTUOSO_TEST/tvvec_onnx_wordpiece_vocab.txt"
 TEXTS="$VIRTUOSO_TEST/tvvec_onnx_wordpiece_texts.txt"
 IDS="$VIRTUOSO_TEST/tvvec_onnx_wordpiece_ids.txt"
@@ -78,7 +77,9 @@ CHECK()
     else FAIL=`expr $FAIL + 1`; LOG "***FAILED: $1"; fi
 }
 
-if [ ! -x "$HOSTING/onnx_helper" ]
+#  Only the helper is needed: it tokenizes without a server or a model.
+ONNX_LOCATE
+if [ -z "$ONNX_HELPER" ]
 then
     LOG "SKIPPED: the ONNX helper is not built"
     BANNER "COMPLETED ONNX tokenizer test (skipped: vonnx not built)"
@@ -86,7 +87,7 @@ then
 fi
 
 #  --- every text, id for id --------------------------------------------------
-"$HOSTING/onnx_helper" --vocab "$VOCAB" --max-seq-len 128 --tokenize \
+"$ONNX_HELPER" --vocab "$VOCAB" --max-seq-len 128 --tokenize \
     < "$TEXTS" > $GOT 2>tvvec_onnx_wordpiece_tokens.err
 same=`awk 'NR == FNR { want[FNR] = $0; next } { if ($0 == want[FNR]) n++ } END { print n + 0 }' "$IDS" $GOT`
 CHECK "the helper tokenizes $same of $NTEXTS texts as Hugging Face does" \

@@ -299,6 +299,7 @@ void
 dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, caddr_t lng, int64 ro_id)
 {
   int save;
+  int deser;
   rdf_bigbox_t rbbt;
   rdf_box_t *rb = (rdf_box_t *) & rbbt;
   memset (&rbbt, 0, sizeof (rbbt));
@@ -309,7 +310,8 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   rb->rb_lang = dt_lang & 0xffff;
   rb->rb_type = dt_lang >> 16;
   rb->rb_box = DV_DB_NULL == DV_TYPE_OF (lng) ? val : lng;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type || RB_IS_DURATION (rb->rb_type))
+  deser = (RDF_BOX_GEO_TYPE == rb->rb_type || RB_DURATION_RO_VAL_SERIALIZED (rb->rb_type, rb->rb_box));
+  if (deser)
     rb->rb_box = box_deserialize_string (rb->rb_box, INT32_MAX, 0);
   DC_CHECK_LEN (dc, inx);
   DC_FILL_TO (dc, int64, inx);
@@ -317,7 +319,7 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   dc->dc_n_values = inx;
   dc_append_rb (dc, (caddr_t) rb);
   dc->dc_n_values = save;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type || RDF_BOX_INTERVAL == rb->rb_type)
+  if (deser)
     dk_free_box (rb->rb_box);
 }
 
@@ -686,6 +688,14 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
       if (SSL_REF == ssl->ssl_type)
 	row_no = sslr_set_no (qst, ssl, row_no);
       dv = ((db_buf_t *)arg->dc_values)[row_no];
+      if (!is_boxes && !dv)
+	{
+	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
+	  if (DCT_BOXES & dc->dc_type)
+	    dc->dc_any_null = 1;
+	  dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
+	  continue;
+	}
       dtp = is_boxes ? DV_TYPE_OF (dv) : dv[0];
       if (DV_RDF_ID == dtp || DV_RDF_ID_8 == dtp
         || (DV_RDF == dtp &&
@@ -860,6 +870,19 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
                     dc->dc_n_values = save;
                     dk_free_box (rb);
                     break;
+                  }
+                if (RB_IS_DURATION (rb))
+                  {
+                    char temp[100];
+                    if (0 <= rb_duration_snprintf (temp, sizeof (temp), rb->rb_type, rb->rb_box))
+                      {
+                        int save = dc->dc_n_values;
+                        dc->dc_n_values = set;
+                        dc_append_box (dc, box_dv_short_string (temp));
+                        dc->dc_n_values = save;
+                        dk_free_box (rb);
+                        break;
+                      }
                   }
                 if (DV_DATETIME == DV_TYPE_OF (rb->rb_box))
                   {

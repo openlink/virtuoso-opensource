@@ -3284,6 +3284,8 @@ select_node_input (select_node_t * sel, caddr_t * inst, caddr_t * state)
       select_node_input_vec (sel, inst, state);
     return;
     }
+  if (!sel_top_count (sel, inst))
+    return;
   if (qi->qi_caller == CALLER_CLIENT)
     {
       int slots = sel->sel_n_value_slots;

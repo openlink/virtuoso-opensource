@@ -477,6 +477,7 @@ extern int32 sparql_construct_max_triples;
 extern size_t sparql_max_mem_in_use;
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
+extern int32 sparql_strict_langstring_ebv;
 
 int32 c_sparql_result_set_max_rows = 0;
 size_t c_sparql_max_mem_in_use = 0L;
@@ -1763,6 +1764,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "QueryGraphKeywords", &c_rdf_query_graph_keywords) == -1)
     c_rdf_query_graph_keywords = 0;
 
+  if (cfg_getlong (pconfig, section, "StrictLangStringEBV", &sparql_strict_langstring_ebv) == -1)
+    sparql_strict_langstring_ebv = 0;
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
 

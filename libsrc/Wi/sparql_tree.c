@@ -3200,7 +3200,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           sparp_equiv_t *cloned_eq;
           int var_pos;
           if (eq->e_cloning_serial != sparp->sparp_sg->sg_cloning_serial)
-            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): eq not cloned for a variable");
+            {
+              if (eq->e_gp != parent_gp)
+                return tgt;
+              spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): eq not cloned for a variable");
+            }
           tgt->_.var.equiv_idx = eq->e_clone_idx;
           cloned_eq = SPARP_EQUIV (sparp, eq->e_clone_idx);
           for (var_pos = eq->e_var_count; var_pos--; /*no step*/)

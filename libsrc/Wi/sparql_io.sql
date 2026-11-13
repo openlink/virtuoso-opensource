@@ -2444,6 +2444,20 @@ end_of_val_print: ;
 create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (inout ses any, inout val any)
 {
   declare tt_lex varchar;
+  if (isarray (val) and not isstring (val))
+    {
+      if (3 = length (val))
+        {
+          http ('{ "type": "triple", "value": { "subject": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[0]);
+          http (', "predicate": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[1]);
+          http (', "object": ', ses);
+          DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (ses, val[2]);
+          http (' } }', ses);
+          return;
+        }
+    }
   tt_lex := null;
   if (isiri_id (val))
     tt_lex := id_to_iri (val);
@@ -2495,7 +2509,10 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_TERM (inout ses any, inout val
             res := cast (__xsd_type (dat) as varchar);
           http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
-          dat := __rdf_strsqlval (dat);
+          if (typ in (sys_stat ('rb_type__xsd:duration'), sys_stat ('rb_type__xsd:dayTimeDuration'), sys_stat ('rb_type__xsd:yearMonthDuration')))
+            dat := __rdf_strsqlval (val);
+          else
+            dat := __rdf_strsqlval (dat);
         }
       else if (257 <> typ)
         {
@@ -2889,7 +2906,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (inout ses any, in 
           http ('"', ses);
           return;
         }
-      http_nt_object (val, ses, 1);
+      http_rdf_object (val, ses, 21, 1);
       return;
     }
   s_val := rdf_triple_subject_impl (tt_iri);
@@ -2925,7 +2942,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (inout ses any, in 
           http ('"', ses);
           return;
         }
-      http_nt_object (val, ses, 1);
+      http_rdf_object (val, ses, 21, 1);
       return;
     }
 emit_tt:
@@ -2963,14 +2980,14 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE_ROW (inout ses any, inout metas
       val := row[varctr];
       if (varctr > 0)
         http('\t', ses);
-      -- http_nt_object tells a literal from an IRI by its type, where
-      -- SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM guesses it from the text of the
-      -- components of a triple term; it leaves a triple term or a TRIPLE()
-      -- vector (flag 256, returns 2) to the latter.  Inline: a procedure
+      -- http_rdf_object tells a literal from an IRI by its type and escapes it
+      -- for TSV (21), where SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM guesses it from
+      -- the text of the components of a triple term; it leaves a triple term or
+      -- a TRIPLE() vector (flag 256, returns 2) to the latter.  Inline: a procedure
       -- call per value would double the cost of a row.
       if (val is not null)
         {
-          if (2 = http_nt_object (val, ses, 257))
+          if (2 = http_rdf_object (val, ses, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
         }
     }
@@ -3805,7 +3822,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_STREAM_ROW (inout ses any, inout meta
       -- As in SPARQL_RESULTS_TSV_WRITE_ROW
       if (val is not null)
         {
-          if (2 = http_nt_object (val, ses, 257))
+          if (2 = http_rdf_object (val, ses, 21, 257))
             DB.DBA.SPARQL_RESULTS_TSV_WRITE_TT_LEX_TERM (ses, val);
         }
     }
@@ -3845,7 +3862,7 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
   in qry varchar, inout state varchar, inout msg varchar, inout qry_params any, in maxrows integer, in stream_maxrows integer,
   inout metas any, inout rset any, inout ses any, in accept varchar, in flags integer, in jsonp_callback any ) returns integer
 {
-  declare hnd, row, env, acc any;
+  declare hnd, row, env, acc, hdr any;
   declare kind, ret_mime, ret_format, row_cb varchar;
   declare rc, rowno, lim, streaming, flush_msec, last_flush integer;
   flush_msec := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'StreamingFlushMsec'), '500'));
@@ -3894,6 +3911,11 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
         -- the first row decides: a CONSTRUCT/DESCRIBE dictionary or no chunked encoding is collected as exec() does
         if (0 = rowno and row_cb is not null and not (1 = length (row) and __tag of dictionary reference = __tag (row[0])))
           {
+            -- a stream cannot know before its first row whether the limit will cut it, so it says what the limit is;
+            -- X-SPARQL-MaxRows stays the collected result's, sent when the result reached the limit
+            hdr := http_header_get ();
+            if (stream_maxrows > 0)
+              http_header (coalesce (hdr, '') || sprintf ('X-SPARQL-MaxRows-Limit: %d\r\n', stream_maxrows));
             streaming := DB.DBA.SPARQL_RESULTS_STREAM_BEGIN (ret_mime, ret_format, flags);
             if (streaming)
               {
@@ -3902,6 +3924,8 @@ create function DB.DBA.SPARQL_RESULTS_STREAM (
                   http (jsonp_callback || '(\n', ses);
                 DB.DBA.SPARQL_RESULTS_STREAM_HEAD (ses, metas, kind, env);
               }
+            else if (stream_maxrows > 0)
+              http_header (coalesce (hdr, ''));
           }
         if (streaming)
           {

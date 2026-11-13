@@ -14,10 +14,10 @@
 #
 #    * the vonnx plugin (--enable-onnxruntime, off by default). The SQL chain builds
 #      its index from real embeddings of the bundled model, granite, so without
-#      vonnx the whole chain is skipped. When vonnx.so is present in the build
-#      tree, this script points the server's plugin LoadPath at it and
-#      configures the model root, then confirms at runtime that the model
-#      actually embeds before relying on it.
+#      vonnx the whole chain is skipped. When the build tree has vonnx.so
+#      (ONNX_LOCATE in testlib.sh finds it), this script points the server's
+#      plugin LoadPath at it and configures the model root, then confirms at
+#      runtime that the model actually embeds before relying on it.
 #    * python3, for the OpenAI-compatible HTTP provider fixture
 #      (onnx_embedding_mock.py). That path uses the core HTTP client, not the
 #      plugin, so it runs independently of vonnx.
@@ -67,8 +67,6 @@ then
     exit 0
 fi
 
-HOSTING="$VIRTUOSO_BUILD/binsrc/hosting"
-
 #  Run one .sql suite, appending its PASSED/FAILED lines to $LOGFILE.
 RUN_VEC_SQL()
 {
@@ -94,27 +92,51 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 #  ---- ONNX gate -------------------------------------------------------------
 #  The harness template already carries `Load8 = plain, vonnx`, but with
 #  `LoadPath = .` and no [ONNX] section it resolves nothing.  If the plugin was
-#  built, repoint LoadPath at the build hosting dir and add the model paths.
-#  If it was not, leave the config alone: the Load8 line fails as a non-fatal
-#  warning and the ONNX suites are skipped below.
+#  built, repoint LoadPath at the directory ONNX_LOCATE found it in and add the
+#  model paths.  If it was not, leave the config alone: the Load8 line fails as
+#  a non-fatal warning and the ONNX suites are skipped below.
 ONNX=0
-if [ -f "$HOSTING/vonnx.so" ]
+if ONNX_LOCATE
 then
-    cp "$CFGFILE" "$CFGFILE.pre_onnx"
-    sed -e "s#^LoadPath[ 	]*=.*#LoadPath = $HOSTING#" "$CFGFILE.pre_onnx" > "$CFGFILE"
-    rm -f "$CFGFILE.pre_onnx"
-    printf '\n[ONNX]\nModelRoot  = %s/onnx-models\nHelperPath = %s/onnx_helper\n' \
-        "$HOSTING" "$HOSTING" >> "$CFGFILE"
+    ONNX_CONFIGURE $CFGFILE
     ONNX=1
-    LOG "+ vonnx plugin found in $HOSTING; ONNX-backed suites enabled"
+    LOG "+ ONNX-backed suites enabled"
 else
     LOG "+ vonnx plugin not built; ONNX-backed suites will be SKIPPED"
+fi
+
+#  ---- A plugin the build produced must be found -----------------------------
+#  Skipping is for a build without vonnx.  The build makes vonnx.so in
+#  binsrc/hosting/onnx/.libs and no longer stages copies into binsrc/hosting,
+#  so a gate that looks only there skips every ONNX-backed suite on a build
+#  that has the plugin -- and the run stays green.
+BUILT=`find "$VIRTUOSO_BUILD/binsrc/hosting/onnx" -name vonnx.so -type f 2>/dev/null | head -1`
+if [ -z "$BUILT" ]
+then
+    LOG "+ no vonnx.so under binsrc/hosting/onnx: the plugin was not built"
+elif [ $ONNX -eq 1 ]
+then
+    LOG "PASSED: the ONNX gate found the vonnx plugin the build produced"
+else
+    LOG "***FAILED: the build produced $BUILT but the ONNX gate did not find it; the ONNX-backed suites are skipped"
+fi
+
+#  The fixed-path gate was copied into every ONNX-backed driver, which is how
+#  they all went quiet at once.  They find the plugin, the helper and the
+#  models through the shared locator in testlib.sh; none tests a path of its
+#  own.
+OWN=`cd "$VIRTUOSO_TEST" && grep -l -E '^[^#]*(HOSTING|binsrc/hosting)/(vonnx\.so|onnx_helper)' *.sh 2>/dev/null | grep -v '^testlib\.sh$' | tr '\n' ' '`
+if [ -z "$OWN" ]
+then
+    LOG "PASSED: every ONNX-backed driver finds vonnx through the shared locator"
+else
+    LOG "***FAILED: drivers that look for vonnx.so or onnx_helper at a fixed path: $OWN"
 fi
 
 START_SERVER $PORT 1000
 
 #  Belt and suspenders: even with vonnx.so present, confirm the model loads and
-#  embeds.  A staged-but-broken plugin (missing runtime lib, unresolved model)
+#  embeds.  A built-but-broken plugin (missing runtime lib, unresolved model)
 #  must skip, not fail.
 if [ $ONNX -eq 1 ]
 then
@@ -202,6 +224,11 @@ RUN_VEC_SQL tvvec_optimizer_vector_key
 #  test_embedding model and its own throwaway accounts, so it runs
 #  unconditionally.
 RUN_VEC_SQL tvvec_index_metadata
+
+#  A failed vector index statement answers its error and nothing more: it does
+#  not reload the built-in RDF metadata as a failed quad map operation does.
+#  Needs no model, so it runs unconditionally.
+RUN_VEC_SQL tvvec_ddl_error_reload
 
 #  Multi-index bif:vector_search: option (index (<a>, <b>)), option (index *),
 #  and the RANKING option.  Self-contained -- its own graphs, its own
