@@ -1619,3 +1619,18 @@ ECHO BOTH ": param cast to UDT  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 exec('delete from mytb where lv = ?', null,null,vector('xxx'));
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": param cast to BLOB  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- a column count error in a UNION found at compile time and raised from exec ()
+create procedure UNION_COLS_EXEC ()
+{
+  exec ('select U_ID, U_NAME from SYS_USERS union all select * from SYS_USERS');
+}
+;
+
+UNION_COLS_EXEC ();
+ECHO BOTH $IF $EQU $STATE 37000 "PASSED" "***FAILED";
+ECHO BOTH ": UNION column count error raised from exec () STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select 1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": next statement after UNION column count error in exec () STATE=" $STATE "\n";
