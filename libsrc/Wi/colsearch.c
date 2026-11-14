@@ -3327,6 +3327,9 @@ itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
       int nth_key = 0;
       ITC_SAVE_ROW_SPECS (itc);
       ITC_NO_ROW_SPECS (itc);
+      /* Equality prefixes must also apply residual filters when counting sampled rows. */
+      if (sqlo_sample_dep_cols)
+	itc->itc_row_specs = prev_row_sp;
       if (sp)
 	{
 	  while (sp->sp_next)
@@ -3342,10 +3345,6 @@ itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
 	      tmp_sp.sp_next = sqlo_sample_dep_cols ? prev_row_sp : NULL;
 	      itc->itc_row_specs = &tmp_sp;
 	    }
-	}
-      else if (sqlo_sample_dep_cols )
-	{
-	  itc->itc_row_specs = prev_row_sp;
 	}
       if (itc->itc_row_specs)
 	{
