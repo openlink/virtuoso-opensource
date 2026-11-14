@@ -3273,7 +3273,7 @@ vvec_forget_key_id (query_instance_t * qi, key_id_t key_id)
 /* Compare what the graph durably knows against what the data durably knows.
    Runs once per index per server start; the answer is cached.  */
 static int
-vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
+vvec_epoch_reconcile_1 (query_instance_t * qi, vvec_meta_t * meta)
 {
   int64 graph_epoch;
   int64 data_epoch;
@@ -3442,6 +3442,39 @@ vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
   vvec_catalog_mark_needs_rebuild (qi, meta, detail);
   vvec_health_set (meta->vm_key->key_id, VVEC_HEALTH_NEEDS_REBUILD);
   return VVEC_HEALTH_NEEDS_REBUILD;
+}
+
+
+/* One caller per index reconciles; the others wait for its verdict.  Writers call it
+   before their first change, so a sweep never sees a transaction's uncommitted nodes. */
+static int
+vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
+{
+  dk_mutex_t * mtx;
+  int state;
+  if (!meta || !meta->vm_key || !meta->vm_it)
+    return VVEC_HEALTH_OK;
+  state = vvec_health_cached (meta->vm_key->key_id);
+  if (VVEC_HEALTH_UNCHECKED != state)
+    return state;
+  if (!meta->vm_it->it_vvec.vt_graph_rwlock)
+    return vvec_epoch_reconcile_1 (qi, meta);
+  mtx = &meta->vm_it->it_vvec.vt_reconcile_mtx;
+  mutex_enter (mtx);
+  QR_RESET_CTX_T (qi->qi_thread)
+    {
+      state = vvec_epoch_reconcile_1 (qi, meta);
+    }
+  QR_RESET_CODE
+    {
+      caddr_t err = thr_get_error_code (qi->qi_thread);
+      POP_QR_RESET;
+      mutex_leave (mtx);
+      sqlr_resignal (err);
+    }
+  END_QR_RESET;
+  mutex_leave (mtx);
+  return state;
 }
 
 
@@ -6533,6 +6566,7 @@ vvec_tree_free (vvec_tree_t * vt)
     return;
   rwlock_free (vt->vt_graph_rwlock);
   dk_mutex_destroy (&vt->vt_writer_mtx);
+  dk_mutex_destroy (&vt->vt_reconcile_mtx);
 }
 
 
@@ -7566,6 +7600,7 @@ vvec_delete_row_impl_1 (query_instance_t * qi, const char *func_name, char * ind
   caddr_t changed = NULL;
   dk_mutex_t * wmtx;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
 again:
   in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, NULL);
   if (!in_hidden)
@@ -7625,6 +7660,7 @@ vvec_insert_embedding_impl_1 (query_instance_t * qi, const char *func_name, char
   dk_mutex_t * wmtx;
   caddr_t stored;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
   if (!vvec_extract_floats (embedding, &vec, &dim))
     sqlr_new_error ("22023", "VEC30", "Malformed embedding vector for %s.", index_name);
   /* Boxed before reduction, so the hidden table keeps the native embedding and a
@@ -7984,6 +8020,7 @@ vvec_embed_and_insert_impl (query_instance_t * qi, const char *func_name, char *
   caddr_t embedding;
   dk_mutex_t * wmtx;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
   source_hash = vvec_source_hash_box (text_value);
   in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, &old_hash);
   if (old_hash && !strcmp ((char *) old_hash, (char *) source_hash))

@@ -65,6 +65,7 @@ typedef struct free_set_cache_s	free_set_cache_t;
 typedef struct vvec_tree_s
 {
   rwlock_t *	vt_graph_rwlock; /* stable cross-page references during graph replacement */
+  dk_mutex_t	vt_reconcile_mtx; /* one epoch reconcile at a time */
   dk_mutex_t	vt_writer_mtx; /* serializes graph writes; guards the fields below */
   dk_set_t	vt_undo; /* undo items of rolled-back transactions, applied by the next writer */
   char		vt_rb_marked; /* a rollback marker for this index is in the log */

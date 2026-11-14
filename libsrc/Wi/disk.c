@@ -418,6 +418,7 @@ DBG_NAME (it_allocate) (DBG_PARAMS dbe_storage_t * dbs)
   tree->it_lock_release_mtx = mutex_allocate ();
   tree->it_vvec.vt_graph_rwlock = rwlock_allocate ();
   dk_mutex_init (&tree->it_vvec.vt_writer_mtx, MUTEX_TYPE_SHORT);
+  dk_mutex_init (&tree->it_vvec.vt_reconcile_mtx, MUTEX_TYPE_LONG);
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
       it_map_t * itm = &tree->it_maps[inx];
