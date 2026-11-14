@@ -4815,10 +4815,13 @@ create procedure DB.DBA.RDF_OBJ_VEC_LOG_ADD (in _ro_id bigint, in _dt_and_lang i
 create procedure DB.DBA.RDF_OBJ_VEC_LOG_DRAIN (in _max_rows integer := 1000) returns integer
 {
   declare _ids, _names, _rows, _meta, _m, _nulls, _kids any;
-  declare _n, inx, jnx, _cnt integer;
+  declare _n, inx, jnx, kx, _cnt, _bs, _len integer;
   declare _name, _src, st, msg varchar;
   if (exists (select 1 from DB.DBA.RDF_OBJ_VEC_INDEX where RVI_STATE in ('embedding', 'embedded', 'building')))
     return 0;
+  -- one flush is one model call, which the plugin caps at max_batch
+  _bs := DB.DBA.VEC_INDEX_EMBED_BATCH_SIZE ();
+  DB.DBA.VEC_INDEX_ONNX_RAISE ('max_batch', _bs);
   st := '00000';
   exec (sprintf ('select top %d RVL_RO_ID from DB.DBA.RDF_OBJ_VEC_LOG order by RVL_RO_ID', _max_rows),
         st, msg, vector (), vector ('max_rows', 0), _meta, _rows);
@@ -4850,12 +4853,16 @@ create procedure DB.DBA.RDF_OBJ_VEC_LOG_DRAIN (in _max_rows integer := 1000) ret
       _cnt := length (_rows);
       if (_cnt > 0)
         {
-          _kids := make_array (_cnt, 'any');
-          _nulls := make_array (_cnt, 'any');
-          for (inx := 0; inx < _cnt; inx := inx + 1)
-            aset (_kids, inx, cast (_rows[inx][0] as bigint));
           _m := DB.DBA.RDF_OBJ_VEC_INDEX_MODEL (_name);
-          DB.DBA.VEC_INDEX_BACKFILL_FLUSH (_name, _src, _m[0], _m[1], _m[2], _kids, _kids, _nulls, _cnt, 0, null);
+          for (inx := 0; inx < _cnt; inx := inx + _bs)
+            {
+              _len := __min (_bs, _cnt - inx);
+              _kids := make_array (_len, 'any');
+              _nulls := make_array (_len, 'any');
+              for (kx := 0; kx < _len; kx := kx + 1)
+                aset (_kids, kx, cast (_rows[inx + kx][0] as bigint));
+              DB.DBA.VEC_INDEX_BACKFILL_FLUSH (_name, _src, _m[0], _m[1], _m[2], _kids, _kids, _nulls, _len, 0, null);
+            }
         }
     }
   -- By id, not by range: a literal created concurrently may commit inside the range later.
