@@ -3005,6 +3005,42 @@ vvec_catalog_mark_needs_rebuild (query_instance_t * qi, vvec_meta_t * meta, cons
  * collected first, then checked -- because running a query with a page latch
  * held is a deadlock waiting to happen.
  */
+typedef struct vvec_sweep_ent_s
+{
+  int64			vse_d_id;
+  vvec_node_ref_t	vse_nref;
+} vvec_sweep_ent_t;
+
+
+static int
+vvec_sweep_ent_cmp (const void * a, const void * b)
+{
+  int64 x = ((const vvec_sweep_ent_t *) a)->vse_d_id;
+  int64 y = ((const vvec_sweep_ent_t *) b)->vse_d_id;
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+
+static void
+vvec_sweep_ent_add (vvec_sweep_ent_t ** ents, size_t * n, size_t * cap, int64 d_id, vvec_node_ref_t nref)
+{
+  if (*n == *cap)
+    {
+      size_t ncap = *cap ? *cap * 2 : 64 * 1024;
+      vvec_sweep_ent_t * ne = (vvec_sweep_ent_t *) dk_alloc (ncap * sizeof (vvec_sweep_ent_t));
+      if (*n)
+	memcpy (ne, *ents, *n * sizeof (vvec_sweep_ent_t));
+      if (*ents)
+	dk_free (*ents, *cap * sizeof (vvec_sweep_ent_t));
+      *ents = ne;
+      *cap = ncap;
+    }
+  (*ents)[*n].vse_d_id = d_id;
+  (*ents)[*n].vse_nref = nref;
+  (*n)++;
+}
+
+
 static int
 vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 {
@@ -3012,9 +3048,16 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
   it_cursor_t * itc = &itc_auto;
   buffer_desc_t * root = NULL;
   vvec_node_ref_t next;
-  dk_set_t candidates = NULL;
-  query_t * exists_qr = NULL;
+  vvec_sweep_ent_t * ents = NULL;
+  size_t n_ents = 0, cap = 0, inx = 0, next_report = 10000000;
+  dk_set_t orphans = NULL;
+  caddr_t err = NULL;
+  local_cursor_t * lc = NULL;
+  query_t * qr;
+  char text[1200];
   int reaped = 0;
+  const char * name = meta->vm_key && meta->vm_key->key_name ? meta->vm_key->key_name : "<unknown>";
+  time_msec_t t0 = get_msec_real_time ();
   ITC_INIT (itc, NULL, qi->qi_trx);
   itc_from_it (itc, meta->vm_it);
   vvec_root_read (itc, meta->vm_it, PA_READ, &root);
@@ -3033,10 +3076,7 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 	    {
 	      db_buf_t cn = vvec_pk_node_ptr (node, slot);
 	      if (cn && !vvec_cn_is_deleted (cn))
-		{
-		  dk_set_push (&candidates, (void *) (ptrlong) cur);
-		  dk_set_push (&candidates, (void *) (ptrlong) vvec_cn_d_id (cn));
-		}
+		vvec_sweep_ent_add (&ents, &n_ents, &cap, vvec_cn_d_id (cn), cur);
 	    }
 	  if (slot + 1 < nc)
 	    next = VVEC_NREF_MAKE (page_dp, slot + 1);
@@ -3047,28 +3087,78 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 	{
 	  next = (vvec_node_ref_t) vvec_meta_ref_i32 (node, VVEC_NODE_NEXT_DP);
 	  if (!vvec_node_is_deleted (node))
-	    {
-	      dk_set_push (&candidates, (void *) (ptrlong) cur);
-	      dk_set_push (&candidates, (void *) (ptrlong) vvec_meta_ref_i64 (node, VVEC_NODE_D_ID));
-	    }
+	    vvec_sweep_ent_add (&ents, &n_ents, &cap, vvec_meta_ref_i64 (node, VVEC_NODE_D_ID), cur);
 	}
       vvec_page_release (itc, node);
+      if (n_ents >= next_report)
+	{
+	  log_info ("Vector index %s: orphan sweep has read %ld node(s) so far.", name, (long) n_ents);
+	  next_report += 10000000;
+	}
     }
   vvec_page_release (itc, root);
-  while (candidates)
+  log_info ("Vector index %s: orphan sweep read %ld node(s) in %ld s; checking them against %s.",
+      name, (long) n_ents, (long) ((get_msec_real_time () - t0) / 1000), meta->vm_hidden_table);
+  if (!n_ents)
+    goto done;
+  /* One ordered pass over the hidden table's primary key instead of a lookup per node. */
+  qsort (ents, n_ents, sizeof (vvec_sweep_ent_t), vvec_sweep_ent_cmp);
+  snprintf (text, sizeof (text), "select VE_D_ID from %s order by VE_D_ID", meta->vm_hidden_table);
+  qr = vvec_compile_text (qi->qi_client, &err, text);
+  if (err)
     {
-      int64 d_id = (int64) (ptrlong) dk_set_pop (&candidates);
-      vvec_node_ref_t nref = (vvec_node_ref_t) (ptrlong) dk_set_pop (&candidates);
-      caddr_t row_id = box_num (d_id);
-      if (!vvec_hidden_row_exists (qi, meta, row_id, &exists_qr))
+      dk_free_tree (err);
+      goto done;   /* cannot tell -- reap nothing */
+    }
+  err = qr_quick_exec (qr, qi->qi_client, "", &lc, 0);
+  if (SQL_SUCCESS != err)
+    {
+      dk_free_tree (err);
+      if (lc)
+	lc_free (lc);
+      qr_free (qr);
+      goto done;
+    }
+  while (inx < n_ents && lc_next (lc))
+    {
+      int64 h_id = unbox (lc_nth_col (lc, 0));
+      for (; inx < n_ents && ents[inx].vse_d_id < h_id; inx++)
 	{
-	  vvec_reap_orphan_node (qi, meta, nref, row_id);
-	  reaped++;
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_nref);
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_d_id);
 	}
+      while (inx < n_ents && ents[inx].vse_d_id == h_id)
+	inx++;
+    }
+  if (lc->lc_error)
+    {
+      dk_set_free (orphans);
+      orphans = NULL;
+    }
+  else
+    {
+      for (; inx < n_ents; inx++)
+	{
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_nref);
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_d_id);
+	}
+    }
+  lc_free (lc);
+  qr_free (qr);
+  log_info ("Vector index %s: orphan sweep checked %ld node(s) in %ld s; %ld orphan(s) to retire.",
+      name, (long) n_ents, (long) ((get_msec_real_time () - t0) / 1000), (long) (dk_set_length (orphans) / 2));
+done:
+  if (ents)
+    dk_free (ents, cap * sizeof (vvec_sweep_ent_t));
+  while (orphans)
+    {
+      int64 d_id = (int64) (ptrlong) dk_set_pop (&orphans);
+      vvec_node_ref_t nref = (vvec_node_ref_t) (ptrlong) dk_set_pop (&orphans);
+      caddr_t row_id = box_num (d_id);
+      vvec_reap_orphan_node (qi, meta, nref, row_id);
+      reaped++;
       dk_free_tree (row_id);
     }
-  if (exists_qr)
-    qr_free (exists_qr);
   return reaped;
 }
 
@@ -3230,7 +3320,11 @@ vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
          index -- a single rolled-back insert should not cost a full rebuild.
          Reaping decrements the epoch per node, so if every excess mutation was
          an orphan the pair re-converges here.  */
-      int reaped = vvec_sweep_orphans (qi, meta);
+      int reaped;
+      log_info ("Vector index %s: graph epoch %ld is ahead of data epoch %ld; sweeping the graph for orphan nodes "
+	  "before the first use. This reads the whole index.",
+	  meta->vm_key->key_name ? meta->vm_key->key_name : "<unknown>", (long) graph_epoch, (long) data_epoch);
+      reaped = vvec_sweep_orphans (qi, meta);
       if (reaped)
 	{
 	  graph_epoch = vvec_root_epoch_ref (qi, meta);
