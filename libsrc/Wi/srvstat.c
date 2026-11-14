@@ -343,6 +343,8 @@ long dbf_2pc_prepare_wait; /* wait this many msec between prepare and commit */
 long dbf_2pc_wait; /* wait this many msec after each 2pc message or log write */
 long dbf_branch_transact_wait; /* wait this many msec onn cluster branch before doing rollback, prepare or commit */
 long dbf_clop_enter_wait;
+long dbf_vvec_upsert_wait; /* msec between linking a new vector node and writing its hidden row */
+long dbf_vvec_probe_wait; /* msec between finding no hidden row and taking the vector writer mutex */
 long dbf_cl_skip_wait_notify;
 long dbf_cpt_rb;
 long dbf_cl_blob_autosend_limit = 2000000;
@@ -2203,6 +2205,8 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I32 (dbf_no_atomic, "dbf_no_atomic"),
     SD_DEF_L   (txn_after_image_limit, "txn_after_image_limit"),
     SD_DEF_L   (dbf_clop_enter_wait, "dbf_clop_enter_wait"),
+    SD_DEF_L   (dbf_vvec_upsert_wait, "dbf_vvec_upsert_wait"),
+    SD_DEF_L   (dbf_vvec_probe_wait, "dbf_vvec_probe_wait"),
     SD_DEF_L   (dbf_cl_skip_wait_notify, "dbf_cl_skip_wait_notify"),
     SD_DEF_L   (dbf_cpt_rb, "dbf_cpt_rb"),
     SD_DEF_I32 (cl_no_auto_remove, "cl_no_auto_remove"),

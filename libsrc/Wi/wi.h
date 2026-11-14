@@ -70,6 +70,7 @@ typedef struct vvec_tree_s
   char		vt_rb_marked; /* a rollback marker for this index is in the log */
   int64		vt_rb_gen; /* bumped by rebuild, voids older undo items */
   int64		vt_rb_seq; /* orders undo items */
+  dk_hash_t *	vt_pending; /* row id -> writers whose node is linked before their hidden row */
 } vvec_tree_t;
 
 typedef struct index_tree_s	index_tree_t;
