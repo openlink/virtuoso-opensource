@@ -1,6 +1,6 @@
 # NEWS
 
-## November 13 2026, v7.2.18 unreleased (development branch)
+## November 16 2026, v7.2.18 unreleased (development branch)
 
 * Virtuoso Engine
   * Added native HNSW vector indexes for similarity search over SQL and RDF data ([3d6a0d5d4](https://github.com/openlink/virtuoso-opensource/commit/3d6a0d5d45b4ca751bec68654538bfa9e310078b))
@@ -67,6 +67,11 @@
   * Fixed TSV output of strings with tabs, newlines and quotes ([7a26f5ea2](https://github.com/openlink/virtuoso-opensource/commit/7a26f5ea2499a8a8ad799a818954b7d753156709))
   * Fixed a plugin listed twice in `[Plugins]` crashing the server at startup ([1580a653d](https://github.com/openlink/virtuoso-opensource/commit/1580a653d35aa3cf6281976486daf01edbdd1956))
   * Fixed a failed vector index statement reloading built-in RDF metadata ([5dd64b6c2](https://github.com/openlink/virtuoso-opensource/commit/5dd64b6c29f44baebc9654048ff5579a5c2f8afa))
+  * Fixed vector index operations interrupted by a crash staying busy with VEC90 or VEC53 after restart until recovered by hand ([83463582a](https://github.com/openlink/virtuoso-opensource/commit/83463582a90c820aa085c53c46ba4181480073e7))
+  * Fixed vector index inserts and deletes reading the whole index for each new row id, and the orphan sweep after a restart doing one lookup per graph node ([5d825872c](https://github.com/openlink/virtuoso-opensource/commit/5d825872cac04a1e22bb4bd7e2e6507a8dee92b2), [a88bfcb27](https://github.com/openlink/virtuoso-opensource/commit/a88bfcb27c3938249bece12dea699ddb40321887))
+  * Fixed a search after a restart sweeping away uncommitted vector inserts as orphans ([9ea5d5f53](https://github.com/openlink/virtuoso-opensource/commit/9ea5d5f5333cf08f4c3673f397d01e24be63c852))
+  * Fixed the RDF_OBJ vector log drain failing with "batch too large" on more than 32 pending literals, and running as one transaction so that killing it lost every insert; each batch is now committed on its own ([5999c7989](https://github.com/openlink/virtuoso-opensource/commit/5999c7989872d6a69de7d6edb57c5265cb075dcd), [bee366aeb](https://github.com/openlink/virtuoso-opensource/commit/bee366aeb7e64262f2ea183aae2097613967b1bd))
+  * Fixed a later error in the same `exec()` call not being handled after a `UNION` column count error ([6a6d9c021](https://github.com/openlink/virtuoso-opensource/commit/6a6d9c02168e7b5892c820c2269f3a5e9ef56e80))
 
 * SPARQL
   * Added initial support for RDF 1.2 triple terms and RDF-star ([692194f4e](https://github.com/openlink/virtuoso-opensource/commit/692194f4e65647cc62a7dafc8d118d6f112514b6))
@@ -124,6 +129,10 @@
   * Fixed a streamed `/sparql` result cut at its row limit not saying so ([7ea2a7561](https://github.com/openlink/virtuoso-opensource/commit/7ea2a7561c2fa5485e7942f2c198f8c894bf7b7a))
   * Fixed SPARQL losing the `xsd:duration` type on the way to the store, `INSERT DATA` and `DELETE DATA` of parsed duration literals, and `DELETE DATA` not finding a stored year-month duration ([961cd0b04](https://github.com/openlink/virtuoso-opensource/commit/961cd0b044b54a461a75306ed7f94cc6f2b37ba0), [7c2ec6982](https://github.com/openlink/virtuoso-opensource/commit/7c2ec6982503d6f149caf168647bc08fa5ea04a0), [e81787f77](https://github.com/openlink/virtuoso-opensource/commit/e81787f77a08e42c9a0a158b840619cb471b35aa))
   * Fixed `xsd:duration` values being printed as plain numbers and an unparsed duration literal being read back as `PT0S` ([06626834c](https://github.com/openlink/virtuoso-opensource/commit/06626834c87751681d6d06bcd888a642174b52c1), [06a45fdc6](https://github.com/openlink/virtuoso-opensource/commit/06a45fdc661b778f1ebe79ab96aa21ad3bd292d4))
+  * Fixed `SERVICE SILENT` failing the query when the remote call fails; it now gives one unbound row ([0edba1d5c](https://github.com/openlink/virtuoso-opensource/commit/0edba1d5c2209bab89399259f4dde41acbd3bd4c))
+  * Fixed a `FILTER` beside a sub-SELECT inside `SERVICE` not being sent to the endpoint ([812cf8e0a](https://github.com/openlink/virtuoso-opensource/commit/812cf8e0a436db13b83a7a63e6d7d67bd83bd410))
+  * Fixed language-tagged literals in `SERVICE` replies failing the query with SR549 or losing their language ([9bc90fa06](https://github.com/openlink/virtuoso-opensource/commit/9bc90fa0643d971df0672be196169eb813f7b024))
+  * Fixed SPARQL XML and RDF/XML results writing `rdf:langString` beside `xml:lang`, which made readers such as rdflib lose the language ([d20e105ff](https://github.com/openlink/virtuoso-opensource/commit/d20e105ff82e2f933d07b2fe13483c22df81ccaf))
 
 * GQL
   * Added GQL (ISO/IEC 39075) property graph queries, translated to SPARQL and run on the SPARQL engine ([4259cca1a](https://github.com/openlink/virtuoso-opensource/commit/4259cca1ade9cdbf0e61edf96081a2024ef9cf2c), [8fbfc5582](https://github.com/openlink/virtuoso-opensource/commit/8fbfc5582d6770a7822822c07690175828ddb1e7), [40180369b](https://github.com/openlink/virtuoso-opensource/commit/40180369b908326e3fa0eb0e00c20ce72e693f57))
@@ -133,6 +142,8 @@
   * Added `CREATE` and `DROP PROPERTY GRAPH` for virtual graphs over relational tables and for physical graphs filled by GQL `INSERT` ([ffdc1be8c](https://github.com/openlink/virtuoso-opensource/commit/ffdc1be8c880bdbbbc5391675f67aed04864bda6))
   * Added a server-wide GQL translation cache ([9a0fbde9d](https://github.com/openlink/virtuoso-opensource/commit/9a0fbde9d52cc44cf6f983233318927bc2d242b1))
   * Added gqlc hosting plugin for GQL Unicode normalization and percentiles, built when ICU is found; use `--disable-gqlc` to turn it off ([761d44290](https://github.com/openlink/virtuoso-opensource/commit/761d442907b4f9c72736cc301d2c6aeba13b4250))
+  * Fixed a property read outside `SERVICE` of a node bound only inside it being looked up in the local store ([08cc62a07](https://github.com/openlink/virtuoso-opensource/commit/08cc62a076af3b945063975423517106a002c5cd))
+  * Fixed `MATCH (n) WHERE n = <iri>` inside `SERVICE` asking the endpoint for every node it has ([238f2ef04](https://github.com/openlink/virtuoso-opensource/commit/238f2ef0406f88db234f33c91079e4877053314b))
 
 * Graph Analytics
   * Added in-memory graph analytics with parallel PageRank, centrality, shortest path, traversal, connected component, community detection, triangle count and similarity algorithms, and a bounded cache of graph snapshots that is invalidated on commit ([45aa744ea](https://github.com/openlink/virtuoso-opensource/commit/45aa744ea305fc0d61f38da5c62f7a4f1d66bffb))
