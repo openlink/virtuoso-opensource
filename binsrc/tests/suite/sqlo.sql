@@ -3637,6 +3637,58 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": case #1464 - VECSL internal error for ANY subquery with chained RIGHT JOINs and a grouped derived table; expected 0 row(s), returned " $ROWCNT " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- --------------------------------------------------------------------------
+-- Case sinv-subq-filter: inside a SERVICE, FILTER (?v = <const>) beside a
+-- sub-SELECT that returns ?v fixes ?v, and the restriction is left to the
+-- sub-SELECT -- whose text is printed without it.  The query sent had no
+-- test at all, and each row the endpoint returned was read as the
+-- constant.  The SQL text shows what would be sent; no endpoint is called.
+-- --------------------------------------------------------------------------
+create function DB.DBA.SQLO_SINV_SENT (in q varchar) returns varchar
+{
+  declare t varchar;
+  declare b, e integer;
+  declare exit handler for sqlstate '*' { return 'ERROR ' || __SQL_MESSAGE; };
+  t := cast (sparql_to_sql_text (q) as varchar);
+  b := strstr (t, 'qtext_template =');
+  e := strstr (t, 'qtext_posmap =');
+  if (b is null or e is null or e < b)
+    return 'NO SERVICE CALL';
+  return subseq (t, b, e);
+}
+;
+
+SELECT case when DB.DBA.SQLO_SINV_SENT ('SELECT ?n WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { { SELECT DISTINCT ?n WHERE { ?n ?p ?o } } FILTER (?n = <urn:sqlo:a>) } }') like '%urn:sqlo:a%' then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-subq-filter - an IRI equality beside a sub-SELECT inside SERVICE is sent: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT case when DB.DBA.SQLO_SINV_SENT ('SELECT ?o WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { { SELECT ?o WHERE { ?s ?p ?o } } FILTER (?o = 2) } }') like '%FILTER%' then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-subq-filter - a number equality beside a sub-SELECT inside SERVICE is sent: got " $LAST[1] " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT case when DB.DBA.SQLO_SINV_SENT ('SELECT ?n WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { ?n ?p ?o FILTER (?n = <urn:sqlo:a>) } }') like '%urn:sqlo:a%' then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-subq-filter - the equality on a triple pattern's variable is sent (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+SELECT case when DB.DBA.SQLO_SINV_SENT ('SELECT ?n WHERE { SERVICE <http://example.com/sparql> (DEFINE lang:dialect 24864) { { SELECT DISTINCT ?n WHERE { ?n ?p ?o } } } }') not like '%FILTER%' then 1 else 0 end;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-subq-filter - a sub-SELECT with no equality is sent without a FILTER (guard): got " $LAST[1] " STATE=" $STATE "\n";
+
+-- An endpoint with no service description is taken for SPARQL 1.0, which
+-- has no nested SELECT to put the test beside: refused, as for any other
+-- FILTER there, rather than asked without the test.
+SELECT case when r like '%SP031%' or r like '%urn:sqlo:a%' then 1 else 0 end, left (r, 100)
+  from (select DB.DBA.SQLO_SINV_SENT ('SELECT ?n WHERE { SERVICE <http://example.com/sparql> { { SELECT DISTINCT ?n WHERE { ?n ?p ?o } } FILTER (?n = <urn:sqlo:a>) } }') as r) x;
+ECHO BOTH $IF $EQU $STATE OK $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case sinv-subq-filter - to an endpoint taken for SPARQL 1.0 the equality is sent or the query refused: got " $LAST[2] " STATE=" $STATE "\n";
+
+drop function DB.DBA.SQLO_SINV_SENT;
+
+-- --------------------------------------------------------------------------
 -- Case late-proj: a select exp computed before a top/oby and laid out after
 -- it must be recomputed from the sorted row; the pre-sort temp holding it is
 -- not restored by the sort, so reading it gives another row's value

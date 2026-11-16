@@ -1494,6 +1494,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
   volatile int inside_sem = 0;
   volatile int is_ddl = 0;
+  volatile int scanner_live = 1;
   volatile int sig_reset = 0;
   volatile time_msec_t anytime_started = 0;
   volatile int anytime_pending = 0;
@@ -1615,8 +1616,13 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
 					   sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
-	      sql_pop_all_buffers (scanner);
-	      scn3yylex_destroy (scanner);
+	      /* a yyerror during compile lands here from inside the QR_RESET_CTX below, the scanner is already released and the reset ctx is no longer current */
+	      self->thr_reset_ctx = saved_reset_ctx;
+	      if (scanner_live)
+		{
+		  sql_pop_all_buffers (scanner);
+		  scn3yylex_destroy (scanner);
+		}
 	      SCS_STATE_POP;
 	      if (!nested_sql_comp)
 		{
@@ -1642,6 +1648,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       sql_pop_all_buffers (scanner);
       scn3yylex_destroy (scanner);
+      scanner_live = 0;
       tree = the_parse_tree ? (ST *) t_full_box_copy_tree ((caddr_t) the_parse_tree) : parse_tree;
       if (cr_type != SQLC_PARSE_ONLY && cr_type != SQLC_TRY_SQLO && cr_type != SQLC_SQLO_SCORE)
 	is_ddl = 0; /*sql_is_ddl (tree);*/

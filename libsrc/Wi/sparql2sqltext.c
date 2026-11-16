@@ -10001,10 +10001,28 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       SPART **rvals = single_subq->_.req_top.retvals;
       int rset_len = BOX_ELEMENTS (rset_varnames);
       int rvals_len = BOX_ELEMENTS (rvals);
-      int vname_ctr, expn_ctr;
+      int vname_ctr, expn_ctr, eq_ctr, sub_ctr;
       caddr_t *sent_varnames;
       if (rset_len != rvals_len)
         goto failed_single_subq_optimization; /* see below */
+      /* A FILTER of the gp, like FILTER (?v = <const>) or FILTER (isIRI (?v)), may have been eaten into a restriction of
+      the gp's equiv; the SELECT printed alone would not test it, so then the gp is printed in full, with its restrictions */
+      SPARP_FOREACH_GP_EQUIV (parent_ssg->ssg_sparp, gp, eq_ctr, eq)
+        {
+          ptrlong unprinted = eq->e_rvr.rvrRestrictions &
+            (SPART_VARR_CONFLICT | SPART_VARR_FIXED | SPART_VARR_IS_LIT | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_REF);
+          if (NULL != eq->e_subvalue_idxs)
+            {
+              DO_BOX_FAST (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
+                {
+                  unprinted &= ~(SPARP_EQUIV (parent_ssg->ssg_sparp, sub_idx)->e_rvr.rvrRestrictions);
+                }
+              END_DO_BOX_FAST;
+            }
+          if (unprinted)
+            goto failed_single_subq_optimization; /* see below */
+        }
+      END_SPARP_FOREACH_GP_EQUIV;
 /* Names the endpoint sends back: (?x AS ?alias) is printed as ?x to a SPARQL 1.0 endpoint (see ssg_sdprint_tree) */
       sent_varnames = (caddr_t *)t_alloc_box (rset_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       for (vname_ctr = rset_len; vname_ctr--; /* no step */)
@@ -10256,6 +10274,8 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
+      if (sinv->_.sinv.silent) /* DB.DBA.SPARQL_SINV_IMP makes a failed call one solution with no bindings */
+        ssg_puts (len ? ", 'silent', 1" : "'silent', 1");
       ssg_putchar (')');
 /* The order of printing parameters here is important because ssg_prepare_sinv_template() has a side effect:
 if sinv->_.sinv.rset_varnames is empty then it uses ?stubvarXX in the printed result set in irder to provide compatibility with obsolete SPARQL endpoints.

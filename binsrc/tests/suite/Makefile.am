@@ -105,6 +105,7 @@ check_SCRIPTS = \
 	tlongany.sh \
 	tvvec.sh \
 	tvvec_crash_recovery.sh \
+	tvvec_recover_interrupted.sh \
 	tvvec_chunked_replay.sh \
 	tvvec_chunked_replay_crash.sh \
 	tvvec_rebuild_durable.sh \

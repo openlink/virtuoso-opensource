@@ -1623,6 +1623,22 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
       http (subseq (qtext_template, prev_pos), qtext_ses);
       qtext_template := string_output_string (qtext_ses);
     }
+  {
+  -- SERVICE SILENT (ws_params has 'silent', see ssg_print_sinv_table_exp):
+  -- a call that fails is a single solution with no bindings (SPARQL 1.1
+  -- Federated Query, section 4).
+  declare exit handler for sqlstate '*'
+    {
+      declare no_bindings any;
+      declare var_ctr integer;
+      if (not (isvector (ws_params) and get_keyword ('silent', ws_params, 0)))
+        resignal;
+      no_bindings := make_array (length (expected_vars), 'any');
+      for (var_ctr := 0; var_ctr < length (no_bindings); var_ctr := var_ctr + 1)
+        no_bindings[var_ctr] := null;
+      result (no_bindings);
+      return;
+    };
   -- Handler dispatch: check for registered SERVICE handler
   handler_info := DB.DBA.SPARQL_SINV_RESOLVE_HANDLER (ws_endpoint);
   if (handler_info is not null)
@@ -1659,6 +1675,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
       -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP returns ', retrow);
       result (retrow);
     }
+  }
 }
 ;
 
@@ -1985,7 +2002,11 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_TERM (inout ses any, inout _val
     is_xml_lit := 0;
   if (lang is not null)
     {
-      if (dt is not null)
+      -- The language makes the datatype rdf:langString (rdf:dirLangString
+      -- with a direction); written beside it, the datatype is what a reader
+      -- that takes the datatype first keeps, and the language is lost.
+      if (dt is not null and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+          and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString')
         http (sprintf ('<literal xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
       else
         http (sprintf ('<literal xml:lang="%V">', cast (lang as varchar)), ses);
@@ -2157,7 +2178,9 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_SOLUTION (inout ses any, in 
           dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
           if (lang is not null)
             {
-              if (dt is not null)
+              -- As in DB.DBA.SPARQL_RESULTS_XML_WRITE_TERM.
+              if (dt is not null and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+                  and dt <> 'http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString')
                        http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
               else
                        http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);

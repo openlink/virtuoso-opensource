@@ -967,6 +967,14 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsparql_xml_lang
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsparql_xml_lang.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: language-tagged literals in XML results -- tsparql_xml_lang.sql"
+      exit 1
+   fi
+
    LOG + running sql script tcontneg
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcontneg.sql
    if test $STATUS -ne 0
@@ -991,10 +999,26 @@ then
       exit 1
    fi
 
+   LOG + running sql script tsinv_lang
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsinv_lang.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: language-tagged literals in SERVICE replies -- tsinv_lang.sql"
+      exit 1
+   fi
+
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql
+   fi
+
+   LOG + running sql script tsinv_silent
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsinv_silent.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: SERVICE SILENT -- tsinv_silent.sql"
+      exit 1
    fi
 
    ECHO "Interop round 4 endpoints"

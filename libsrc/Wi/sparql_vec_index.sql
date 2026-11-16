@@ -4379,6 +4379,12 @@ create function DB.DBA.VEC_INDEX_QUEUE_DRAIN (in max_items integer := 1000) retu
 --
 -- This runs as a server init statement, so it must not raise -- an error here
 -- would abort the rest of this file's initialisation.
+--
+-- It runs after roll forward (the call below is marked AFTER).  An operation commits
+-- its in-flight state when it starts, and unless a checkpoint followed that
+-- commit, the state is only in the transaction log: run before roll forward,
+-- this would find the checkpoint's 'active', and the replay would then put the
+-- index back in 'refreshing' for good.
 create procedure DB.DBA.VEC_INDEX_RECOVER_INTERRUPTED ()
 {
   declare stranded, names any;
@@ -4806,13 +4812,17 @@ create procedure DB.DBA.RDF_OBJ_VEC_LOG_ADD (in _ro_id bigint, in _dt_and_lang i
 -- Embed up to _max_rows logged literals into every ready index, then forget them.
 -- Nothing is drained while an index is being embedded, is embedded but not built, or is being
 -- built: the literals stay logged until the graph exists to take them.  Returns the number of log rows consumed.
+-- Each batch is embedded into every index, removed from the log and committed on its own.
 create procedure DB.DBA.RDF_OBJ_VEC_LOG_DRAIN (in _max_rows integer := 1000) returns integer
 {
   declare _ids, _names, _rows, _meta, _m, _nulls, _kids any;
-  declare _n, inx, jnx, _cnt integer;
+  declare _n, inx, jnx, kx, _cnt, _bs, _len, _from, _slice integer;
   declare _name, _src, st, msg varchar;
   if (exists (select 1 from DB.DBA.RDF_OBJ_VEC_INDEX where RVI_STATE in ('embedding', 'embedded', 'building')))
     return 0;
+  -- one flush is one model call, which the plugin caps at max_batch
+  _bs := DB.DBA.VEC_INDEX_EMBED_BATCH_SIZE ();
+  DB.DBA.VEC_INDEX_ONNX_RAISE ('max_batch', _bs);
   st := '00000';
   exec (sprintf ('select top %d RVL_RO_ID from DB.DBA.RDF_OBJ_VEC_LOG order by RVL_RO_ID', _max_rows),
         st, msg, vector (), vector ('max_rows', 0), _meta, _rows);
@@ -4828,34 +4838,41 @@ create procedure DB.DBA.RDF_OBJ_VEC_LOG_DRAIN (in _max_rows integer := 1000) ret
   _names := (select vector_agg (RVI_NAME) from DB.DBA.RDF_OBJ_VEC_INDEX where RVI_STATE = 'ready');
   if (_names is null)
     _names := vector ();
-  for (jnx := 0; jnx < length (_names); jnx := jnx + 1)
+  for (_from := 0; _from < _n; _from := _from + _bs)
     {
-      _name := _names[jnx];
-      _src := DB.DBA.RDF_OBJ_VEC_INDEX_SRC_TABLE (_name);
-      st := '00000';
-      -- a literal EMBED has already recorded is in the index once it is built; only new ones are embedded
-      exec (sprintf ('select RO_ID from DB.DBA.RDF_OBJ where RO_ID between ? and ? and %s'
-                     || ' and exists (select 1 from DB.DBA.RDF_OBJ_VEC_LOG where RVL_RO_ID = RO_ID)'
-                     || ' and not exists (select 1 from %s s where s.RV_ID = RO_ID)',
-                     DB.DBA.RDF_OBJ_VEC_INDEX_FILTER_SQL (_name), _src),
-            st, msg, vector (_ids[0], _ids[_n - 1]), vector ('max_rows', 0, 'use_cache', 1), _meta, _rows);
-      if (DB.DBA.VEC_INDEX_EXEC_FAILED (st))
-        signal (st, msg);
-      _cnt := length (_rows);
-      if (_cnt > 0)
+      _len := __min (_bs, _n - _from);
+      for (jnx := 0; jnx < length (_names); jnx := jnx + 1)
         {
-          _kids := make_array (_cnt, 'any');
-          _nulls := make_array (_cnt, 'any');
-          for (inx := 0; inx < _cnt; inx := inx + 1)
-            aset (_kids, inx, cast (_rows[inx][0] as bigint));
-          _m := DB.DBA.RDF_OBJ_VEC_INDEX_MODEL (_name);
-          DB.DBA.VEC_INDEX_BACKFILL_FLUSH (_name, _src, _m[0], _m[1], _m[2], _kids, _kids, _nulls, _cnt, 0, null);
+          _name := _names[jnx];
+          _src := DB.DBA.RDF_OBJ_VEC_INDEX_SRC_TABLE (_name);
+          st := '00000';
+          -- a literal EMBED has already recorded is in the index once it is built; only new ones are embedded
+          exec (sprintf ('select RO_ID from DB.DBA.RDF_OBJ where RO_ID between ? and ? and %s'
+                         || ' and exists (select 1 from DB.DBA.RDF_OBJ_VEC_LOG where RVL_RO_ID = RO_ID)'
+                         || ' and not exists (select 1 from %s s where s.RV_ID = RO_ID)',
+                         DB.DBA.RDF_OBJ_VEC_INDEX_FILTER_SQL (_name), _src),
+                st, msg, vector (_ids[_from], _ids[_from + _len - 1]), vector ('max_rows', 0, 'use_cache', 1), _meta, _rows);
+          if (DB.DBA.VEC_INDEX_EXEC_FAILED (st))
+            signal (st, msg);
+          _cnt := length (_rows);
+          if (_cnt > 0)
+            _m := DB.DBA.RDF_OBJ_VEC_INDEX_MODEL (_name);
+          -- more than _bs when a literal logged meanwhile falls inside the range
+          for (inx := 0; inx < _cnt; inx := inx + _bs)
+            {
+              _slice := __min (_bs, _cnt - inx);
+              _kids := make_array (_slice, 'any');
+              _nulls := make_array (_slice, 'any');
+              for (kx := 0; kx < _slice; kx := kx + 1)
+                aset (_kids, kx, cast (_rows[inx + kx][0] as bigint));
+              DB.DBA.VEC_INDEX_BACKFILL_FLUSH (_name, _src, _m[0], _m[1], _m[2], _kids, _kids, _nulls, _slice, 0, null);
+            }
         }
+      -- By id, not by range: a literal created concurrently may commit inside the range later.
+      for (inx := _from; inx < _from + _len; inx := inx + 1)
+        delete from DB.DBA.RDF_OBJ_VEC_LOG where RVL_RO_ID = _ids[inx];
+      commit work;
     }
-  -- By id, not by range: a literal created concurrently may commit inside the range later.
-  for (inx := 0; inx < _n; inx := inx + 1)
-    delete from DB.DBA.RDF_OBJ_VEC_LOG where RVL_RO_ID = _ids[inx];
-  commit work;
   return _n;
 }
 ;
@@ -4899,10 +4916,10 @@ create procedure DB.DBA.RDF_OBJ_VEC_INDEX_RECOVER_INTERRUPTED ()
 }
 ;
 
--- Server init: an index found mid-operation at startup was interrupted, since
--- nothing can be running one yet.
+--!AFTER
 DB.DBA.VEC_INDEX_RECOVER_INTERRUPTED ()
 ;
 
+--!AFTER
 DB.DBA.RDF_OBJ_VEC_INDEX_RECOVER_INTERRUPTED ()
 ;

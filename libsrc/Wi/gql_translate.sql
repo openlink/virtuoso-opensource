@@ -2329,6 +2329,211 @@ create procedure DB.DBA.GQL_SERVICE_OPTIONS (in _endpoint varchar)
 ;
 
 ----------------------------------------------------------------------
+-- A property read outside a SERVICE block, of a node only the block binds,
+-- belongs to the remote graph: outside, its triple would be matched
+-- against the local store.  The block fetches it, as if it named it.
+-- GQL_TO_SPARQL_IMPL collects the reads (GQL_COLLECT_PROP_REFS) when the
+-- statement has a SERVICE block, so a statement without one is translated
+-- as before.
+----------------------------------------------------------------------
+
+-- Add to _acc the (variable, property) of each property the expressions in
+-- _ast read of a variable: f.title -> ('f', 'title').  EXISTS { ... } and
+-- a pattern predicate have scopes of their own and are not entered.
+create procedure DB.DBA.GQL_COLLECT_PROP_REFS (in _ast any, inout _acc any)
+{
+  declare i integer;
+  if (__tag (_ast) <> __tag of vector or length (_ast) = 0)
+    return;
+  if (isstring (aref (_ast, 0)))
+    {
+      if (aref (_ast, 0) = 'EXISTS_SUBQUERY' or aref (_ast, 0) = 'PATTERNPRED')
+        return;
+      if (aref (_ast, 0) = 'PROP' and length (_ast) > 2 and isstring (aref (_ast, 2))
+          and __tag (aref (_ast, 1)) = __tag of vector and aref (aref (_ast, 1), 0) = 'VAR')
+        {
+          for (i := 0; i < length (_acc); i := i + 1)
+            if (aref (aref (_acc, i), 0) = aref (aref (_ast, 1), 1) and aref (aref (_acc, i), 1) = aref (_ast, 2))
+              return;
+          _acc := vector_concat (_acc, vector (vector (aref (aref (_ast, 1), 1), aref (_ast, 2))));
+          return;
+        }
+    }
+  for (i := 0; i < length (_ast); i := i + 1)
+    DB.DBA.GQL_COLLECT_PROP_REFS (aref (_ast, i), _acc);
+}
+;
+
+-- Which of the reads _refs the SERVICE block whose MATCH clauses are
+-- _match_asts fetches.  Outside the block a node is known by the name its
+-- RETURN gives it, if it has a RETURN (_ret_items), and that item must be
+-- the node itself.  Returns the (variable, property, name outside) of the
+-- nodes the block's MATCH binds; those only its OPTIONAL MATCH binds go to
+-- _svc_ctx's service_fetch_opt, for GQL_SERVICE_FETCH_OPTIONAL.
+create procedure DB.DBA.GQL_SERVICE_FETCH_PLAN (inout _svc_ctx any, in _refs any, in _match_asts any, in _ret_items any)
+{
+  declare mand, opt, plan, plan_opt, pms any;
+  declare i, j integer;
+  declare outer_name, inner_name varchar;
+
+  mand := vector ();
+  opt := vector ();
+  for (i := 0; i < length (_match_asts); i := i + 1)
+    {
+      pms := aref (aref (_match_asts, i), 2);
+      for (j := 0; j < length (pms); j := j + 1)
+        {
+          if (aref (aref (_match_asts, i), 1) is not null and aref (aref (_match_asts, i), 1) <> 0)
+            opt := DB.DBA.GQL_PLAN_COLLECT_PATTERN_VARS (aref (pms, j), opt);
+          else
+            mand := DB.DBA.GQL_PLAN_COLLECT_PATTERN_VARS (aref (pms, j), mand);
+        }
+    }
+  plan := vector ();
+  plan_opt := vector ();
+  for (i := 0; i < length (_refs); i := i + 1)
+    {
+      outer_name := aref (aref (_refs, i), 0);
+      inner_name := outer_name;
+      if (_ret_items is not null)
+        {
+          inner_name := null;
+          for (j := 0; j < length (_ret_items); j := j + 1)
+            {
+              declare item_expr, item_alias any;
+              item_expr := aref (aref (_ret_items, j), 1);
+              item_alias := aref (aref (_ret_items, j), 2);
+              if (isarray (item_expr) and aref (item_expr, 0) = 'VAR'
+                  and (item_alias = outer_name or (item_alias is null and aref (item_expr, 1) = outer_name)))
+                inner_name := aref (item_expr, 1);
+            }
+        }
+      if (inner_name is not null and DB.DBA.GQL_PLAN_VEC_HAS (mand, inner_name))
+        plan := vector_concat (plan, vector (vector (inner_name, aref (aref (_refs, i), 1), outer_name)));
+      else if (inner_name is not null and DB.DBA.GQL_PLAN_VEC_HAS (opt, inner_name))
+        plan_opt := vector_concat (plan_opt, vector (vector (inner_name, aref (aref (_refs, i), 1), outer_name)));
+    }
+  if (length (plan_opt) > 0)
+    DB.DBA.GQL_CTX_SET (_svc_ctx, 'service_fetch_opt', plan_opt);
+  return plan;
+}
+;
+
+-- 1 when _expr reads no variable, property or parameter.
+create procedure DB.DBA.GQL_EXPR_IS_CONST (in _expr any)
+{
+  declare i integer;
+  if (__tag (_expr) <> __tag of vector or length (_expr) = 0)
+    return 1;
+  if (isstring (aref (_expr, 0)) and aref (_expr, 0) in ('VAR', 'PROP', 'PARAM'))
+    return 0;
+  for (i := 0; i < length (_expr); i := i + 1)
+    if (not DB.DBA.GQL_EXPR_IS_CONST (aref (_expr, i)))
+      return 0;
+  return 1;
+}
+;
+
+-- Add to _acc the equalities of the conjunction _expr between one of the
+-- variables _vars and a constant: vector (variable, equality).
+create procedure DB.DBA.GQL_COLLECT_VAR_EQ_CONST (in _expr any, in _vars any, inout _acc any)
+{
+  if (__tag (_expr) <> __tag of vector or length (_expr) < 4 or aref (_expr, 0) <> 'BINOP')
+    return;
+  if (aref (_expr, 1) = 'AND')
+    {
+      DB.DBA.GQL_COLLECT_VAR_EQ_CONST (aref (_expr, 2), _vars, _acc);
+      DB.DBA.GQL_COLLECT_VAR_EQ_CONST (aref (_expr, 3), _vars, _acc);
+      return;
+    }
+  if (aref (_expr, 1) <> '=')
+    return;
+  if (isarray (aref (_expr, 2)) and aref (aref (_expr, 2), 0) = 'VAR'
+      and DB.DBA.GQL_PLAN_VEC_HAS (_vars, aref (aref (_expr, 2), 1)) and DB.DBA.GQL_EXPR_IS_CONST (aref (_expr, 3)))
+    _acc := vector_concat (_acc, vector (vector (aref (aref (_expr, 2), 1), _expr)));
+  else if (isarray (aref (_expr, 3)) and aref (aref (_expr, 3), 0) = 'VAR'
+      and DB.DBA.GQL_PLAN_VEC_HAS (_vars, aref (aref (_expr, 3), 1)) and DB.DBA.GQL_EXPR_IS_CONST (aref (_expr, 2)))
+    _acc := vector_concat (_acc, vector (vector (aref (aref (_expr, 3), 1), _expr)));
+}
+;
+
+-- A node with no label inside a SERVICE block is the remote node set, a
+-- nested SELECT DISTINCT (GQL_CTX_ADD_NODE_SET).  An equality in the
+-- block's WHERE between it and a constant is tested inside that SELECT
+-- too: beside it, the SPARQL compiler does not send the test, and the
+-- endpoint would be asked for every node it has.  Sets _svc_ctx's
+-- node_set_filters to the (node variable, FILTER) of each.
+create procedure DB.DBA.GQL_SERVICE_NODE_SET_FILTERS (inout _svc_ctx any, in _match_asts any, in _where_asts any)
+{
+  declare lone, eqs, filters, pms any;
+  declare i, j integer;
+
+  lone := vector ();
+  for (i := 0; i < length (_match_asts); i := i + 1)
+    {
+      pms := aref (aref (_match_asts, i), 2);
+      for (j := 0; j < length (pms); j := j + 1)
+        if (DB.DBA.GQL_LONE_NODE_VAR (aref (pms, j)) is not null)
+          lone := DB.DBA.GQL_PLAN_VEC_ADD (lone, DB.DBA.GQL_LONE_NODE_VAR (aref (pms, j)));
+    }
+  if (length (lone) = 0)
+    return;
+  eqs := vector ();
+  for (i := 0; i < length (_where_asts); i := i + 1)
+    DB.DBA.GQL_COLLECT_VAR_EQ_CONST (aref (aref (_where_asts, i), 1), lone, eqs);
+  filters := vector ();
+  for (i := 0; i < length (eqs); i := i + 1)
+    filters := vector_concat (filters, vector (vector (
+      DB.DBA.GQL_GEN_EXPR (vector ('VAR', aref (aref (eqs, i), 0)), _svc_ctx),
+      concat ('FILTER (', DB.DBA.GQL_GEN_EXPR (aref (aref (eqs, i), 1), _svc_ctx), ')'))));
+  if (length (filters) > 0)
+    DB.DBA.GQL_CTX_SET (_svc_ctx, 'node_set_filters', filters);
+}
+;
+
+-- Called by GQL_GEN_MATCH for an OPTIONAL MATCH inside a SERVICE block:
+-- a read property of a node only an OPTIONAL MATCH binds is fetched inside
+-- the optional part that binds it, as an OPTIONAL of its own.  After it,
+-- the node may be unbound, and on a remote endpoint a triple pattern on an
+-- unbound variable matches every node.
+create procedure DB.DBA.GQL_SERVICE_FETCH_OPTIONAL (inout _ctx any, in _patterns any)
+{
+  declare plan_opt, rest, bound, entry any;
+  declare subj, pvar varchar;
+  declare i integer;
+
+  plan_opt := DB.DBA.GQL_CTX_GET (_ctx, 'service_fetch_opt');
+  bound := vector ();
+  for (i := 0; i < length (_patterns); i := i + 1)
+    bound := DB.DBA.GQL_PLAN_COLLECT_PATTERN_VARS (aref (_patterns, i), bound);
+  rest := vector ();
+  for (i := 0; i < length (plan_opt); i := i + 1)
+    {
+      entry := aref (plan_opt, i);
+      if (not DB.DBA.GQL_PLAN_VEC_HAS (bound, aref (entry, 0)))
+        {
+          rest := vector_concat (rest, vector (entry));
+          goto next_entry;
+        }
+      subj := DB.DBA.GQL_GEN_EXPR (vector ('VAR', aref (entry, 0)), _ctx);
+      pvar := DB.DBA.GQL_CTX_GET_PROP_VAR (_ctx, subj, aref (entry, 1));
+      if (pvar is null)
+        {
+          pvar := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'prop_');
+          DB.DBA.GQL_CTX_ADD_PROP_VAR (_ctx, subj, aref (entry, 1), pvar);
+          DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx, concat ('  OPTIONAL { ', subj, ' ',
+            DB.DBA.GQL_GEN_PROP_IRI_CTX (aref (entry, 1), _ctx), ' ', pvar, ' }\n'));
+        }
+      DB.DBA.GQL_CTX_SET (_ctx, 'service_fetched', vector_concat (
+        coalesce (DB.DBA.GQL_CTX_GET (_ctx, 'service_fetched'), vector ()),
+        vector (vector (aref (entry, 2), aref (entry, 1), pvar))));
+    next_entry:;
+    }
+  DB.DBA.GQL_CTX_SET (_ctx, 'service_fetch_opt', rest);
+}
+;
+
+----------------------------------------------------------------------
 -- SERVICE block: emit `SERVICE <endpoint> { triples ... }` into context
 -- triples accumulator. The inner block reuses the outer context so any
 -- variables it binds become visible to the surrounding query.
@@ -2349,6 +2554,7 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
   declare proj varchar;
   declare ri integer;
   declare clause, ctype any;
+  declare fetch_plan, fetched any;
 
   endpoint_expr := aref (_service_ast, 1);
   svc_query := aref (_service_ast, 2);
@@ -2431,6 +2637,15 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
     svc_next_clause:;
     }
 
+  -- The properties the statement reads outside this block of the nodes it
+  -- binds: those of a node its OPTIONAL MATCH binds are fetched as that
+  -- MATCH is generated, the others after the block's own patterns.
+  fetch_plan := vector ();
+  if (length (DB.DBA.GQL_CTX_GET (_ctx, 'service_prop_refs')) > 0)
+    fetch_plan := DB.DBA.GQL_SERVICE_FETCH_PLAN (svc_ctx, DB.DBA.GQL_CTX_GET (_ctx, 'service_prop_refs'),
+      match_asts, case when has_return then aref (return_ast, 2) else null end);
+  DB.DBA.GQL_SERVICE_NODE_SET_FILTERS (svc_ctx, match_asts, where_asts);
+
   for (i := 0; i < length (match_asts); i := i + 1)
     {
       declare m_ast any;
@@ -2455,10 +2670,17 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
       DB.DBA.GQL_CTX_ADD_FILTER (svc_ctx, wexpr);
     }
 
+  fetched := coalesce (DB.DBA.GQL_CTX_GET (svc_ctx, 'service_fetched'), vector ());
+  for (i := 0; i < length (fetch_plan); i := i + 1)
+    fetched := vector_concat (fetched, vector (vector (aref (aref (fetch_plan, i), 2), aref (aref (fetch_plan, i), 1),
+      DB.DBA.GQL_GEN_EXPR (vector ('PROP', vector ('VAR', aref (aref (fetch_plan, i), 0)), aref (aref (fetch_plan, i), 1)), svc_ctx))));
+
   triples := DB.DBA.GQL_CTX_GET (_ctx, 'triples');
   if (has_return)
     {
       ret_vars := DB.DBA.GQL_GEN_RETURN (return_ast, svc_ctx, order_clause, limit_clause, skip_clause, is_distinct);
+      for (i := 0; i < length (fetched); i := i + 1)
+        ret_vars := vector_concat (ret_vars, vector (vector (aref (aref (fetched, i), 2), null)));
       explicit_from := DB.DBA.GQL_GEN_EXPLICIT_FROM_CLAUSES (svc_ctx);
 
       body := DB.DBA.GQL_CTX_GET (svc_ctx, 'values');
@@ -2527,6 +2749,9 @@ create procedure DB.DBA.GQL_GEN_SERVICE (in _service_ast any, inout _ctx any)
               DB.DBA.GQL_CTX_ADD_ALIAS (_ctx, aref (expr, 1), concat ('?', aref (expr, 1)));
             }
         }
+      for (i := 0; i < length (fetched); i := i + 1)
+        DB.DBA.GQL_CTX_ADD_PROP_VAR (_ctx, concat ('?', aref (aref (fetched, i), 0)),
+          aref (aref (fetched, i), 1), aref (aref (fetched, i), 2));
     }
   else
     {
@@ -4054,13 +4279,20 @@ create procedure DB.DBA.GQL_CTX_ADD_NODE_SET (inout _ctx any, in _nsv varchar)
   op := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'node_p_');
   if (DB.DBA.GQL_CTX_GET (_ctx, 'in_service') = 1)
     {
+      declare set_filters, nsf any;
+      declare fi integer;
+      set_filters := '';
+      nsf := DB.DBA.GQL_CTX_GET (_ctx, 'node_set_filters');
+      for (fi := 0; fi < length (nsf); fi := fi + 1)
+        if (aref (aref (nsf, fi), 0) = _nsv)
+          set_filters := concat (set_filters, ' ', aref (aref (nsf, fi), 1));
       DB.DBA.GQL_CTX_ADD_RAW_TRIPLES (_ctx, concat (
         '  { SELECT DISTINCT ', _nsv, ' WHERE {\n',
         '      { ', _nsv, ' ', sp, ' ', so, ' }\n',
         '      UNION\n',
         '      { ', os, ' ', op, ' ', _nsv, ' . FILTER (isIRI (', _nsv, ') && ', op,
         ' NOT IN (rdf:type, rdf:subject, rdf:predicate, rdf:object, rdf:reifies)) }\n',
-        '      ', DB.DBA.GQL_NOT_HOLDER_OPTIONALS (_ctx, _nsv, 'node_r_'), ' } } .\n'));
+        '      ', DB.DBA.GQL_NOT_HOLDER_OPTIONALS (_ctx, _nsv, 'node_r_'), set_filters, ' } } .\n'));
       return;
     }
   r1 := DB.DBA.GQL_CTX_FRESH_VAR (_ctx, 'node_r_');
@@ -4745,6 +4977,8 @@ create procedure DB.DBA.GQL_GEN_MATCH (in _match_ast any, inout _ctx any)
 
       for (i := 0; i < length (patterns); i := i + 1)
         DB.DBA.GQL_GEN_MATCH_PATTERN (aref (patterns, i), _ctx);
+      if (length (DB.DBA.GQL_CTX_GET (_ctx, 'service_fetch_opt')) > 0)
+        DB.DBA.GQL_SERVICE_FETCH_OPTIONAL (_ctx, patterns);
 
       declare opt_body varchar;
       opt_body := DB.DBA.GQL_CTX_GET (_ctx, 'values');
@@ -6148,6 +6382,21 @@ create procedure DB.DBA.GQL_TO_SPARQL_IMPL (in _ast any, in _graph varchar)
     if (not DB.DBA.GQL_PLAN_VEC_HAS (mand_vars, aref (opt_vars, i)))
       prebind_skip := DB.DBA.GQL_PLAN_VEC_ADD (prebind_skip, aref (opt_vars, i));
   DB.DBA.GQL_CTX_SET (ctx, 'prebind_skip', prebind_skip);
+
+  -- The properties read outside the SERVICE blocks, of variables no local
+  -- MATCH binds: the block that binds one fetches them (GQL_GEN_SERVICE).
+  if (length (service_asts) > 0)
+    {
+      declare prop_refs, remote_refs any;
+      prop_refs := vector ();
+      DB.DBA.GQL_COLLECT_PROP_REFS (vector (return_ast, where_asts, let_asts, group_ast, having_ast), prop_refs);
+      remote_refs := vector ();
+      for (i := 0; i < length (prop_refs); i := i + 1)
+        if (not DB.DBA.GQL_PLAN_VEC_HAS (mand_vars, aref (aref (prop_refs, i), 0))
+            and not DB.DBA.GQL_PLAN_VEC_HAS (opt_vars, aref (aref (prop_refs, i), 0)))
+          remote_refs := vector_concat (remote_refs, vector (aref (prop_refs, i)));
+      DB.DBA.GQL_CTX_SET (ctx, 'service_prop_refs', remote_refs);
+    }
 
   -- Pre-bind simple equality constraints before MATCH where possible.
   -- Path-step materialisation must use BIND, not VALUES: Virtuoso accepts

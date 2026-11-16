@@ -1021,10 +1021,11 @@ vvec_hidden_table_name (dbe_table_t * tb, const char *index_name)
   char full_name[MAX_QUAL_NAME_LEN + MAX_NAME_LEN * 3];
   vvec_name_sanitize (safe_index, sizeof (safe_index), index_name);
   if (tb->tb_name && !stricmp (tb->tb_name, "DB.DBA.RDF_OBJ"))
-    snprintf (full_name, sizeof (full_name), "%s.%s.%s%s_embeddings", tb->tb_qualifier, tb->tb_owner,
+    snprintf (full_name, sizeof (full_name), "%s.%s.%s%s_EMBEDDINGS", tb->tb_qualifier, tb->tb_owner,
 	strnicmp (safe_index, "RDF_OBJ_", 8) ? "RDF_OBJ_" : "", safe_index);
   else
-    snprintf (full_name, sizeof (full_name), "%s.%s.%s_vec_embeddings", tb->tb_qualifier, tb->tb_owner, safe_index);
+    snprintf (full_name, sizeof (full_name), "%s.%s.%s_VEC_EMBEDDINGS", tb->tb_qualifier, tb->tb_owner, safe_index);
+  sqlp_upcase (full_name);   /* unquoted SQL folds it under CaseMode 1 */
   return box_string (full_name);
 }
 
@@ -2232,36 +2233,87 @@ vvec_hidden_upsert (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id, c
 }
 
 
-static caddr_t
-vvec_hidden_source_hash (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id)
+#define VVEC_PROBE_READ		0	/* committed rows: a search hit without one is filtered */
+#define VVEC_PROBE_LOCK		1	/* waits for and keeps the row lock, as select ... for update */
+#define VVEC_PROBE_PRESENT	2	/* any row not being deleted, committed or not; never waits */
+
+/* Point lookup of the hidden row of ROW_ID on the hidden table's primary key.
+   A read-committed read skips another writer's uncommitted insert while its graph
+   node is already linked, so a writer takes the row lock before the writer mutex
+   and waits for that writer before deciding to skip the O(N) node walk.  Under the
+   mutex it checks PRESENT again: a writer may have linked and written the row
+   between the first probe and the mutex. */
+static int
+vvec_hidden_probe (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id, int mode, caddr_t * hash_ret)
 {
-  caddr_t err = NULL;
-  local_cursor_t * lc = NULL;
-  query_t * qr;
-  caddr_t hash = NULL;
-  char text[1200];
-  snprintf (text, sizeof (text), "select SOURCE_HASH from %s where VE_D_ID = ?", meta->vm_hidden_table);
-  qr = vvec_compile_text (qi->qi_client, &err, text);
-  if (err)
-    sqlr_resignal (err);
-  err = qr_quick_exec (qr, qi->qi_client, "", &lc, 1, ":0", box_copy_tree (row_id), QRP_RAW);
-  if (SQL_SUCCESS != err)
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, meta->vm_hidden_table);
+  dbe_key_t * key;
+  dbe_column_t * hash_col = NULL;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  buffer_desc_t * buf;
+  caddr_t par;
+  int64 id;
+  int found = 0;
+  key = tb ? tb->tb_primary_key : NULL;
+  if (!key || key->key_is_col)
+    sqlr_new_error ("42000", "VEC99", "Vector index hidden table %s is missing or not row-wise.", meta->vm_hidden_table);
+  if (!vvec_row_id_to_i64 (row_id, &id))
+    return 0;   /* the node walk compares the same conversion, so it cannot match */
+  if (hash_ret)
+    hash_col = tb_name_to_column (tb, "SOURCE_HASH");
+  ITC_INIT (itc, NULL, qi->qi_trx);
+  itc_from (itc, key, QI_NO_SLICE);
+  par = box_num_nonull (id);
+  ITC_SEARCH_PARAM (itc, par);
+  ITC_OWNS_PARAM (itc, par);
+  itc->itc_key_spec = key->key_insert_spec;
+  if (VVEC_PROBE_READ != mode)
     {
-      qr_free (qr);
-      sqlr_resignal (err);
+      /* lands on the row, committed or not, with the page in write mode */
+      itc->itc_search_mode = SM_INSERT;
+      itc->itc_lock_mode = PL_EXCLUSIVE;
+      itc->itc_isolation = ISO_REPEATABLE;
     }
-  if (lc && lc_next (lc) && vvec_is_string_box (lc_nth_col (lc, 0)))
-    hash = box_copy_tree (lc_nth_col (lc, 0));
-  if (lc)
-    lc_free (lc);
-  qr_free (qr);
-  return hash;
+  else
+    itc->itc_isolation = ISO_COMMITTED;
+  ITC_FAIL (itc)
+    {
+    again:
+      buf = itc_reset (itc);
+      if (DVC_MATCH == itc_search (itc, &buf))
+	{
+	  if (VVEC_PROBE_LOCK == mode && NO_WAIT != itc_set_lock_on_row (itc, &buf))
+	    {
+	      /* waited for the owner: its commit or rollback decides */
+	      itc_page_leave (itc, buf);
+	      goto again;
+	    }
+	  if (VVEC_PROBE_READ == mode || !IE_ISSET (BUF_ROW (buf, itc->itc_map_pos), IEF_DELETE))
+	    {
+	      found = 1;
+	      if (hash_col)
+		{
+		  caddr_t hash = itc_box_column (itc, buf, hash_col->col_id, NULL);
+		  if (vvec_is_string_box (hash))
+		    *hash_ret = hash;
+		  else
+		    dk_free_tree (hash);
+		}
+	    }
+	}
+      itc_page_leave (itc, buf);
+    }
+  ITC_FAILED
+    {
+      itc_free (itc);
+    }
+  END_FAIL (itc);
+  itc_free (itc);
+  return found;
 }
 
 
-/* Does this row id still have a committed embedding row?
-   A graph node whose row is gone is an *orphan*: the graph insert reached the
-   buffer pool but the transaction that owned the row did not commit.  */
 /* Re-assert the client's logging mode on the transaction a commit just started.
    A new lt takes lt_replicate from cli_replicate (sqlsrv.c:570), while
    log_enable () only ever set it on the lt that was current when it ran.  So a
@@ -2274,54 +2326,6 @@ vvec_keep_log_mode (query_instance_t * qi)
 {
   if (qi->qi_client && !(qi->qi_client->cli_log_mode & 1))
     qi->qi_trx->lt_replicate = REPL_NO_LOG;
-}
-
-
-/* SLOT, when given, holds a plan compiled once and reused: the orphan sweep asks
-   this per graph node, and compiling "select 1 from <hidden> where VE_D_ID = ?"
-   nine million times -- each one a full sql_compile_static under
-   vvec_compile_mtx -- is why a single search could sit in scn3yyparse for
-   hours.  NULL keeps the one-off compile-and-free. */
-static int
-vvec_hidden_row_exists (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id,
-    query_t ** slot)
-{
-  caddr_t err = NULL;
-  local_cursor_t * lc = NULL;
-  query_t * qr;
-  char text[1200];
-  int found = 0;
-  if (slot && *slot)
-    qr = *slot;
-  else
-    {
-      snprintf (text, sizeof (text), "select 1 from %s where VE_D_ID = ?", meta->vm_hidden_table);
-      qr = vvec_compile_text (qi->qi_client, &err, text);
-      if (err)
-	{
-	  dk_free_tree (err);
-	  return 1;   /* cannot tell -- do not drop a hit on a lookup failure */
-	}
-      if (slot)
-	*slot = qr;
-    }
-  err = qr_quick_exec (qr, qi->qi_client, "", &lc, 1, ":0", box_copy_tree (row_id), QRP_RAW);
-  if (SQL_SUCCESS != err)
-    {
-      if (lc)
-	lc_free (lc);
-      if (!slot)
-	qr_free (qr);
-      dk_free_tree (err);
-      return 1;
-    }
-  if (lc && lc_next (lc))
-    found = 1;
-  if (lc)
-    lc_free (lc);
-  if (!slot)
-    qr_free (qr);
-  return found;
 }
 
 
@@ -2581,6 +2585,50 @@ vvec_writer_unlock (dk_mutex_t * mtx)
 {
   if (mtx)
     mutex_leave (mtx);
+}
+
+
+/* A writer that found no hidden row links its node first and writes the row after
+   the writer mutex, so in between no probe can see the id: the id is pending.  A
+   writer meeting a pending id waits for the row and probes again, which then waits
+   on the row lock.  vvec_pending_p and vvec_pending_add run under the writer mutex. */
+static int
+vvec_pending_p (index_tree_t * it, caddr_t row_id)
+{
+  int64 id;
+  return it->it_vvec.vt_pending && vvec_row_id_to_i64 (row_id, &id)
+      && gethash ((void *) (ptrlong) id, it->it_vvec.vt_pending);
+}
+
+
+static void
+vvec_pending_add (index_tree_t * it, caddr_t row_id)
+{
+  int64 id;
+  ptrlong n;
+  if (!vvec_row_id_to_i64 (row_id, &id))
+    return;
+  if (!it->it_vvec.vt_pending)
+    it->it_vvec.vt_pending = hash_table_allocate (31);
+  n = (ptrlong) gethash ((void *) (ptrlong) id, it->it_vvec.vt_pending);
+  sethash ((void *) (ptrlong) id, it->it_vvec.vt_pending, (void *) (n + 1));
+}
+
+
+static void
+vvec_pending_done (index_tree_t * it, caddr_t row_id)
+{
+  int64 id;
+  ptrlong n;
+  if (!vvec_row_id_to_i64 (row_id, &id))
+    return;
+  mutex_enter (&it->it_vvec.vt_writer_mtx);
+  n = (ptrlong) gethash ((void *) (ptrlong) id, it->it_vvec.vt_pending);
+  if (n > 1)
+    sethash ((void *) (ptrlong) id, it->it_vvec.vt_pending, (void *) (n - 1));
+  else
+    remhash ((void *) (ptrlong) id, it->it_vvec.vt_pending);
+  mutex_leave (&it->it_vvec.vt_writer_mtx);
 }
 
 
@@ -2957,6 +3005,42 @@ vvec_catalog_mark_needs_rebuild (query_instance_t * qi, vvec_meta_t * meta, cons
  * collected first, then checked -- because running a query with a page latch
  * held is a deadlock waiting to happen.
  */
+typedef struct vvec_sweep_ent_s
+{
+  int64			vse_d_id;
+  vvec_node_ref_t	vse_nref;
+} vvec_sweep_ent_t;
+
+
+static int
+vvec_sweep_ent_cmp (const void * a, const void * b)
+{
+  int64 x = ((const vvec_sweep_ent_t *) a)->vse_d_id;
+  int64 y = ((const vvec_sweep_ent_t *) b)->vse_d_id;
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+
+static void
+vvec_sweep_ent_add (vvec_sweep_ent_t ** ents, size_t * n, size_t * cap, int64 d_id, vvec_node_ref_t nref)
+{
+  if (*n == *cap)
+    {
+      size_t ncap = *cap ? *cap * 2 : 64 * 1024;
+      vvec_sweep_ent_t * ne = (vvec_sweep_ent_t *) dk_alloc (ncap * sizeof (vvec_sweep_ent_t));
+      if (*n)
+	memcpy (ne, *ents, *n * sizeof (vvec_sweep_ent_t));
+      if (*ents)
+	dk_free (*ents, *cap * sizeof (vvec_sweep_ent_t));
+      *ents = ne;
+      *cap = ncap;
+    }
+  (*ents)[*n].vse_d_id = d_id;
+  (*ents)[*n].vse_nref = nref;
+  (*n)++;
+}
+
+
 static int
 vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 {
@@ -2964,9 +3048,16 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
   it_cursor_t * itc = &itc_auto;
   buffer_desc_t * root = NULL;
   vvec_node_ref_t next;
-  dk_set_t candidates = NULL;
-  query_t * exists_qr = NULL;
+  vvec_sweep_ent_t * ents = NULL;
+  size_t n_ents = 0, cap = 0, inx = 0, next_report = 10000000;
+  dk_set_t orphans = NULL;
+  caddr_t err = NULL;
+  local_cursor_t * lc = NULL;
+  query_t * qr;
+  char text[1200];
   int reaped = 0;
+  const char * name = meta->vm_key && meta->vm_key->key_name ? meta->vm_key->key_name : "<unknown>";
+  time_msec_t t0 = get_msec_real_time ();
   ITC_INIT (itc, NULL, qi->qi_trx);
   itc_from_it (itc, meta->vm_it);
   vvec_root_read (itc, meta->vm_it, PA_READ, &root);
@@ -2985,10 +3076,7 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 	    {
 	      db_buf_t cn = vvec_pk_node_ptr (node, slot);
 	      if (cn && !vvec_cn_is_deleted (cn))
-		{
-		  dk_set_push (&candidates, (void *) (ptrlong) cur);
-		  dk_set_push (&candidates, (void *) (ptrlong) vvec_cn_d_id (cn));
-		}
+		vvec_sweep_ent_add (&ents, &n_ents, &cap, vvec_cn_d_id (cn), cur);
 	    }
 	  if (slot + 1 < nc)
 	    next = VVEC_NREF_MAKE (page_dp, slot + 1);
@@ -2999,28 +3087,78 @@ vvec_sweep_orphans_1 (query_instance_t * qi, vvec_meta_t * meta)
 	{
 	  next = (vvec_node_ref_t) vvec_meta_ref_i32 (node, VVEC_NODE_NEXT_DP);
 	  if (!vvec_node_is_deleted (node))
-	    {
-	      dk_set_push (&candidates, (void *) (ptrlong) cur);
-	      dk_set_push (&candidates, (void *) (ptrlong) vvec_meta_ref_i64 (node, VVEC_NODE_D_ID));
-	    }
+	    vvec_sweep_ent_add (&ents, &n_ents, &cap, vvec_meta_ref_i64 (node, VVEC_NODE_D_ID), cur);
 	}
       vvec_page_release (itc, node);
+      if (n_ents >= next_report)
+	{
+	  log_info ("Vector index %s: orphan sweep has read %ld node(s) so far.", name, (long) n_ents);
+	  next_report += 10000000;
+	}
     }
   vvec_page_release (itc, root);
-  while (candidates)
+  log_info ("Vector index %s: orphan sweep read %ld node(s) in %ld s; checking them against %s.",
+      name, (long) n_ents, (long) ((get_msec_real_time () - t0) / 1000), meta->vm_hidden_table);
+  if (!n_ents)
+    goto done;
+  /* One ordered pass over the hidden table's primary key instead of a lookup per node. */
+  qsort (ents, n_ents, sizeof (vvec_sweep_ent_t), vvec_sweep_ent_cmp);
+  snprintf (text, sizeof (text), "select VE_D_ID from %s order by VE_D_ID", meta->vm_hidden_table);
+  qr = vvec_compile_text (qi->qi_client, &err, text);
+  if (err)
     {
-      int64 d_id = (int64) (ptrlong) dk_set_pop (&candidates);
-      vvec_node_ref_t nref = (vvec_node_ref_t) (ptrlong) dk_set_pop (&candidates);
-      caddr_t row_id = box_num (d_id);
-      if (!vvec_hidden_row_exists (qi, meta, row_id, &exists_qr))
+      dk_free_tree (err);
+      goto done;   /* cannot tell -- reap nothing */
+    }
+  err = qr_quick_exec (qr, qi->qi_client, "", &lc, 0);
+  if (SQL_SUCCESS != err)
+    {
+      dk_free_tree (err);
+      if (lc)
+	lc_free (lc);
+      qr_free (qr);
+      goto done;
+    }
+  while (inx < n_ents && lc_next (lc))
+    {
+      int64 h_id = unbox (lc_nth_col (lc, 0));
+      for (; inx < n_ents && ents[inx].vse_d_id < h_id; inx++)
 	{
-	  vvec_reap_orphan_node (qi, meta, nref, row_id);
-	  reaped++;
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_nref);
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_d_id);
 	}
+      while (inx < n_ents && ents[inx].vse_d_id == h_id)
+	inx++;
+    }
+  if (lc->lc_error)
+    {
+      dk_set_free (orphans);
+      orphans = NULL;
+    }
+  else
+    {
+      for (; inx < n_ents; inx++)
+	{
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_nref);
+	  dk_set_push (&orphans, (void *) (ptrlong) ents[inx].vse_d_id);
+	}
+    }
+  lc_free (lc);
+  qr_free (qr);
+  log_info ("Vector index %s: orphan sweep checked %ld node(s) in %ld s; %ld orphan(s) to retire.",
+      name, (long) n_ents, (long) ((get_msec_real_time () - t0) / 1000), (long) (dk_set_length (orphans) / 2));
+done:
+  if (ents)
+    dk_free (ents, cap * sizeof (vvec_sweep_ent_t));
+  while (orphans)
+    {
+      int64 d_id = (int64) (ptrlong) dk_set_pop (&orphans);
+      vvec_node_ref_t nref = (vvec_node_ref_t) (ptrlong) dk_set_pop (&orphans);
+      caddr_t row_id = box_num (d_id);
+      vvec_reap_orphan_node (qi, meta, nref, row_id);
+      reaped++;
       dk_free_tree (row_id);
     }
-  if (exists_qr)
-    qr_free (exists_qr);
   return reaped;
 }
 
@@ -3135,7 +3273,7 @@ vvec_forget_key_id (query_instance_t * qi, key_id_t key_id)
 /* Compare what the graph durably knows against what the data durably knows.
    Runs once per index per server start; the answer is cached.  */
 static int
-vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
+vvec_epoch_reconcile_1 (query_instance_t * qi, vvec_meta_t * meta)
 {
   int64 graph_epoch;
   int64 data_epoch;
@@ -3182,7 +3320,11 @@ vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
          index -- a single rolled-back insert should not cost a full rebuild.
          Reaping decrements the epoch per node, so if every excess mutation was
          an orphan the pair re-converges here.  */
-      int reaped = vvec_sweep_orphans (qi, meta);
+      int reaped;
+      log_info ("Vector index %s: graph epoch %ld is ahead of data epoch %ld; sweeping the graph for orphan nodes "
+	  "before the first use. This reads the whole index.",
+	  meta->vm_key->key_name ? meta->vm_key->key_name : "<unknown>", (long) graph_epoch, (long) data_epoch);
+      reaped = vvec_sweep_orphans (qi, meta);
       if (reaped)
 	{
 	  graph_epoch = vvec_root_epoch_ref (qi, meta);
@@ -3300,6 +3442,39 @@ vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
   vvec_catalog_mark_needs_rebuild (qi, meta, detail);
   vvec_health_set (meta->vm_key->key_id, VVEC_HEALTH_NEEDS_REBUILD);
   return VVEC_HEALTH_NEEDS_REBUILD;
+}
+
+
+/* One caller per index reconciles; the others wait for its verdict.  Writers call it
+   before their first change, so a sweep never sees a transaction's uncommitted nodes. */
+static int
+vvec_epoch_reconcile (query_instance_t * qi, vvec_meta_t * meta)
+{
+  dk_mutex_t * mtx;
+  int state;
+  if (!meta || !meta->vm_key || !meta->vm_it)
+    return VVEC_HEALTH_OK;
+  state = vvec_health_cached (meta->vm_key->key_id);
+  if (VVEC_HEALTH_UNCHECKED != state)
+    return state;
+  if (!meta->vm_it->it_vvec.vt_graph_rwlock)
+    return vvec_epoch_reconcile_1 (qi, meta);
+  mtx = &meta->vm_it->it_vvec.vt_reconcile_mtx;
+  mutex_enter (mtx);
+  QR_RESET_CTX_T (qi->qi_thread)
+    {
+      state = vvec_epoch_reconcile_1 (qi, meta);
+    }
+  QR_RESET_CODE
+    {
+      caddr_t err = thr_get_error_code (qi->qi_thread);
+      POP_QR_RESET;
+      mutex_leave (mtx);
+      sqlr_resignal (err);
+    }
+  END_QR_RESET;
+  mutex_leave (mtx);
+  return state;
 }
 
 
@@ -3880,7 +4055,7 @@ vvec_search_result_box (query_instance_t * qi, vvec_meta_t * meta, vvec_cand_lis
 	continue;
       /* Never hand back a hit with no backing row.  A phantom neighbour is
          indistinguishable from a real one to the caller.  */
-      if (!vvec_hidden_row_exists (qi, meta, row_id, NULL))
+      if (!vvec_hidden_probe (qi, meta, row_id, VVEC_PROBE_READ, NULL))
 	{
 	  /* Absence from this transaction's snapshot does not prove rollback: a
 	     concurrent insert publishes its graph node before its hidden row commits.
@@ -5657,8 +5832,9 @@ vvec_index_post_create (query_instance_t * qi, caddr_t table, caddr_t name, cadd
       if (!sch_table_key (wi_inst.wi_schema, table, name, 1))
         sqlr_new_error ("42S12", "VEC20", "Cannot find newly created vector index %s.", name);
       snprintf (text, sizeof (text),
-          "create table %s (VE_D_ID BIGINT PRIMARY KEY, VE_EMBEDDING LONG ANY, SOURCE_HASH VARCHAR(32), "
-          "EMBED_STATUS VARCHAR(32), MODEL_ID INTEGER, UPDATED_AT DATETIME)",
+          "create table %s (VE_D_ID BIGINT, VE_EMBEDDING LONG ANY, SOURCE_HASH VARCHAR(32), "
+          "EMBED_STATUS VARCHAR(32), MODEL_ID INTEGER, UPDATED_AT DATETIME, "
+          "primary key (VE_D_ID) not column)",   /* point lookups and row locks: vvec_hidden_probe */
           hidden);
       vvec_exec_text (qi, text);
       vvec_create_hidden_guard_triggers (qi, name, hidden);
@@ -6382,11 +6558,15 @@ void
 vvec_tree_free (vvec_tree_t * vt)
 {
   VVEC_UNDO_LIST_FREE (vt->vt_undo);
+  if (vt->vt_pending)
+    hash_table_free (vt->vt_pending);
+  vt->vt_pending = NULL;
   /* it_temp_allocate () trees never had these initialized. */
   if (!vt->vt_graph_rwlock)
     return;
   rwlock_free (vt->vt_graph_rwlock);
   dk_mutex_destroy (&vt->vt_writer_mtx);
+  dk_mutex_destroy (&vt->vt_reconcile_mtx);
 }
 
 
@@ -7374,14 +7554,57 @@ vvec_reap_orphan_node (query_instance_t * qi, vvec_meta_t * meta, vvec_node_ref_
 }
 
 
+extern long dbf_vvec_upsert_wait, dbf_vvec_probe_wait;
+
+/* Test hook: widen a race window by MS msec. */
+static void
+vvec_test_wait (long ms)
+{
+  if (ms)
+    virtuoso_sleep (ms / 1000, (ms % 1000) * 1000);
+}
+
+/* PENDING: the node was linked before the row, so the id is pending until the row is written. */
+static void
+vvec_hidden_upsert_pending (query_instance_t * qi, vvec_meta_t * meta, caddr_t row_id, caddr_t embedding,
+    const char *source_hash, float magnitude, vvec_hidden_stmts_t * st, int pending)
+{
+  if (!pending)
+    {
+      vvec_hidden_upsert (qi, meta, row_id, embedding, source_hash, magnitude, st);
+      return;
+    }
+  vvec_test_wait (dbf_vvec_upsert_wait);
+  QR_RESET_CTX_T (qi->qi_thread)
+    {
+      vvec_hidden_upsert (qi, meta, row_id, embedding, source_hash, magnitude, st);
+    }
+  QR_RESET_CODE
+    {
+      caddr_t err = thr_get_error_code (qi->qi_thread);
+      POP_QR_RESET;
+      vvec_pending_done (meta->vm_it, row_id);
+      sqlr_resignal (err);
+    }
+  END_QR_RESET;
+  vvec_pending_done (meta->vm_it, row_id);
+}
+
+
 static caddr_t
 vvec_delete_row_impl_1 (query_instance_t * qi, const char *func_name, char * index_name, caddr_t row_id, int sync_epoch, vvec_hidden_stmts_t * st)
 {
   vvec_meta_t meta;
   dp_addr_t old_dp = 0;
+  int in_hidden, retry = 0;
   caddr_t changed = NULL;
   dk_mutex_t * wmtx;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
+again:
+  in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, NULL);
+  if (!in_hidden)
+    vvec_test_wait (dbf_vvec_probe_wait);
   /* Serialize only the graph mutation (a soft-delete flips a node flag and
      read-modify-writes the root counters); the transactional hidden-table
      delete and epoch sync stay outside the lock, as in the insert path, so no
@@ -7390,9 +7613,15 @@ vvec_delete_row_impl_1 (query_instance_t * qi, const char *func_name, char * ind
   wmtx = vvec_writer_lock (meta.vm_it);
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      vvec_undo_apply (qi, &meta);
-      if (vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp))
-	vvec_delete_node_noted (qi, &meta, old_dp, &changed);
+      if (!in_hidden && (vvec_pending_p (meta.vm_it, row_id)
+	  || vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_PRESENT, NULL)))
+	retry = 1;
+      else
+	{
+	  vvec_undo_apply (qi, &meta);
+	  if (in_hidden && vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp))
+	    vvec_delete_node_noted (qi, &meta, old_dp, &changed);
+	}
     }
   QR_RESET_CODE
     {
@@ -7403,6 +7632,12 @@ vvec_delete_row_impl_1 (query_instance_t * qi, const char *func_name, char * ind
     }
   END_QR_RESET;
   vvec_writer_unlock (wmtx);
+  if (retry)
+    {
+      retry = 0;
+      virtuoso_sleep (0, 1000);
+      goto again;
+    }
   if (!old_dp)
     return box_num (0);
   vvec_hidden_delete (qi, &meta, row_id, st);
@@ -7418,13 +7653,14 @@ vvec_insert_embedding_impl_1 (query_instance_t * qi, const char *func_name, char
 {
   vvec_meta_t meta;
   float * vec = NULL;
-  int dim = 0;
+  int dim = 0, in_hidden, retry = 0;
   float magnitude;
   dp_addr_t old_dp = 0;
   dp_addr_t new_dp = 0;
   dk_mutex_t * wmtx;
   caddr_t stored;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
   if (!vvec_extract_floats (embedding, &vec, &dim))
     sqlr_new_error ("22023", "VEC30", "Malformed embedding vector for %s.", index_name);
   /* Boxed before reduction, so the hidden table keeps the native embedding and a
@@ -7438,9 +7674,13 @@ vvec_insert_embedding_impl_1 (query_instance_t * qi, const char *func_name, char
       sqlr_new_error ("22023", "VEC31", "Embedding dimension %d does not match vector index dimension %d.", dim, meta.vm_dimension);
     }
   magnitude = vvec_vector_magnitude (vec, dim);
-  /* The hidden-table read is a plain (non-locking) select and stays outside the
-     writer lock.  */
-  vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+again:
+  in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, NULL);
+  if (!in_hidden)
+    vvec_test_wait (dbf_vvec_probe_wait);
+  old_dp = 0;
+  if (in_hidden)
+    vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
   /* Serialize the graph mutation -- and ONLY the graph mutation -- per index.
      The transactional writes (hidden_upsert, epoch_sync) are kept OUTSIDE the
      lock: each takes a row lock that its worker holds until commit, so awaiting
@@ -7453,15 +7693,24 @@ vvec_insert_embedding_impl_1 (query_instance_t * qi, const char *func_name, char
   wmtx = vvec_writer_lock (meta.vm_it);
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      if (vvec_undo_apply (qi, &meta))
+      if (!in_hidden && (vvec_pending_p (meta.vm_it, row_id)
+	  || vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_PRESENT, NULL)))
+	retry = 1;
+      else
 	{
-	  old_dp = 0;
-	  vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+	  if (vvec_undo_apply (qi, &meta))
+	    {
+	      old_dp = 0;
+	      if (in_hidden)
+		vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+	    }
+	  if (old_dp)
+	    vvec_delete_node_noted (qi, &meta, old_dp, NULL);
+	  new_dp = vvec_insert_graph (qi, &meta, row_id, vec, magnitude);
+	  vvec_undo_note (qi, &meta, VVEC_UNDO_INSERT, new_dp);
+	  if (!in_hidden)
+	    vvec_pending_add (meta.vm_it, row_id);
 	}
-      if (old_dp)
-	vvec_delete_node_noted (qi, &meta, old_dp, NULL);
-      new_dp = vvec_insert_graph (qi, &meta, row_id, vec, magnitude);
-      vvec_undo_note (qi, &meta, VVEC_UNDO_INSERT, new_dp);
     }
   QR_RESET_CODE
     {
@@ -7474,7 +7723,13 @@ vvec_insert_embedding_impl_1 (query_instance_t * qi, const char *func_name, char
     }
   END_QR_RESET;
   vvec_writer_unlock (wmtx);
-  vvec_hidden_upsert (qi, &meta, row_id, stored, source_hash, magnitude, st);
+  if (retry)
+    {
+      retry = 0;
+      virtuoso_sleep (0, 1000);
+      goto again;
+    }
+  vvec_hidden_upsert_pending (qi, &meta, row_id, stored, source_hash, magnitude, st, !in_hidden);
   if (sync_epoch)
     vvec_write_epoch_sync (qi, &meta);
   dk_free ((caddr_t) vec, dim * sizeof (float));
@@ -7756,7 +8011,7 @@ vvec_embed_and_insert_impl (query_instance_t * qi, const char *func_name, char *
 {
   vvec_meta_t meta;
   float * vec = NULL;
-  int dim = 0;
+  int dim = 0, in_hidden, retry = 0;
   float magnitude;
   dp_addr_t old_dp = 0;
   dp_addr_t new_dp = 0;
@@ -7765,8 +8020,9 @@ vvec_embed_and_insert_impl (query_instance_t * qi, const char *func_name, char *
   caddr_t embedding;
   dk_mutex_t * wmtx;
   vvec_require_key (qi, func_name, index_name, &meta);
+  vvec_epoch_reconcile (qi, &meta);
   source_hash = vvec_source_hash_box (text_value);
-  old_hash = vvec_hidden_source_hash (qi, &meta, row_id);
+  in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, &old_hash);
   if (old_hash && !strcmp ((char *) old_hash, (char *) source_hash))
     {
       dk_free_tree (old_hash);
@@ -7786,19 +8042,33 @@ vvec_embed_and_insert_impl (query_instance_t * qi, const char *func_name, char *
      ran outside the lock.  As in vvec_insert_embedding_impl_1, only the graph
      mutation is serialized; the transactional hidden_upsert and epoch_sync run
      after the mutex is released.  */
-  vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+again:
+  old_dp = 0;
+  if (in_hidden)
+    vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+  else
+    vvec_test_wait (dbf_vvec_probe_wait);
   wmtx = vvec_writer_lock (meta.vm_it);
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      if (vvec_undo_apply (qi, &meta))
+      if (!in_hidden && (vvec_pending_p (meta.vm_it, row_id)
+	  || vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_PRESENT, NULL)))
+	retry = 1;
+      else
 	{
-	  old_dp = 0;
-	  vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+	  if (vvec_undo_apply (qi, &meta))
+	    {
+	      old_dp = 0;
+	      if (in_hidden)
+		vvec_hidden_lookup_existing (qi, &meta, row_id, &old_dp);
+	    }
+	  if (old_dp)
+	    vvec_delete_node_noted (qi, &meta, old_dp, NULL);
+	  new_dp = vvec_insert_graph (qi, &meta, row_id, vec, magnitude);
+	  vvec_undo_note (qi, &meta, VVEC_UNDO_INSERT, new_dp);
+	  if (!in_hidden)
+	    vvec_pending_add (meta.vm_it, row_id);
 	}
-      if (old_dp)
-	vvec_delete_node_noted (qi, &meta, old_dp, NULL);
-      new_dp = vvec_insert_graph (qi, &meta, row_id, vec, magnitude);
-      vvec_undo_note (qi, &meta, VVEC_UNDO_INSERT, new_dp);
     }
   QR_RESET_CODE
     {
@@ -7812,7 +8082,14 @@ vvec_embed_and_insert_impl (query_instance_t * qi, const char *func_name, char *
     }
   END_QR_RESET;
   vvec_writer_unlock (wmtx);
-  vvec_hidden_upsert (qi, &meta, row_id, embedding, (char *) source_hash, magnitude, NULL);
+  if (retry)
+    {
+      retry = 0;
+      virtuoso_sleep (0, 1000);
+      in_hidden = vvec_hidden_probe (qi, &meta, row_id, VVEC_PROBE_LOCK, NULL);
+      goto again;
+    }
+  vvec_hidden_upsert_pending (qi, &meta, row_id, embedding, (char *) source_hash, magnitude, NULL, !in_hidden);
   vvec_write_epoch_sync (qi, &meta);
   dk_free ((caddr_t) vec, dim * sizeof (float));
   dk_free_tree (embedding);

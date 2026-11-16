@@ -495,6 +495,202 @@ ECHO BOTH $IF $EQU $LAST[1] 5000 "PASSED" "***FAILED";
 ECHO BOTH ": VCONC_IDX2 rows after concurrent write-during-rebuild=" $LAST[1] " (expect 5000)\n";
 
 -- ===========================================================================
+-- PHASE E -- two writers of the SAME row id.  A worker writes it and holds the
+-- transaction open; this session writes the same id meanwhile.  Its plain read
+-- of the hidden table cannot see the worker's uncommitted insert while the
+-- worker's graph node is already linked, so the existing-node lookup must wait
+-- for the worker instead of trusting that read.
+-- ===========================================================================
+create table DB.DBA.VCONC_DOCS_C (id integer not null primary key, content varchar);
+CREATE VECTOR INDEX VCONC_IDX3 ON DB.DBA.VCONC_DOCS_C (content)
+  USING 'vvec-conc-128' WITH (dimensions = 128, distance_metric = 'cosine', hnsw_m = 16, ef_construction = 64);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": create VCONC_IDX3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+DB.DBA.VCONC_INSERT_RANGE ('VCONC_IDX3', 1, 201, 128);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": seed VCONC_IDX3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- op: 'insert' / 'delete'; commits after the pause, or rolls back when rb = 1.
+create procedure DB.DBA.VCONC_HOLD (in idx varchar, in op varchar, in id integer, in seed integer, in rb integer)
+{
+  if (op = 'insert')
+    __VEC_INDEX_INSERT_EMBEDDING (idx, id, DB.DBA.VCONC_RAND_VEC (seed, 128));
+  else
+    __VEC_INDEX_DELETE_ROW (idx, id);
+  delay (2);
+  if (rb)
+    rollback work;
+  else
+    commit work;
+}
+;
+create procedure DB.DBA.VCONC_SAME_ID (in idx varchar, in w_op varchar, in w_rb integer,
+    in op varchar, in id integer)
+{
+  declare aq any;
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.VCONC_HOLD', vector (idx, w_op, id, id, w_rb));
+  delay (0.5);
+  if (op = 'insert')
+    __VEC_INDEX_INSERT_EMBEDDING (idx, id, DB.DBA.VCONC_RAND_VEC (id + 7, 128));
+  else
+    __VEC_INDEX_DELETE_ROW (idx, id);
+  commit work;
+  aq_wait_all (aq);
+}
+;
+-- How many of the top 10 hits for the id's own vector are that id.
+create function DB.DBA.VCONC_HITS (in idx varchar, in id integer, in seed integer) returns integer
+{
+  declare res any;
+  declare j, n integer;
+  res := __VEC_INDEX_SEARCH (idx, DB.DBA.VCONC_RAND_VEC (seed, 128), 10, 128);
+  n := 0;
+  for (j := 0; j < length (res); j := j + 1)
+    if (cast (res[j][0] as integer) = id)
+      n := n + 1;
+  return n;
+}
+;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": create same-id procedures STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- (E1) both insert 9001: one live node, found once.
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'insert', 0, 'insert', 9001);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": concurrent inserts of one row id STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 201 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after concurrent inserts of one row id=" $LAST[1] " (expect 201)\n";
+
+select DB.DBA.VCONC_HITS ('VCONC_IDX3', 9001, 9008);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": hits for the row id=" $LAST[1] " (expect 1)\n";
+
+-- (E2) delete of 9002 while its insert is uncommitted: the delete waits and wins.
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'insert', 0, 'delete', 9002);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": delete during an uncommitted insert STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select count (*) from DB.DBA.VCONC_IDX3_vec_embeddings where VE_D_ID = 9002;
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": hidden rows of the deleted row id=" $LAST[1] " (expect 0)\n";
+
+select DB.DBA.VCONC_HITS ('VCONC_IDX3', 9002, 9002);
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": hits for the deleted row id=" $LAST[1] " (expect 0)\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 201 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the delete=" $LAST[1] " (expect 201)\n";
+
+-- (E3) re-insert of 100 while a delete of it is rolled back: one live node.
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'delete', 1, 'insert', 100);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": re-insert during a rolled-back delete STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 201 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the re-insert=" $LAST[1] " (expect 201)\n";
+
+select DB.DBA.VCONC_HITS ('VCONC_IDX3', 100, 107);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": hits for the re-inserted row id=" $LAST[1] " (expect 1)\n";
+
+-- (E4, E5) the competing writer arrives while the first has linked its node but
+-- not yet written its hidden row: no probe can see the id then.
+__dbf_set ('dbf_vvec_upsert_wait', 2000);
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'insert', 0, 'insert', 9003);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": insert before the other insert's hidden row exists STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 202 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after inserts in the gap=" $LAST[1] " (expect 202)\n";
+
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'insert', 0, 'delete', 9004);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": delete before the insert's hidden row exists STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+__dbf_set ('dbf_vvec_upsert_wait', 0);
+
+select count (*) from DB.DBA.VCONC_IDX3_vec_embeddings where VE_D_ID = 9004;
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": hidden rows of the row id deleted in the gap=" $LAST[1] " (expect 0)\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 202 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the delete in the gap=" $LAST[1] " (expect 202)\n";
+
+-- (E6) both find no row; the first links and writes it before the second takes the
+-- writer mutex, so the second's earlier probe is stale by then.
+create procedure DB.DBA.VCONC_STALE_PROBE (in idx varchar, in id integer)
+{
+  declare aq any;
+  aq := async_queue (2);
+  aq_request (aq, 'DB.DBA.VCONC_HOLD', vector (idx, 'insert', id, id, 0));
+  delay (0.5);
+  aq_request (aq, 'DB.DBA.VCONC_HOLD', vector (idx, 'insert', id, id + 7, 0));
+  aq_wait_all (aq);
+}
+;
+__dbf_set ('dbf_vvec_probe_wait', 2000);
+DB.DBA.VCONC_STALE_PROBE ('VCONC_IDX3', 9005);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": insert after a stale absent probe STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+__dbf_set ('dbf_vvec_probe_wait', 0);
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 203 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the stale probe=" $LAST[1] " (expect 203)\n";
+drop procedure DB.DBA.VCONC_STALE_PROBE;
+
+-- (E7) re-insert of 101 while another replace of it rolls back: the undo restores
+-- the old node and drops the rolled-back one before this insert replaces it.
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'insert', 1, 'insert', 101);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": insert during a rolled-back replace STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 203 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the rolled-back replace=" $LAST[1] " (expect 203)\n";
+
+select DB.DBA.VCONC_HITS ('VCONC_IDX3', 101, 108);
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": hits for the replaced row id=" $LAST[1] " (expect 1)\n";
+
+-- (E8) delete of 102 while another delete of it rolls back: the undo restores the
+-- node, and this delete must find and remove it.
+DB.DBA.VCONC_SAME_ID ('VCONC_IDX3', 'delete', 1, 'delete', 102);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": delete during a rolled-back delete STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select count (*) from DB.DBA.VCONC_IDX3_vec_embeddings where VE_D_ID = 102;
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": hidden rows of the row id deleted after the rollback=" $LAST[1] " (expect 0)\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'active_nodes');
+ECHO BOTH $IF $EQU $LAST[1] 202 "PASSED" "***FAILED";
+ECHO BOTH ": active_nodes after the delete after the rollback=" $LAST[1] " (expect 202)\n";
+
+select DB.DBA.VCONC_HITS ('VCONC_IDX3', 102, 102);
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": hits for the row id deleted after the rollback=" $LAST[1] " (expect 0)\n";
+
+select DB.DBA.VCONC_KV (__VEC_INDEX_VALIDATE ('VCONC_IDX3'), 'consistent');
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": VCONC_IDX3 consistent=" $LAST[1] "\n";
+
+drop index VCONC_IDX3;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": drop VCONC_IDX3 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+drop table DB.DBA.VCONC_DOCS_C;
+drop procedure DB.DBA.VCONC_SAME_ID;
+drop procedure DB.DBA.VCONC_HOLD;
+drop function DB.DBA.VCONC_HITS;
+
+-- ===========================================================================
 -- Cleanup
 -- ===========================================================================
 -- A vector index is dropped with plain DROP INDEX; there is no
