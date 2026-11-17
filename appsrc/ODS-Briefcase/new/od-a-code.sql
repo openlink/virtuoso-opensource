@@ -98,13 +98,15 @@ _end:;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.session_restore (
-  inout params any)
+create procedure ODRIVE.WA.session_restore ( inout params any, inout lines any)
 {
-  declare domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare domain_id, user_id, user_name, user_role, sid, realm, options, cookies any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, 'wa');
+  cookies := DB.DBA.vsp_ua_get_cookie_vec (lines);
+  if (sid = '')
+   sid := get_keyword ('sid', cookies, ''); 
   domain_id := ODRIVE.WA.session_domain (params);
   user_id := -1;
         user_role := 'expire';
