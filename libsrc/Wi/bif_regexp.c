@@ -93,16 +93,17 @@ regexp_key_hashcmp (char *x, char *y)
   return ((0 == strcmp (kx->orig_strg, ky->orig_strg)) && (kx->options == ky->options));
 }
 
+/* Release under the cache lock; NULL means the caller holds it or the object is private. */
 void
 release_compiled_regexp (id_hash_t *c_r, compiled_regexp_t *data)
 {
   int delete_data;
   if (NULL == data)
     return;
-  if (0 >= data->refctr)
-    GPF_T1 ("Wrong refctr of a compiled regexp; memory corruption");
   if (NULL != c_r)
     HT_WRLOCK (c_r);
+  if (0 >= data->refctr)
+    GPF_T1 ("Wrong refctr of a compiled regexp; memory corruption");
   delete_data = (0 == --(data->refctr));
   if (NULL != c_r)
     HT_UNLOCK (c_r);
@@ -133,6 +134,7 @@ pcre_cache_check (id_hash_t * ht)
     }
 }
 
+/* Return an owned reference; access hash slots only while holding the cache lock. */
 static compiled_regexp_t *
 get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *err_ret)
 {
@@ -147,9 +149,11 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
   val = (compiled_regexp_t **)id_hash_get (c_r, (caddr_t) &key);
   if (NULL != val)
     {
-      val[0]->refctr++;
+      /* Eviction or rehashing may move the slot after unlock; retain its object now. */
+      new_val = val[0];
+      new_val->refctr++;
       HT_UNLOCK (c_r);
-      return val[0];
+      return new_val;
     }
   HT_UNLOCK (c_r);
   dbg_printf (("regex compiling (%s) with options %x ...\n", pattern, options));
@@ -164,7 +168,8 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
             "SR098", "regexp error at \'%s\' column %d", pattern, erroff);
       return NULL;
     }
-  tmp.code_x = pcre_study (tmp.code, options, &error);
+  /* Study options exclude compile flags; UTF-8 and case modes are stored in the code. */
+  tmp.code_x = pcre_study (tmp.code, 0, &error);
 #ifdef DEBUG
   if (!tmp.code_x)
     dbg_printf (("***warning RX100: regexp warning: extra regular expression compiling failed\n"));
@@ -201,9 +206,11 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
     {
       dk_free_box (key.orig_strg);
       release_compiled_regexp (NULL, new_val);
-      val[0]->refctr++;
+      /* A concurrent compile hit also requires retaining the object under the lock. */
+      new_val = val[0];
+      new_val->refctr++;
       HT_UNLOCK (c_r);
-      return val[0];
+      return new_val;
     }
   id_hash_set (c_r, (caddr_t)(&key), (caddr_t)(&new_val));
   new_val->refctr++;
